@@ -1,12 +1,25 @@
 import AppKit
 import SwiftUI
+import SwiftData
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var statusItem: NSStatusItem?
+    private var settingsWindow: NSWindow?
+    private var modelContainer: ModelContainer?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 确保应用可以显示窗口（非 accessory 模式）
+        NSApp.setActivationPolicy(.regular)
+        
+        // 初始化 SwiftData 容器
+        do {
+            modelContainer = try ModelContainer(for: HistoryItem.self, AppRule.self, AIProviderConfig.self)
+            print("✅ ModelContainer initialized")
+        } catch {
+            print("❌ Failed to create ModelContainer: \(error)")
+        }
         print("🚀 SpokenAnyWhere started")
         
         // 检查辅助功能权限
@@ -64,7 +77,50 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        print("⚙️ openSettings called")
+        
+        // 如果窗口已存在，直接显示
+        if let window = settingsWindow {
+            print("⚙️ Reusing existing window")
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        
+        guard let container = modelContainer else {
+            print("❌ ModelContainer is nil!")
+            return
+        }
+        
+        print("⚙️ Creating new settings window...")
+        
+        // 创建设置视图
+        let settingsView = SettingsView()
+            .modelContainer(container)
+        
+        // 创建窗口 - 深色融合标题栏风格
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 750, height: 520),
+            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        
+        // 深色标题栏融合风格
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.backgroundColor = NSColor(red: 0.08, green: 0.08, blue: 0.08, alpha: 1.0) // #141414
+        window.isMovableByWindowBackground = true
+        
+        window.contentView = NSHostingView(rootView: settingsView)
+        window.center()
+        window.isReleasedWhenClosed = false
+        
+        self.settingsWindow = window
+        
+        print("⚙️ Showing window...")
+        window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        print("⚙️ Window should be visible now, frame: \(window.frame)")
     }
 }
