@@ -1,0 +1,105 @@
+# SwiftLint Configuration for SpokenAnyWhere
+# https://github.com/realm/SwiftLint
+
+# 包含的路径
+included:
+  - spoke
+
+# 排除的路径
+excluded:
+  - .build
+  - Spokenly
+  - spoke/.build
+
+# 禁用的规则
+disabled_rules:
+  - trailing_whitespace
+  - todo
+  - orphaned_doc_comment
+
+# 启用的可选规则
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - explicit_init
+  - first_where
+  - sorted_first_last
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - operator_usage_whitespace
+  - overridden_super_call
+  - private_action
+  - private_outlet
+  - redundant_nil_coalescing
+  - single_test_class
+  - sorted_imports
+  - vertical_whitespace_closing_braces
+
+# 行长度限制
+line_length:
+  warning: 120
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+  ignores_function_declarations: true
+
+# 标识符命名
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - j
+    - to
+    - db
+
+# 类型体长度
+type_body_length:
+  warning: 300
+  error: 500
+
+# 文件长度
+file_length:
+  warning: 500
+  error: 1000
+  ignore_comment_only_lines: true
+
+# 函数体长度
+function_body_length:
+  warning: 50
+  error: 100
+
+# 函数参数数量
+function_parameter_count:
+  warning: 6
+  error: 8
+
+# 嵌套深度
+nesting:
+  type_level:
+    warning: 2
+  function_level:
+    warning: 3
+
+# 圈复杂度
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+# 强制解包
+force_unwrapping:
+  severity: warning
+
+# 强制类型转换
+force_cast:
+  severity: warning
+
+# 输出格式
+reporter: "xcode"
