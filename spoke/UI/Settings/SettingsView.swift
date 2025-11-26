@@ -440,8 +440,7 @@ struct ModelOptionRow: View {
 
 struct ShortcutsSettingsContent: View {
     @ObservedObject var appSettings: AppSettings
-    @AppStorage("RecordingShortcut") private var shortcutDisplay = "⌥ Space"
-    @State private var isRecording = false
+    @State private var isRecordingShortcut = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -452,16 +451,13 @@ struct ShortcutsSettingsContent: View {
             
             SettingsCard {
                 SettingsRow(icon: "record.circle", title: "触发录音", description: "按下快捷键开始/停止录音") {
-                    Button(action: { isRecording.toggle() }) {
-                        Text(isRecording ? "输入快捷键..." : shortcutDisplay)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(6)
-                    }
-                    .buttonStyle(.plain)
+                    ShortcutRecorderButton(
+                        isRecording: $isRecordingShortcut,
+                        currentShortcut: appSettings.shortcutDisplayString,
+                        onShortcutCaptured: { keyCode, modifiers in
+                            appSettings.updateShortcut(keyCode: keyCode, modifiers: modifiers)
+                        }
+                    )
                 }
                 
                 Divider().background(Color.white.opacity(0.06))
@@ -494,6 +490,83 @@ struct ShortcutsSettingsContent: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+        }
+    }
+}
+
+// MARK: - Shortcut Recorder Button
+
+struct ShortcutRecorderButton: View {
+    @Binding var isRecording: Bool
+    let currentShortcut: String
+    let onShortcutCaptured: (Int, Int) -> Void
+    
+    @State private var eventMonitor: Any?
+    
+    var body: some View {
+        Button(action: { toggleRecording() }) {
+            Text(isRecording ? "输入快捷键..." : currentShortcut)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isRecording ? Color.accentColor.opacity(0.3) : Color.white.opacity(0.1))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isRecording ? Color.accentColor : Color.clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .onDisappear {
+            stopRecording()
+        }
+    }
+    
+    private func toggleRecording() {
+        if isRecording {
+            stopRecording()
+        } else {
+            startRecording()
+        }
+    }
+    
+    private func startRecording() {
+        isRecording = true
+        
+        // 使用 NSEvent.addLocalMonitorForEvents 监听键盘事件
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            
+            // Escape 取消录制
+            if event.keyCode == 53 {
+                self.stopRecording()
+                return nil
+            }
+            
+            // 必须有修饰键
+            guard !modifiers.isEmpty else { return event }
+            
+            // 忽略纯修饰键按下
+            let modifierKeyCodes: Set<UInt16> = [54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+            if modifierKeyCodes.contains(event.keyCode) { return event }
+            
+            // 捕获快捷键
+            let keyCode = Int(event.keyCode)
+            let modifiersRaw = Int(modifiers.rawValue)
+            
+            self.onShortcutCaptured(keyCode, modifiersRaw)
+            self.stopRecording()
+            
+            return nil
+        }
+    }
+    
+    private func stopRecording() {
+        isRecording = false
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
         }
     }
 }

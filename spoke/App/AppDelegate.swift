@@ -8,6 +8,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var modelContainer: ModelContainer?
+    private var hotkeyMenuItem: NSMenuItem?
+    private var shortcutObserver: NSObjectProtocol?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 确保应用可以显示窗口（非 accessory 模式）
@@ -63,8 +65,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "SpokenAnyWhere", action: nil, keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         
-        let hotkeyItem = NSMenuItem(title: "快捷键: ⌥ + R", action: nil, keyEquivalent: "")
+        // 动态显示当前快捷键
+        let hotkeyItem = NSMenuItem(title: "快捷键: \(AppSettings.shared.shortcutDisplayString)", action: nil, keyEquivalent: "")
         hotkeyItem.isEnabled = false
+        self.hotkeyMenuItem = hotkeyItem
         menu.addItem(hotkeyItem)
         
         menu.addItem(NSMenuItem.separator())
@@ -74,6 +78,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
         statusItem?.menu = menu
+        
+        // 监听快捷键变更通知
+        setupShortcutObserver()
+    }
+    
+    private func setupShortcutObserver() {
+        shortcutObserver = NotificationCenter.default.addObserver(
+            forName: AppSettings.shortcutDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateHotkeyMenuItem()
+            }
+        }
+    }
+    
+    private func updateHotkeyMenuItem() {
+        hotkeyMenuItem?.title = "快捷键: \(AppSettings.shared.shortcutDisplayString)"
     }
     
     @objc private func openSettings() {

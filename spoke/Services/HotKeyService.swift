@@ -21,11 +21,11 @@ final class HotKeyService {
     /// 长按阈值（秒）
     private let holdThreshold: TimeInterval = 0.4
     
-    /// 当前快捷键 (默认: ⌥ + R)
-    private(set) var currentKeyCombo: (keyCode: UInt32, modifiers: UInt32) = (
-        keyCode: UInt32(kVK_ANSI_R),
-        modifiers: UInt32(optionKey)
-    )
+    /// 当前快捷键 keyCode
+    private var currentKeyCode: UInt32 = UInt32(kVK_ANSI_R)
+    
+    /// 当前快捷键修饰符
+    private var currentModifiers: NSEvent.ModifierFlags = .option
     
     /// 是否正在录音
     var isRecording = false
@@ -37,13 +37,50 @@ final class HotKeyService {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     
+    /// 快捷键变更观察者
+    private var shortcutObserver: NSObjectProtocol?
+    
     /// 回调
     var onRecordingStart: (() -> Void)?
     var onRecordingStop: (() -> Void)?
     
     // MARK: - Init
     
-    private init() {}
+    private init() {
+        loadShortcutFromSettings()
+        setupShortcutObserver()
+    }
+    
+    private func loadShortcutFromSettings() {
+        let settings = AppSettings.shared
+        currentKeyCode = UInt32(settings.shortcutKeyCode)
+        currentModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers))
+    }
+    
+    private func setupShortcutObserver() {
+        shortcutObserver = NotificationCenter.default.addObserver(
+            forName: AppSettings.shortcutDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadShortcut()
+            }
+        }
+    }
+    
+    /// 重新加载快捷键配置并重新注册
+    func reloadShortcut() {
+        loadShortcutFromSettings()
+        
+        // 如果已注册，重新注册
+        if eventTap != nil {
+            unregister()
+            register()
+        }
+        
+        logger.info("🔄 Shortcut reloaded: \(AppSettings.shared.shortcutDisplayString)")
+    }
     
     // MARK: - Public API
     
@@ -74,7 +111,7 @@ final class HotKeyService {
         if let source = runLoopSource {
             CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
             CGEvent.tapEnable(tap: tap, enable: true)
-            logger.info("✅ HotKey registered: ⌥ + R")
+            logger.info("✅ HotKey registered: \(AppSettings.shared.shortcutDisplayString)")
         }
     }
     
@@ -96,20 +133,20 @@ final class HotKeyService {
         let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = event.flags
         
-        let isOptionPressed = flags.contains(.maskAlternate)
-        let isTargetKey = keyCode == currentKeyCombo.keyCode
+        let isModifiersPressed = checkModifiersMatch(flags: flags)
+        let isTargetKey = keyCode == currentKeyCode
         
         switch type {
         case .keyDown:
-            // keyDown 需要 Option + R 同时按下
-            guard isTargetKey && isOptionPressed else {
+            // keyDown 需要修饰键 + 目标键同时按下
+            guard isTargetKey && isModifiersPressed else {
                 return Unmanaged.passRetained(event)
             }
             handleKeyDown()
             return nil // 吞掉事件
             
         case .keyUp:
-            // keyUp 只需要是 R 键，且当前正在录音（因为 Option 可能已经先松开）
+            // keyUp 只需要是目标键，且当前正在录音
             guard isTargetKey && isRecording else {
                 return Unmanaged.passRetained(event)
             }
@@ -117,8 +154,8 @@ final class HotKeyService {
             return nil
             
         case .flagsChanged:
-            // 监听 Option 键松开
-            if !isOptionPressed && isRecording {
+            // 监听修饰键松开
+            if !isModifiersPressed && isRecording {
                 handleRelease()
             }
             return Unmanaged.passRetained(event)
@@ -128,6 +165,30 @@ final class HotKeyService {
         }
         
         return Unmanaged.passRetained(event)
+    }
+    
+    /// 检查当前按下的修饰键是否匹配配置
+    private func checkModifiersMatch(flags: CGEventFlags) -> Bool {
+        var matches = true
+        
+        // 检查 Option
+        if currentModifiers.contains(.option) {
+            matches = matches && flags.contains(.maskAlternate)
+        }
+        // 检查 Command
+        if currentModifiers.contains(.command) {
+            matches = matches && flags.contains(.maskCommand)
+        }
+        // 检查 Control
+        if currentModifiers.contains(.control) {
+            matches = matches && flags.contains(.maskControl)
+        }
+        // 检查 Shift
+        if currentModifiers.contains(.shift) {
+            matches = matches && flags.contains(.maskShift)
+        }
+        
+        return matches
     }
     
     private func handleKeyDown() {
