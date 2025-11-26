@@ -44,7 +44,6 @@ final class FloatingPanel: NSPanel {
         
         let screenFrame = screen.visibleFrame
         let panelWidth = frame.width
-        let panelHeight = frame.height
         
         let x = screenFrame.midX - panelWidth / 2
         // 底部固定，距离底部 80pt

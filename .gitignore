@@ -1,6 +1,7 @@
 # Build artifacts
 .build/
 DerivedData/
+spoke/dist/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 
