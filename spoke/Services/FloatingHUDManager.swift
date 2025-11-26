@@ -6,6 +6,12 @@ import SwiftUI
 @MainActor
 final class FloatingHUDManager {
     
+    // MARK: - Constants
+    
+    /// 窗口固定高度（足够容纳最大内容，内容从底部向上扩展）
+    private static let fixedWindowHeight: CGFloat = 300
+    private static let fixedWindowWidth: CGFloat = 340
+    
     // MARK: - Singleton
     
     static let shared = FloatingHUDManager()
@@ -40,7 +46,7 @@ final class FloatingHUDManager {
         state.startRecording(targetApp: targetApp)
         
         panel?.orderFront(nil)
-        panel?.positionAtTopCenter()
+        panel?.positionAtBottomCenter()
     }
     
     /// 更新录音时长
@@ -55,69 +61,8 @@ final class FloatingHUDManager {
     
     /// 更新实时转写文本
     func updatePartialText(_ text: String) {
-        // 先预计算新高度并扩展窗口
-        preExpandPanelForText(text)
-        
-        // 稍微延迟更新文字，让窗口先扩展
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-            self?.state.updatePartialText(text)
-        }
-    }
-    
-    /// 预先扩展窗口以容纳新文字
-    private func preExpandPanelForText(_ text: String) {
-        guard let panel = panel,
-              let contentView = panel.contentView else { return }
-        
-        // 临时更新状态以计算新高度
-        let oldText = state.partialText
-        state.partialText = text
-        
-        // 获取新的 fitting size
-        let fittingSize = contentView.fittingSize
-        let newHeight = max(fittingSize.height, 60)
-        
-        // 恢复旧文字（稍后会正式更新）
-        state.partialText = oldText
-        
-        let oldFrame = panel.frame
-        guard abs(oldFrame.height - newHeight) > 1 else { return }
-        
-        var newFrame = oldFrame
-        newFrame.size.height = newHeight
-        
-        // 使用动画扩展窗口
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.15
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().setFrame(newFrame, display: true)
-        }
-    }
-    
-    /// 更新窗口大小（底部固定，向上扩展，带动画）
-    private func updatePanelSize() {
-        guard let panel = panel,
-              let contentView = panel.contentView else { return }
-        
-        // 重新计算合适尺寸
-        let fittingSize = contentView.fittingSize
-        let newHeight = max(fittingSize.height, 60)
-        
-        let oldFrame = panel.frame
-        guard abs(oldFrame.height - newHeight) > 1 else { return } // 避免无意义更新
-        
-        // macOS 窗口原点在左下角
-        // 底部固定 = origin.y 不变，只改变高度
-        var newFrame = oldFrame
-        newFrame.size.height = newHeight
-        // origin.y 保持不变，窗口自然向上扩展
-        
-        // 使用动画平滑过渡
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.2
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            panel.animator().setFrame(newFrame, display: true)
-        }
+        state.updatePartialText(text)
+        // 不再需要更新窗口大小，窗口是固定的
     }
     
     /// 切换到处理状态
@@ -166,22 +111,19 @@ final class FloatingHUDManager {
         contentView.onCancel = { [weak self] in
             self?.onCancel?()
         }
-        contentView.onHoverChange = { [weak self] hovering in
-            // Hover 状态变化可能需要更新 UI（比如触发动画），但现在使用 overlay 覆盖整个视图
-            // 所以不需要重新计算窗口大小
-        }
+        contentView.onHoverChange = { _ in }
         
-        let framedView = contentView.frame(width: 340) // 固定宽度
+        // 固定宽度，内容从底部向上扩展
+        let framedView = contentView
+            .frame(width: Self.fixedWindowWidth, height: Self.fixedWindowHeight, alignment: .bottom)
+        
         let hostingView = NSHostingView(rootView: framedView)
         
-        // 让 hostingView 根据内容自动调整大小
-        hostingView.setContentHuggingPriority(.defaultHigh, for: .vertical)
-        hostingView.setContentCompressionResistancePriority(.defaultHigh, for: .vertical)
-        
-        // 获取合适的初始尺寸
-        let fittingSize = hostingView.fittingSize
-        let initialSize = NSSize(width: 340, height: max(fittingSize.height, 60))
-        let frame = NSRect(origin: .zero, size: initialSize)
+        // 固定窗口大小
+        let frame = NSRect(
+            origin: .zero,
+            size: NSSize(width: Self.fixedWindowWidth, height: Self.fixedWindowHeight)
+        )
         
         let newPanel = FloatingPanel(contentRect: frame)
         newPanel.contentView = hostingView

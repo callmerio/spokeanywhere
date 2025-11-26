@@ -234,17 +234,33 @@ final class AudioRecorderService: NSObject {
         guard let channelData = buffer.floatChannelData?[0] else { return }
         
         let frameLength = Int(buffer.frameLength)
-        var sum: Float = 0
+        // 使用 RMS (均方根) 计算，更能反映听感响度
+        var sumSquares: Float = 0
         
-        for i in 0..<frameLength {
-            sum += abs(channelData[i])
+        // 降采样以提高性能 (每 4 个采样点取一个)
+        let strideStep = 4
+        for i in stride(from: 0, to: frameLength, by: strideStep) {
+            let sample = channelData[i]
+            sumSquares += sample * sample
         }
         
-        let average = sum / Float(frameLength)
-        let level = min(average * 10, 1.0) // 放大并限制在 0-1
+        let rms = sqrt(sumSquares / Float(frameLength / strideStep))
+        
+        // 非线性放大：
+        // 1. 基础放大倍数 5.0
+        // 2. 加上一个非线性分量 sqrt(rms) * 2.0 提升小音量表现
+        // 3. 限制在 0.01 - 1.0 之间 (保留极小值避免完全静止)
+        var level = (rms * 5.0) + (sqrt(rms) * 2.0)
+        
+        // 添加一点随机抖动，让波形在说话时更生动
+        if level > 0.1 {
+            level += Float.random(in: -0.05...0.05)
+        }
+        
+        let finalLevel = min(max(level, 0.02), 1.0)
         
         Task { @MainActor in
-            onAudioLevelUpdate?(level)
+            onAudioLevelUpdate?(finalLevel)
         }
     }
 }

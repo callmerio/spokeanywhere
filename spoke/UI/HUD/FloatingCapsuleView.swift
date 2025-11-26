@@ -19,32 +19,31 @@ struct FloatingCapsuleView: View {
     var onHoverChange: ((Bool) -> Void)?
     
     var body: some View {
-        ZStack {
-            // 正常内容层
-            VStack(spacing: 0) {
-                // 上方：转写文字区域（向上扩展）
-                if state.phase == .recording || state.phase == .processing {
-                    textArea
-                        .transition(.asymmetric(
-                            insertion: .opacity.animation(.easeInOut(duration: 0.15).delay(0.1)),
-                            removal: .opacity.animation(.easeInOut(duration: 0.1))
-                        ))
-                }
-                
-                // 下方：固定控制栏（始终在底部）
-                controlBar
-            }
-            .frame(minHeight: 44, alignment: .bottom)
-            .opacity((isHovering && state.phase == .recording) ? 0 : 1)
+        // 外层容器：固定高度，内容从底部向上扩展
+        VStack {
+            Spacer() // 顶部弹性空间，把内容推到底部
             
-            // Hover 操作层
-            if isHovering && state.phase == .recording {
-                hoverOverlay
-                    .transition(.opacity)
+            // 实际内容区域
+            ZStack {
+                // 正常内容层
+                VStack(spacing: 0) {
+                    // 上方：转写文字区域（向上扩展）
+                    if state.phase == .recording || state.phase == .processing {
+                        textArea
+                    }
+                    
+                    // 下方：固定控制栏（始终在底部）
+                    controlBar
+                }
+                .opacity((isHovering && state.phase == .recording) ? 0 : 1)
+                
+                // Hover 操作层
+                if isHovering && state.phase == .recording {
+                    hoverOverlay
+                        .transition(.opacity)
+                }
             }
-        }
-        .animation(.easeInOut(duration: 0.2), value: isHovering) // Hover 切换动画
-        .background(
+            .background(
             ZStack {
                 // 毛玻璃底层
                 VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
@@ -89,6 +88,7 @@ struct FloatingCapsuleView: View {
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
         )
+        .animation(.easeInOut(duration: 0.2), value: isHovering) // Hover 切换动画
         .onChange(of: state.audioLevel) { _, newLevel in
             updateWaveform(newLevel)
         }
@@ -99,6 +99,7 @@ struct FloatingCapsuleView: View {
             }
             onHoverChange?(hovering)
         }
+        } // VStack 结束
     }
     
     // MARK: - Text Area (上方，向上扩展)
@@ -137,7 +138,12 @@ struct FloatingCapsuleView: View {
     
     private var controlBar: some View {
         HStack(spacing: 0) {
-            appIcon
+            // 左侧：App 图标或成功图标（同一位置）
+            if state.phase == .success {
+                successIcon
+            } else {
+                appIcon
+            }
             Spacer().frame(width: 12)
             
             if state.phase == .recording {
@@ -149,8 +155,6 @@ struct FloatingCapsuleView: View {
             
             if state.phase == .recording {
                 brandLabel
-            } else if state.phase == .success {
-                successIcon
             }
         }
         .padding(.horizontal, 12)
@@ -261,7 +265,8 @@ struct FloatingCapsuleView: View {
         var newLevels = levels
         newLevels.removeFirst()
         newLevels.append(level)
-        withAnimation(.linear(duration: 0.08)) {
+        // 缩短动画时间，让波形跳动更敏捷
+        withAnimation(.linear(duration: 0.05)) {
             self.levels = newLevels
         }
     }
@@ -278,7 +283,6 @@ struct VisualEffectBackground: NSViewRepresentable {
         view.material = material
         view.blendingMode = blendingMode
         view.state = .active
-        view.wantsLayer = true
         return view
     }
     
@@ -298,20 +302,28 @@ struct ScrollingWaveform: View {
             ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
                 Capsule()
                     .fill(barColor(for: index))
+                    // 动态高度：即使音量很小，也给一个基础波动
                     .frame(width: 2, height: barHeight(for: level))
             }
         }
     }
     
     private func barHeight(for level: Float) -> CGFloat {
-        let minH: CGFloat = 3
-        let maxH: CGFloat = 14
-        return minH + CGFloat(level) * (maxH - minH)
+        let minH: CGFloat = 4
+        let maxH: CGFloat = 20 // 增加最大高度
+        
+        // 非线性映射：让小音量也能有明显的高度
+        // pow(level, 0.7) 会提升小数值的权重
+        let adjustedLevel = CGFloat(pow(Double(level), 0.7))
+        
+        return minH + adjustedLevel * (maxH - minH)
     }
     
     private func barColor(for index: Int) -> Color {
         let count = levels.count
+        // 让右侧（最新）的波纹更亮更红
         let progress = Double(index) / Double(count - 1)
-        return Color.red.opacity(0.3 + 0.7 * progress)
+        // 增加一点不透明度
+        return Color.red.opacity(0.4 + 0.6 * progress)
     }
 }

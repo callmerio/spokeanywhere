@@ -38,16 +38,17 @@ final class FloatingPanel: NSPanel {
         hasShadow = false // 禁用系统阴影，防止出现方框黑影
     }
     
-    /// 定位到屏幕底部中央（纵向布局，向上扩展）
-    func positionAtTopCenter() {
+    /// 定位到屏幕底部中央（固定位置，内容向上扩展）
+    func positionAtBottomCenter() {
         guard let screen = NSScreen.main else { return }
         
         let screenFrame = screen.visibleFrame
         let panelWidth = frame.width
+        let panelHeight = frame.height
         
         let x = screenFrame.midX - panelWidth / 2
-        // 底部固定，距离底部 100pt
-        let y = screenFrame.minY + 100
+        // 底部固定，距离底部 80pt
+        let y = screenFrame.minY + 80
         
         setFrameOrigin(NSPoint(x: x, y: y))
     }
