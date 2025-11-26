@@ -27,6 +27,8 @@ final class RecordingController {
     private let contextService = ContextService.shared
     private let hotKeyService = HotKeyService.shared
     private let audioService = AudioRecorderService.shared
+    private let inputService = InputService.shared
+    private let settings = AppSettings.shared
     
     // MARK: - Properties
     
@@ -64,10 +66,24 @@ final class RecordingController {
             }
         }
         
-        audioService.onPartialResult = { [weak self] text in
+        audioService.onPartialResult = { [weak self] result in
             Task { @MainActor in
-                self?.lastTranscription = text
-                self?.hudManager.updatePartialText(text)
+                guard let self = self else { return }
+                
+                // 保存完整文本
+                self.lastTranscription = result.text
+                
+                // HUD 始终显示完整文本（finalized + volatile）
+                self.hudManager.updatePartialText(result.text)
+                
+                // 边说边打字模式：使用稳定性检测输入
+                if self.settings.realtimeTypingEnabled {
+                    // 基于前缀稳定性检测，更快地输入稳定内容
+                    self.inputService.typeWithStabilityDetection(
+                        finalizedText: result.finalizedText,
+                        volatileText: result.volatileText
+                    )
+                }
             }
         }
         
@@ -117,12 +133,15 @@ final class RecordingController {
     private func startRecordingSession() {
         let targetApp = contextService.getCurrentTargetApp()
         
-        // 显示 HUD
+        // 显示 HUD（先显示"准备中"状态）
         hudManager.show(targetApp: targetApp)
         
         // 记录开始时间
         recordingStartTime = Date()
         lastTranscription = ""
+        
+        // 重置输入服务（边说边打字）
+        inputService.reset()
         
         // 启动计时器更新时长
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -131,7 +150,7 @@ final class RecordingController {
             }
         }
         
-        // 启动真实的音频录制
+        // 启动音频录制（立即开始，引擎后台准备）
         do {
             try audioService.startRecording()
             logger.info("🔴 Recording started for: \(targetApp?.name ?? "Unknown")")
@@ -148,6 +167,11 @@ final class RecordingController {
         
         // 停止音频录制（正常结束，等待最终结果）
         _ = audioService.stopRecording()
+        
+        // 边说边打字：刷新待输入的文本
+        if settings.realtimeTypingEnabled {
+            inputService.flushPendingText()
+        }
         
         // 切换到处理状态
         hudManager.startProcessing()
@@ -213,8 +237,8 @@ final class RecordingController {
             while waitTime < Self.maxWaitForFinalResult {
                 try? await Task.sleep(for: .milliseconds(Self.checkInterval))
                 waitTime += Self.checkInterval
-                // 如果 recognitionTask 已完成，提前退出
-                if audioService.recognitionTask == nil { break }
+                // 如果处理已完成，提前退出
+                if !audioService.isProcessing { break }
             }
             
             let text = lastTranscription

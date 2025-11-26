@@ -26,8 +26,23 @@
 ## Phase 3: 本地智能 - 隐私与离线 (The Ear)
 **目标**: 隐私安全、离线可用、超低延迟。
 
+- [x] **SpeechAnalyzer 升级 (macOS 26+)** ⭐ NEW
+    - [x] 设计 `TranscriptionProvider` 协议，抽象语音转录引擎
+    - [x] 实现 `SpeechAnalyzerProvider` (macOS 26+，优先使用)
+    - [x] 保留 `SFSpeechRecognizerProvider` (macOS 15+ 回退方案)
+    - [x] 运行时自动检测系统版本，选择最佳引擎
+    - [x] 集成 `AssetInventory` 管理语言模型下载
+    - [x] 完善 SpeechAnalyzer 实际 API 调用
+    - [x] 使用 `.progressiveTranscription` 预设支持实时转录
+    - [x] **边说边打字 (Real-time Typing)** ⭐ NEW
+        - 实现 `InputService` 模拟键盘输入 (CGEvent)
+        - 策略：只输入 Finalized Text (最稳妥，无回删风险)
+        - 交互：开启时 HUD 隐藏文字，只显示波形
+        - 兼容性：仅支持流式输出的引擎 (SpeechAnalyzer / SFSpeech)
+
 - [ ] **本地 Whisper 集成**
     - 集成 `WhisperKit` (针对 Apple Silicon 优化的 CoreML 版本)
+    - 作为第三种 `TranscriptionProvider` 实现
     - 支持高精度的离线听写
     - 模型下载与管理界面
 

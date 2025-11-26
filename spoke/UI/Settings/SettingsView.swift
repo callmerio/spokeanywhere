@@ -489,6 +489,45 @@ struct ShortcutsSettingsContent: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
+                
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                
+                // 边说边打字
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(isOn: $appSettings.realtimeTypingEnabled) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "keyboard")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.white.opacity(0.7))
+                                .frame(width: 24)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("边说边打字")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.white)
+                                
+                                Text("实时将语音转录输入到当前应用")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            }
+                        }
+                    }
+                    .toggleStyle(.switch)
+                    
+                    if appSettings.realtimeTypingEnabled {
+                        HStack(spacing: 6) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 11))
+                            Text("开启后，语音转录将直接输入到光标位置，HUD 仅显示波形")
+                        }
+                        .font(.system(size: 11))
+                        .foregroundStyle(.orange.opacity(0.8))
+                        .padding(.leading, 38)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
         }
     }

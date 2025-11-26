@@ -4,13 +4,9 @@ import os
 
 /// 音频录制服务
 /// 负责麦克风录音、流式写入磁盘、实时转写
+/// 使用 TranscriptionManager 自动选择最佳转录引擎
 @MainActor
 final class AudioRecorderService: NSObject {
-    
-    // MARK: - Constants
-    
-    /// SFSpeechRecognizer 取消错误码
-    private static let speechRecognizerCancelledErrorCode = 216
     
     // MARK: - Singleton
     
@@ -18,13 +14,14 @@ final class AudioRecorderService: NSObject {
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "Audio")
     
+    // MARK: - Dependencies
+    
+    private let transcriptionManager = TranscriptionManager.shared
+    
     // MARK: - Properties
     
     private var audioEngine: AVAudioEngine?
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    /// 当前识别任务（外部可读取以检查完成状态）
-    private(set) var recognitionTask: SFSpeechRecognitionTask?
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
+    private var transcriptionProvider: TranscriptionProvider?
     
     /// 临时音频文件 URL
     private var tempAudioFileURL: URL?
@@ -33,56 +30,62 @@ final class AudioRecorderService: NSObject {
     /// 是否正在录音
     private(set) var isRecording = false
     
+    /// 是否正在处理中（等待最终结果）
+    private(set) var isProcessing = false
+    
+    /// 引擎是否已准备好
+    private var isEngineReady = false
+    
+    /// 音频缓冲区（引擎准备好之前暂存）
+    private var audioBuffer: [AVAudioPCMBuffer] = []
+    private let bufferLock = NSLock()
+    
     /// 回调
     var onAudioLevelUpdate: ((Float) -> Void)?
-    var onPartialResult: ((String) -> Void)?
+    var onPartialResult: ((TranscriptionResult) -> Void)?  // 传递完整结果，包含 finalized/volatile 分离
     var onFinalResult: ((String) -> Void)?
     var onError: ((Error) -> Void)?
+    
+    /// 当前使用的引擎类型（用于 UI 展示）
+    var currentEngineType: TranscriptionEngineType? {
+        transcriptionManager.currentEngineType
+    }
     
     // MARK: - Init
     
     private override init() {
         super.init()
+        
+        // 打印调试信息
+        transcriptionManager.printDebugInfo()
     }
     
     // MARK: - Public API
     
     /// 请求麦克风和语音识别权限
     func requestPermissions() async -> Bool {
-        // 麦克风权限
-        let micStatus = await withCheckedContinuation { continuation in
-            AVCaptureDevice.requestAccess(for: .audio) { granted in
-                continuation.resume(returning: granted)
-            }
-        }
-        
-        guard micStatus else {
-            print("⚠️ Microphone permission denied")
-            return false
-        }
-        
-        // 语音识别权限
-        let speechStatus = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status == .authorized)
-            }
-        }
-        
-        guard speechStatus else {
-            print("⚠️ Speech recognition permission denied")
-            return false
-        }
-        
-        print("✅ All audio permissions granted")
-        return true
+        await transcriptionManager.requestPermissions()
     }
     
     /// 开始录音
     func startRecording() throws {
         guard !isRecording else { return }
         
-        // 确保有可用的语音识别器
-        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+        // 重置状态
+        isEngineReady = false
+        bufferLock.lock()
+        audioBuffer.removeAll()
+        bufferLock.unlock()
+        
+        // 创建最佳转录引擎
+        let provider = transcriptionManager.createBestProvider()
+        transcriptionProvider = provider
+        
+        // 设置回调
+        setupProviderCallbacks(provider)
+        
+        // 确保引擎可用
+        guard provider.isAvailable else {
             throw AudioRecorderError.recognizerNotAvailable
         }
         
@@ -91,17 +94,6 @@ final class AudioRecorderService: NSObject {
         guard let audioEngine = audioEngine else {
             throw AudioRecorderError.engineCreationFailed
         }
-        
-        // 创建识别请求
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let request = recognitionRequest else {
-            throw AudioRecorderError.requestCreationFailed
-        }
-        
-        request.shouldReportPartialResults = true
-        request.addsPunctuation = true
-        // 使用 dictation 模式，减少"智能修正"，保留更多原始表达
-        request.taskHint = .dictation
         
         // 创建临时文件用于保存音频
         tempAudioFileURL = createTempAudioFileURL()
@@ -115,69 +107,108 @@ final class AudioRecorderService: NSObject {
             audioFile = try? AVAudioFile(forWriting: url, settings: recordingFormat.settings)
         }
         
-        // 安装 Tap 节点
+        // 安装 Tap 节点 - 立即开始录音
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-            // 发送到语音识别
-            self?.recognitionRequest?.append(buffer)
+            guard let self = self else { return }
             
             // 写入磁盘（崩溃恢复）
-            try? self?.audioFile?.write(from: buffer)
+            try? self.audioFile?.write(from: buffer)
             
             // 计算音频电平
-            self?.processAudioLevel(buffer: buffer)
-        }
-        
-        // 开始识别任务
-        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor in
-                if let result = result {
-                    let text = result.bestTranscription.formattedString
-                    
-                    if result.isFinal {
-                        self?.onFinalResult?(text)
-                        // 最终结果后清理 task
-                        self?.recognitionTask = nil
-                    } else {
-                        self?.onPartialResult?(text)
-                    }
-                }
-                
-                if let error = error {
-                    // 只有非取消错误才报告（用户主动取消不算错误）
-                    let nsError = error as NSError
-                    if nsError.code != Self.speechRecognizerCancelledErrorCode {
-                        self?.onError?(error)
-                    }
-                    self?.recognitionTask = nil
-                }
+            self.processAudioLevel(buffer: buffer)
+            
+            // 根据引擎状态决定发送还是缓存
+            if self.isEngineReady {
+                // 引擎已准备好，直接发送
+                try? self.transcriptionProvider?.process(buffer: buffer)
+            } else {
+                // 引擎未准备好，缓存音频
+                self.bufferLock.lock()
+                self.audioBuffer.append(buffer)
+                self.bufferLock.unlock()
             }
         }
         
-        // 启动引擎
+        // 启动音频引擎（立即开始录音）
         audioEngine.prepare()
         try audioEngine.start()
         
         isRecording = true
-        logger.info("🎙️ Recording started")
+        logger.info("🎙️ Recording started (engine preparing in background)")
+        
+        // 异步准备转录引擎
+        Task { [weak self] in
+            guard let self = self else { return }
+            
+            do {
+                logger.info("⏳ Preparing transcription engine...")
+                try await provider.prepare()
+                
+                await MainActor.run {
+                    // 发送缓存的音频
+                    self.bufferLock.lock()
+                    let bufferedAudio = self.audioBuffer
+                    self.audioBuffer.removeAll()
+                    self.bufferLock.unlock()
+                    
+                    self.logger.info("✅ Engine ready, sending \(bufferedAudio.count) buffered chunks")
+                    
+                    for buffer in bufferedAudio {
+                        try? self.transcriptionProvider?.process(buffer: buffer)
+                    }
+                    
+                    // 标记引擎已准备好
+                    self.isEngineReady = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.logger.error("❌ Engine prepare failed: \(error)")
+                    self.onError?(error)
+                }
+            }
+        }
+    }
+    
+    /// 设置 Provider 回调
+    private func setupProviderCallbacks(_ provider: TranscriptionProvider) {
+        provider.onResult = { [weak self] result in
+            Task { @MainActor in
+                switch result.type {
+                case .partial:
+                    // 传递完整的 TranscriptionResult
+                    self?.onPartialResult?(result)
+                case .final:
+                    self?.onFinalResult?(result.text)
+                    self?.isProcessing = false
+                }
+            }
+        }
+        
+        provider.onError = { [weak self] error in
+            Task { @MainActor in
+                self?.onError?(error)
+                self?.isProcessing = false
+            }
+        }
     }
     
     /// 停止录音（正常结束，等待最终识别结果）
     func stopRecording() -> String? {
         guard isRecording else { return nil }
         
+        isProcessing = true
+        
         // 停止音频引擎
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         
-        // 结束识别请求（不要 cancel，让它自然完成）
-        recognitionRequest?.endAudio()
-        // 注意：不调用 recognitionTask?.cancel()，等待最终结果
+        // 通知 Provider 结束处理
+        Task {
+            try? await transcriptionProvider?.finishProcessing()
+        }
         
         // 关闭音频文件
         audioFile = nil
-        
-        // 清理引擎（但保留 recognitionTask 等待完成）
-        recognitionRequest = nil
         audioEngine = nil
         
         isRecording = false
@@ -189,25 +220,24 @@ final class AudioRecorderService: NSObject {
     /// 取消录音（用户主动取消，丢弃结果）
     func cancelRecording() {
         // 即使不在录音状态，也要尝试取消可能残留的任务
-        guard isRecording || recognitionTask != nil else { return }
+        guard isRecording || transcriptionProvider != nil else { return }
         
         // 停止音频引擎
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         
-        // 取消识别任务
-        recognitionTask?.cancel()
-        recognitionRequest?.endAudio()
+        // 取消转录
+        transcriptionProvider?.cancel()
         
         // 关闭音频文件
         audioFile = nil
         
         // 清理
-        recognitionRequest = nil
-        recognitionTask = nil
+        transcriptionProvider = nil
         audioEngine = nil
         
         isRecording = false
+        isProcessing = false
         logger.info("🚫 Recording cancelled")
         
         // 清理临时文件

@@ -80,6 +80,12 @@ class AppSettings: ObservableObject {
     @AppStorage("PlaySoundEffect") var playSoundEffect: Bool = true
     @AppStorage("RecordingMode") var recordingMode: RecordingMode = .mixed
     
+    // MARK: - Real-time Typing
+    
+    /// 边说边打字功能开关
+    /// 仅在支持流式输出的引擎下有效 (SpeechAnalyzer / SFSpeech)
+    @AppStorage("RealtimeTypingEnabled") var realtimeTypingEnabled: Bool = false
+    
     // MARK: - Shortcut Settings
     
     /// 快捷键 keyCode (默认: R = 15)
