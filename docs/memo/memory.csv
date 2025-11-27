@@ -11,3 +11,6 @@ timestamp,scope,file,action,user_intent,mm_thought,implementation,ai_tips,ref
 2025-11-27T13:50,spoke,UI/Settings/SettingsView.swift,update,更新UI文案,剪贴板内容->剪贴板历史,修改设置项标题和描述,保持开关逻辑不变,SettingsView.swift#上下文选项
 2025-11-27T14:07,spoke,Core/LLM/LLMSettings.swift,update,改进 System Prompt,让 LLM 主动利用剪贴板历史修正术语,重写 defaultSystemPrompt 明确指导修正规则,关键：明确告诉 LLM 用剪贴板历史修正听错的词,LLMSettings.swift#defaultSystemPrompt
 2025-11-27T14:07,spoke,docs/roadmap.md,update,添加多模态音频功能规划,支持 Gemini/GPT-4o 直接听音频,roadmap 新增 Multimodal Audio 功能,检测 Provider 能力+可选传送音频+一步到位转录,roadmap.md#Multimodal-Audio
+2025-11-27T15:10,spoke,Core/LLM/LLMSettings.swift,update,Prompt 驼峰处理太激进把中文也改了,需要保守策略+明确区分中英文,重写 defaultSystemPrompt 明确只对英文词消歧义;添加 v1~v4 迁移逻辑,Prompt 要给具体例子说明中文不变;迁移检测用 contains 匹配旧版特征,LLMSettings.swift#defaultSystemPrompt
+2025-11-27T15:10,spoke,Services/ClipboardHistoryService.swift,update,调试日志污染剪贴板历史,过滤系统日志+构建日志,shouldIgnore 过滤 DEBUG/LLM PROMPT/Building 等关键词;loadHistory 时也清洗旧数据,过滤项目名 SpokenAnyWhere 可能误杀合法复制,ClipboardHistoryService.swift#shouldIgnore
+2025-11-27T18:45,spoke,Core/LLM/LLMSettings.swift,update,解决 Keychain 重复弹窗问题,统一存储+一次性迁移+移除回退逻辑,合并 Legacy API Keys 到统一存储;OpenAICompatibleProvider 移除 Keychain 访问;hasConsolidatedAPIKeys 标记,LLMSettings.swift#consolidateLegacyAPIKeys

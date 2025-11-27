@@ -135,9 +135,9 @@ enum LLMProviderType: String, CaseIterable, Codable, Identifiable {
     }
 }
 
-// MARK: - Provider Config
+// MARK: - Provider Config (Legacy - 保留兼容)
 
-/// Provider 配置
+/// Provider 配置 (旧版，用于迁移)
 struct ProviderConfig: Codable, Equatable {
     var baseURL: String
     var modelName: String
@@ -147,6 +147,98 @@ struct ProviderConfig: Codable, Equatable {
         self.baseURL = baseURL
         self.modelName = modelName
         self.apiKeyRef = apiKeyRef
+    }
+}
+
+// MARK: - Provider Profile (新版)
+
+/// AI 配置文件
+/// 支持同一 Provider 创建多个配置
+struct ProviderProfile: Codable, Identifiable, Equatable {
+    let id: UUID
+    var name: String                    // 配置名称，如 "Gemini Pro"
+    var providerType: LLMProviderType   // Provider 类型
+    var baseURL: String                 // API 地址
+    var modelName: String               // 模型名称
+    var apiKeyRef: String?              // Keychain 中的 key 引用
+    
+    // 高级参数
+    var temperature: Double             // 温度 0.0-2.0
+    var maxTokens: Int?                 // 最大输出 token
+    var contextWindow: Int              // 上下文窗口大小
+    var reasoningEffort: ReasoningEffort // 推理深度
+    
+    // 增强功能
+    var enableURLContext: Bool          // 启用 URL 上下文
+    var enableSearchGrounding: Bool     // 启用搜索增强
+    
+    var createdAt: Date
+    var updatedAt: Date
+    
+    init(
+        id: UUID = UUID(),
+        name: String,
+        providerType: LLMProviderType,
+        baseURL: String? = nil,
+        modelName: String? = nil,
+        apiKeyRef: String? = nil,
+        temperature: Double = 0.3,
+        maxTokens: Int? = nil,
+        contextWindow: Int = 128_000,
+        reasoningEffort: ReasoningEffort = .medium,
+        enableURLContext: Bool = false,
+        enableSearchGrounding: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.providerType = providerType
+        self.baseURL = baseURL ?? providerType.defaultBaseURL
+        self.modelName = modelName ?? providerType.defaultModel
+        self.apiKeyRef = apiKeyRef
+        self.temperature = temperature
+        self.maxTokens = maxTokens
+        self.contextWindow = contextWindow
+        self.reasoningEffort = reasoningEffort
+        self.enableURLContext = enableURLContext
+        self.enableSearchGrounding = enableSearchGrounding
+        self.createdAt = Date()
+        self.updatedAt = Date()
+    }
+    
+    /// 从旧版 ProviderConfig 迁移
+    static func migrate(from config: ProviderConfig, type: LLMProviderType) -> ProviderProfile {
+        ProviderProfile(
+            name: type.displayName,
+            providerType: type,
+            baseURL: config.baseURL,
+            modelName: config.modelName,
+            apiKeyRef: config.apiKeyRef
+        )
+    }
+}
+
+// MARK: - Reasoning Effort
+
+/// 推理深度
+enum ReasoningEffort: String, Codable, CaseIterable {
+    case low = "low"
+    case medium = "medium"
+    case high = "high"
+    
+    var displayName: String {
+        switch self {
+        case .low: return "低"
+        case .medium: return "中"
+        case .high: return "高"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .low: return "快速响应，适合简单任务"
+        case .medium: return "平衡速度与质量"
+        case .high: return "深度思考，适合复杂任务"
+        }
     }
 }
 
@@ -168,7 +260,7 @@ protocol LLMProvider {
     func complete(prompt: LLMPrompt) async throws -> LLMResponse
     
     /// 测试连接
-    func testConnection() async -> Bool
+    func testConnection() async throws -> Bool
 }
 
 extension LLMProvider {

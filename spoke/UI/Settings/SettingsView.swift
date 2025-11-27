@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import SwiftData
+import AppKit
 
 // MARK: - Main Settings View
 
@@ -36,7 +37,7 @@ struct SettingsView: View {
             // 右侧内容
             contentArea
         }
-        .frame(minWidth: 700, minHeight: 480)
+        .frame(minWidth: 820, minHeight: 580)
         .background(Color(hex: "1a1a1a"))
     }
     
@@ -440,15 +441,19 @@ struct ModelOptionRow: View {
     }
 }
 
-// MARK: - AI Settings
+// MARK: - AI Settings (Screenium 风格单列布局)
 
 struct AISettingsContent: View {
     @State private var llmSettings = LLMSettings.shared
     @State private var showingAPIKeyInput = false
     @State private var apiKeyInput = ""
+    @State private var expandedProfileId: UUID?
     @State private var isTesting = false
     @State private var testResult: TestResult?
     @State private var showConflictAlert = false
+    @State private var showDeleteConfirm = false
+    @State private var profileToDelete: UUID?
+    @State private var modelRefreshTrigger = UUID() // 用于触发模型列表刷新
     @ObservedObject var appSettings = AppSettings.shared
     
     enum TestResult {
@@ -459,11 +464,6 @@ struct AISettingsContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // 启用开关
-            Text("AI 文本处理")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.gray)
-                .padding(.leading, 4)
-            
             SettingsCard {
                 SettingsRow(icon: "sparkles", title: "启用 AI 处理", description: "语音转写后自动使用 AI 精炼文本") {
                     Toggle("", isOn: Binding(
@@ -485,151 +485,123 @@ struct AISettingsContent: View {
                     appSettings.realtimeTypingEnabled = false
                     llmSettings.isEnabled = true
                 }
-                Button("保持两者开启") {
-                    llmSettings.isEnabled = true
-                }
+                Button("保持两者开启") { llmSettings.isEnabled = true }
                 Button("取消", role: .cancel) {}
             } message: {
                 Text("开启 AI 处理后，实时上屏会先输出原始转写，AI 完成后会再次输出精炼文本。\n\n建议关闭实时上屏，仅使用 AI 输出的最终结果。")
             }
             
             if llmSettings.isEnabled {
-                // Provider 选择
-                Text("AI 服务商")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
-                    .padding(.leading, 4)
-                    .padding(.top, 8)
-                
-                SettingsCard {
-                    ForEach(Array(LLMProviderType.allCases.enumerated()), id: \.element) { index, provider in
-                        if index > 0 {
-                            Divider().background(Color.white.opacity(0.06))
-                        }
-                        
-                        ProviderOptionRow(
-                            provider: provider,
-                            isSelected: llmSettings.selectedProviderType == provider,
-                            isConfigured: isProviderConfigured(provider)
-                        ) {
-                            selectProvider(provider)
-                        }
+                // 已配置的服务列表
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(llmSettings.profiles) { profile in
+                        ServiceCardRow(
+                            profile: binding(for: profile),
+                            isExpanded: expandedProfileId == profile.id,
+                            isActive: llmSettings.selectedProfileId == profile.id,
+                            hasAPIKey: llmSettings.hasAPIKey(for: profile.id),
+                            modelRefreshTrigger: modelRefreshTrigger,
+                            isTesting: expandedProfileId == profile.id ? $isTesting : .constant(false),
+                            testResult: expandedProfileId == profile.id ? $testResult : .constant(nil),
+                            onTap: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    if expandedProfileId == profile.id {
+                                        expandedProfileId = nil
+                                    } else {
+                                        expandedProfileId = profile.id
+                                        testResult = nil
+                                    }
+                                }
+                            },
+                            onSetActive: {
+                                llmSettings.selectedProfileId = profile.id
+                            },
+                            onSetAPIKey: {
+                                apiKeyInput = ""
+                                llmSettings.selectedProfileId = profile.id
+                                showingAPIKeyInput = true
+                            },
+                            onTest: { testConnection(for: profile) },
+                            onDelete: {
+                                profileToDelete = profile.id
+                                showDeleteConfirm = true
+                            }
+                        )
                     }
                 }
+                .background(Color(hex: "1e1e1e"))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                )
                 
-                // 当前 Provider 配置
-                if let selectedProvider = llmSettings.selectedProviderType {
-                    Text("配置 - \(selectedProvider.displayName)")
+                // 添加服务区域
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("添加服务")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.gray)
                         .padding(.leading, 4)
-                        .padding(.top, 8)
                     
-                    SettingsCard {
-                        // Base URL
-                        SettingsRow(icon: "link", title: "API 地址") {
-                            TextField("https://api.example.com/v1", text: Binding(
-                                get: { llmSettings.providerConfigs[selectedProvider]?.baseURL ?? "" },
-                                set: { newValue in
-                                    var config = llmSettings.providerConfigs[selectedProvider] ?? ProviderConfig()
-                                    config.baseURL = newValue
-                                    llmSettings.providerConfigs[selectedProvider] = config
-                                }
-                            ))
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(6)
-                            .frame(width: 220)
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10)
+                    ], spacing: 10) {
+                        ForEach(LLMProviderType.allCases) { provider in
+                            AddServiceButton(
+                                provider: provider,
+                                action: { createProfile(for: provider) }
+                            )
                         }
-                        
-                        Divider().background(Color.white.opacity(0.06))
-                        
-                        // Model Name
-                        SettingsRow(icon: "cpu", title: "模型名称") {
-                            TextField("gpt-4o-mini", text: Binding(
-                                get: { llmSettings.providerConfigs[selectedProvider]?.modelName ?? "" },
-                                set: { newValue in
-                                    var config = llmSettings.providerConfigs[selectedProvider] ?? ProviderConfig()
-                                    config.modelName = newValue
-                                    llmSettings.providerConfigs[selectedProvider] = config
-                                }
-                            ))
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(6)
-                            .frame(width: 220)
-                        }
-                        
-                        // API Key (如果需要)
-                        if selectedProvider.requiresAPIKey {
-                            Divider().background(Color.white.opacity(0.06))
-                            
-                            SettingsRow(icon: "key", title: "API Key", description: hasAPIKey(selectedProvider) ? "已配置" : "未配置") {
-                                Button(hasAPIKey(selectedProvider) ? "修改" : "设置") {
-                                    apiKeyInput = ""
-                                    showingAPIKeyInput = true
-                                }
-                                .buttonStyle(.bordered)
-                                .tint(.blue)
-                            }
-                        }
-                        
-                        Divider().background(Color.white.opacity(0.06))
-                        
-                        // 测试连接
-                        HStack(spacing: 14) {
-                            Image(systemName: "antenna.radiowaves.left.and.right")
-                                .font(.system(size: 16))
-                                .foregroundStyle(.gray)
-                                .frame(width: 24)
-                            
-                            Text("测试连接")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.white)
-                            
-                            Spacer()
-                            
-                            if let result = testResult {
-                                switch result {
-                                case .success:
-                                    Label("连接成功", systemImage: "checkmark.circle.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(.green)
-                                case .failure(let message):
-                                    Label(message, systemImage: "xmark.circle.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(.red)
-                                        .lineLimit(1)
-                                }
-                            }
-                            
-                            Button(isTesting ? "测试中..." : "测试") {
-                                testConnection()
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(.blue)
-                            .disabled(isTesting || !llmSettings.isFullyConfigured)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
                     }
                 }
                 
-                // 提示词配置
-                Text("系统提示词")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
-                    .padding(.leading, 4)
-                    .padding(.top, 8)
-                
-                SettingsCard {
-                    VStack(alignment: .leading, spacing: 12) {
+                // 底部选项
+                bottomOptionsSection
+            }
+        }
+        .sheet(isPresented: $showingAPIKeyInput) {
+            if let profileId = llmSettings.selectedProfileId,
+               let profile = llmSettings.selectedProfile {
+                ProfileAPIKeySheet(
+                    profileName: profile.name,
+                    providerType: profile.providerType,
+                    apiKey: $apiKeyInput,
+                    onSave: { key in
+                        try? llmSettings.setAPIKey(key, for: profileId)
+                        showingAPIKeyInput = false
+                        // 保存后触发模型列表刷新
+                        modelRefreshTrigger = UUID()
+                    },
+                    onCancel: { showingAPIKeyInput = false }
+                )
+            }
+        }
+        .alert("确认删除", isPresented: $showDeleteConfirm) {
+            Button("删除", role: .destructive) {
+                if let id = profileToDelete {
+                    if expandedProfileId == id {
+                        expandedProfileId = nil
+                    }
+                    llmSettings.deleteProfile(id)
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("确定要删除这个配置文件吗？此操作不可撤销。")
+        }
+    }
+    
+    // MARK: - 底部选项
+    
+    private var bottomOptionsSection: some View {
+        SettingsCard {
+            VStack(alignment: .leading, spacing: 12) {
+                // 系统提示词（可折叠）
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: 10) {
                         TextEditor(text: Binding(
                             get: { llmSettings.systemPrompt },
                             set: { llmSettings.systemPrompt = $0 }
@@ -639,7 +611,7 @@ struct AISettingsContent: View {
                         .scrollContentBackground(.hidden)
                         .background(Color.white.opacity(0.05))
                         .cornerRadius(8)
-                        .frame(height: 120)
+                        .frame(height: 80)
                         
                         HStack {
                             Button("重置为默认") {
@@ -647,6 +619,7 @@ struct AISettingsContent: View {
                             }
                             .buttonStyle(.bordered)
                             .tint(.gray)
+                            .controlSize(.small)
                             
                             Spacer()
                             
@@ -655,81 +628,64 @@ struct AISettingsContent: View {
                                 .foregroundStyle(.gray)
                         }
                     }
-                    .padding(16)
+                    .padding(.top, 8)
+                } label: {
+                    Label("系统提示词", systemImage: "text.quote")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
                 }
+                .tint(.gray)
+                
+                Divider().background(Color.white.opacity(0.06))
                 
                 // 上下文选项
-                Text("上下文选项")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
-                    .padding(.leading, 4)
-                    .padding(.top, 8)
-                
-                SettingsCard {
-                    SettingsRow(icon: "app.badge", title: "包含当前应用名称", description: "将活跃应用名称添加到上下文") {
-                        Toggle("", isOn: Binding(
-                            get: { llmSettings.includeActiveApp },
-                            set: { llmSettings.includeActiveApp = $0 }
-                        ))
-                        .toggleStyle(.switch)
-                        .tint(.blue)
+                HStack(spacing: 24) {
+                    Toggle(isOn: Binding(
+                        get: { llmSettings.includeActiveApp },
+                        set: { llmSettings.includeActiveApp = $0 }
+                    )) {
+                        Label("包含当前应用", systemImage: "app.badge")
+                            .font(.system(size: 12))
                     }
+                    .toggleStyle(.switch)
+                    .tint(.blue)
                     
-                    Divider().background(Color.white.opacity(0.06))
-                    
-                    SettingsRow(icon: "doc.on.clipboard", title: "包含剪贴板历史", description: "将最近复制的内容添加到上下文（可能含敏感信息）") {
-                        Toggle("", isOn: Binding(
-                            get: { llmSettings.includeClipboard },
-                            set: { llmSettings.includeClipboard = $0 }
-                        ))
-                        .toggleStyle(.switch)
-                        .tint(.blue)
+                    Toggle(isOn: Binding(
+                        get: { llmSettings.includeClipboard },
+                        set: { llmSettings.includeClipboard = $0 }
+                    )) {
+                        Label("包含剪贴板", systemImage: "doc.on.clipboard")
+                            .font(.system(size: 12))
                     }
+                    .toggleStyle(.switch)
+                    .tint(.blue)
                 }
             }
-        }
-        .sheet(isPresented: $showingAPIKeyInput) {
-            APIKeyInputSheet(
-                provider: llmSettings.selectedProviderType ?? .openai,
-                apiKey: $apiKeyInput,
-                onSave: { key in
-                    if let provider = llmSettings.selectedProviderType {
-                        try? llmSettings.setAPIKey(key, for: provider)
-                    }
-                    showingAPIKeyInput = false
-                },
-                onCancel: {
-                    showingAPIKeyInput = false
-                }
-            )
+            .padding(16)
         }
     }
     
     // MARK: - Helpers
     
-    private func selectProvider(_ provider: LLMProviderType) {
-        llmSettings.selectedProviderType = provider
-        llmSettings.initializeProvider(provider)
-        testResult = nil
+    private func binding(for profile: ProviderProfile) -> Binding<ProviderProfile> {
+        Binding(
+            get: { llmSettings.profiles.first { $0.id == profile.id } ?? profile },
+            set: { llmSettings.updateProfile($0) }
+        )
     }
     
-    private func isProviderConfigured(_ provider: LLMProviderType) -> Bool {
-        guard let config = llmSettings.providerConfigs[provider] else { return false }
-        if provider.requiresAPIKey {
-            return config.apiKeyRef != nil && KeychainService.exists(key: config.apiKeyRef ?? "")
+    private func createProfile(for type: LLMProviderType) {
+        let existingCount = llmSettings.profilesByProvider[type]?.count ?? 0
+        let name = existingCount > 0 ? "\(type.displayName) \(existingCount + 1)" : type.displayName
+        let profile = llmSettings.createProfile(for: type, name: name)
+        withAnimation(.easeInOut(duration: 0.2)) {
+            expandedProfileId = profile.id
         }
-        return !config.baseURL.isEmpty && !config.modelName.isEmpty
     }
     
-    private func hasAPIKey(_ provider: LLMProviderType) -> Bool {
-        guard let config = llmSettings.providerConfigs[provider],
-              let keyRef = config.apiKeyRef else { return false }
-        return KeychainService.exists(key: keyRef)
-    }
-    
-    private func testConnection() {
-        guard let provider = llmSettings.createCurrentProvider() else {
-            testResult = .failure("Provider 未配置")
+    private func testConnection(for profile: ProviderProfile) {
+        guard let provider = llmSettings.createProvider(for: profile) else {
+            testResult = .failure("未配置")
             return
         }
         
@@ -737,91 +693,574 @@ struct AISettingsContent: View {
         testResult = nil
         
         Task {
-            let success = await provider.testConnection()
-            await MainActor.run {
-                isTesting = false
-                testResult = success ? .success : .failure("连接失败")
+            do {
+                let success = try await provider.testConnection()
+                await MainActor.run {
+                    isTesting = false
+                    testResult = success ? .success : .failure("连接失败")
+                }
+            } catch let error as LLMError {
+                await MainActor.run {
+                    isTesting = false
+                    testResult = .failure(error.localizedDescription)
+                }
+            } catch {
+                await MainActor.run {
+                    isTesting = false
+                    testResult = .failure("未知错误: \(error.localizedDescription)")
+                }
             }
         }
     }
 }
 
-// MARK: - Provider Option Row
+// MARK: - Service Card Row (可展开卡片)
 
-struct ProviderOptionRow: View {
-    let provider: LLMProviderType
-    let isSelected: Bool
-    let isConfigured: Bool
-    let action: () -> Void
+struct ServiceCardRow: View {
+    @Binding var profile: ProviderProfile
+    let isExpanded: Bool
+    let isActive: Bool
+    let hasAPIKey: Bool
+    let modelRefreshTrigger: UUID
+    @Binding var isTesting: Bool
+    @Binding var testResult: AISettingsContent.TestResult?
+    let onTap: () -> Void
+    let onSetActive: () -> Void
+    let onSetAPIKey: () -> Void
+    let onTest: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: providerIcon)
-                    .font(.system(size: 16))
-                    .foregroundStyle(.gray)
-                    .frame(width: 24)
+        VStack(alignment: .leading, spacing: 0) {
+            // 主行（始终显示）
+            HStack(spacing: 12) {
+                // 激活状态按钮
+                Button(action: onSetActive) {
+                    Image(systemName: isActive ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 18))
+                        .foregroundStyle(isActive ? .green : .gray.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+                .help(isActive ? "当前使用中" : "设为默认")
                 
+                // Provider 图标
+                ProviderIconView(provider: profile.providerType, size: 32)
+                
+                // 名称和副标题
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(provider.displayName)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white)
-                        
-                        if isConfigured {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.green)
-                        }
-                    }
+                    Text(profile.name)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white)
                     
-                    Text(provider.defaultBaseURL.isEmpty ? "自定义 API 地址" : provider.defaultBaseURL)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray.opacity(0.7))
-                        .lineLimit(1)
+                    Text(profile.modelName.isEmpty ? profile.providerType.displayName : profile.modelName)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.gray)
                 }
                 
                 Spacer()
                 
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.blue)
+                // 配置按钮
+                Button(action: onTap) {
+                    Text(isExpanded ? "完成" : "配置")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(isExpanded ? Color.blue : Color.white.opacity(0.1))
+                        .cornerRadius(6)
                 }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .contentShape(Rectangle())
+            
+            // 展开的配置区域
+            if isExpanded {
+                Divider().background(Color.white.opacity(0.06))
+                
+                expandedContent
+            }
         }
-        .buttonStyle(.plain)
     }
     
-    private var providerIcon: String {
+    private var expandedContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 配置名称
+            configRow(title: "名称") {
+                TextField("配置名称", text: $profile.name)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(6)
+            }
+            
+            // API Key
+            if profile.providerType.requiresAPIKey {
+                configRow(title: "API Key") {
+                    HStack {
+                        if hasAPIKey {
+                            HStack(spacing: 4) {
+                                ForEach(0..<30, id: \.self) { _ in
+                                    Circle()
+                                        .fill(Color.white.opacity(0.6))
+                                        .frame(width: 4, height: 4)
+                                }
+                            }
+                            
+                            Button(action: {}) {
+                                Image(systemName: "eye.slash")
+                                    .foregroundStyle(.gray)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Text("未配置")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.orange)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(hasAPIKey ? "修改" : "设置") {
+                            onSetAPIKey()
+                        }
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.blue)
+                        .buttonStyle(.plain)
+                    }
+                }
+                
+                // 官方文档链接
+                if let docURL = providerDocURL {
+                    HStack {
+                        Spacer()
+                        Link(destination: docURL) {
+                            HStack(spacing: 4) {
+                                Text("获取 API Key")
+                                Image(systemName: "arrow.up.right")
+                            }
+                            .font(.system(size: 11))
+                            .foregroundStyle(.blue)
+                        }
+                    }
+                    .padding(.top, -8)
+                }
+            }
+            
+            // 模型选择（智能下拉 + 手动输入）
+            configRow(title: "模型") {
+                ModelPickerView(
+                    selectedModel: $profile.modelName,
+                    profile: profile,
+                    placeholder: profile.providerType.defaultModel,
+                    refreshTrigger: modelRefreshTrigger
+                )
+            }
+            
+            // API 地址（仅当不是默认地址时显示）
+            configRow(title: "API 地址") {
+                TextField(profile.providerType.defaultBaseURL.isEmpty ? "https://api.example.com/v1" : profile.providerType.defaultBaseURL, text: $profile.baseURL)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(6)
+            }
+            
+            Divider().background(Color.white.opacity(0.06))
+            
+            // 底部操作栏
+            HStack {
+                // 测试连接
+                Button(action: onTest) {
+                    HStack(spacing: 6) {
+                        if isTesting {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "network")
+                                .font(.system(size: 12))
+                        }
+                        Text(isTesting ? "测试中..." : "测试连接")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .disabled(isTesting)
+                
+                if let result = testResult {
+                    HStack(spacing: 4) {
+                        switch result {
+                        case .success:
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                            Text("连接成功")
+                                .foregroundStyle(.green)
+                        case .failure(let msg):
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.red)
+                            Text(msg)
+                                .foregroundStyle(.red)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .help(msg)
+                        }
+                    }
+                    .font(.system(size: 11))
+                }
+                
+                Spacer()
+                
+                // 删除按钮
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red.opacity(0.8))
+                        .padding(8)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white.opacity(0.02))
+    }
+    
+    private func configRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(alignment: .center, spacing: 16) {
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundStyle(.gray)
+                .frame(width: 70, alignment: .leading)
+            
+            content()
+        }
+    }
+    
+    private var providerDocURL: URL? {
+        switch profile.providerType {
+        case .openai:
+            return URL(string: "https://platform.openai.com/api-keys")
+        case .anthropic:
+            return URL(string: "https://console.anthropic.com/settings/keys")
+        case .googleGemini:
+            return URL(string: "https://aistudio.google.com/app/apikey")
+        case .groq:
+            return URL(string: "https://console.groq.com/keys")
+        case .openRouter:
+            return URL(string: "https://openrouter.ai/keys")
+        case .ollama, .openAICompatible:
+            return nil
+        }
+    }
+}
+
+// MARK: - Provider Icon View
+
+struct ProviderIconView: View {
+    let provider: LLMProviderType
+    let size: CGFloat
+    
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(iconBackground)
+            
+            Image(systemName: iconName)
+                .font(.system(size: size * 0.45))
+                .foregroundStyle(iconColor)
+        }
+        .frame(width: size, height: size)
+    }
+    
+    private var iconName: String {
         switch provider {
         case .ollama: return "desktopcomputer"
         case .openai: return "bubble.left.and.bubble.right"
         case .anthropic: return "brain"
         case .googleGemini: return "sparkle"
-        case .groq: return "bolt"
+        case .groq: return "bolt.fill"
         case .openRouter: return "arrow.triangle.branch"
         case .openAICompatible: return "server.rack"
         }
     }
+    
+    private var iconColor: Color {
+        switch provider {
+        case .ollama: return .white
+        case .openai: return .green
+        case .anthropic: return .orange
+        case .googleGemini: return .blue
+        case .groq: return .orange
+        case .openRouter: return .purple
+        case .openAICompatible: return .gray
+        }
+    }
+    
+    private var iconBackground: Color {
+        iconColor.opacity(0.15)
+    }
 }
 
-// MARK: - API Key Input Sheet
+// MARK: - Model Picker View (智能模型选择器)
 
-struct APIKeyInputSheet: View {
+struct ModelPickerView: View {
+    @Binding var selectedModel: String
+    let profile: ProviderProfile
+    let placeholder: String
+    let refreshTrigger: UUID
+    
+    @State private var isExpanded = false
+    @State private var searchText = ""
+    @State private var availableModels: [String] = []
+    @State private var isLoading = false
+    @State private var hasLoadedModels = false
+    
+    private var filteredModels: [String] {
+        if searchText.isEmpty {
+            return availableModels
+        }
+        return availableModels.filter { $0.localizedCaseInsensitiveContains(searchText) }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // 主按钮/输入区域
+            Button(action: { toggleExpanded() }) {
+                HStack {
+                    if isExpanded {
+                        // 展开时显示搜索框
+                        TextField(placeholder, text: $searchText)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white)
+                            .onSubmit {
+                                if !searchText.isEmpty {
+                                    selectedModel = searchText
+                                    isExpanded = false
+                                }
+                            }
+                    } else {
+                        // 收起时显示当前选择
+                        Text(selectedModel.isEmpty ? placeholder : selectedModel)
+                            .font(.system(size: 13))
+                            .foregroundStyle(selectedModel.isEmpty ? .gray : .white)
+                            .lineLimit(1)
+                    }
+                    
+                    Spacer()
+                    
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.gray)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isExpanded ? Color.blue.opacity(0.5) : Color.clear, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // 下拉列表
+            if isExpanded {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        // 模型列表
+                        if filteredModels.isEmpty && !searchText.isEmpty {
+                            // 搜索无结果时，允许使用输入的文本作为自定义模型
+                            Button(action: {
+                                selectedModel = searchText
+                                isExpanded = false
+                            }) {
+                                HStack {
+                                    Image(systemName: "plus.circle")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.blue)
+                                    Text("使用 \"\(searchText)\"")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        } else if filteredModels.isEmpty && availableModels.isEmpty && !isLoading {
+                            // API 不支持或加载失败
+                            Text("输入模型名称...")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.gray)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(filteredModels, id: \.self) { model in
+                                Button(action: {
+                                    selectedModel = model
+                                    searchText = ""
+                                    isExpanded = false
+                                }) {
+                                    HStack {
+                                        Text(model)
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(.white)
+                                            .lineLimit(1)
+                                        
+                                        Spacer()
+                                        
+                                        if model == selectedModel {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                                    .background(model == selectedModel ? Color.white.opacity(0.05) : Color.clear)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 200)
+                .background(Color(hex: "252525"))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .padding(.top, 4)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: isExpanded)
+        .onChange(of: refreshTrigger) { _, _ in
+            // API Key 更新后，重置并重新加载模型列表
+            hasLoadedModels = false
+            availableModels = []
+            loadModels()
+        }
+    }
+    
+    private func toggleExpanded() {
+        if !isExpanded {
+            // 展开时加载模型列表
+            isExpanded = true
+            searchText = selectedModel // 预填当前选择
+            
+            if !hasLoadedModels {
+                loadModels()
+            }
+        } else {
+            // 收起时，如果有输入则使用输入值
+            if !searchText.isEmpty && searchText != selectedModel {
+                selectedModel = searchText
+            }
+            isExpanded = false
+            searchText = ""
+        }
+    }
+    
+    private func loadModels() {
+        guard !isLoading else { return }
+        isLoading = true
+        
+        Task {
+            // 从 LLMSettings 获取最新的 profile（包含 API Key 引用）
+            let currentProfile = LLMSettings.shared.profiles.first { $0.id == profile.id } ?? profile
+            let models = await LLMSettings.shared.fetchModels(for: currentProfile)
+            await MainActor.run {
+                availableModels = models
+                hasLoadedModels = true
+                isLoading = false
+            }
+        }
+    }
+}
+
+// MARK: - Add Service Button
+
+struct AddServiceButton: View {
     let provider: LLMProviderType
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                ProviderIconView(provider: provider, size: 24)
+                
+                Text(provider.displayName)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.gray)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Profile API Key Sheet
+
+struct ProfileAPIKeySheet: View {
+    let profileName: String
+    let providerType: LLMProviderType
     @Binding var apiKey: String
     let onSave: (String) -> Void
     let onCancel: () -> Void
     
+    private var placeholder: String {
+        switch providerType {
+        case .googleGemini: return "AIza..."
+        case .anthropic: return "sk-ant-..."
+        case .openai: return "sk-..."
+        case .groq: return "gsk_..."
+        case .openRouter: return "sk-or-..."
+        case .ollama: return "(可选)"
+        case .openAICompatible: return "API Key"
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
-            Text("设置 \(provider.displayName) API Key")
+            Text("设置 \(profileName) API Key")
                 .font(.headline)
             
-            SecureField("sk-...", text: $apiKey)
+            SecureField(placeholder, text: $apiKey)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 300)
             
@@ -830,16 +1269,12 @@ struct APIKeyInputSheet: View {
                 .foregroundStyle(.secondary)
             
             HStack(spacing: 12) {
-                Button("取消") {
-                    onCancel()
-                }
-                .buttonStyle(.bordered)
+                Button("取消") { onCancel() }
+                    .buttonStyle(.bordered)
                 
-                Button("保存") {
-                    onSave(apiKey)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(apiKey.isEmpty)
+                Button("保存") { onSave(apiKey) }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(apiKey.isEmpty)
             }
         }
         .padding(30)
@@ -1079,11 +1514,11 @@ struct HistorySettingsContent: View {
             if filteredItems.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.gray.opacity(0.5))
+                    .font(.system(size: 40))
+                    .foregroundStyle(.gray.opacity(0.5))
                     Text("没有找到记录")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.gray)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.gray)
                 }
                 .frame(maxWidth: .infinity, minHeight: 200)
             } else {

@@ -24,6 +24,11 @@ final class LLMSettings {
         static let includeActiveApp = "llm.includeActiveApp"
         static let temperature = "llm.temperature"
         static let timeout = "llm.timeout"
+        // 新版 Profile 系统
+        static let profiles = "llm.profiles"
+        static let selectedProfileId = "llm.selectedProfileId"
+        static let hasMigrated = "llm.hasMigratedToProfiles"
+        static let hasConsolidatedAPIKeys = "llm.hasConsolidatedAPIKeys"
     }
     
     // MARK: - Default Prompt
@@ -51,14 +56,37 @@ final class LLMSettings {
         didSet { save() }
     }
     
-    /// 当前选择的 Provider 类型
+    /// 当前选择的 Provider 类型 (旧版，保留兼容)
     var selectedProviderType: LLMProviderType? {
         didSet { save() }
     }
     
-    /// 各 Provider 的配置
+    /// 各 Provider 的配置 (旧版，保留兼容)
     var providerConfigs: [LLMProviderType: ProviderConfig] {
         didSet { save() }
+    }
+    
+    // MARK: - Profile System (新版)
+    
+    /// 所有配置文件
+    var profiles: [ProviderProfile] {
+        didSet { save() }
+    }
+    
+    /// 当前选中的 Profile ID
+    var selectedProfileId: UUID? {
+        didSet { save() }
+    }
+    
+    /// 当前选中的 Profile
+    var selectedProfile: ProviderProfile? {
+        guard let id = selectedProfileId else { return nil }
+        return profiles.first { $0.id == id }
+    }
+    
+    /// 按 Provider 类型分组的 Profiles
+    var profilesByProvider: [LLMProviderType: [ProviderProfile]] {
+        Dictionary(grouping: profiles, by: \.providerType)
     }
     
     /// 系统提示词
@@ -94,23 +122,20 @@ final class LLMSettings {
         return providerConfigs[type]
     }
     
-    /// 是否已完整配置
+    /// 是否已完整配置 (基于新版 Profile)
     var isFullyConfigured: Bool {
-        guard isEnabled,
-              let type = selectedProviderType,
-              let config = providerConfigs[type] else {
+        guard isEnabled, let profile = selectedProfile else {
             return false
         }
         
         // 检查必要字段
-        guard !config.baseURL.isEmpty, !config.modelName.isEmpty else {
+        guard !profile.baseURL.isEmpty, !profile.modelName.isEmpty else {
             return false
         }
         
-        // 需要 API Key 的检查 Keychain
-        if type.requiresAPIKey {
-            guard let keyRef = config.apiKeyRef,
-                  KeychainService.exists(key: keyRef) else {
+        // 需要 API Key 的检查（从内存缓存读取，不访问 Keychain）
+        if profile.providerType.requiresAPIKey {
+            guard hasAPIKey(for: profile.id) else {
                 return false
             }
         }
@@ -125,6 +150,7 @@ final class LLMSettings {
         
         self.isEnabled = defaults.bool(forKey: Keys.isEnabled)
         
+        // 加载旧版配置（兼容）
         if let rawValue = defaults.string(forKey: Keys.selectedProvider) {
             self.selectedProviderType = LLMProviderType(rawValue: rawValue)
         } else {
@@ -144,50 +170,271 @@ final class LLMSettings {
             self.providerConfigs = [:]
         }
         
+        // 加载新版 Profile 系统
+        if let data = defaults.data(forKey: Keys.profiles),
+           let loadedProfiles = try? JSONDecoder().decode([ProviderProfile].self, from: data) {
+            self.profiles = loadedProfiles
+        } else {
+            self.profiles = []
+        }
+        
+        if let idString = defaults.string(forKey: Keys.selectedProfileId),
+           let uuid = UUID(uuidString: idString) {
+            self.selectedProfileId = uuid
+        } else {
+            self.selectedProfileId = nil
+        }
+        
         self.systemPrompt = defaults.string(forKey: Keys.systemPrompt) ?? Self.defaultSystemPrompt
         self.includeClipboard = defaults.object(forKey: Keys.includeClipboard) as? Bool ?? false
         self.includeActiveApp = defaults.object(forKey: Keys.includeActiveApp) as? Bool ?? true
         self.temperature = defaults.object(forKey: Keys.temperature) as? Double ?? 0.3
         self.timeout = defaults.object(forKey: Keys.timeout) as? TimeInterval ?? 30
         
-        // 迁移检查：如果当前 Prompt 是旧版默认值，自动更新到新版
-        // v1: 最早的版本
+        // 迁移旧数据到新 Profile 系统
+        if !defaults.bool(forKey: Keys.hasMigrated) && !providerConfigs.isEmpty {
+            migrateToProfiles()
+            defaults.set(true, forKey: Keys.hasMigrated)
+        }
+        
+        // Prompt 迁移检查
         if self.systemPrompt.starts(with: "处理语音转写的文本：") {
             logger.info("♻️ Migrating v1 system prompt to new version")
             self.systemPrompt = Self.defaultSystemPrompt
-        }
-        // v2: "强制规则"版本
-        else if self.systemPrompt.contains("修正策略（优先级从高到低）：") {
+        } else if self.systemPrompt.contains("修正策略（优先级从高到低）：") {
             logger.info("♻️ Migrating v2 system prompt to v4")
             self.systemPrompt = Self.defaultSystemPrompt
-        }
-        // v3: "上下文优先"版本（过于激进）
-        else if self.systemPrompt.contains("你是 SpokenAnyWhere 的语音转写后处理专家") {
+        } else if self.systemPrompt.contains("你是 SpokenAnyWhere 的语音转写后处理专家") {
             logger.info("♻️ Migrating v3 system prompt to v4 (conservative)")
             self.systemPrompt = Self.defaultSystemPrompt
         }
         
-        logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled)")
+        // 加载并合并 API Keys
+        consolidateLegacyAPIKeys()
+        
+        logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled), profiles: \(self.profiles.count)")
     }
     
-    // MARK: - Public API
+    /// 从旧版配置迁移到 Profile 系统
+    private func migrateToProfiles() {
+        logger.info("🔄 Migrating legacy configs to Profile system...")
+        
+        for (type, config) in providerConfigs {
+            let profile = ProviderProfile.migrate(from: config, type: type)
+            profiles.append(profile)
+            
+            // 如果是之前选中的 Provider，设为当前 Profile
+            if type == selectedProviderType {
+                selectedProfileId = profile.id
+            }
+        }
+        
+        logger.info("✅ Migrated \(self.profiles.count) profiles")
+    }
     
-    /// 创建当前配置的 Provider
-    func createCurrentProvider() -> (any LLMProvider)? {
-        guard let type = selectedProviderType,
-              let config = providerConfigs[type] else {
+    /// 合并遗留的 API Key 到统一存储
+    private func consolidateLegacyAPIKeys() {
+        let defaults = UserDefaults.standard
+        
+        // 1. 加载统一存储
+        loadAllAPIKeys()
+        
+        // 2. 如果已经完成迁移，直接返回（不再尝试读取遗留 Key）
+        if defaults.bool(forKey: Keys.hasConsolidatedAPIKeys) {
+            logger.info("🔓 API keys already consolidated, skipping migration")
+            return
+        }
+        
+        var hasChanges = false
+        
+        // 3. 检查所有 Profile，尝试迁移遗留 Key
+        for i in profiles.indices {
+            let profile = profiles[i]
+            
+            // 如果缓存中没有 Key，但 Profile 有遗留引用 (且不是 "unified_storage")
+            if apiKeysCache[profile.id.uuidString] == nil,
+               let keyRef = profile.apiKeyRef,
+               keyRef != "unified_storage" {
+                
+                logger.info("📥 Consolidating legacy key for profile: \(profile.name)")
+                
+                // 尝试从旧 Keychain Item 读取
+                if let legacyKey = KeychainService.load(key: keyRef) {
+                    // 存入缓存
+                    apiKeysCache[profile.id.uuidString] = legacyKey
+                    
+                    // 更新 Profile 标记
+                    profiles[i].apiKeyRef = "unified_storage"
+                    profiles[i].updatedAt = Date()
+                    
+                    hasChanges = true
+                }
+            }
+        }
+        
+        // 4. 保存迁移结果
+        if hasChanges {
+            saveAllAPIKeys()
+            save() // 保存 Profile 的 apiKeyRef 更新
+            logger.info("✅ Consolidated legacy API keys to unified storage")
+        }
+        
+        // 5. 标记迁移完成（即使没有任何 Key 需要迁移，也标记为完成）
+        defaults.set(true, forKey: Keys.hasConsolidatedAPIKeys)
+    }
+    
+    // MARK: - Profile CRUD
+    
+    /// 创建新的 Profile
+    @discardableResult
+    func createProfile(for type: LLMProviderType, name: String? = nil) -> ProviderProfile {
+        let profileName = name ?? "\(type.displayName)"
+        let profile = ProviderProfile(name: profileName, providerType: type)
+        profiles.append(profile)
+        logger.info("➕ Created profile: \(profileName)")
+        return profile
+    }
+    
+    /// 更新 Profile
+    func updateProfile(_ profile: ProviderProfile) {
+        guard let index = profiles.firstIndex(where: { $0.id == profile.id }) else {
+            logger.warning("⚠️ Profile not found: \(profile.id)")
+            return
+        }
+        var updated = profile
+        updated.updatedAt = Date()
+        profiles[index] = updated
+        logger.info("📝 Updated profile: \(profile.name)")
+    }
+    
+    /// 删除 Profile
+    func deleteProfile(_ profileId: UUID) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileId }) else {
+            return
+        }
+        let profile = profiles[index]
+        
+        // 删除关联的 API Key
+        if let keyRef = profile.apiKeyRef {
+            try? KeychainService.delete(key: keyRef)
+        }
+        
+        profiles.remove(at: index)
+        
+        // 如果删除的是当前选中的，清除选择
+        if selectedProfileId == profileId {
+            selectedProfileId = profiles.first?.id
+        }
+        
+        logger.info("🗑️ Deleted profile: \(profile.name)")
+    }
+    
+    /// 复制 Profile
+    @discardableResult
+    func duplicateProfile(_ profileId: UUID) -> ProviderProfile? {
+        guard let source = profiles.first(where: { $0.id == profileId }) else {
             return nil
         }
         
-        return OpenAICompatibleProvider(providerType: type, config: config)
+        let newProfile = ProviderProfile(
+            name: "\(source.name) (副本)",
+            providerType: source.providerType,
+            baseURL: source.baseURL,
+            modelName: source.modelName,
+            temperature: source.temperature,
+            maxTokens: source.maxTokens,
+            contextWindow: source.contextWindow,
+            reasoningEffort: source.reasoningEffort,
+            enableURLContext: source.enableURLContext,
+            enableSearchGrounding: source.enableSearchGrounding
+        )
+        // 注意：不复制 apiKeyRef，需要用户重新设置
+        profiles.append(newProfile)
+        logger.info("📋 Duplicated profile: \(source.name) -> \(newProfile.name)")
+        return newProfile
     }
     
-    /// 设置 Provider 的 API Key
+    /// 设置 Profile 的 API Key
+    func setAPIKey(_ apiKey: String, for profileId: UUID) throws {
+        guard let index = profiles.firstIndex(where: { $0.id == profileId }) else {
+            throw LLMError.notConfigured
+        }
+        
+        // 使用 profile ID 作为 key
+        apiKeysCache[profileId.uuidString] = apiKey
+        saveAllAPIKeys()
+        
+        // 标记已设置（不需要实际的 keyRef 了，但为了兼容性保留字段逻辑）
+        profiles[index].apiKeyRef = "unified_storage" 
+        profiles[index].updatedAt = Date()
+        
+        logger.info("🔑 API Key saved for profile: \(self.profiles[index].name)")
+    }
+    
+    /// 获取 Profile 的 API Key
+    func getAPIKey(for profileId: UUID) -> String? {
+        return apiKeysCache[profileId.uuidString]
+    }
+    
+    /// 检查 Profile 是否有 API Key
+    func hasAPIKey(for profileId: UUID) -> Bool {
+        return apiKeysCache[profileId.uuidString] != nil
+    }
+    
+    // MARK: - API Key Management (Unified Storage)
+    
+    private let allAPIKeysStorageKey = "spoke_all_api_keys_v1"
+    private var apiKeysCache: [String: String] = [:]
+    
+    private func loadAllAPIKeys() {
+        // 尝试加载统一存储的 Keys
+        if let jsonString = KeychainService.load(key: allAPIKeysStorageKey),
+           let data = jsonString.data(using: .utf8),
+           let keys = try? JSONDecoder().decode([String: String].self, from: data) {
+            self.apiKeysCache = keys
+            logger.info("🔓 Loaded \(keys.count) API keys from unified storage")
+        }
+    }
+    
+    private func saveAllAPIKeys() {
+        guard let data = try? JSONEncoder().encode(apiKeysCache),
+              let jsonString = String(data: data, encoding: .utf8) else {
+            return
+        }
+        try? KeychainService.save(key: allAPIKeysStorageKey, value: jsonString)
+        logger.info("🔒 Saved API keys to unified storage")
+    }
+    
+    // MARK: - Provider Creation
+    
+    /// 创建当前配置的 Provider (基于新版 Profile)
+    func createCurrentProvider() -> (any LLMProvider)? {
+        guard let profile = selectedProfile else { return nil }
+        // 直接注入 API Key，避免 Provider 再次访问 Keychain
+        let apiKey = getAPIKey(for: profile.id)
+        return OpenAICompatibleProvider(profile: profile, apiKey: apiKey)
+    }
+    
+    /// 根据指定 Profile 创建 Provider
+    func createProvider(for profile: ProviderProfile) -> (any LLMProvider)? {
+        let apiKey = getAPIKey(for: profile.id)
+        return OpenAICompatibleProvider(profile: profile, apiKey: apiKey)
+    }
+    
+    /// 获取 Profile 对应的可用模型列表
+    func fetchModels(for profile: ProviderProfile) async -> [String] {
+        let apiKey = getAPIKey(for: profile.id)
+        let provider = OpenAICompatibleProvider(profile: profile, apiKey: apiKey)
+        return await provider.fetchModels()
+    }
+    
+    // MARK: - Legacy API (保留兼容)
+    
+    /// 设置 Provider 的 API Key (旧版)
     func setAPIKey(_ apiKey: String, for type: LLMProviderType) throws {
         let keyRef = "apikey.\(type.rawValue)"
         try KeychainService.save(key: keyRef, value: apiKey)
         
-        // 更新配置中的引用
         var config = providerConfigs[type] ?? ProviderConfig(
             baseURL: type.defaultBaseURL,
             modelName: type.defaultModel
@@ -198,7 +445,7 @@ final class LLMSettings {
         logger.info("🔑 API Key saved for \(type.displayName)")
     }
     
-    /// 获取 Provider 的 API Key
+    /// 获取 Provider 的 API Key (旧版)
     func getAPIKey(for type: LLMProviderType) -> String? {
         guard let config = providerConfigs[type],
               let keyRef = config.apiKeyRef else {
@@ -207,7 +454,7 @@ final class LLMSettings {
         return KeychainService.load(key: keyRef)
     }
     
-    /// 删除 Provider 的 API Key
+    /// 删除 Provider 的 API Key (旧版)
     func deleteAPIKey(for type: LLMProviderType) throws {
         guard let config = providerConfigs[type],
               let keyRef = config.apiKeyRef else {
@@ -215,7 +462,6 @@ final class LLMSettings {
         }
         try KeychainService.delete(key: keyRef)
         
-        // 清除配置中的引用
         var updatedConfig = config
         updatedConfig.apiKeyRef = nil
         providerConfigs[type] = updatedConfig
@@ -223,7 +469,7 @@ final class LLMSettings {
         logger.info("🗑️ API Key deleted for \(type.displayName)")
     }
     
-    /// 使用默认配置初始化 Provider
+    /// 使用默认配置初始化 Provider (旧版)
     func initializeProvider(_ type: LLMProviderType) {
         if providerConfigs[type] == nil {
             providerConfigs[type] = ProviderConfig(
@@ -246,7 +492,7 @@ final class LLMSettings {
         defaults.set(isEnabled, forKey: Keys.isEnabled)
         defaults.set(selectedProviderType?.rawValue, forKey: Keys.selectedProvider)
         
-        // 将 providerConfigs 转换为可编码格式
+        // 保存旧版 providerConfigs（兼容）
         var stringKeyedConfigs: [String: ProviderConfig] = [:]
         for (type, config) in providerConfigs {
             stringKeyedConfigs[type.rawValue] = config
@@ -254,6 +500,12 @@ final class LLMSettings {
         if let data = try? JSONEncoder().encode(stringKeyedConfigs) {
             defaults.set(data, forKey: Keys.providerConfigs)
         }
+        
+        // 保存新版 Profile 系统
+        if let data = try? JSONEncoder().encode(profiles) {
+            defaults.set(data, forKey: Keys.profiles)
+        }
+        defaults.set(selectedProfileId?.uuidString, forKey: Keys.selectedProfileId)
         
         defaults.set(systemPrompt, forKey: Keys.systemPrompt)
         defaults.set(includeClipboard, forKey: Keys.includeClipboard)

@@ -4,6 +4,8 @@
 
 ## Learns (Latest at top)
 
+- [T032] 彻底解决 Keychain 弹窗需移除所有回退逻辑，并使用统一存储 + 迁移标记
+- [T031] System Prompt 要保守处理驼峰：只对英文/拼音词消歧义，中文保持原样；用具体例子说明
 - [T030] System Prompt 要明确指导 LLM 如何利用上下文，否则 LLM 可能忽略剪贴板历史
 - [T029] ClipboardHistoryService 使用定时器轮询剪贴板变化，过滤敏感信息（密码/API Key/长密钥）
 - [T028] 剪贴板历史比当前剪贴板更有价值：可提供专业术语/人名/项目名上下文
@@ -15,9 +17,9 @@
 
 ## 智能索引
 
-技术栈: #swiftui(T023,T024,T027) #cgevent(T026) #keychain(T025) #clipboard(T028)
-架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026) #security(@C003:T025) #context(@C004:T028)
-任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026) #performance(T025) #design(T028)
+技术栈: #swiftui(T023,T024,T027) #cgevent(T026) #keychain(T025) #clipboard(T028,T029) #llm-prompt(T030,T031)
+架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026) #security(@C003:T025) #context(@C004:T028,T029,T030,T031)
+任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026) #performance(T025) #design(T028) #prompt-engineering(T030,T031)
 
 ## 记录条目 (Latest at bottom)
 
@@ -65,3 +67,30 @@
 - LINK: spoke/Services/ClipboardHistoryService.swift
 - STAT: [√] 完成 4/4 通过
 - NOTE: 检查间隔 1s；单条限制 500 字符；过滤密码/API Key/长密钥
+
+[2025-11-27 T030] System Prompt 优化 v1~v3
+
+- PROB: LLM 忽略剪贴板历史，无法修正术语（如 mirroday → mirrored）
+- PLAN: 重写 defaultSystemPrompt 明确指导利用历史修正；添加同音纠错规则
+- TIME: 0.3h | TAGS: #llm-prompt #prompt-engineering #context
+- LINK: spoke/Core/LLM/LLMSettings.swift#defaultSystemPrompt
+- STAT: [√] 完成
+- NOTE: Prompt 迁移用 contains 匹配旧版特征字符串
+
+[2025-11-27 T031] System Prompt 保守驼峰策略
+
+- PROB: Prompt 太激进，把中文也改成驼峰了
+- PLAN: 明确只对英文/拼音词消歧义 + 用具体例子说明中文不变 + v1~v4 迁移
+- TIME: 0.2h | TAGS: #llm-prompt #prompt-engineering #iteration
+- LINK: spoke/Core/LLM/LLMSettings.swift#defaultSystemPrompt
+- STAT: [√] 完成
+- NOTE: Prompt 给 LLM 具体例子比抽象规则更有效；后续可结合活跃应用判断是否代码环境
+
+[2025-11-27 T032] Keychain 统一存储与迁移优化
+
+- PROB: 开发环境签名变化导致每次启动都重复弹窗 (2次+)
+- PLAN: 统一存储(Unified Storage) + 一次性迁移(Migration) + 移除 Provider 回退逻辑 + hasConsolidatedAPIKeys Flag
+- TIME: 0.5h | TAGS: #keychain #security #optimization
+- LINK: spoke/Core/LLM/LLMSettings.swift
+- STAT: [√]完成 3/3 通过
+- NOTE: 迁移仅在首次运行触发；Provider 应完全依赖注入的 API Key 而非自行访问 Keychain

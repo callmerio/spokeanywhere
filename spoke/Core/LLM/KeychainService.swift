@@ -18,26 +18,39 @@ final class KeychainService {
     
     // MARK: - Public API
     
-    /// 保存 API Key
+    /// 保存 API Key (智能更新)
     static func save(key: String, value: String) throws {
         let service = "\(servicePrefix).\(key)"
-        
-        // 先删除已存在的
-        try? delete(key: key)
         
         guard let data = value.data(using: .utf8) else {
             throw KeychainError.encodingFailed
         }
         
+        // 1. 尝试更新现有项目
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
+            kSecAttrAccount as String: key
+        ]
+        
+        let attributes: [String: Any] = [
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
         ]
         
-        let status = SecItemAdd(query as CFDictionary, nil)
+        var status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        
+        // 2. 如果项目不存在 (errSecItemNotFound)，则添加新项目
+        if status == errSecItemNotFound {
+            let addQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: key,
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
+            ]
+            status = SecItemAdd(addQuery as CFDictionary, nil)
+        }
         
         guard status == errSecSuccess else {
             logger.error("❌ Keychain save failed: \(status)")
