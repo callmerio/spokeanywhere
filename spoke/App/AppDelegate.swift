@@ -18,6 +18,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 初始化 SwiftData 容器
         do {
             modelContainer = try ModelContainer(for: HistoryItem.self, AppRule.self, AIProviderConfig.self)
+            
+            // 配置 HistoryManager
+            if let context = modelContainer?.mainContext {
+                HistoryManager.shared.configure(with: context)
+            }
+            
             print("✅ ModelContainer initialized")
         } catch {
             print("❌ Failed to create ModelContainer: \(error)")
@@ -35,6 +41,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 启动录音控制器
         RecordingController.shared.start()
+        
+        // 执行历史记录自动清理
+        performHistoryCleanup()
+    }
+    
+    private func performHistoryCleanup() {
+        let settings = AppSettings.shared
+        guard settings.historyAutoCleanupEnabled else { return }
+        
+        Task {
+            // 按天数清理
+            if settings.historyKeepDays > 0 {
+                await HistoryManager.shared.performCleanup(policy: .keepDays(settings.historyKeepDays))
+            }
+            
+            // 按条数清理
+            if settings.historyMaxCount > 0 {
+                await HistoryManager.shared.performCleanup(policy: .keepCount(settings.historyMaxCount))
+            }
+        }
     }
     
     func applicationWillTerminate(_ notification: Notification) {

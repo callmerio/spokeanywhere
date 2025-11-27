@@ -94,6 +94,17 @@ class AppSettings: ObservableObject {
     /// 剪贴板历史保存条数
     @AppStorage("ClipboardHistoryLimit") var clipboardHistoryLimit: Int = 30
     
+    // MARK: - History Cleanup
+    
+    /// 是否启用历史记录自动清理
+    @AppStorage("HistoryAutoCleanupEnabled") var historyAutoCleanupEnabled: Bool = true
+    
+    /// 历史记录保留天数（默认 30 天）
+    @AppStorage("HistoryKeepDays") var historyKeepDays: Int = 30
+    
+    /// 历史记录最大条数（默认 500 条，0 表示不限制）
+    @AppStorage("HistoryMaxCount") var historyMaxCount: Int = 500
+    
     // MARK: - Shortcut Settings
     
     /// 快捷键 keyCode (默认: R = 15)

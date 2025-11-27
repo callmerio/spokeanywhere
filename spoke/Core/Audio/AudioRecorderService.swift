@@ -24,7 +24,7 @@ final class AudioRecorderService: NSObject {
     private var transcriptionProvider: TranscriptionProvider?
     
     /// 临时音频文件 URL
-    private var tempAudioFileURL: URL?
+    private(set) var tempAudioFileURL: URL?
     private var audioFile: AVAudioFile?
     
     /// 是否正在录音

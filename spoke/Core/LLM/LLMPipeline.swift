@@ -35,9 +35,11 @@ final class LLMPipeline {
     }
     
     /// 精炼文本
-    /// - Parameter text: 原始转写文本
-    /// - Returns: 精炼后的文本，失败时返回 nil
-    func refine(_ text: String) async -> Result<String, LLMError> {
+    /// - Parameters:
+    ///   - text: 原始转写文本
+    ///   - customSystemPrompt: 自定义系统提示词（用于历史记录重处理）
+    /// - Returns: 精炼后的文本，失败时返回错误
+    func refine(_ text: String, customSystemPrompt: String? = nil) async -> Result<String, LLMError> {
         guard shouldProcess else {
             logger.info("⏭️ LLM not configured, skipping")
             return .success(text)
@@ -51,12 +53,22 @@ final class LLMPipeline {
         isProcessing = true
         defer { isProcessing = false }
         
-        // 构建 Prompt
-        let prompt = buildPrompt(for: text)
+        // 构建 Prompt（支持自定义系统提示词）
+        let prompt: LLMPrompt
+        if let customPrompt = customSystemPrompt {
+            // 使用自定义提示词（历史记录重处理场景）
+            prompt = LLMPrompt(
+                systemPrompt: customPrompt,
+                userMessage: text,
+                contextAppName: nil
+            )
+        } else {
+            // 使用默认设置构建提示词
+            prompt = buildPrompt(for: text)
+        }
         
         // 调试：打印完整 Prompt
         logger.info("🤖 Starting LLM refinement...")
-        // clipboardHistory.debugPrintHistory() // 减少噪音，Prompt 里已经有了
         print("📝 === LLM PROMPT DEBUG ===")
         print("📝 System Prompt:")
         print(prompt.systemPrompt)

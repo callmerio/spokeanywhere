@@ -30,6 +30,7 @@ final class RecordingController {
     private let inputService = InputService.shared
     private let settings = AppSettings.shared
     private let llmPipeline = LLMPipeline.shared
+    private let historyManager = HistoryManager.shared
     
     // MARK: - Properties
     
@@ -263,11 +264,23 @@ final class RecordingController {
             copyToClipboard(transcribedText)
             logger.info("📋 Clipboard #1: transcribed text")
             
+            // 获取临时音频文件 URL
+            let tempAudioURL = audioService.tempAudioFileURL
+            let appBundleId = contextService.getCurrentTargetApp()?.bundleIdentifier
+            
             // 检查是否需要 LLM 处理
             guard llmPipeline.shouldProcess else {
                 // 不需要 LLM，直接完成
                 hudManager.complete(with: transcribedText)
-                audioService.cleanupTempFile()
+                
+                // 保存到历史记录
+                await historyManager.saveRecording(
+                    rawText: transcribedText,
+                    processedText: nil,
+                    tempAudioURL: tempAudioURL,
+                    appBundleId: appBundleId
+                )
+                
                 hotKeyService.resetState()
                 logger.info("✅ Transcription complete (no LLM): \(transcribedText)")
                 return
@@ -277,6 +290,8 @@ final class RecordingController {
             // 调用 LLM 精炼
             let result = await llmPipeline.refine(transcribedText)
             
+            var processedText: String?
+            
             switch result {
             case .success(let refinedText):
                 // 第二次写入剪贴板（精炼后文本）
@@ -285,6 +300,7 @@ final class RecordingController {
                 
                 // 完成
                 hudManager.complete(with: refinedText)
+                processedText = refinedText
                 logger.info("✅ LLM refinement complete: \(refinedText)")
                 
             case .failure(let error):
@@ -294,8 +310,13 @@ final class RecordingController {
                 logger.info("⚠️ Fallback to transcribed text")
             }
             
-            // 清理临时文件
-            audioService.cleanupTempFile()
+            // 保存到历史记录（替代临时文件清理）
+            await historyManager.saveRecording(
+                rawText: transcribedText,
+                processedText: processedText,
+                tempAudioURL: tempAudioURL,
+                appBundleId: appBundleId
+            )
             
             // 确保热键状态已重置（防止异常情况）
             hotKeyService.resetState()
