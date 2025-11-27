@@ -12,13 +12,28 @@
 ## Phase 2: 注入灵魂 - AI 集成 (优先级: 高)
 **目标**: 从单纯的“听写”进化为“创作”。
 
-- [ ] **LLM 处理管线 (LLM Pipeline)**
-    - 后处理流程：音频 -> 文本 -> LLM -> 精炼文本
-    - 在 HUD 上增加可视化的“思考中”状态
+- [x] **LLM 处理管线 (LLM Pipeline)** ⭐ DONE
+    - [x] 后处理流程：音频 -> 文本 -> LLM -> 精炼文本
+    - [x] 在 HUD 上增加可视化的“思考中”状态（流光边框 + 旋转指示器）
+    - [x] 多 Provider 支持：Ollama / OpenAI / Anthropic / Gemini / Groq / OpenRouter
+    - [x] 设置界面：AI 处理 Tab（Provider 配置 / API Key / 系统提示词）
+    - [x] Keychain 安全存储 API Key
 - [ ] **上下文感知 (Context Awareness)**
-    - 检测当前活跃应用 (例如：VS Code vs 微信)
-    - 基于上下文动态注入 Prompt (例如在代码编辑器中偏向代码生成)
-    - 集成 `ContextService`
+    - [x] 检测当前活跃应用 (例如：VS Code vs 微信)
+    - [ ] 基于上下文动态注入 Prompt (例如在代码编辑器中偏向代码生成)
+    - [x] 集成 `ContextService`
+    - [x] **剪贴板历史 (Clipboard History)** ⭐ DONE
+        - [x] 底层静默保存用户剪贴板历史 (最近 30 条，可配置)
+        - [x] 替代当前「包含剪贴板内容」选项
+        - [x] 用户可选开关：将历史作为 LLM 上下文
+        - [x] 可帮助识别专业术语/人名/项目名
+        - [x] 隐私考量：过滤敏感内容 + 限制单条 500 字符
+- [ ] **多模态音频增强 (Multimodal Audio)** ⭐ TODO
+    - 检测 Provider 是否支持音频输入（Gemini/GPT-4o）
+    - 设置选项：是否传送原始音频
+    - 同时发送：音频 + 初级转录 + 剪贴板上下文
+    - 模型直接"听"音频，结合上下文修正术语
+    - 预期效果：一步到位的高质量转录
 - [ ] **自定义指令 (Custom Instructions)**
     - 用户自定义 Prompt 库 (例如："翻译成英文", "委婉的邮件回复")
     - 快捷键或语音命令触发特定指令
@@ -60,6 +75,15 @@
 ---
 
 ## 功能愿望清单 (Feature Wishlist)
+### 字典配置
+
+### 实时字幕
+
+### TTS
+- selected to TTS
+- 剪贴板 to TTS
+- 截图图片 to TTS
+- 实时屏幕转 TTS
 
 ### 魔术键 (Magic Key)
 - **交互**: 录音结束后，按 `Enter` 直接上屏原文，按 `Tab` 或 `Cmd+Enter` 触发 AI 润色。

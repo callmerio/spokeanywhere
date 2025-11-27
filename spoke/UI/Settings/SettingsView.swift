@@ -13,6 +13,7 @@ struct SettingsView: View {
     enum SettingsTab: String, CaseIterable {
         case general = "常规"
         case model = "听写模型"
+        case ai = "AI 处理"
         case shortcuts = "快捷键"
         case history = "历史记录"
         
@@ -20,6 +21,7 @@ struct SettingsView: View {
             switch self {
             case .general: return "gear"
             case .model: return "waveform"
+            case .ai: return "sparkles"
             case .shortcuts: return "keyboard"
             case .history: return "clock.arrow.circlepath"
             }
@@ -91,6 +93,8 @@ struct SettingsView: View {
                     )
                 case .model:
                     ModelsSettingsContent()
+                case .ai:
+                    AISettingsContent()
                 case .shortcuts:
                     ShortcutsSettingsContent(appSettings: appSettings)
                 case .history:
@@ -433,6 +437,413 @@ struct ModelOptionRow: View {
         }
         .buttonStyle(.plain)
         .disabled(!isAvailable)
+    }
+}
+
+// MARK: - AI Settings
+
+struct AISettingsContent: View {
+    @State private var llmSettings = LLMSettings.shared
+    @State private var showingAPIKeyInput = false
+    @State private var apiKeyInput = ""
+    @State private var isTesting = false
+    @State private var testResult: TestResult?
+    @State private var showConflictAlert = false
+    @ObservedObject var appSettings = AppSettings.shared
+    
+    enum TestResult {
+        case success
+        case failure(String)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // 启用开关
+            Text("AI 文本处理")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.gray)
+                .padding(.leading, 4)
+            
+            SettingsCard {
+                SettingsRow(icon: "sparkles", title: "启用 AI 处理", description: "语音转写后自动使用 AI 精炼文本") {
+                    Toggle("", isOn: Binding(
+                        get: { llmSettings.isEnabled },
+                        set: { newValue in
+                            if newValue && appSettings.realtimeTypingEnabled {
+                                showConflictAlert = true
+                            } else {
+                                llmSettings.isEnabled = newValue
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
+                    .tint(.blue)
+                }
+            }
+            .alert("冲突提示", isPresented: $showConflictAlert) {
+                Button("关闭实时上屏并开启 AI") {
+                    appSettings.realtimeTypingEnabled = false
+                    llmSettings.isEnabled = true
+                }
+                Button("保持两者开启") {
+                    llmSettings.isEnabled = true
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("开启 AI 处理后，实时上屏会先输出原始转写，AI 完成后会再次输出精炼文本。\n\n建议关闭实时上屏，仅使用 AI 输出的最终结果。")
+            }
+            
+            if llmSettings.isEnabled {
+                // Provider 选择
+                Text("AI 服务商")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.gray)
+                    .padding(.leading, 4)
+                    .padding(.top, 8)
+                
+                SettingsCard {
+                    ForEach(Array(LLMProviderType.allCases.enumerated()), id: \.element) { index, provider in
+                        if index > 0 {
+                            Divider().background(Color.white.opacity(0.06))
+                        }
+                        
+                        ProviderOptionRow(
+                            provider: provider,
+                            isSelected: llmSettings.selectedProviderType == provider,
+                            isConfigured: isProviderConfigured(provider)
+                        ) {
+                            selectProvider(provider)
+                        }
+                    }
+                }
+                
+                // 当前 Provider 配置
+                if let selectedProvider = llmSettings.selectedProviderType {
+                    Text("配置 - \(selectedProvider.displayName)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.gray)
+                        .padding(.leading, 4)
+                        .padding(.top, 8)
+                    
+                    SettingsCard {
+                        // Base URL
+                        SettingsRow(icon: "link", title: "API 地址") {
+                            TextField("https://api.example.com/v1", text: Binding(
+                                get: { llmSettings.providerConfigs[selectedProvider]?.baseURL ?? "" },
+                                set: { newValue in
+                                    var config = llmSettings.providerConfigs[selectedProvider] ?? ProviderConfig()
+                                    config.baseURL = newValue
+                                    llmSettings.providerConfigs[selectedProvider] = config
+                                }
+                            ))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(6)
+                            .frame(width: 220)
+                        }
+                        
+                        Divider().background(Color.white.opacity(0.06))
+                        
+                        // Model Name
+                        SettingsRow(icon: "cpu", title: "模型名称") {
+                            TextField("gpt-4o-mini", text: Binding(
+                                get: { llmSettings.providerConfigs[selectedProvider]?.modelName ?? "" },
+                                set: { newValue in
+                                    var config = llmSettings.providerConfigs[selectedProvider] ?? ProviderConfig()
+                                    config.modelName = newValue
+                                    llmSettings.providerConfigs[selectedProvider] = config
+                                }
+                            ))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(6)
+                            .frame(width: 220)
+                        }
+                        
+                        // API Key (如果需要)
+                        if selectedProvider.requiresAPIKey {
+                            Divider().background(Color.white.opacity(0.06))
+                            
+                            SettingsRow(icon: "key", title: "API Key", description: hasAPIKey(selectedProvider) ? "已配置" : "未配置") {
+                                Button(hasAPIKey(selectedProvider) ? "修改" : "设置") {
+                                    apiKeyInput = ""
+                                    showingAPIKeyInput = true
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.blue)
+                            }
+                        }
+                        
+                        Divider().background(Color.white.opacity(0.06))
+                        
+                        // 测试连接
+                        HStack(spacing: 14) {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.gray)
+                                .frame(width: 24)
+                            
+                            Text("测试连接")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white)
+                            
+                            Spacer()
+                            
+                            if let result = testResult {
+                                switch result {
+                                case .success:
+                                    Label("连接成功", systemImage: "checkmark.circle.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.green)
+                                case .failure(let message):
+                                    Label(message, systemImage: "xmark.circle.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.red)
+                                        .lineLimit(1)
+                                }
+                            }
+                            
+                            Button(isTesting ? "测试中..." : "测试") {
+                                testConnection()
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.blue)
+                            .disabled(isTesting || !llmSettings.isFullyConfigured)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                }
+                
+                // 提示词配置
+                Text("系统提示词")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.gray)
+                    .padding(.leading, 4)
+                    .padding(.top, 8)
+                
+                SettingsCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        TextEditor(text: Binding(
+                            get: { llmSettings.systemPrompt },
+                            set: { llmSettings.systemPrompt = $0 }
+                        ))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(8)
+                        .frame(height: 120)
+                        
+                        HStack {
+                            Button("重置为默认") {
+                                llmSettings.resetToDefaultPrompt()
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.gray)
+                            
+                            Spacer()
+                            
+                            Text("\(llmSettings.systemPrompt.count) 字符")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                    .padding(16)
+                }
+                
+                // 上下文选项
+                Text("上下文选项")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.gray)
+                    .padding(.leading, 4)
+                    .padding(.top, 8)
+                
+                SettingsCard {
+                    SettingsRow(icon: "app.badge", title: "包含当前应用名称", description: "将活跃应用名称添加到上下文") {
+                        Toggle("", isOn: Binding(
+                            get: { llmSettings.includeActiveApp },
+                            set: { llmSettings.includeActiveApp = $0 }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(.blue)
+                    }
+                    
+                    Divider().background(Color.white.opacity(0.06))
+                    
+                    SettingsRow(icon: "doc.on.clipboard", title: "包含剪贴板历史", description: "将最近复制的内容添加到上下文（可能含敏感信息）") {
+                        Toggle("", isOn: Binding(
+                            get: { llmSettings.includeClipboard },
+                            set: { llmSettings.includeClipboard = $0 }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(.blue)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingAPIKeyInput) {
+            APIKeyInputSheet(
+                provider: llmSettings.selectedProviderType ?? .openai,
+                apiKey: $apiKeyInput,
+                onSave: { key in
+                    if let provider = llmSettings.selectedProviderType {
+                        try? llmSettings.setAPIKey(key, for: provider)
+                    }
+                    showingAPIKeyInput = false
+                },
+                onCancel: {
+                    showingAPIKeyInput = false
+                }
+            )
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func selectProvider(_ provider: LLMProviderType) {
+        llmSettings.selectedProviderType = provider
+        llmSettings.initializeProvider(provider)
+        testResult = nil
+    }
+    
+    private func isProviderConfigured(_ provider: LLMProviderType) -> Bool {
+        guard let config = llmSettings.providerConfigs[provider] else { return false }
+        if provider.requiresAPIKey {
+            return config.apiKeyRef != nil && KeychainService.exists(key: config.apiKeyRef ?? "")
+        }
+        return !config.baseURL.isEmpty && !config.modelName.isEmpty
+    }
+    
+    private func hasAPIKey(_ provider: LLMProviderType) -> Bool {
+        guard let config = llmSettings.providerConfigs[provider],
+              let keyRef = config.apiKeyRef else { return false }
+        return KeychainService.exists(key: keyRef)
+    }
+    
+    private func testConnection() {
+        guard let provider = llmSettings.createCurrentProvider() else {
+            testResult = .failure("Provider 未配置")
+            return
+        }
+        
+        isTesting = true
+        testResult = nil
+        
+        Task {
+            let success = await provider.testConnection()
+            await MainActor.run {
+                isTesting = false
+                testResult = success ? .success : .failure("连接失败")
+            }
+        }
+    }
+}
+
+// MARK: - Provider Option Row
+
+struct ProviderOptionRow: View {
+    let provider: LLMProviderType
+    let isSelected: Bool
+    let isConfigured: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: providerIcon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(.gray)
+                    .frame(width: 24)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(provider.displayName)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white)
+                        
+                        if isConfigured {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.green)
+                        }
+                    }
+                    
+                    Text(provider.defaultBaseURL.isEmpty ? "自定义 API 地址" : provider.defaultBaseURL)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray.opacity(0.7))
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var providerIcon: String {
+        switch provider {
+        case .ollama: return "desktopcomputer"
+        case .openai: return "bubble.left.and.bubble.right"
+        case .anthropic: return "brain"
+        case .googleGemini: return "sparkle"
+        case .groq: return "bolt"
+        case .openRouter: return "arrow.triangle.branch"
+        case .openAICompatible: return "server.rack"
+        }
+    }
+}
+
+// MARK: - API Key Input Sheet
+
+struct APIKeyInputSheet: View {
+    let provider: LLMProviderType
+    @Binding var apiKey: String
+    let onSave: (String) -> Void
+    let onCancel: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("设置 \(provider.displayName) API Key")
+                .font(.headline)
+            
+            SecureField("sk-...", text: $apiKey)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 300)
+            
+            Text("API Key 将安全存储在 macOS Keychain 中")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            HStack(spacing: 12) {
+                Button("取消") {
+                    onCancel()
+                }
+                .buttonStyle(.bordered)
+                
+                Button("保存") {
+                    onSave(apiKey)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(apiKey.isEmpty)
+            }
+        }
+        .padding(30)
+        .frame(width: 400)
     }
 }
 

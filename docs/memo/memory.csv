@@ -1,0 +1,13 @@
+timestamp,scope,file,action,user_intent,mm_thought,implementation,ai_tips,ref
+2025-11-27T12:20,spoke,Services/HotKeyService.swift,fix,快捷键处理一个后失效,CGEvent tap 可能被系统超时禁用,添加 tapDisabledByTimeout 处理+自动重启+resetState(),检查 isRecording/isToggleSession 状态重置,HotKeyService#handleEvent
+2025-11-27T12:26,spoke,Services/RecordingController.swift,update,LLM 动画太晚出现像卡壳,录音结束后应立即显示 thinking 状态,stopRecordingSession 根据 llmPipeline.shouldProcess 选择状态,若启用 LLM 则跳过 processing 直接 thinking,RecordingController#stopRecordingSession
+2025-11-27T12:30,spoke,UI/HUD/FloatingCapsuleView.swift,fix,流光效果不显示,AIGlowView 被毛玻璃层遮挡+clipShape 裁剪,改用 RunningLightBorder 作为 overlay 放在 clipShape 后,边框动画用 AngularGradient+rotation,FloatingCapsuleView#RunningLightBorder
+2025-11-27T12:46,spoke,UI/HUD/FloatingCapsuleView.swift,update,转圈样式改成彩色点,参考 Apple Intelligence 风格,StatusIndicator 改成 6 个彩色点旋转,用 ZStack+ForEach+offset+rotationEffect,FloatingCapsuleView#StatusIndicator
+2025-11-27T12:46,spoke,Services/FloatingHUDManager.swift,update,打钩到消失太慢,用户体验优化,scheduleHide 从 1.5s 改为 0.75s,成功状态不需要停留太久,FloatingHUDManager#complete
+2025-11-27T12:10,spoke,Core/LLM/KeychainService.swift,update,Keychain 每次启动都要授权,开发阶段签名变化导致,添加内存缓存减少 Keychain 访问次数,load 时先查缓存再访问 Keychain,KeychainService#cache
+2025-11-27T13:40,spoke,docs/roadmap.md,update,剪贴板历史作为 LLM 上下文,替代当前剪贴板改为历史+用户可选,roadmap 添加 Clipboard History 功能规划,底层先存储再实验效果;过滤敏感信息;限制单条长度,roadmap.md#Context-Awareness
+2025-11-27T13:50,spoke,Services/ClipboardHistoryService.swift,create,实现剪贴板历史服务,监听变化+保存历史+过滤敏感+持久化,ClipboardHistoryService 完整实现,检查间隔1s;单条500字符;JSON持久化,ClipboardHistoryService.swift
+2025-11-27T13:50,spoke,Core/LLM/LLMPipeline.swift,update,集成剪贴板历史,使用历史替代单条剪贴板,buildPrompt 使用 clipboardHistory.formatForPrompt(),限制20条历史作为上下文,LLMPipeline.swift#buildPrompt
+2025-11-27T13:50,spoke,UI/Settings/SettingsView.swift,update,更新UI文案,剪贴板内容->剪贴板历史,修改设置项标题和描述,保持开关逻辑不变,SettingsView.swift#上下文选项
+2025-11-27T14:07,spoke,Core/LLM/LLMSettings.swift,update,改进 System Prompt,让 LLM 主动利用剪贴板历史修正术语,重写 defaultSystemPrompt 明确指导修正规则,关键：明确告诉 LLM 用剪贴板历史修正听错的词,LLMSettings.swift#defaultSystemPrompt
+2025-11-27T14:07,spoke,docs/roadmap.md,update,添加多模态音频功能规划,支持 Gemini/GPT-4o 直接听音频,roadmap 新增 Multimodal Audio 功能,检测 Provider 能力+可选传送音频+一步到位转录,roadmap.md#Multimodal-Audio

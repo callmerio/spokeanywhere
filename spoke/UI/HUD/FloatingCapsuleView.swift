@@ -28,7 +28,8 @@ struct FloatingCapsuleView: View {
                 // 正常内容层
                 VStack(spacing: 0) {
                     // 上方：转写文字区域（向上扩展）
-                    if state.phase == .recording || state.phase == .processing {
+                    // .success 状态也保留文字显示，直到 UI 消失
+                    if state.phase == .recording || state.phase == .processing || state.phase == .thinking || state.phase == .success {
                         textArea
                     }
                     
@@ -85,8 +86,16 @@ struct FloatingCapsuleView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+            // 思考状态：跑马灯边框
+            // 非思考状态：普通边框
+            Group {
+                if state.phase == .thinking {
+                    RunningLightBorder()
+                } else {
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                }
+            }
         )
         .animation(.easeInOut(duration: 0.2), value: isHovering) // Hover 切换动画
         .onChange(of: state.audioLevel) { _, newLevel in
@@ -122,6 +131,29 @@ struct FloatingCapsuleView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(.white.opacity(0.7))
                 }
+            } else if state.phase == .thinking || state.phase == .success {
+                // 思考中状态：文字模糊效果 + 提示
+                // Success 状态下也保持这个布局，但提示语可能会变
+                VStack(alignment: .leading, spacing: 8) {
+                    if !state.partialText.isEmpty {
+                        Text(state.partialText)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(state.phase == .success ? 0.9 : 0.5)) // 成功后变亮
+                            .lineSpacing(4)
+                            .blur(radius: state.phase == .thinking ? 2 : 0) // 思考时模糊，成功后清晰
+                            .animation(.easeInOut(duration: 0.3), value: state.phase)
+                    }
+                    
+                    if state.phase == .thinking {
+                        HStack(spacing: 6) {
+                            ThinkingIndicator()
+                            Text("AI 思考中...")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                        .transition(.opacity)
+                    }
+                }
             } else {
                 Text("正在聆听...")
                     .font(.system(size: 14))
@@ -138,22 +170,23 @@ struct FloatingCapsuleView: View {
     
     private var controlBar: some View {
         HStack(spacing: 0) {
-            // 左侧：App 图标或成功图标（同一位置）
-            if state.phase == .success {
-                successIcon
-            } else {
-                appIcon
-            }
+            // 左侧：App 图标 (Success 状态下不再显示大勾勾，而是保持 App 图标)
+            appIcon
+            
             Spacer().frame(width: 12)
             
             if state.phase == .recording {
                 ScrollingWaveform(levels: levels)
                     .frame(width: 120, height: 16)
+            } else if state.phase == .thinking || state.phase == .success {
+                // 思考中/成功：显示状态指示器 (Spinner -> Checkmark)
+                StatusIndicator(isThinking: state.phase == .thinking)
+                    .frame(width: 20, height: 20)
             }
             
             Spacer()
             
-            if state.phase == .recording {
+            if state.phase == .recording || state.phase == .thinking || state.phase == .success {
                 brandLabel
             }
         }
@@ -253,12 +286,6 @@ struct FloatingCapsuleView: View {
         .foregroundStyle(.white.opacity(0.6))
     }
     
-    private var successIcon: some View {
-        Image(systemName: "checkmark.circle.fill")
-            .foregroundStyle(.green)
-            .font(.system(size: 20))
-    }
-    
     // MARK: - Helpers
     
     private func updateWaveform(_ level: Float) {
@@ -325,5 +352,150 @@ struct ScrollingWaveform: View {
         let progress = Double(index) / Double(count - 1)
         // 增加一点不透明度
         return Color.red.opacity(0.4 + 0.6 * progress)
+    }
+}
+
+// MARK: - Status Indicator (Spinner -> Checkmark)
+
+struct StatusIndicator: View {
+    /// 当前状态：true = thinking (spinner), false = success (checkmark)
+    let isThinking: Bool
+    
+    @State private var checkmarkScale: CGFloat = 0
+    @State private var rotation: Double = 0
+    
+    // 彩色点的颜色
+    private let dotColors: [Color] = [
+        Color(red: 0.3, green: 0.5, blue: 1.0),   // 蓝
+        Color(red: 0.5, green: 0.3, blue: 1.0),   // 紫蓝
+        Color(red: 0.8, green: 0.3, blue: 0.9),   // 紫
+        Color(red: 1.0, green: 0.4, blue: 0.7),   // 粉
+        Color(red: 1.0, green: 0.5, blue: 0.4),   // 橙红
+        Color(red: 0.3, green: 0.7, blue: 0.9),   // 青
+    ]
+    
+    var body: some View {
+        ZStack {
+            if isThinking {
+                // 彩色点旋转
+                ZStack {
+                    ForEach(0..<6, id: \.self) { index in
+                        Circle()
+                            .fill(dotColors[index])
+                            .frame(width: 4, height: 4)
+                            .offset(y: -7) // 半径
+                            .rotationEffect(.degrees(Double(index) * 60))
+                    }
+                }
+                .rotationEffect(.degrees(rotation))
+            } else {
+                // 成功对号
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.green)
+                    .scaleEffect(checkmarkScale)
+            }
+        }
+        .frame(width: 18, height: 18)
+        .onAppear {
+            if isThinking {
+                startSpinner()
+            }
+        }
+        .onChange(of: isThinking) { wasThinking, nowThinking in
+            if wasThinking && !nowThinking {
+                // 转到成功状态
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    checkmarkScale = 1
+                }
+            } else if nowThinking {
+                // 重置到思考状态
+                checkmarkScale = 0
+                rotation = 0
+                startSpinner()
+            }
+        }
+    }
+    
+    private func startSpinner() {
+        withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+            rotation = 360
+        }
+    }
+}
+
+// MARK: - Thinking Indicator (文字旁的小动画)
+
+struct ThinkingIndicator: View {
+    @State private var isAnimating = false
+    
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3) { index in
+                Circle()
+                    .fill(Color.white.opacity(0.8))
+                    .frame(width: 4, height: 4)
+                    .scaleEffect(isAnimating ? 1.0 : 0.5)
+                    .animation(
+                        .easeInOut(duration: 0.6)
+                        .repeatForever()
+                        .delay(Double(index) * 0.2),
+                        value: isAnimating
+                    )
+            }
+        }
+        .onAppear {
+            isAnimating = true
+        }
+    }
+}
+
+// MARK: - Running Light Border (白色流光边框)
+
+struct RunningLightBorder: View {
+    @State private var rotation: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // 外层光晕 (柔和扩散)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    AngularGradient(
+                        colors: [
+                            Color.white.opacity(0.8),
+                            Color.white.opacity(0.1),
+                            Color.white.opacity(0.1),
+                            Color.white.opacity(0.1),
+                            Color.white.opacity(0.8)
+                        ],
+                        center: .center,
+                        angle: .degrees(rotation)
+                    ),
+                    lineWidth: 2
+                )
+                .blur(radius: 3)
+            
+            // 内层清晰边框
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    AngularGradient(
+                        colors: [
+                            Color.white.opacity(0.9),
+                            Color.white.opacity(0.05),
+                            Color.white.opacity(0.05),
+                            Color.white.opacity(0.05),
+                            Color.white.opacity(0.9)
+                        ],
+                        center: .center,
+                        angle: .degrees(rotation)
+                    ),
+                    lineWidth: 1.5
+                )
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                rotation = 360
+            }
+        }
     }
 }

@@ -6,7 +6,8 @@ import Observation
 enum RecordingPhase: Equatable {
     case idle
     case recording
-    case processing
+    case processing   // 转写处理中
+    case thinking     // LLM 思考中
     case success
     case failure(String)
 }
@@ -63,6 +64,10 @@ final class RecordingState {
     
     func startProcessing() {
         self.phase = .processing
+    }
+    
+    func startThinking() {
+        self.phase = .thinking
     }
     
     func complete(with text: String) {

@@ -86,6 +86,14 @@ class AppSettings: ObservableObject {
     /// 仅在支持流式输出的引擎下有效 (SpeechAnalyzer / SFSpeech)
     @AppStorage("RealtimeTypingEnabled") var realtimeTypingEnabled: Bool = false
     
+    // MARK: - Clipboard History
+    
+    /// 剪贴板历史作为 LLM 上下文（替代之前的「包含剪贴板内容」）
+    @AppStorage("ClipboardHistoryEnabled") var clipboardHistoryEnabled: Bool = false
+    
+    /// 剪贴板历史保存条数
+    @AppStorage("ClipboardHistoryLimit") var clipboardHistoryLimit: Int = 30
+    
     // MARK: - Shortcut Settings
     
     /// 快捷键 keyCode (默认: R = 15)

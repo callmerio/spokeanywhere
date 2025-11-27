@@ -65,15 +65,20 @@ final class FloatingHUDManager {
         // 不再需要更新窗口大小，窗口是固定的
     }
     
-    /// 切换到处理状态
+    /// 切换到处理状态（转写中）
     func startProcessing() {
         state.startProcessing()
+    }
+    
+    /// 切换到思考状态（LLM 处理中）
+    func startThinking() {
+        state.startThinking()
     }
     
     /// 完成处理
     func complete(with text: String) {
         state.complete(with: text)
-        scheduleHide(after: 1.5)
+        scheduleHide(after: 0.75)  // 打勾后快速消失
     }
     
     /// 处理失败

@@ -29,6 +29,7 @@ final class RecordingController {
     private let audioService = AudioRecorderService.shared
     private let inputService = InputService.shared
     private let settings = AppSettings.shared
+    private let llmPipeline = LLMPipeline.shared
     
     // MARK: - Properties
     
@@ -173,10 +174,15 @@ final class RecordingController {
             inputService.flushPendingText()
         }
         
-        // 切换到处理状态
-        hudManager.startProcessing()
-        
-        logger.info("⏹️ Recording stopped, processing...")
+        // 根据是否启用 LLM 选择状态
+        // 如果启用了 LLM，立即显示"思考中"（流光效果），让用户感知到 AI 正在工作
+        if llmPipeline.shouldProcess {
+            hudManager.startThinking()
+            logger.info("⏹️ Recording stopped, AI thinking...")
+        } else {
+            hudManager.startProcessing()
+            logger.info("⏹️ Recording stopped, processing...")
+        }
         
         // 处理转写结果
         processTranscription()
@@ -194,8 +200,12 @@ final class RecordingController {
         // 重置热键状态
         hotKeyService.isRecording = false
         
-        // 切换到处理状态
-        hudManager.startProcessing()
+        // 根据是否启用 LLM 选择状态
+        if llmPipeline.shouldProcess {
+            hudManager.startThinking()
+        } else {
+            hudManager.startProcessing()
+        }
         
         logger.info("⏹️ Recording completed by user button")
         
@@ -241,30 +251,59 @@ final class RecordingController {
                 if !audioService.isProcessing { break }
             }
             
-            let text = lastTranscription
+            let transcribedText = lastTranscription
             
-            if text.isEmpty {
+            if transcribedText.isEmpty {
                 hudManager.fail(with: "未检测到语音")
+                hotKeyService.resetState()
                 return
             }
             
-            // TODO: 这里后续接入 AI 处理
-            // let processedText = await aiPipeline.process(text)
+            // 第一次写入剪贴板（原始转写文本）
+            copyToClipboard(transcribedText)
+            logger.info("📋 Clipboard #1: transcribed text")
             
-            // 目前直接使用原始转写文本
-            let finalText = text
+            // 检查是否需要 LLM 处理
+            guard llmPipeline.shouldProcess else {
+                // 不需要 LLM，直接完成
+                hudManager.complete(with: transcribedText)
+                audioService.cleanupTempFile()
+                hotKeyService.resetState()
+                logger.info("✅ Transcription complete (no LLM): \(transcribedText)")
+                return
+            }
             
-            // 完成
-            hudManager.complete(with: finalText)
+            // 已经在 thinking 状态了（stopRecordingSession 时已切换）
+            // 调用 LLM 精炼
+            let result = await llmPipeline.refine(transcribedText)
             
-            // 复制到剪贴板
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(finalText, forType: .string)
+            switch result {
+            case .success(let refinedText):
+                // 第二次写入剪贴板（精炼后文本）
+                copyToClipboard(refinedText)
+                logger.info("📋 Clipboard #2: refined text")
+                
+                // 完成
+                hudManager.complete(with: refinedText)
+                logger.info("✅ LLM refinement complete: \(refinedText)")
+                
+            case .failure(let error):
+                // LLM 失败，保留原始文本
+                logger.error("❌ LLM failed: \(error.localizedDescription)")
+                hudManager.complete(with: transcribedText)
+                logger.info("⚠️ Fallback to transcribed text")
+            }
             
             // 清理临时文件
             audioService.cleanupTempFile()
             
-            logger.info("✅ Transcription complete: \(finalText)")
+            // 确保热键状态已重置（防止异常情况）
+            hotKeyService.resetState()
         }
+    }
+    
+    private func copyToClipboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }

@@ -130,6 +130,15 @@ final class HotKeyService {
     // MARK: - Private
     
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // 处理 tap 被系统禁用的情况（超时或其他原因）
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            logger.warning("⚠️ Event tap was disabled, re-enabling...")
+            if let tap = eventTap {
+                CGEvent.tapEnable(tap: tap, enable: true)
+            }
+            return Unmanaged.passRetained(event)
+        }
+        
         let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = event.flags
         
@@ -244,8 +253,18 @@ final class HotKeyService {
     
     private func stopRecording() {
         isRecording = false
+        isToggleSession = false
+        recordingStartTime = nil
         Task { @MainActor in
             onRecordingStop?()
         }
+    }
+    
+    /// 强制重置状态（用于异常恢复）
+    func resetState() {
+        isRecording = false
+        isToggleSession = false
+        recordingStartTime = nil
+        logger.info("🔄 HotKey state reset")
     }
 }

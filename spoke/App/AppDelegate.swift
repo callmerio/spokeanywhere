@@ -30,6 +30,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 设置菜单栏图标
         setupMenuBar()
         
+        // 启动剪贴板历史服务
+        ClipboardHistoryService.shared.start()
+        
         // 启动录音控制器
         RecordingController.shared.start()
     }
