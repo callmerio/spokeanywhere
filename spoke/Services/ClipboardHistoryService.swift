@@ -122,12 +122,18 @@ final class ClipboardHistoryService {
             return
         }
         
+        // 过滤垃圾内容（调试日志、CSV、太短）
+        if shouldIgnore(content) {
+            logger.debug("📋 Skipped ignored content")
+            return
+        }
+        
         // 截断过长内容
         let truncated = content.count > Self.maxItemLength
             ? String(content.prefix(Self.maxItemLength))
             : content
         
-        // 去重：如果最近一条相同则跳过
+        // 去重：如果最近一条相同则跳过（只过滤完全一致的连续内容）
         if let lastItem = history.first, lastItem.content == truncated {
             return
         }
@@ -147,6 +153,32 @@ final class ClipboardHistoryService {
         
         logger.info("📋 Added to history: \(truncated.prefix(80))...")
         print("📋 Clipboard history count: \(history.count), latest: \(truncated.prefix(80))...")
+    }
+    
+    /// 检测是否应忽略（垃圾过滤）
+    private func shouldIgnore(_ content: String) -> Bool {
+        // 长度检查 (忽略 < 2 字符)
+        if content.count < 2 { return true }
+        
+        // 包含特定关键词的调试日志
+        let ignoredKeywords = [
+            "DEBUG",
+            "Clipboard history count",
+            "timestamp,scope,file", // CSV Header
+            "SpokenAnyWhere", // Log app name
+            "LLM PROMPT",
+            "System Prompt",
+            "User Message",
+            "Audio files cannot be non-interleaved", // CoreAudio log
+            "Building for debugging", // Swift build log
+            "Emitting module"
+        ]
+        
+        for keyword in ignoredKeywords {
+            if content.contains(keyword) { return true }
+        }
+        
+        return false
     }
     
     /// 检测敏感内容
@@ -188,8 +220,10 @@ final class ClipboardHistoryService {
     private func loadHistory() {
         guard let data = UserDefaults.standard.data(forKey: Self.storageKey) else { return }
         do {
-            history = try JSONDecoder().decode([ClipboardItem].self, from: data)
-            logger.info("📋 Loaded \(self.history.count) history items")
+            let loaded = try JSONDecoder().decode([ClipboardItem].self, from: data)
+            // 启动时清洗脏数据：应用 shouldIgnore 规则
+            history = loaded.filter { !shouldIgnore($0.content) }
+            logger.info("📋 Loaded \(self.history.count) history items (cleaned from \(loaded.count))")
         } catch {
             logger.error("❌ Failed to load history: \(error)")
         }

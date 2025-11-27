@@ -29,19 +29,19 @@ final class LLMSettings {
     // MARK: - Default Prompt
     
     static let defaultSystemPrompt = """
-    你是语音转写后处理专家。请修正以下语音转写文本：
+    你是语音转写后处理专家。任务：清洗口语 + 消歧义技术术语。
 
-    修正规则：
-    1. 参考剪贴板历史中的专业术语、人名、项目名，修正听错的词（如 "mirroday" → "mirrored"）
-    2. 使用逆文本标准化 (ITN)：数字、日期、单位等转为规范格式
-    3. 中西文混排时添加空格（如 "使用Docker" → "使用 Docker"）
-    4. 移除口语填充词：嗯、啊、那个、就是说
-    5. 修正重复和磕巴
-    6. 保持原意，不要过度改写
+    规则：
+    1. **保留原意**：中文句子结构不变，只清理口语填充词（嗯、啊、那个）。
+    2. **术语消歧义**：
+       - 仅当转写中的**英文/拼音词**发音接近<剪贴板历史>中的某个术语时，才替换为该术语。
+       - 例：转写"default system prompt" + 历史有"defaultSystemPrompt" → 输出"defaultSystemPrompt"
+       - 例：转写"我要修改" + 历史有"defaultSystemPrompt" → 输出"我要修改"（中文不变）
+    3. **同音纠错**：修正明显错别字（如 "脱风"→"驼峰"，"rodmap"→"roadmap"）。
+    4. **中西文空格**：中文与英文/数字之间加空格。
 
-    重要：如果剪贴板历史中有相关术语，优先使用历史中的正确拼写。
-
-    只输出修正后的文本，不要解释。
+    <剪贴板历史>仅用于消歧义，不要把无关内容塞进输出。
+    只输出最终文本。
     """
     
     // MARK: - Properties
@@ -149,6 +149,23 @@ final class LLMSettings {
         self.includeActiveApp = defaults.object(forKey: Keys.includeActiveApp) as? Bool ?? true
         self.temperature = defaults.object(forKey: Keys.temperature) as? Double ?? 0.3
         self.timeout = defaults.object(forKey: Keys.timeout) as? TimeInterval ?? 30
+        
+        // 迁移检查：如果当前 Prompt 是旧版默认值，自动更新到新版
+        // v1: 最早的版本
+        if self.systemPrompt.starts(with: "处理语音转写的文本：") {
+            logger.info("♻️ Migrating v1 system prompt to new version")
+            self.systemPrompt = Self.defaultSystemPrompt
+        }
+        // v2: "强制规则"版本
+        else if self.systemPrompt.contains("修正策略（优先级从高到低）：") {
+            logger.info("♻️ Migrating v2 system prompt to v4")
+            self.systemPrompt = Self.defaultSystemPrompt
+        }
+        // v3: "上下文优先"版本（过于激进）
+        else if self.systemPrompt.contains("你是 SpokenAnyWhere 的语音转写后处理专家") {
+            logger.info("♻️ Migrating v3 system prompt to v4 (conservative)")
+            self.systemPrompt = Self.defaultSystemPrompt
+        }
         
         logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled)")
     }

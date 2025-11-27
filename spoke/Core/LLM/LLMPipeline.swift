@@ -56,7 +56,7 @@ final class LLMPipeline {
         
         // 调试：打印完整 Prompt
         logger.info("🤖 Starting LLM refinement...")
-        clipboardHistory.debugPrintHistory()
+        // clipboardHistory.debugPrintHistory() // 减少噪音，Prompt 里已经有了
         print("📝 === LLM PROMPT DEBUG ===")
         print("📝 System Prompt:")
         print(prompt.systemPrompt)
@@ -89,7 +89,8 @@ final class LLMPipeline {
         }
         
         if settings.includeClipboard {
-            let historyContext = clipboardHistory.formatForPrompt(limit: 50)
+            // 限制为最近 10 条，减少噪音并聚焦最近上下文
+            let historyContext = clipboardHistory.formatForPrompt(limit: 10)
             if !historyContext.isEmpty {
                 systemPrompt += "\n\n" + historyContext
             }
