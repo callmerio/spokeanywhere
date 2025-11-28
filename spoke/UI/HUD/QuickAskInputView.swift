@@ -13,9 +13,12 @@ struct QuickAskInputView: View {
     var onSend: (() -> Void)?
     /// 取消回调
     var onCancel: (() -> Void)?
-    
-    /// 拖拽状态（已移至 CapsuleView）
-    // @State private var isDragOver = false
+    /// 拖拽进入回调（显示蓝色蒙版）
+    var onDragEntered: (() -> Void)?
+    /// 拖拽退出回调
+    var onDragExited: (() -> Void)?
+    /// 拖拽放下回调
+    var onDrop: (([NSItemProvider]) -> Void)?
     
     var body: some View {
         // 主内容
@@ -25,34 +28,25 @@ struct QuickAskInputView: View {
                 attachmentsArea
             }
             
-            // 输入框
+            // 输入框（加号按钮已移至左下角 appIcon 位置）
             inputField
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.top, 12)
-        .padding(.bottom, 8)
+        .padding(.bottom, 4)
     }
     
     // MARK: - Attachments Area
     
     private var attachmentsArea: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(state.attachments) { attachment in
-                    AttachmentThumbnail(
-                        attachment: attachment,
-                        onRemove: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                state.removeAttachment(attachment.id)
-                            }
-                        }
-                    )
+        AttachmentsAreaView(
+            attachments: state.attachments,
+            onRemove: { id in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    state.removeAttachment(id)
                 }
             }
-            .padding(.vertical, 4) // 给删除按钮留出空间
-        }
-        .frame(height: 68) // 52 + 8 (删除按钮偏移) + 8 (padding)
-        .clipped() // 确保不超出边界
+        )
     }
     
     // MARK: - Input Field
@@ -69,7 +63,10 @@ struct QuickAskInputView: View {
             },
             onPasteImage: { image in
                 state.addImage(image)
-            }
+            },
+            onDragEntered: onDragEntered,
+            onDragExited: onDragExited,
+            onDrop: onDrop
         )
         .frame(minHeight: 20, maxHeight: 200) // 动态增高，最大 200
     }
@@ -86,6 +83,12 @@ struct QuickAskTextEditor: NSViewRepresentable {
     let placeholder: String
     var onSend: (() -> Void)?
     var onPasteImage: ((NSImage) -> Void)?
+    /// 拖拽进入回调
+    var onDragEntered: (() -> Void)?
+    /// 拖拽退出回调
+    var onDragExited: (() -> Void)?
+    /// 拖拽放下回调
+    var onDrop: (([NSItemProvider]) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -119,12 +122,12 @@ struct QuickAskTextEditor: NSViewRepresentable {
         // ✅ 设置正确的光标颜色
         textView.insertionPointColor = .white
         
-        // 🚫 禁止 NSTextView 接收拖拽，将事件让给外层 SwiftUI 处理
-        textView.unregisterDraggedTypes()
-        
         // 设置回调
         textView.onSend = onSend
         textView.onPasteImage = onPasteImage
+        textView.onDragEntered = onDragEntered
+        textView.onDragExited = onDragExited
+        textView.onDrop = onDrop
         
         scrollView.documentView = textView
         
@@ -147,6 +150,9 @@ struct QuickAskTextEditor: NSViewRepresentable {
         // 更新回调
         textView.onSend = onSend
         textView.onPasteImage = onPasteImage
+        textView.onDragEntered = onDragEntered
+        textView.onDragExited = onDragExited
+        textView.onDrop = onDrop
         
         // 更新 placeholder
         textView.placeholderString = placeholder
@@ -172,10 +178,18 @@ struct QuickAskTextEditor: NSViewRepresentable {
 }
 
 /// 自定义 NSTextView，处理键盘事件
+/// 禁用拖拽功能，让父视图处理
 class QuickAskNSTextView: NSTextView {
     var onSend: (() -> Void)?
     var onPasteImage: ((NSImage) -> Void)?
     var placeholderString: String = ""
+    
+    /// 拖拽进入回调
+    var onDragEntered: (() -> Void)?
+    /// 拖拽退出回调
+    var onDragExited: (() -> Void)?
+    /// 拖拽放下回调
+    var onDrop: (([NSItemProvider]) -> Void)?
     
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)
@@ -196,6 +210,49 @@ class QuickAskNSTextView: NSTextView {
         // 确保文本选择功能正常
         isSelectable = true
         isEditable = true
+        
+        // 注册拖拽类型（我们要自己处理）
+        registerForDraggedTypes([.fileURL, .png, .tiff])
+    }
+    
+    // MARK: - Drag & Drop（禁用默认行为，转发给父视图）
+    
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        onDragEntered?()
+        return .copy
+    }
+    
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        return .copy
+    }
+    
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        onDragExited?()
+    }
+    
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        onDragExited?()
+        
+        // 获取拖拽的文件 URL
+        guard let items = sender.draggingPasteboard.pasteboardItems else { return false }
+        
+        var providers: [NSItemProvider] = []
+        for item in items {
+            if let urlString = item.string(forType: .fileURL),
+               let url = URL(string: urlString) {
+                let provider = NSItemProvider(contentsOf: url)
+                if let provider = provider {
+                    providers.append(provider)
+                }
+            }
+        }
+        
+        if !providers.isEmpty {
+            onDrop?(providers)
+            return true
+        }
+        
+        return false
     }
     
     /// 确保滚轮事件传递给 ScrollView
@@ -307,126 +364,9 @@ class QuickAskNSTextView: NSTextView {
     }
 }
 
-// MARK: - Attachment Thumbnail
-
-struct AttachmentThumbnail: View {
-    let attachment: QuickAskAttachment
-    var onRemove: (() -> Void)?
-    
-    @State private var isHovering = false
-    @State private var videoThumbnail: NSImage? // 视频缩略图（异步加载）
-    
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            // 内容
-            contentView
-                .frame(width: 52, height: 52)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(HUDTheme.borderSecondary, lineWidth: 0.5)
-                )
-            
-            // 删除按钮（Hover 时显示）
-            if isHovering {
-                Button(action: { onRemove?() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.white)
-                        .background(Circle().fill(Color.black.opacity(0.6)))
-                }
-                .buttonStyle(.plain)
-                .offset(x: 4, y: -4)
-            }
-        }
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var contentView: some View {
-        switch attachment {
-        case .image(_, let thumbnail, _), .screenshot(_, let thumbnail, _):
-            // 优先使用缩略图，没有则显示加载占位
-            if let thumb = thumbnail {
-                Image(nsImage: thumb)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                // 缩略图生成中，显示加载状态
-                ZStack {
-                    HUDTheme.cardBackground
-                    ProgressView()
-                        .scaleEffect(0.6)
-                }
-            }
-            
-        case .file(let url, _):
-            // 视频文件：显示视频缩略图
-            if attachment.isVideo {
-                ZStack {
-                    if let thumb = videoThumbnail {
-                        Image(nsImage: thumb)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else {
-                        // 加载中
-                        HUDTheme.cardBackground
-                        ProgressView()
-                            .scaleEffect(0.6)
-                    }
-                    
-                    // 播放图标
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .shadow(radius: 2)
-                }
-                .onAppear {
-                    loadVideoThumbnail(url: url)
-                }
-            } else {
-                // 普通文件：图标 + 扩展名
-                ZStack {
-                    HUDTheme.cardBackground
-                    
-                    Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                    
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Text(url.pathExtension.uppercased())
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundStyle(HUDTheme.textPrimary)
-                                .padding(.horizontal, 3)
-                                .padding(.vertical, 1)
-                                .background(Color.black.opacity(0.6))
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
-                        }
-                    }
-                    .padding(4)
-                }
-            }
-        }
-    }
-    
-    /// 异步加载视频缩略图
-    private func loadVideoThumbnail(url: URL) {
-        Task.detached(priority: .userInitiated) {
-            let thumbnail = QuickAskAttachment.makeVideoThumbnail(from: url)
-            await MainActor.run {
-                self.videoThumbnail = thumbnail
-            }
-        }
-    }
-}
+// MARK: - Legacy Attachment Thumbnail (deprecated, use AttachmentThumbnailView instead)
+/// 向后兼容的类型别名
+typealias AttachmentThumbnail = AttachmentThumbnailView
 
 // MARK: - Preview
 

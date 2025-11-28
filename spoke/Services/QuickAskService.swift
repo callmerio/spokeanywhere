@@ -236,17 +236,29 @@ final class QuickAskService {
         
         // 附件说明
         if !state.attachments.isEmpty {
-            let attachmentDesc = state.attachments.map { attachment in
+            var attachmentParts: [String] = []
+            var textBundleContents: [String] = []
+            
+            for attachment in state.attachments {
                 switch attachment {
                 case .image:
-                    return "[图片]"
+                    attachmentParts.append("[图片]")
                 case .screenshot:
-                    return "[截图]"
+                    attachmentParts.append("[截图]")
                 case .file(let url, _):
-                    return "[文件: \(url.lastPathComponent)]"
+                    attachmentParts.append("[文件: \(url.lastPathComponent)]")
+                case .textBundle(let content, let source, let count, _):
+                    attachmentParts.append("[代码包: \(source) (\(count) 文件)]")
+                    textBundleContents.append("### \(source)\n\(content)")
                 }
-            }.joined(separator: ", ")
-            parts.append("## 附件\n\(attachmentDesc)")
+            }
+            
+            parts.append("## 附件\n\(attachmentParts.joined(separator: ", "))")
+            
+            // 添加文本包内容
+            if !textBundleContents.isEmpty {
+                parts.append("## 代码/文档内容\n\(textBundleContents.joined(separator: "\n\n---\n\n"))")
+            }
         }
         
         return parts.joined(separator: "\n\n")

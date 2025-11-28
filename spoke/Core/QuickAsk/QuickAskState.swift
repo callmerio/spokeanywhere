@@ -1,8 +1,6 @@
 import Foundation
 import AppKit
 import Observation
-import AVFoundation
-import UniformTypeIdentifiers
 
 /// Quick Ask 会话阶段
 enum QuickAskPhase: Equatable {
@@ -14,98 +12,9 @@ enum QuickAskPhase: Equatable {
     case failed(String)  // 失败
 }
 
-/// 附件类型
-enum QuickAskAttachment: Identifiable, Equatable {
-    /// 图片：原图 + 缩略图 + ID
-    case image(NSImage, NSImage?, UUID)
-    case file(URL, UUID)
-    /// 截图：原图 + 缩略图 + ID
-    case screenshot(NSImage, NSImage?, UUID)
-    
-    var id: UUID {
-        switch self {
-        case .image(_, _, let id), .file(_, let id), .screenshot(_, _, let id):
-            return id
-        }
-    }
-    
-    /// 缩略图（用于显示）
-    var thumbnail: NSImage? {
-        switch self {
-        case .image(_, let thumb, _), .screenshot(_, let thumb, _):
-            return thumb
-        case .file(_, _):
-            return nil // 文件缩略图在 AttachmentThumbnail 中单独处理
-        }
-    }
-    
-    /// 是否是视频文件
-    var isVideo: Bool {
-        if case .file(let url, _) = self {
-            if let uti = UTType(filenameExtension: url.pathExtension) {
-                return uti.conforms(to: .movie) || uti.conforms(to: .video)
-            }
-        }
-        return false
-    }
-    
-    /// 原图（用于发送）
-    var originalImage: NSImage? {
-        switch self {
-        case .image(let image, _, _), .screenshot(let image, _, _):
-            return image
-        default:
-            return nil
-        }
-    }
-    
-    var fileName: String? {
-        switch self {
-        case .file(let url, _):
-            return url.lastPathComponent
-        default:
-            return nil
-        }
-    }
-    
-    static func == (lhs: QuickAskAttachment, rhs: QuickAskAttachment) -> Bool {
-        lhs.id == rhs.id
-    }
-    
-    /// 生成缩略图（异步）
-    static func makeThumbnail(from image: NSImage, maxSize: CGFloat = 256) -> NSImage {
-        let size = image.size
-        guard size.width > 0 && size.height > 0 else { return image }
-        
-        let scale = min(maxSize / size.width, maxSize / size.height, 1.0)
-        let newSize = NSSize(width: size.width * scale, height: size.height * scale)
-        
-        let thumbnail = NSImage(size: newSize)
-        thumbnail.lockFocus()
-        image.draw(in: NSRect(origin: .zero, size: newSize),
-                   from: NSRect(origin: .zero, size: size),
-                   operation: .copy, fraction: 1.0)
-        thumbnail.unlockFocus()
-        
-        return thumbnail
-    }
-    
-    /// 从视频生成缩略图
-    static func makeVideoThumbnail(from url: URL, maxSize: CGFloat = 256) -> NSImage? {
-        let asset = AVAsset(url: url)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: maxSize, height: maxSize)
-        
-        do {
-            let cgImage = try generator.copyCGImage(at: .zero, actualTime: nil)
-            return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-        } catch {
-            print("Failed to generate video thumbnail: \(error)")
-            return nil
-        }
-    }
-}
+/// 向后兼容的类型别名
+/// 新代码请直接使用 Attachment 类型
+typealias QuickAskAttachment = Attachment
 
 /// Quick Ask 状态模型
 @Observable
@@ -125,8 +34,11 @@ final class QuickAskState {
     /// 语音转写文本
     var voiceTranscription: String = ""
     
-    /// 附件列表
-    var attachments: [QuickAskAttachment] = []
+    /// 附件列表（使用通用 Attachment 类型）
+    var attachments: [Attachment] = []
+    
+    /// 缩略图更新观察者
+    private var thumbnailObserver: NSObjectProtocol?
     
     // MARK: - Recording
     
@@ -196,9 +108,10 @@ final class QuickAskState {
         self.voiceTranscription = text
     }
     
-    /// 添加附件
-    func addAttachment(_ attachment: QuickAskAttachment) {
+    /// 添加附件（通用方法）
+    func addAttachment(_ attachment: Attachment) {
         attachments.append(attachment)
+        setupThumbnailObserverIfNeeded()
     }
     
     /// 移除附件
@@ -206,45 +119,48 @@ final class QuickAskState {
         attachments.removeAll { $0.id == id }
     }
     
-    /// 添加图片附件（异步生成缩略图）
+    /// 添加图片附件（通过 AttachmentManager）
     func addImage(_ image: NSImage) {
-        let id = UUID()
-        // 先添加占位（无缩略图），避免延迟感
-        let placeholder = QuickAskAttachment.image(image, nil, id)
-        attachments.append(placeholder)
-        
-        // 后台生成缩略图
-        Task.detached(priority: .userInitiated) {
-            let thumbnail = QuickAskAttachment.makeThumbnail(from: image)
-            await MainActor.run {
-                // 更新为带缩略图的版本
-                if let index = self.attachments.firstIndex(where: { $0.id == id }) {
-                    self.attachments[index] = .image(image, thumbnail, id)
-                }
-            }
+        AttachmentManager.shared.addImage(image, source: .paste) { [weak self] attachment in
+            self?.addAttachment(attachment)
         }
     }
     
-    /// 添加截图附件（异步生成缩略图）
+    /// 添加截图附件
     func addScreenshot(_ image: NSImage) {
-        let id = UUID()
-        let placeholder = QuickAskAttachment.screenshot(image, nil, id)
-        attachments.append(placeholder)
-        
-        Task.detached(priority: .userInitiated) {
-            let thumbnail = QuickAskAttachment.makeThumbnail(from: image)
-            await MainActor.run {
-                if let index = self.attachments.firstIndex(where: { $0.id == id }) {
-                    self.attachments[index] = .screenshot(image, thumbnail, id)
-                }
-            }
+        AttachmentManager.shared.addScreenshot(image) { [weak self] attachment in
+            self?.addAttachment(attachment)
         }
     }
     
     /// 添加文件附件
     func addFile(_ url: URL) {
-        let attachment = QuickAskAttachment.file(url, UUID())
-        attachments.append(attachment)
+        Task {
+            await AttachmentManager.shared.handleFileURL(url, source: .drop) { [weak self] attachment in
+                self?.addAttachment(attachment)
+            }
+        }
+    }
+    
+    /// 设置缩略图更新观察者
+    private func setupThumbnailObserverIfNeeded() {
+        guard thumbnailObserver == nil else { return }
+        
+        thumbnailObserver = NotificationCenter.default.addObserver(
+            forName: .attachmentThumbnailUpdated,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let id = notification.userInfo?["id"] as? UUID,
+                  let updated = notification.userInfo?["attachment"] as? Attachment else { return }
+            
+            // 确保在 MainActor 上下文中更新
+            Task { @MainActor in
+                if let index = self?.attachments.firstIndex(where: { $0.id == id }) {
+                    self?.attachments[index] = updated
+                }
+            }
+        }
     }
     
     /// 开始发送

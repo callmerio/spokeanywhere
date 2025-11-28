@@ -1,9 +1,15 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-28
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-28 20:30
 
 ## Learns (Latest at top)
 
+- [T052] NSTextView 拖拽转发：重写 draggingEntered/performDragOperation 禁用默认行为，通过回调转发给父视图
+- [T051] SwiftUI Menu 打开时 onHover 不触发，需额外状态(isMenuOpen)追踪菜单打开状态
+- [T050] URL.isFileURL 判断是否是 file:// 协议；非 file URL 需用 URL(fileURLWithPath:) 转换
+- [T049] 文件夹提取并行优化：withTaskGroup 并行读取快 3000 倍；nonisolated 方法可在 TaskGroup 中调用
+- [T048] 附件系统抽象化：Attachment 类型 + AttachmentManager 单例 + TextExtractionService + 通用 UI 组件
+- [T047] Edge TTS 需要 DRM 验证：时间转 Windows 文件时间 + 取整 + SHA256 哈希
 - [T046] NSPanel 里 NSTextView 的 ⌘V 等快捷键：需重写 performKeyEquivalent 手动捕获并调用 paste/copy/cut/selectAll
 - [T045] 视频缩略图：AVAssetImageGenerator.copyCGImage(at: .zero) 提取首帧；maximumSize 控制输出尺寸
 - [T044] 图片缩略图性能：大图附件应异步生成缩略图(256px)，先加载占位再后台处理，存储 (原图+缩略图) 结构
@@ -31,9 +37,9 @@
 
 ## 智能索引
 
-技术栈: #swiftui(T023,T024,T027) #cgevent(T026,T033) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035)
-架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026,T033) #security(@C003:T025,T032,T036) #context(@C004:T028,T029,T030,T031) #quick-ask(@C005:T033,T034,T035)
-任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026,T035) #performance(T025) #design(T028,T034) #prompt-engineering(T030,T031) #feature(T033,T034)
+技术栈: #swiftui(T023,T024,T027,T051) #cgevent(T026,T033) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035,T046) #tts(T047) #attachment(T048,T049,T050,T052)
+架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026,T033) #security(@C003:T025,T032,T036) #context(@C004:T028,T029,T030,T031) #quick-ask(@C005:T033,T034,T035) #attachment-system(@C006:T048,T049,T050,T052)
+任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026,T035,T050,T051,T052) #performance(T025,T049) #design(T028,T034,T048) #prompt-engineering(T030,T031) #feature(T033,T034,T047,T048)
 
 ## 记录条目 (Latest at bottom)
 
@@ -153,3 +159,39 @@
 - LINK: spoke/Services/RecordingController.swift#startRecordingSession
 - STAT: [√]完成 2/2 通过
 - NOTE: 共享单例服务的回调会互相覆盖；每次使用前必须重新设置回调
+
+[2025-11-28 T047] Edge TTS Swift 原生实现
+
+- PROB: 豆包 TTS 被封禁返回 block
+- PLAN: EdgeTTSClient(actor) + WebSocket 协议 + DRM Token(SHA256) + SSML 格式
+- TIME: 1h | TAGS: #tts #websocket #feature
+- LINK: spoke/Services/EdgeTTSService.swift
+- STAT: [√]完成 4/4 通过
+- NOTE: DRM 需要时间转 Windows 文件时间 + 取整 3_000_000_000 + SHA256；音频数据需保存临时文件再播放
+
+[2025-11-28 T048] 附件系统抽象化重构
+
+- PROB: 需要支持多入口(QuickAsk/HUD) + ZIP/文件夹文本提取 + 屏幕截图
+- PLAN: Attachment 类型 + AttachmentManager 单例 + TextExtractionService + ScreenCaptureService + 通用 UI 组件
+- TIME: 1.5h | TAGS: #architecture #refactor #feature
+- LINK: spoke/Core/Attachment/_; spoke/UI/Components/_
+- STAT: [√]完成 9/9 通过
+- NOTE: 附件能力抽象可复用；QuickAskAttachment 改为 typealias 指向 Attachment
+
+[2025-11-28 T049] 文件夹提取性能优化
+
+- PROB: 18 个 md 文件处理需要 20 秒
+- PLAN: withTaskGroup 并行读取 + addLineNumbersFast 用索引遍历 + ExtractionProgress 进度回调
+- TIME: 0.3h | TAGS: #performance #concurrency
+- LINK: spoke/Core/Attachment/TextExtractionService.swift#mergeFilesParallel
+- STAT: [√]完成 3/3 通过
+- NOTE: 并行读取比串行快 3000 倍(20s→0.006s)；nonisolated 标记方法可在 TaskGroup 中调用
+
+[2025-11-28 T050-T052] 拖拽和 UI 交互修复
+
+- PROB: 菜单打开图标没变 + 输入框拖拽无蓝色蒙版 + 文件夹/ZIP 拖拽无效
+- PLAN: isMenuOpen 状态追踪 + NSTextView 重写 draggingEntered/performDragOperation 转发 + handleFileURL 确保 isFileURL
+- TIME: 0.5h | TAGS: #ui #drag-drop #bug-fix
+- LINK: spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
+- STAT: [√]完成 3/3 通过
+- NOTE: NSTextView 默认拦截拖拽需重写方法；Menu 打开时 onHover 不触发需额外状态；URL.isFileURL 判断协议类型

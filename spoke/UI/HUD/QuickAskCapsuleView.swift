@@ -9,6 +9,16 @@ struct QuickAskCapsuleView: View {
     
     @Bindable var state: QuickAskState
     
+    /// 左下角图标 hover 状态或菜单打开状态
+    @State private var isIconHovering = false
+    /// 菜单是否打开
+    @State private var isMenuOpen = false
+    
+    /// 是否显示加号图标（hover 或菜单打开时）
+    private var showPlusIcon: Bool {
+        isIconHovering || isMenuOpen
+    }
+    
     /// 发送回调
     var onSend: (() -> Void)?
     /// 取消回调（ESC 键）
@@ -25,7 +35,19 @@ struct QuickAskCapsuleView: View {
             VStack(spacing: 0) {
                 // 上方：输入区域
                 if state.phase == .recording || state.phase == .sending {
-                    QuickAskInputView(state: state, onSend: onSend, onCancel: onCancel)
+                    QuickAskInputView(
+                        state: state,
+                        onSend: onSend,
+                        onCancel: onCancel,
+                        onDragEntered: { isDragOver = true },
+                        onDragExited: { isDragOver = false },
+                        onDrop: { providers in
+                            isDragOver = false
+                            AttachmentManager.shared.handleDrop(providers: providers) { attachment in
+                                state.addAttachment(attachment)
+                            }
+                        }
+                    )
                 }
                 
                 // 下方：固定控制栏（和转录 HUD 一样）
@@ -60,17 +82,15 @@ struct QuickAskCapsuleView: View {
                     }
                 }
             )
-            .overlay(
-                // 拖拽蒙版（用 overlay 不影响布局）
-                Group {
-                    if isDragOver {
-                        dropOverlay
-                    }
+            .overlay {
+                // 拖拽蒙版（使用通用组件）
+                AttachmentDropOverlay(cornerRadius: 16, isVisible: isDragOver)
+            }
+            // 拖拽处理（使用 AttachmentManager）
+            .onDrop(of: [.image, .fileURL, .folder, .zip], isTargeted: $isDragOver) { providers in
+                AttachmentManager.shared.handleDrop(providers: providers) { attachment in
+                    state.addAttachment(attachment)
                 }
-            )
-            // 拖拽直接绑定在主视图上，不用透明 overlay
-            .onDrop(of: [.image, .fileURL], isTargeted: $isDragOver) { providers in
-                handleDrop(providers: providers)
                 return true
             }
             .onChange(of: state.audioLevel) { _, newLevel in
@@ -89,71 +109,6 @@ struct QuickAskCapsuleView: View {
         }
     }
     
-    // MARK: - Drop Overlay
-    
-    private var dropOverlay: some View {
-        ZStack {
-            // 半透明背景（填充整个区域）
-            Color.black.opacity(0.6)
-            
-            // 蓝色背景
-            Color.blue.opacity(0.15)
-            
-            // 虚线边框
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
-                .foregroundStyle(Color.blue.opacity(0.6))
-                .padding(4)
-            
-            // 提示内容
-            VStack(spacing: 12) {
-                Image(systemName: "paperclip")
-                    .font(.system(size: 32))
-                    .foregroundStyle(Color.blue)
-                
-                Text("Drop files here")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.blue)
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-    
-    // MARK: - Drop Handler
-    
-    private func handleDrop(providers: [NSItemProvider]) {
-        for provider in providers {
-            // 处理图片
-            if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                provider.loadObject(ofClass: NSImage.self) { image, _ in
-                    if let image = image as? NSImage {
-                        Task { @MainActor in
-                            state.addImage(image)
-                        }
-                    }
-                }
-            }
-            
-            // 处理文件
-            if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
-                    if let data = data as? Data,
-                       let url = URL(dataRepresentation: data, relativeTo: nil) {
-                        Task { @MainActor in
-                            // 判断是否是图片文件
-                            if let uti = UTType(filenameExtension: url.pathExtension),
-                               uti.conforms(to: .image),
-                               let image = NSImage(contentsOf: url) {
-                                state.addImage(image)
-                            } else {
-                                state.addFile(url)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     
     // MARK: - Background Elements
     
@@ -192,8 +147,8 @@ struct QuickAskCapsuleView: View {
     
     private var controlBar: some View {
         HStack(spacing: 0) {
-            // 左侧：App 图标
-            appIcon
+            // 左侧：App 图标 + 附件菜单（hover 时变加号）
+            attachmentMenuButton
             
             Spacer().frame(width: 12)
             
@@ -213,25 +168,95 @@ struct QuickAskCapsuleView: View {
             brandLabel
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(height: 44)
+        .padding(.vertical, 8)
+        .frame(height: 40)
     }
     
     // MARK: - Components
     
-    private var appIcon: some View {
-        Group {
-            if let icon = state.targetApp?.icon {
-                Image(nsImage: icon)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } else {
-                Image(systemName: "app.fill")
-                    .foregroundStyle(HUDTheme.textPrimary)
+    /// 左下角附件菜单按钮（hover 或菜单打开时从应用图标 fade 变成加号）
+    private var attachmentMenuButton: some View {
+        Menu {
+            // 从设备上传
+            Button(action: { AttachmentManager.shared.pickFiles { state.addAttachment($0) } }) {
+                Label("从设备上传", systemImage: "doc.badge.plus")
+            }
+            
+            Divider()
+            
+            // 导入文件夹
+            Button(action: { AttachmentManager.shared.pickFolder { state.addAttachment($0) } }) {
+                Label("导入文件夹 (转为文本)", systemImage: "folder.badge.plus")
+            }
+            
+            // 导入 ZIP
+            Button(action: { AttachmentManager.shared.pickZIP { state.addAttachment($0) } }) {
+                Label("导入 ZIP (转为文本)", systemImage: "doc.zipper")
+            }
+            
+            Divider()
+            
+            // 图库
+            Button(action: { AttachmentManager.shared.pickFromPhotos { state.addAttachment($0) } }) {
+                Label("图库", systemImage: "photo.on.rectangle")
+            }
+            
+            // 屏幕截图
+            Button(action: { AttachmentManager.shared.captureScreen { state.addAttachment($0) } }) {
+                Label("屏幕截图", systemImage: "camera.viewfinder")
+            }
+        } label: {
+            ZStack {
+                // 默认：应用图标
+                appIconView
+                    .opacity(showPlusIcon ? 0 : 1)
+                
+                // Hover 或菜单打开：加号
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .opacity(showPlusIcon ? 1 : 0)
+            }
+            .frame(width: 24, height: 24)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(showPlusIcon ? Color.white.opacity(0.15) : Color.clear)
+            )
+            .contentShape(Rectangle())
+            .animation(.easeInOut(duration: 0.2), value: showPlusIcon)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .onHover { hovering in
+            isIconHovering = hovering
+        }
+        .onTapGesture {
+            // 点击时设置菜单打开状态
+            isMenuOpen = true
+            // 延迟重置（菜单关闭后）
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if !isIconHovering {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isMenuOpen = false
+                    }
+                }
             }
         }
-        .frame(width: 24, height: 24)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+    
+    /// 应用图标视图
+    @ViewBuilder
+    private var appIconView: some View {
+        if let icon = state.targetApp?.icon {
+            Image(nsImage: icon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        } else {
+            Image(systemName: "app.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(HUDTheme.textPrimary)
+        }
     }
     
     private var brandLabel: some View {
