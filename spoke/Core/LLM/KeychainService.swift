@@ -16,10 +16,28 @@ final class KeychainService {
     private static var cache: [String: String] = [:]
     private static let cacheQueue = DispatchQueue(label: "com.spokeanywhere.keychain.cache")
     
+    // MARK: - Debug Mode
+    
+    /// ⚠️ 测试模式：使用 UserDefaults 代替 Keychain（避免每次启动输入密码）
+    /// 正式发布时请设为 false
+    static var useSimpleStorage: Bool = true
+    
+    /// UserDefaults 存储前缀（测试模式用）
+    private static let simpleStoragePrefix = "debug.apikey."
+    
     // MARK: - Public API
     
     /// 保存 API Key (智能更新)
     static func save(key: String, value: String) throws {
+        // 测试模式：使用 UserDefaults
+        if useSimpleStorage {
+            UserDefaults.standard.set(value, forKey: simpleStoragePrefix + key)
+            cacheQueue.sync { cache[key] = value }
+            logger.info("✅ [Debug] Saved to UserDefaults: \(key)")
+            return
+        }
+        
+        // 正式模式：使用 Keychain
         let service = "\(servicePrefix).\(key)"
         
         guard let data = value.data(using: .utf8) else {
@@ -70,6 +88,16 @@ final class KeychainService {
             return cached
         }
         
+        // 测试模式：从 UserDefaults 读取
+        if useSimpleStorage {
+            if let value = UserDefaults.standard.string(forKey: simpleStoragePrefix + key) {
+                cacheQueue.sync { cache[key] = value }
+                return value
+            }
+            return nil
+        }
+        
+        // 正式模式：从 Keychain 读取
         let service = "\(servicePrefix).\(key)"
         
         let query: [String: Any] = [
@@ -97,6 +125,15 @@ final class KeychainService {
     
     /// 删除 API Key
     static func delete(key: String) throws {
+        // 测试模式：从 UserDefaults 删除
+        if useSimpleStorage {
+            UserDefaults.standard.removeObject(forKey: simpleStoragePrefix + key)
+            _ = cacheQueue.sync { cache.removeValue(forKey: key) }
+            logger.info("🗑️ [Debug] Deleted from UserDefaults: \(key)")
+            return
+        }
+        
+        // 正式模式：从 Keychain 删除
         let service = "\(servicePrefix).\(key)"
         
         let query: [String: Any] = [

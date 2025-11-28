@@ -15,6 +15,7 @@ struct SettingsView: View {
         case general = "常规"
         case model = "听写模型"
         case ai = "AI 处理"
+        case tts = "语音合成"
         case shortcuts = "快捷键"
         case history = "历史记录"
         
@@ -23,6 +24,7 @@ struct SettingsView: View {
             case .general: return "gear"
             case .model: return "waveform"
             case .ai: return "sparkles"
+            case .tts: return "speaker.wave.2"
             case .shortcuts: return "keyboard"
             case .history: return "clock.arrow.circlepath"
             }
@@ -96,6 +98,8 @@ struct SettingsView: View {
                     ModelsSettingsContent()
                 case .ai:
                     AISettingsContent()
+                case .tts:
+                    TTSSettingsContent()
                 case .shortcuts:
                     ShortcutsSettingsContent(appSettings: appSettings)
                 case .history:
@@ -153,6 +157,7 @@ struct SettingsCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             content
         }
+        .padding(16)
         .background(Color(hex: "252525"))
         .cornerRadius(12)
         .overlay(
@@ -499,6 +504,8 @@ struct AISettingsContent: View {
                             profile: binding(for: profile),
                             isExpanded: expandedProfileId == profile.id,
                             isActive: llmSettings.selectedProfileId == profile.id,
+                            isTranscription: llmSettings.transcriptionProfileId == profile.id,
+                            isChat: llmSettings.chatProfileId == profile.id,
                             hasAPIKey: llmSettings.hasAPIKey(for: profile.id),
                             modelRefreshTrigger: modelRefreshTrigger,
                             isTesting: expandedProfileId == profile.id ? $isTesting : .constant(false),
@@ -515,6 +522,12 @@ struct AISettingsContent: View {
                             },
                             onSetActive: {
                                 llmSettings.selectedProfileId = profile.id
+                            },
+                            onSetTranscription: {
+                                llmSettings.transcriptionProfileId = profile.id
+                            },
+                            onSetChat: {
+                                llmSettings.chatProfileId = profile.id
                             },
                             onSetAPIKey: {
                                 apiKeyInput = ""
@@ -720,12 +733,16 @@ struct ServiceCardRow: View {
     @Binding var profile: ProviderProfile
     let isExpanded: Bool
     let isActive: Bool
+    let isTranscription: Bool
+    let isChat: Bool
     let hasAPIKey: Bool
     let modelRefreshTrigger: UUID
     @Binding var isTesting: Bool
     @Binding var testResult: AISettingsContent.TestResult?
     let onTap: () -> Void
     let onSetActive: () -> Void
+    let onSetTranscription: () -> Void
+    let onSetChat: () -> Void
     let onSetAPIKey: () -> Void
     let onTest: () -> Void
     let onDelete: () -> Void
@@ -734,15 +751,6 @@ struct ServiceCardRow: View {
         VStack(alignment: .leading, spacing: 0) {
             // 主行（始终显示）
             HStack(spacing: 12) {
-                // 激活状态按钮
-                Button(action: onSetActive) {
-                    Image(systemName: isActive ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 18))
-                        .foregroundStyle(isActive ? .green : .gray.opacity(0.5))
-                }
-                .buttonStyle(.plain)
-                .help(isActive ? "当前使用中" : "设为默认")
-                
                 // Provider 图标
                 ProviderIconView(provider: profile.providerType, size: 32)
                 
@@ -755,6 +763,29 @@ struct ServiceCardRow: View {
                     Text(profile.modelName.isEmpty ? profile.providerType.displayName : profile.modelName)
                         .font(.system(size: 12))
                         .foregroundStyle(.gray)
+                }
+                
+                // Badges
+                HStack(spacing: 4) {
+                    if isTranscription {
+                        Text("转录")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.red.opacity(0.8))
+                            .cornerRadius(4)
+                    }
+                    
+                    if isChat {
+                        Text("对话")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.8))
+                            .cornerRadius(4)
+                    }
                 }
                 
                 Spacer()
@@ -779,6 +810,21 @@ struct ServiceCardRow: View {
                 Divider().background(Color.white.opacity(0.06))
                 
                 expandedContent
+            }
+        }
+        .contextMenu {
+            Button(action: onSetTranscription) {
+                Label("设为转录模型", systemImage: "waveform")
+            }
+            
+            Button(action: onSetChat) {
+                Label("设为对话模型", systemImage: "bubble.left.and.bubble.right")
+            }
+            
+            Divider()
+            
+            Button(action: onSetActive) {
+                Label("设为默认", systemImage: "checkmark.circle")
             }
         }
     }
@@ -1287,6 +1333,7 @@ struct ProfileAPIKeySheet: View {
 struct ShortcutsSettingsContent: View {
     @ObservedObject var appSettings: AppSettings
     @State private var isRecordingShortcut = false
+    @State private var isRecordingQuickAskShortcut = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -1302,6 +1349,18 @@ struct ShortcutsSettingsContent: View {
                         currentShortcut: appSettings.shortcutDisplayString,
                         onShortcutCaptured: { keyCode, modifiers in
                             appSettings.updateShortcut(keyCode: keyCode, modifiers: modifiers)
+                        }
+                    )
+                }
+                
+                Divider().background(Color.white.opacity(0.06))
+                
+                SettingsRow(icon: "bubble.left.and.bubble.right", title: "Quick Ask", description: "快速向 AI 提问") {
+                    ShortcutRecorderButton(
+                        isRecording: $isRecordingQuickAskShortcut,
+                        currentShortcut: appSettings.quickAskShortcutDisplayString,
+                        onShortcutCaptured: { keyCode, modifiers in
+                            appSettings.updateQuickAskShortcut(keyCode: keyCode, modifiers: modifiers)
                         }
                     )
                 }
@@ -1992,6 +2051,370 @@ class MicrophoneTester: ObservableObject {
         Task { @MainActor in
             self.level = newLevel
         }
+    }
+}
+
+// MARK: - TTS Settings
+
+struct TTSSettingsContent: View {
+    @ObservedObject private var settings = TTSSettings.shared
+    @ObservedObject private var ttsService = TTSService.shared
+    @State private var isTesting = false
+    @State private var testText = "你好，这是语音合成测试。Hello, this is a TTS test."
+    @State private var testStartTime: Date?
+    @State private var latencyMs: Int?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // 服务选择
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("语音合成服务")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                    
+                    ForEach(TTSProvider.allCases, id: \.self) { provider in
+                        TTSProviderRow(
+                            provider: provider,
+                            isSelected: settings.provider == provider,
+                            onSelect: { settings.provider = provider }
+                        )
+                    }
+                }
+            }
+            
+            // Edge TTS 配置
+            if settings.provider == .edge {
+                SettingsCard {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // 标题区
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Edge TTS 配置")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
+                            
+                            Text("使用微软 Edge 浏览器的 TTS 服务，免费且音质好")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Divider().opacity(0.3)
+                        
+                        // 语音选择
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("语音角色")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.9))
+                            
+                            Picker("", selection: $settings.edgeVoice) {
+                                ForEach(EdgeVoice.allCases, id: \.self) { voice in
+                                    Text(voice.displayName).tag(voice)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        // 语速
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("语速")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                
+                                Spacer()
+                                
+                                Text("\(settings.edgeRate >= 0 ? "+" : "")\(settings.edgeRate)%")
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(.blue)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.15))
+                                    .cornerRadius(4)
+                            }
+                            
+                            Slider(value: Binding(
+                                get: { Double(settings.edgeRate) },
+                                set: { settings.edgeRate = Int($0) }
+                            ), in: -50...100, step: 10)
+                            .tint(.blue)
+                        }
+                        
+                        // 音调
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("音调")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                
+                                Spacer()
+                                
+                                Text("\(settings.edgePitch >= 0 ? "+" : "")\(settings.edgePitch)Hz")
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(.purple)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.purple.opacity(0.15))
+                                    .cornerRadius(4)
+                            }
+                            
+                            Slider(value: Binding(
+                                get: { Double(settings.edgePitch) },
+                                set: { settings.edgePitch = Int($0) }
+                            ), in: -50...50, step: 5)
+                            .tint(.purple)
+                        }
+                    }
+                }
+            }
+            
+            // 系统 TTS 配置
+            if settings.provider == .system {
+                SettingsCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("系统语音配置")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                        
+                        HStack {
+                            Text("语速")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.gray)
+                            
+                            Slider(value: $settings.systemRate, in: 0...1, step: 0.1)
+                            
+                            Text(String(format: "%.1f", settings.systemRate))
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(.gray)
+                                .frame(width: 40)
+                        }
+                    }
+                }
+            }
+            
+            // 朗读设置
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("朗读设置")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                    
+                    Divider().opacity(0.3)
+                    
+                    // 自动朗读
+                    HStack(spacing: 12) {
+                        Image(systemName: "speaker.wave.2")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.blue)
+                            .frame(width: 28)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("自动朗读回复")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white)
+                            Text("AI 回复后自动开始朗读")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $settings.autoReadAloud)
+                            .toggleStyle(.switch)
+                            .tint(.blue)
+                    }
+                    
+                    // 分块大小
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "square.grid.3x3")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.green)
+                                .frame(width: 28)
+                            
+                            Text("分块大小")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white)
+                            
+                            Spacer()
+                            
+                            Text("\(settings.chunkSize) 字")
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.green)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.15))
+                                .cornerRadius(4)
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Text("50")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                            
+                            Slider(value: Binding(
+                                get: { Double(settings.chunkSize) },
+                                set: { settings.chunkSize = Int($0) }
+                            ), in: 50...500, step: 50)
+                            .tint(.green)
+                            
+                            Text("500")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.leading, 40)
+                        
+                        Text("分块朗读可减少首次响应延迟，数值越小延迟越低")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 40)
+                    }
+                }
+            }
+            
+            // 测试区域
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Text("测试语音")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                        
+                        Spacer()
+                        
+                        // 延迟显示
+                        if let latency = latencyMs {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 10))
+                                Text("首音延迟: \(latency)ms")
+                                    .font(.system(size: 11, design: .monospaced))
+                            }
+                            .foregroundStyle(latency < 1000 ? .green : (latency < 2000 ? .orange : .red))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(4)
+                        }
+                    }
+                    
+                    // 测试文本输入
+                    TextEditor(text: $testText)
+                        .font(.system(size: 12))
+                        .scrollContentBackground(.hidden)
+                        .padding(10)
+                        .frame(height: 80)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(8)
+                    
+                    // 进度显示
+                    if isTesting && ttsService.totalChunks > 1 {
+                        HStack(spacing: 8) {
+                            ProgressView(value: Double(ttsService.currentChunkIndex + 1), total: Double(ttsService.totalChunks))
+                                .progressViewStyle(.linear)
+                                .tint(.blue)
+                            
+                            Text("\(ttsService.currentChunkIndex + 1)/\(ttsService.totalChunks)")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                    
+                    // 按钮区域
+                    HStack(spacing: 12) {
+                        Button(action: testTTS) {
+                            HStack(spacing: 6) {
+                                if ttsService.isSynthesizing {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: isTesting ? "stop.fill" : "play.fill")
+                                }
+                                Text(isTesting ? (ttsService.isSynthesizing ? "合成中..." : "播放中") : "开始测试")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(isTesting ? Color.orange : Color.blue)
+                            .foregroundStyle(.white)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // 重置按钮
+                        Button(action: { latencyMs = nil }) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .padding(10)
+                                .background(Color.white.opacity(0.05))
+                                .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.gray)
+                        .help("重置延迟统计")
+                    }
+                    
+                    // 提示
+                    Text("测试将使用当前分块设置 (\(settings.chunkSize)字/块)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+                }
+            }
+        }
+        .onChange(of: ttsService.isPlaying) { _, isPlaying in
+            if !isPlaying && isTesting {
+                isTesting = false
+            }
+            // 计算首音延迟
+            if isPlaying, let startTime = testStartTime {
+                latencyMs = Int(Date().timeIntervalSince(startTime) * 1000)
+                testStartTime = nil
+            }
+        }
+    }
+    
+    private func testTTS() {
+        if isTesting {
+            TTSService.shared.stop()
+            isTesting = false
+            testStartTime = nil
+        } else {
+            isTesting = true
+            testStartTime = Date()  // 记录开始时间
+            TTSService.shared.speak(testText)
+        }
+    }
+}
+
+// MARK: - TTS Provider Row
+
+private struct TTSProviderRow: View {
+    let provider: TTSProvider
+    let isSelected: Bool
+    let onSelect: () -> Void
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(isSelected ? .blue : .gray)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(provider.displayName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                    
+                    Text(provider.description)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+                }
+                
+                Spacer()
+            }
+            .padding(12)
+            .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+            .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
     }
 }
 

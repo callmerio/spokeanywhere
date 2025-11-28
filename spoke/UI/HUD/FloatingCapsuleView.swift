@@ -24,21 +24,19 @@ struct FloatingCapsuleView: View {
             Spacer() // 顶部弹性空间，把内容推到底部
             
             // 实际内容区域
-            ZStack {
-                // 正常内容层
-                VStack(spacing: 0) {
-                    // 上方：转写文字区域（向上扩展）
-                    // .success 状态也保留文字显示，直到 UI 消失
-                    if state.phase == .recording || state.phase == .processing || state.phase == .thinking || state.phase == .success {
-                        textArea
-                    }
-                    
-                    // 下方：固定控制栏（始终在底部）
-                    controlBar
+            VStack(spacing: 0) {
+                // 上方：转写文字区域（向上扩展）
+                // .success 状态也保留文字显示，直到 UI 消失
+                if state.phase == .recording || state.phase == .processing || state.phase == .thinking || state.phase == .success {
+                    textArea
                 }
-                .opacity((isHovering && state.phase == .recording) ? 0 : 1)
                 
-                // Hover 操作层
+                // 下方：固定控制栏（始终在底部）
+                controlBar
+            }
+            .opacity((isHovering && state.phase == .recording) ? 0 : 1)
+            // Hover 操作层：用 overlay 自动继承正常内容的尺寸
+            .overlay {
                 if isHovering && state.phase == .recording {
                     hoverOverlay
                         .transition(.opacity)
@@ -108,6 +106,16 @@ struct FloatingCapsuleView: View {
             }
             onHoverChange?(hovering)
         }
+        .background {
+            // 隐藏的快捷键监听：Cmd + , 打开设置
+            Button("") {
+                if let appDelegate = NSApp.delegate as? AppDelegate {
+                    appDelegate.openSettings()
+                }
+            }
+            .keyboardShortcut(",", modifiers: .command)
+            .hidden()
+        }
         } // VStack 结束
     }
     
@@ -119,7 +127,7 @@ struct FloatingCapsuleView: View {
             if !state.partialText.isEmpty {
                 Text(state.partialText)
                     .font(.system(size: 14))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(HUDTheme.textPrimary)
                     .lineSpacing(4)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true) // 高度自适应
@@ -129,7 +137,7 @@ struct FloatingCapsuleView: View {
                         .controlSize(.small)
                     Text("处理中...")
                         .font(.system(size: 14))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(HUDTheme.textSecondary)
                 }
             } else if state.phase == .thinking || state.phase == .success {
                 // 思考中状态：文字模糊效果 + 提示
@@ -138,7 +146,7 @@ struct FloatingCapsuleView: View {
                     if !state.partialText.isEmpty {
                         Text(state.partialText)
                             .font(.system(size: 14))
-                            .foregroundStyle(.white.opacity(state.phase == .success ? 0.9 : 0.5)) // 成功后变亮
+                            .foregroundStyle(state.phase == .success ? HUDTheme.textPrimary : Color.white.opacity(0.5)) // 成功后变亮
                             .lineSpacing(4)
                             .blur(radius: state.phase == .thinking ? 2 : 0) // 思考时模糊，成功后清晰
                             .animation(.easeInOut(duration: 0.3), value: state.phase)
@@ -149,7 +157,7 @@ struct FloatingCapsuleView: View {
                             ThinkingIndicator()
                             Text("AI 思考中...")
                                 .font(.system(size: 13))
-                                .foregroundStyle(.white.opacity(0.8))
+                                .foregroundStyle(HUDTheme.textPrimary)
                         }
                         .transition(.opacity)
                     }
@@ -157,7 +165,7 @@ struct FloatingCapsuleView: View {
             } else {
                 Text("正在聆听...")
                     .font(.system(size: 14))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.white.opacity(0.5))
             }
         }
         .padding(.horizontal, 16)
@@ -213,7 +221,7 @@ struct FloatingCapsuleView: View {
                         
                         Text("完成录音")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(HUDTheme.textPrimary)
                             .shadow(radius: 1)
                     }
                 }
@@ -244,7 +252,7 @@ struct FloatingCapsuleView: View {
                         
                         Text("取消录音")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(HUDTheme.textPrimary)
                             .shadow(radius: 1)
                     }
                 }
@@ -269,7 +277,7 @@ struct FloatingCapsuleView: View {
                     .aspectRatio(contentMode: .fit)
             } else {
                 Image(systemName: "app.fill")
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(HUDTheme.textPrimary)
             }
         }
         .frame(width: 24, height: 24)
@@ -283,7 +291,7 @@ struct FloatingCapsuleView: View {
             Text("SpokenAnyWhere")
                 .font(.system(size: 11, weight: .medium))
         }
-        .foregroundStyle(.white.opacity(0.6))
+        .foregroundStyle(HUDTheme.textSecondary)
     }
     
     // MARK: - Helpers

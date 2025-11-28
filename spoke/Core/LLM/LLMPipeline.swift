@@ -34,6 +34,59 @@ final class LLMPipeline {
         settings.isFullyConfigured
     }
     
+    /// 对话（Quick Ask 专用）
+    /// - Parameter message: 用户消息
+    /// - Returns: AI 回答
+    func chat(_ message: String) async -> Result<String, LLMError> {
+        guard shouldProcess else {
+            logger.info("⏭️ LLM not configured")
+            return .failure(.notConfigured)
+        }
+        
+        guard let provider = settings.createCurrentProvider() else {
+            logger.error("❌ Failed to create LLM provider")
+            return .failure(.notConfigured)
+        }
+        
+        isProcessing = true
+        defer { isProcessing = false }
+        
+        // Quick Ask 专用系统提示词
+        let systemPrompt = """
+        你是一个友好、专业的 AI 助手。请根据用户的问题提供清晰、准确的回答。
+        
+        如果用户提供了语音转写内容，请注意：
+        - 语音转写可能存在错误（尤其是专业术语、人名、产品名）
+        - 请根据上下文推断用户的真实意图
+        - 如果不确定用户的意思，可以礼貌地询问
+        
+        回答要求：
+        - 使用简洁明了的语言
+        - 适当使用列表或分段来组织内容
+        - 如果是代码相关问题，请提供代码示例
+        """
+        
+        let prompt = LLMPrompt(
+            systemPrompt: systemPrompt,
+            userMessage: message,
+            contextAppName: contextService.getCurrentTargetApp()?.name
+        )
+        
+        logger.info("🤖 Quick Ask: \(message.prefix(100))...")
+        
+        do {
+            let response = try await provider.complete(prompt: prompt)
+            logger.info("✅ Quick Ask complete")
+            return .success(response.text)
+        } catch let error as LLMError {
+            logger.error("❌ Quick Ask error: \(error.localizedDescription)")
+            return .failure(error)
+        } catch {
+            logger.error("❌ Unexpected error: \(error.localizedDescription)")
+            return .failure(.networkError(error))
+        }
+    }
+    
     /// 精炼文本
     /// - Parameters:
     ///   - text: 原始转写文本

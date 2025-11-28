@@ -29,6 +29,8 @@ final class LLMSettings {
         static let selectedProfileId = "llm.selectedProfileId"
         static let hasMigrated = "llm.hasMigratedToProfiles"
         static let hasConsolidatedAPIKeys = "llm.hasConsolidatedAPIKeys"
+        static let transcriptionProfileId = "llm.transcriptionProfileId"
+        static let chatProfileId = "llm.chatProfileId"
     }
     
     // MARK: - Default Prompt
@@ -114,6 +116,30 @@ final class LLMSettings {
         didSet { save() }
     }
     
+    // MARK: - Role Based Profiles
+    
+    /// 转录模型 Profile ID
+    var transcriptionProfileId: UUID? {
+        didSet { save() }
+    }
+    
+    /// 对话模型 Profile ID
+    var chatProfileId: UUID? {
+        didSet { save() }
+    }
+    
+    /// 获取转录模型 Profile
+    var transcriptionProfile: ProviderProfile? {
+        guard let id = transcriptionProfileId else { return nil }
+        return profiles.first { $0.id == id }
+    }
+    
+    /// 获取对话模型 Profile
+    var chatProfile: ProviderProfile? {
+        guard let id = chatProfileId else { return nil }
+        return profiles.first { $0.id == id }
+    }
+    
     // MARK: - Computed
     
     /// 当前 Provider 配置
@@ -183,6 +209,20 @@ final class LLMSettings {
             self.selectedProfileId = uuid
         } else {
             self.selectedProfileId = nil
+        }
+        
+        if let idString = defaults.string(forKey: Keys.transcriptionProfileId),
+           let uuid = UUID(uuidString: idString) {
+            self.transcriptionProfileId = uuid
+        } else {
+            self.transcriptionProfileId = nil
+        }
+        
+        if let idString = defaults.string(forKey: Keys.chatProfileId),
+           let uuid = UUID(uuidString: idString) {
+            self.chatProfileId = uuid
+        } else {
+            self.chatProfileId = nil
         }
         
         self.systemPrompt = defaults.string(forKey: Keys.systemPrompt) ?? Self.defaultSystemPrompt
@@ -506,6 +546,8 @@ final class LLMSettings {
             defaults.set(data, forKey: Keys.profiles)
         }
         defaults.set(selectedProfileId?.uuidString, forKey: Keys.selectedProfileId)
+        defaults.set(transcriptionProfileId?.uuidString, forKey: Keys.transcriptionProfileId)
+        defaults.set(chatProfileId?.uuidString, forKey: Keys.chatProfileId)
         
         defaults.set(systemPrompt, forKey: Keys.systemPrompt)
         defaults.set(includeClipboard, forKey: Keys.includeClipboard)

@@ -5,6 +5,9 @@ import SwiftData
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     
+    // MARK: - Singleton (for access from HotKeyService)
+    static var shared: AppDelegate?
+    
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var modelContainer: ModelContainer?
@@ -12,6 +15,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var shortcutObserver: NSObjectProtocol?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 设置 shared 引用
+        AppDelegate.shared = self
         // 确保应用可以显示窗口（非 accessory 模式）
         NSApp.setActivationPolicy(.regular)
         
@@ -128,7 +133,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyMenuItem?.title = "快捷键: \(AppSettings.shared.shortcutDisplayString)"
     }
     
-    @objc private func openSettings() {
+    @objc func openSettings() {
         print("⚙️ openSettings called")
         
         // 如果窗口已存在，直接显示

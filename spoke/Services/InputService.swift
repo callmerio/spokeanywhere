@@ -109,7 +109,7 @@ final class InputService {
                 if Task.isCancelled { return }
                 
                 // 500ms 过去了，文本稳定，可以输入
-                await self?.flushPendingText()
+                self?.flushPendingText()
                 
             } catch {
                 // Task 被取消，正常情况

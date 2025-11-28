@@ -31,6 +31,7 @@ final class RecordingController {
     private let settings = AppSettings.shared
     private let llmPipeline = LLMPipeline.shared
     private let historyManager = HistoryManager.shared
+    private let quickAskService = QuickAskService.shared
     
     // MARK: - Properties
     
@@ -43,6 +44,7 @@ final class RecordingController {
     private init() {
         setupAudioCallbacks()
         setupHUDCallbacks()
+        setupQuickAskCallbacks()
     }
     
     private func setupHUDCallbacks() {
@@ -58,6 +60,31 @@ final class RecordingController {
             Task { @MainActor in
                 self?.cancelRecordingSession()
             }
+        }
+    }
+    
+    private func setupQuickAskCallbacks() {
+        // Quick Ask 开始
+        hotKeyService.onQuickAskStart = { [weak self] in
+            Task { @MainActor in
+                self?.quickAskService.startSession()
+            }
+        }
+        
+        // Quick Ask 发送（再次按快捷键）
+        hotKeyService.onQuickAskSend = { [weak self] in
+            Task { @MainActor in
+                self?.quickAskService.sendViaShortcut()
+            }
+        }
+        
+        // Cmd+逗号 打开设置
+        hotKeyService.onOpenSettings = {
+            guard let appDelegate = AppDelegate.shared else {
+                assertionFailure("AppDelegate.shared should be set in applicationDidFinishLaunching")
+                return
+            }
+            appDelegate.openSettings()
         }
     }
     
@@ -144,6 +171,9 @@ final class RecordingController {
         
         // 重置输入服务（边说边打字）
         inputService.reset()
+        
+        // ⚠️ 重新设置音频回调（Quick Ask 可能覆盖了）
+        setupAudioCallbacks()
         
         // 启动计时器更新时长
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in

@@ -15,7 +15,7 @@ let package = Package(
             name: "SpokenAnyWhere",
             dependencies: [],
             path: ".",
-            exclude: ["Package.swift", "Resources/LocalModels"],
+            exclude: ["Package.swift", "Resources/LocalModels", "Tests"],
             sources: ["App", "Core", "Services", "UI"]
         )
     ]

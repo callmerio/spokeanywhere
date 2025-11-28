@@ -135,6 +135,36 @@ class AppSettings: ObservableObject {
         self.shortcutModifiers = modifiers
     }
     
+    // MARK: - Quick Ask Shortcut
+    
+    /// Quick Ask 快捷键 keyCode (默认: T = 17)
+    @AppStorage("QuickAskKeyCode") var quickAskKeyCode: Int = kVK_ANSI_T {
+        didSet { notifyQuickAskShortcutChange() }
+    }
+    
+    /// Quick Ask 快捷键修饰符 (默认: Option = 524288)
+    @AppStorage("QuickAskModifiers") var quickAskModifiers: Int = Int(NSEvent.ModifierFlags.option.rawValue) {
+        didSet { notifyQuickAskShortcutChange() }
+    }
+    
+    /// Quick Ask 快捷键变更通知
+    static let quickAskShortcutDidChangeNotification = Notification.Name("QuickAskShortcutDidChange")
+    
+    private func notifyQuickAskShortcutChange() {
+        NotificationCenter.default.post(name: Self.quickAskShortcutDidChangeNotification, object: nil)
+    }
+    
+    /// 获取 Quick Ask 快捷键显示字符串
+    var quickAskShortcutDisplayString: String {
+        KeyComboFormatter.format(keyCode: quickAskKeyCode, modifiers: quickAskModifiers)
+    }
+    
+    /// 更新 Quick Ask 快捷键
+    func updateQuickAskShortcut(keyCode: Int, modifiers: Int) {
+        self.quickAskKeyCode = keyCode
+        self.quickAskModifiers = modifiers
+    }
+    
     enum RecordingMode: String, CaseIterable, Identifiable {
         case hold = "hold"
         case toggle = "toggle"

@@ -27,11 +27,20 @@ final class HotKeyService {
     /// 当前快捷键修饰符
     private var currentModifiers: NSEvent.ModifierFlags = .option
     
+    /// Quick Ask 快捷键 keyCode
+    private var quickAskKeyCode: UInt32 = UInt32(kVK_ANSI_T)
+    
+    /// Quick Ask 快捷键修饰符
+    private var quickAskModifiers: NSEvent.ModifierFlags = .option
+    
     /// 是否正在录音
     var isRecording = false
     
     /// 是否是 Toggle 模式触发的录音（用于区分长按结束后的逻辑）
     private var isToggleSession = false
+    
+    /// 是否处于 Quick Ask 模式
+    var isQuickAskActive = false
     
     /// 事件处理器
     private var eventTap: CFMachPort?
@@ -44,6 +53,13 @@ final class HotKeyService {
     var onRecordingStart: (() -> Void)?
     var onRecordingStop: (() -> Void)?
     
+    /// Quick Ask 回调
+    var onQuickAskStart: (() -> Void)?
+    var onQuickAskSend: (() -> Void)?
+    
+    /// 打开设置回调
+    var onOpenSettings: (() -> Void)?
+    
     // MARK: - Init
     
     private init() {
@@ -55,6 +71,8 @@ final class HotKeyService {
         let settings = AppSettings.shared
         currentKeyCode = UInt32(settings.shortcutKeyCode)
         currentModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers))
+        quickAskKeyCode = UInt32(settings.quickAskKeyCode)
+        quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
     }
     
     private func setupShortcutObserver() {
@@ -67,6 +85,24 @@ final class HotKeyService {
                 self?.reloadShortcut()
             }
         }
+        
+        // Quick Ask 快捷键变更观察
+        NotificationCenter.default.addObserver(
+            forName: AppSettings.quickAskShortcutDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadQuickAskShortcut()
+            }
+        }
+    }
+    
+    private func reloadQuickAskShortcut() {
+        let settings = AppSettings.shared
+        quickAskKeyCode = UInt32(settings.quickAskKeyCode)
+        quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
+        logger.info("🔄 Quick Ask shortcut reloaded: \(settings.quickAskShortcutDisplayString)")
     }
     
     /// 重新加载快捷键配置并重新注册
@@ -142,29 +178,58 @@ final class HotKeyService {
         let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = event.flags
         
-        let isModifiersPressed = checkModifiersMatch(flags: flags)
-        let isTargetKey = keyCode == currentKeyCode
+        // 检查是否是录音快捷键
+        let isRecordingModifiersPressed = checkModifiersMatch(flags: flags, target: currentModifiers)
+        let isRecordingKey = keyCode == currentKeyCode
+        
+        // 检查是否是 Quick Ask 快捷键
+        let isQuickAskModifiersPressed = checkModifiersMatch(flags: flags, target: quickAskModifiers)
+        let isQuickAskKey = keyCode == quickAskKeyCode
+        
+        // 检查是否是 Cmd+逗号 (打开设置)
+        let isCommandPressed = checkModifiersMatch(flags: flags, target: .command)
+        let isCommaKey = keyCode == UInt32(kVK_ANSI_Comma)
         
         switch type {
         case .keyDown:
-            // keyDown 需要修饰键 + 目标键同时按下
-            guard isTargetKey && isModifiersPressed else {
-                return Unmanaged.passRetained(event)
+            // Cmd+逗号 打开设置
+            if isCommaKey && isCommandPressed {
+                handleOpenSettings()
+                return nil
             }
-            handleKeyDown()
-            return nil // 吞掉事件
+            
+            // Quick Ask 快捷键
+            if isQuickAskKey && isQuickAskModifiersPressed {
+                handleQuickAskKeyDown()
+                return nil
+            }
+            
+            // 录音快捷键
+            if isRecordingKey && isRecordingModifiersPressed {
+                handleKeyDown()
+                return nil
+            }
+            
+            return Unmanaged.passRetained(event)
             
         case .keyUp:
-            // keyUp 只需要是目标键，且当前正在录音
-            guard isTargetKey && isRecording else {
-                return Unmanaged.passRetained(event)
+            // Quick Ask keyUp
+            if isQuickAskKey && isQuickAskActive {
+                // Quick Ask 不响应 keyUp（只用 keyDown 触发发送）
+                return nil
             }
-            handleKeyUp()
-            return nil
+            
+            // 录音 keyUp
+            if isRecordingKey && isRecording {
+                handleKeyUp()
+                return nil
+            }
+            
+            return Unmanaged.passRetained(event)
             
         case .flagsChanged:
-            // 监听修饰键松开
-            if !isModifiersPressed && isRecording {
+            // 监听修饰键松开（仅针对录音模式）
+            if !isRecordingModifiersPressed && isRecording && !isQuickAskActive {
                 handleRelease()
             }
             return Unmanaged.passRetained(event)
@@ -176,42 +241,89 @@ final class HotKeyService {
         return Unmanaged.passRetained(event)
     }
     
-    /// 检查当前按下的修饰键是否匹配配置
-    private func checkModifiersMatch(flags: CGEventFlags) -> Bool {
-        var matches = true
+    /// 检查当前按下的修饰键是否匹配目标配置（严格匹配）
+    private func checkModifiersMatch(flags: CGEventFlags, target: NSEvent.ModifierFlags) -> Bool {
+        // 提取当前按下的所有修饰键
+        var currentFlags: NSEvent.ModifierFlags = []
         
-        // 检查 Option
-        if currentModifiers.contains(.option) {
-            matches = matches && flags.contains(.maskAlternate)
-        }
-        // 检查 Command
-        if currentModifiers.contains(.command) {
-            matches = matches && flags.contains(.maskCommand)
-        }
-        // 检查 Control
-        if currentModifiers.contains(.control) {
-            matches = matches && flags.contains(.maskControl)
-        }
-        // 检查 Shift
-        if currentModifiers.contains(.shift) {
-            matches = matches && flags.contains(.maskShift)
-        }
+        if flags.contains(.maskAlternate) { currentFlags.insert(.option) }
+        if flags.contains(.maskCommand) { currentFlags.insert(.command) }
+        if flags.contains(.maskControl) { currentFlags.insert(.control) }
+        if flags.contains(.maskShift) { currentFlags.insert(.shift) }
         
-        return matches
+        // 提取目标修饰键（只关心主要的四个：opt, cmd, ctrl, shift）
+        let targetFlags = target.intersection([.option, .command, .control, .shift])
+        
+        // 必须完全相等（不能多按，也不能少按）
+        return currentFlags == targetFlags
     }
     
-    private func handleKeyDown() {
-        if !isRecording {
-            // 开始录音
-            startRecording()
-            recordingStartTime = Date()
-            isToggleSession = false
+    // MARK: - Settings Handler
+    
+    private func handleOpenSettings() {
+        // 使用 DispatchQueue.main 而不是 Task，因为 CGEvent 回调不在主线程
+        DispatchQueue.main.async { [weak self] in
+            self?.onOpenSettings?()
+        }
+    }
+    
+    // MARK: - Quick Ask Handlers
+    
+    private func handleQuickAskKeyDown() {
+        if !isQuickAskActive {
+            // 开始 Quick Ask
+            startQuickAsk()
         } else {
-            // 正在录音中
-            if isToggleSession {
-                // 如果已经是 Toggle 模式（之前短按触发），再次按下则停止
-                stopRecording()
+            // 已经在 Quick Ask 中，再按一次触发发送
+            sendQuickAsk()
+        }
+    }
+    
+    private func startQuickAsk() {
+        // 使用 DispatchQueue.main 而不是 Task，因为 CGEvent 回调不在主线程
+        DispatchQueue.main.async { [weak self] in
+            self?.isQuickAskActive = true
+            self?.onQuickAskStart?()
+        }
+        logger.info("🚀 Quick Ask started")
+    }
+    
+    private func sendQuickAsk() {
+        DispatchQueue.main.async { [weak self] in
+            self?.isQuickAskActive = false
+            self?.onQuickAskSend?()
+        }
+        logger.info("📤 Quick Ask sending")
+    }
+    
+    /// 重置 Quick Ask 状态
+    func resetQuickAskState() {
+        isQuickAskActive = false
+        logger.info("🔄 Quick Ask state reset")
+    }
+    
+    // MARK: - Recording Handlers
+    
+    private func handleKeyDown() {
+        // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if !self.isRecording {
+                // 开始录音
+                self.isRecording = true
+                self.recordingStartTime = Date()
+                self.isToggleSession = false
+                self.onRecordingStart?()
             } else {
+                // 正在录音中
+                if self.isToggleSession {
+                    // 如果已经是 Toggle 模式（之前短按触发），再次按下则停止
+                    self.isRecording = false
+                    self.isToggleSession = false
+                    self.recordingStartTime = nil
+                    self.onRecordingStop?()
+                }
                 // 如果是 Hold 模式（正在按住），忽略重复的 KeyDown
             }
         }
@@ -222,43 +334,35 @@ final class HotKeyService {
     }
     
     private func handleRelease() {
-        guard isRecording else { return }
-        
-        if isToggleSession {
-            // Toggle 模式下，松开键不停止录音
-            return
-        }
-        
-        // 检查按压时长
-        guard let startTime = recordingStartTime else { return }
-        let duration = Date().timeIntervalSince(startTime)
-        
-        if duration < holdThreshold {
-            // 短按：切换到 Toggle 模式，继续录音
-            isToggleSession = true
-            logger.info("👆 Short press (\(String(format: "%.2f", duration))s) detected. Switched to Toggle mode.")
-        } else {
-            // 长按：松手即停止
-            logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping.")
-            stopRecording()
+        // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard self.isRecording else { return }
+            
+            if self.isToggleSession {
+                // Toggle 模式下，松开键不停止录音
+                return
+            }
+            
+            // 检查按压时长
+            guard let startTime = self.recordingStartTime else { return }
+            let duration = Date().timeIntervalSince(startTime)
+            
+            if duration < self.holdThreshold {
+                // 短按：切换到 Toggle 模式，继续录音
+                self.isToggleSession = true
+                self.logger.info("👆 Short press (\(String(format: "%.2f", duration))s) detected. Switched to Toggle mode.")
+            } else {
+                // 长按：松手即停止
+                self.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping.")
+                self.isRecording = false
+                self.isToggleSession = false
+                self.recordingStartTime = nil
+                self.onRecordingStop?()
+            }
         }
     }
     
-    private func startRecording() {
-        isRecording = true
-        Task { @MainActor in
-            onRecordingStart?()
-        }
-    }
-    
-    private func stopRecording() {
-        isRecording = false
-        isToggleSession = false
-        recordingStartTime = nil
-        Task { @MainActor in
-            onRecordingStop?()
-        }
-    }
     
     /// 强制重置状态（用于异常恢复）
     func resetState() {
