@@ -49,6 +49,9 @@ final class HotKeyService {
     /// 快捷键变更观察者
     private var shortcutObserver: NSObjectProtocol?
     
+    /// flagsChanged 防抖工作项（用于多屏切换时的二次确认）
+    private var flagsDebounceWorkItem: DispatchWorkItem?
+    
     /// 回调
     var onRecordingStart: (() -> Void)?
     var onRecordingStop: (() -> Void)?
@@ -192,10 +195,14 @@ final class HotKeyService {
         
         switch type {
         case .keyDown:
-            // Cmd+逗号 打开设置
+            // Cmd+逗号 打开设置（仅当应用在前台时响应）
             if isCommaKey && isCommandPressed {
-                handleOpenSettings()
-                return nil
+                if NSApp.isActive {
+                    handleOpenSettings()
+                    return nil
+                }
+                // 应用不在前台，放行给其他应用
+                return Unmanaged.passRetained(event)
             }
             
             // Quick Ask 快捷键
@@ -229,8 +236,10 @@ final class HotKeyService {
             
         case .flagsChanged:
             // 监听修饰键松开（仅针对录音模式）
+            // 多显示器/Space切换时 macOS 会发送虚假的 flagsChanged 事件
+            // 使用延迟二次确认机制：等待 100ms 后再次检查修饰键状态
             if !isRecordingModifiersPressed && isRecording && !isQuickAskActive {
-                handleRelease()
+                scheduleModifierReleaseCheck()
             }
             return Unmanaged.passRetained(event)
             
@@ -256,6 +265,39 @@ final class HotKeyService {
         
         // 必须完全相等（不能多按，也不能少按）
         return currentFlags == targetFlags
+    }
+    
+    // MARK: - Modifier Release Check (Multi-Display Fix)
+    
+    /// 延迟检查修饰键是否真的松开（修复多屏切换时的虚假事件）
+    private func scheduleModifierReleaseCheck() {
+        // 取消之前的检查（防抖）
+        flagsDebounceWorkItem?.cancel()
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            
+            // 100ms 后再次检查当前修饰键状态
+            let currentFlags = NSEvent.modifierFlags
+            let targetFlags = self.currentModifiers.intersection([.option, .command, .control, .shift])
+            
+            var actualFlags: NSEvent.ModifierFlags = []
+            if currentFlags.contains(.option) { actualFlags.insert(.option) }
+            if currentFlags.contains(.command) { actualFlags.insert(.command) }
+            if currentFlags.contains(.control) { actualFlags.insert(.control) }
+            if currentFlags.contains(.shift) { actualFlags.insert(.shift) }
+            
+            // 如果修饰键确实已松开，才停止录音
+            if actualFlags != targetFlags {
+                self.logger.info("🔍 Modifier release confirmed after delay check")
+                self.handleRelease()
+            } else {
+                self.logger.info("🔍 Modifier still held, ignoring false flagsChanged event (multi-display fix)")
+            }
+        }
+        
+        flagsDebounceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
     }
     
     // MARK: - Settings Handler
@@ -330,6 +372,9 @@ final class HotKeyService {
     }
     
     private func handleKeyUp() {
+        // keyUp 是明确的结束信号，取消任何待执行的防抖检查
+        flagsDebounceWorkItem?.cancel()
+        flagsDebounceWorkItem = nil
         handleRelease()
     }
     

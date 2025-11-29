@@ -1,9 +1,10 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-28 20:30
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-29 14:15
 
 ## Learns (Latest at top)
 
+- [T053] CGEvent.flagsChanged 在多屏切换时不可靠，需延迟 100ms + NSEvent.modifierFlags 二次确认真实键盘状态
 - [T052] NSTextView 拖拽转发：重写 draggingEntered/performDragOperation 禁用默认行为，通过回调转发给父视图
 - [T051] SwiftUI Menu 打开时 onHover 不触发，需额外状态(isMenuOpen)追踪菜单打开状态
 - [T050] URL.isFileURL 判断是否是 file:// 协议；非 file URL 需用 URL(fileURLWithPath:) 转换
@@ -37,7 +38,7 @@
 
 ## 智能索引
 
-技术栈: #swiftui(T023,T024,T027,T051) #cgevent(T026,T033) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035,T046) #tts(T047) #attachment(T048,T049,T050,T052)
+技术栈: #swiftui(T023,T024,T027,T051) #cgevent(T026,T033,T053) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035,T046) #tts(T047) #attachment(T048,T049,T050,T052)
 架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026,T033) #security(@C003:T025,T032,T036) #context(@C004:T028,T029,T030,T031) #quick-ask(@C005:T033,T034,T035) #attachment-system(@C006:T048,T049,T050,T052)
 任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026,T035,T050,T051,T052) #performance(T025,T049) #design(T028,T034,T048) #prompt-engineering(T030,T031) #feature(T033,T034,T047,T048)
 
@@ -195,3 +196,12 @@
 - LINK: spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
 - STAT: [√]完成 3/3 通过
 - NOTE: NSTextView 默认拦截拖拽需重写方法；Menu 打开时 onHover 不触发需额外状态；URL.isFileURL 判断协议类型
+
+[2025-11-29 T053] 多屏长按快捷键修复
+
+- PROB: 多显示器/Space 切换时长按 ⌥R 被 flagsChanged 提前终止录音
+- PLAN: scheduleModifierReleaseCheck 延迟 100ms + NSEvent.modifierFlags 二次确认 + 防抖机制
+- TIME: 0.2h | TAGS: #cgevent #multi-display #bug-fix
+- LINK: spoke/Services/HotKeyService.swift#scheduleModifierReleaseCheck
+- STAT: [√]完成 1/1 构建通过
+- NOTE: CGEvent.flagsChanged 在多屏切换时会发送虚假事件；用 NSEvent.modifierFlags 获取真实状态；keyUp 时取消待执行的防抖检查
