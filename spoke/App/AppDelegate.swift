@@ -8,9 +8,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Singleton (for access from HotKeyService)
     static var shared: AppDelegate?
     
+    // MARK: - Shared ModelContainer (专属路径避免冲突)
+    static let sharedModelContainer: ModelContainer = {
+        let schema = Schema([HistoryItem.self, AppRule.self, AIProviderConfig.self])
+        
+        // 使用专属路径，避免和其他应用冲突
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let spokeDataDir = appSupport.appendingPathComponent("Spoke/Data", isDirectory: true)
+        
+        // 确保目录存在
+        try? FileManager.default.createDirectory(at: spokeDataDir, withIntermediateDirectories: true)
+        
+        let storeURL = spokeDataDir.appendingPathComponent("SpokenAnyWhere.store")
+        let config = ModelConfiguration(schema: schema, url: storeURL)
+        
+        do {
+            let container = try ModelContainer(for: schema, configurations: [config])
+            print("✅ ModelContainer initialized at: \(storeURL.path)")
+            return container
+        } catch {
+            fatalError("❌ Failed to create ModelContainer: \(error)")
+        }
+    }()
+    
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
-    private var modelContainer: ModelContainer?
     private var hotkeyMenuItem: NSMenuItem?
     private var shortcutObserver: NSObjectProtocol?
     
@@ -20,19 +42,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 确保应用可以显示窗口（非 accessory 模式）
         NSApp.setActivationPolicy(.regular)
         
-        // 初始化 SwiftData 容器
-        do {
-            modelContainer = try ModelContainer(for: HistoryItem.self, AppRule.self, AIProviderConfig.self)
-            
-            // 配置 HistoryManager
-            if let context = modelContainer?.mainContext {
-                HistoryManager.shared.configure(with: context)
-            }
-            
-            print("✅ ModelContainer initialized")
-        } catch {
-            print("❌ Failed to create ModelContainer: \(error)")
-        }
+        // 配置 HistoryManager (使用共享 Container)
+        HistoryManager.shared.configure(with: Self.sharedModelContainer.mainContext)
+        
         print("🚀 SpokenAnyWhere started")
         
         // 检查辅助功能权限
@@ -144,10 +156,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
-        guard let container = modelContainer else {
-            print("❌ ModelContainer is nil!")
-            return
-        }
+        let container = Self.sharedModelContainer
         
         print("⚙️ Creating new settings window...")
         

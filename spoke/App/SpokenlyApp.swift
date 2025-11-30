@@ -9,7 +9,7 @@ struct SpokenAnyWhereApp: App {
         Settings {
             SettingsView()
         }
-        .modelContainer(for: [HistoryItem.self, AppRule.self, AIProviderConfig.self])
+        .modelContainer(AppDelegate.sharedModelContainer)
         
         // No WindowGroup strictly needed if we only have Settings + HUD
         // But usually we want a main window or just Settings. 
