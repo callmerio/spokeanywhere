@@ -14,6 +14,12 @@ final class QuickAskService {
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "QuickAsk")
     
+    // MARK: - Constants
+    
+    private enum Constants {
+        static let recordingStartDelay: TimeInterval = 0.2
+    }
+    
     // MARK: - Dependencies
     
     private let hudManager = QuickAskHUDManager.shared
@@ -70,7 +76,7 @@ final class QuickAskService {
     func startSession() {
         let targetApp = contextService.getCurrentTargetApp()
         
-        // 显示 HUD
+        // 显示 HUD（这会激活窗口和输入法上下文）
         hudManager.show(targetApp: targetApp)
         
         // 记录开始时间
@@ -83,13 +89,16 @@ final class QuickAskService {
             }
         }
         
-        // 启动录音
-        do {
-            try startQuickAskRecording()
-            logger.info("🎙️ Quick Ask session started")
-        } catch {
-            logger.error("❌ Failed to start Quick Ask recording: \(error)")
-            hudManager.fail(with: "录音启动失败")
+        // 🔥 延迟启动录音，避免阻塞主线程导致输入法通信失败
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.recordingStartDelay) { [weak self] in
+            guard let self = self else { return }
+            do {
+                try self.startQuickAskRecording()
+                self.logger.info("🎙️ Quick Ask session started")
+            } catch {
+                self.logger.error("❌ Failed to start Quick Ask recording: \(error)")
+                self.hudManager.fail(with: "录音启动失败")
+            }
         }
     }
     
@@ -315,18 +324,48 @@ final class QuickAskHUDManager {
     // MARK: - Public API
     
     func show(targetApp: TargetAppInfo?) {
+        print("📱 QuickAskService.show() called")
         createPanelIfNeeded()
+        
+        // 🔥 第一步：禁用 event tap，避免干扰输入法（必须在窗口激活前执行）
+        HotKeyService.shared.setQuickAskActive(true)
+        
+        // 启用按键调试日志
+        HotKeyService.shared.debugKeyEvents = true
+        
+        // 🔥 第二步：切换到普通应用模式以支持输入法
+        NSApp.setActivationPolicy(.regular)
+        print("📱 Activation policy set to .regular")
         
         state.startSession(targetApp: targetApp)
         
-        panel?.orderFront(nil)
         panel?.positionAtBottomCenter()
         
-        // 让窗口成为 key window，以便接收键盘输入
-        panel?.makeKey()
+        // 🔥 第三步：先显示窗口
+        panel?.orderFront(nil)
+        
+        // 🔥 第四步：延迟一帧再激活（等待窗口完全显示）
+        DispatchQueue.main.async { [weak self] in
+            guard let panel = self?.panel else { return }
+            
+            // 激活应用（强制激活，忽略其他应用）
+            NSApp.activate(ignoringOtherApps: true)
+            
+            // 让窗口成为 key window 和 main window
+            panel.makeKeyAndOrderFront(nil)
+            panel.makeMain()
+            
+            print("📱 QuickAskService.show() activated, isKeyWindow: \(panel.isKeyWindow), isMainWindow: \(panel.isMainWindow)")
+        }
     }
     
     func hide() {
+        // 关闭按键调试日志
+        HotKeyService.shared.debugKeyEvents = false
+        
+        // 🔥 重新启用 event tap
+        HotKeyService.shared.setQuickAskActive(false)
+        
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             panel?.animator().alphaValue = 0
@@ -334,6 +373,8 @@ final class QuickAskHUDManager {
             Task { @MainActor in
                 self?.panel?.orderOut(nil)
                 self?.panel?.alphaValue = 1
+                // 恢复为辅助应用模式
+                NSApp.setActivationPolicy(.accessory)
             }
         }
     }

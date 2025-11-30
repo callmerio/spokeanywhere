@@ -33,6 +33,12 @@ final class HotKeyService {
     /// Quick Ask 快捷键修饰符
     private var quickAskModifiers: NSEvent.ModifierFlags = .option
     
+    /// Message Panel 快捷键 keyCode
+    private var messagePanelKeyCode: UInt32 = UInt32(kVK_ANSI_P)
+    
+    /// Message Panel 快捷键修饰符
+    private var messagePanelModifiers: NSEvent.ModifierFlags = .option
+    
     /// 是否正在录音
     var isRecording = false
     
@@ -60,6 +66,9 @@ final class HotKeyService {
     var onQuickAskStart: (() -> Void)?
     var onQuickAskSend: (() -> Void)?
     
+    /// Message Panel 回调
+    var onMessagePanelToggle: (() -> Void)?
+    
     /// 打开设置回调
     var onOpenSettings: (() -> Void)?
     
@@ -76,6 +85,8 @@ final class HotKeyService {
         currentModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers))
         quickAskKeyCode = UInt32(settings.quickAskKeyCode)
         quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
+        messagePanelKeyCode = UInt32(settings.messagePanelKeyCode)
+        messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
     }
     
     private func setupShortcutObserver() {
@@ -99,6 +110,24 @@ final class HotKeyService {
                 self?.reloadQuickAskShortcut()
             }
         }
+        
+        // Message Panel 快捷键变更观察
+        NotificationCenter.default.addObserver(
+            forName: AppSettings.messagePanelShortcutDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadMessagePanelShortcut()
+            }
+        }
+    }
+    
+    private func reloadMessagePanelShortcut() {
+        let settings = AppSettings.shared
+        messagePanelKeyCode = UInt32(settings.messagePanelKeyCode)
+        messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
+        logger.info("🔄 Message Panel shortcut reloaded: \(settings.messagePanelShortcutDisplayString)")
     }
     
     private func reloadQuickAskShortcut() {
@@ -168,18 +197,57 @@ final class HotKeyService {
     
     // MARK: - Private
     
+    /// 是否启用调试日志（用于排查输入法问题）
+    var debugKeyEvents = false
+    
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // 处理 tap 被系统禁用的情况（超时或其他原因）
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            logger.warning("⚠️ Event tap was disabled, re-enabling...")
+            // 🔥 如果是 Quick Ask 主动禁用的，不要自动重新启用！
+            if isQuickAskActive {
+                print("🔥 Event tap disabled event received, but Quick Ask is active - NOT re-enabling")
+                return Unmanaged.passRetained(event)
+            }
+            logger.warning("⚠️ Event tap was disabled by system, re-enabling...")
             if let tap = eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
             return Unmanaged.passRetained(event)
         }
         
+        // 🔥🔥🔥 Quick Ask 激活时，完全不处理任何键盘事件（除了 Quick Ask 快捷键本身）
+        // 这是解决输入法问题的关键：让事件完全绕过 event tap
+        if isQuickAskActive {
+            let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+            let flags = event.flags
+            
+            // 只处理 Quick Ask 快捷键（用于再次按下发送）
+            let isQuickAskModifiersPressed = checkModifiersMatch(flags: flags, target: quickAskModifiers)
+            let isQuickAskKey = keyCode == quickAskKeyCode
+            
+            if type == .keyDown && isQuickAskKey && isQuickAskModifiersPressed {
+                handleQuickAskKeyDown()
+                return nil
+            }
+            
+            // 其他所有事件都直接放行，不做任何处理
+            return Unmanaged.passRetained(event)
+        }
+        
         let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = event.flags
+        
+        // 调试日志（直接 print 到终端，方便调试）
+        if debugKeyEvents && (type == .keyDown || type == .keyUp) {
+            let typeStr = type == .keyDown ? "↓" : "↑"
+            let char = keyCodeToChar(keyCode)
+            let modStr = flagsToString(flags)
+            let qaState = self.isQuickAskActive
+            _ = self.isRecording
+            // 检查 tap 是否应该被禁用
+            let tapEnabled = eventTap != nil ? CGEvent.tapIsEnabled(tap: eventTap!) : false
+            print("🔑 \(typeStr) key=\(keyCode)(\(char)) mod=[\(modStr)] qa=\(qaState) tap=\(tapEnabled ? "ON" : "OFF")")
+        }
         
         // 检查是否是录音快捷键
         let isRecordingModifiersPressed = checkModifiersMatch(flags: flags, target: currentModifiers)
@@ -188,6 +256,10 @@ final class HotKeyService {
         // 检查是否是 Quick Ask 快捷键
         let isQuickAskModifiersPressed = checkModifiersMatch(flags: flags, target: quickAskModifiers)
         let isQuickAskKey = keyCode == quickAskKeyCode
+        
+        // 检查是否是 Message Panel 快捷键
+        let isMessagePanelModifiersPressed = checkModifiersMatch(flags: flags, target: messagePanelModifiers)
+        let isMessagePanelKey = keyCode == messagePanelKeyCode
         
         // 检查是否是 Cmd+逗号 (打开设置)
         let isCommandPressed = checkModifiersMatch(flags: flags, target: .command)
@@ -211,6 +283,12 @@ final class HotKeyService {
                 return nil
             }
             
+            // Message Panel 快捷键
+            if isMessagePanelKey && isMessagePanelModifiersPressed {
+                handleMessagePanelToggle()
+                return nil
+            }
+            
             // 录音快捷键
             if isRecordingKey && isRecordingModifiersPressed {
                 handleKeyDown()
@@ -220,14 +298,14 @@ final class HotKeyService {
             return Unmanaged.passRetained(event)
             
         case .keyUp:
-            // Quick Ask keyUp
-            if isQuickAskKey && isQuickAskActive {
+            // Quick Ask keyUp - 必须同时检查修饰键，否则会吞掉普通输入的 keyUp 事件
+            if isQuickAskKey && isQuickAskModifiersPressed && isQuickAskActive {
                 // Quick Ask 不响应 keyUp（只用 keyDown 触发发送）
                 return nil
             }
             
-            // 录音 keyUp
-            if isRecordingKey && isRecording {
+            // 录音 keyUp - 同样需要检查修饰键
+            if isRecordingKey && isRecordingModifiersPressed && isRecording {
                 handleKeyUp()
                 return nil
             }
@@ -265,6 +343,43 @@ final class HotKeyService {
         
         // 必须完全相等（不能多按，也不能少按）
         return currentFlags == targetFlags
+    }
+    
+    // MARK: - Debug Helpers
+    
+    /// keyCode 转字符（调试用）
+    private func keyCodeToChar(_ keyCode: UInt32) -> String {
+        #if DEBUG
+        // 常用键码映射表
+        let keyMap: [Int: String] = [
+            kVK_ANSI_A: "A", kVK_ANSI_S: "S", kVK_ANSI_D: "D", kVK_ANSI_F: "F", kVK_ANSI_H: "H", kVK_ANSI_G: "G", kVK_ANSI_Z: "Z", kVK_ANSI_X: "X", kVK_ANSI_C: "C", kVK_ANSI_V: "V",
+            kVK_ANSI_B: "B", kVK_ANSI_Q: "Q", kVK_ANSI_W: "W", kVK_ANSI_E: "E", kVK_ANSI_R: "R", kVK_ANSI_Y: "Y", kVK_ANSI_T: "T", kVK_ANSI_1: "1", kVK_ANSI_2: "2", kVK_ANSI_3: "3",
+            kVK_ANSI_4: "4", kVK_ANSI_6: "6", kVK_ANSI_5: "5", kVK_ANSI_Equal: "=", kVK_ANSI_9: "9", kVK_ANSI_7: "7", kVK_ANSI_Minus: "-", kVK_ANSI_8: "8", kVK_ANSI_0: "0", kVK_ANSI_RightBracket: "]",
+            kVK_ANSI_O: "O", kVK_ANSI_U: "U", kVK_ANSI_LeftBracket: "[", kVK_ANSI_I: "I", kVK_ANSI_P: "P", kVK_ANSI_L: "L", kVK_ANSI_J: "J", kVK_ANSI_Quote: "'", kVK_ANSI_K: "K", kVK_ANSI_Semicolon: ";",
+            kVK_ANSI_Backslash: "\\", kVK_ANSI_Comma: ",", kVK_ANSI_Slash: "/", kVK_ANSI_N: "N", kVK_ANSI_M: "M", kVK_ANSI_Period: ".", kVK_ANSI_Grave: "`", kVK_ANSI_KeypadDecimal: ".",
+            kVK_ANSI_KeypadMultiply: "*", kVK_ANSI_KeypadPlus: "+", kVK_ANSI_KeypadClear: "Clear", kVK_ANSI_KeypadDivide: "/", kVK_ANSI_KeypadEnter: "Enter", kVK_ANSI_KeypadMinus: "-", kVK_ANSI_KeypadEquals: "=",
+            kVK_ANSI_Keypad0: "0", kVK_ANSI_Keypad1: "1", kVK_ANSI_Keypad2: "2", kVK_ANSI_Keypad3: "3", kVK_ANSI_Keypad4: "4", kVK_ANSI_Keypad5: "5", kVK_ANSI_Keypad6: "6", kVK_ANSI_Keypad7: "7",
+            kVK_ANSI_Keypad8: "8", kVK_ANSI_Keypad9: "9", kVK_Return: "⏎", kVK_Tab: "⇥", kVK_Space: "␣", kVK_Delete: "⌫", kVK_Escape: "⎋", kVK_Command: "⌘", kVK_Shift: "⇧", kVK_CapsLock: "⇪", kVK_Option: "⌥",
+            kVK_Control: "⌃", kVK_RightShift: "⇧", kVK_RightOption: "⌥", kVK_RightControl: "⌃", kVK_Function: "Fn", kVK_F17: "F17", kVK_VolumeUp: "Vol+", kVK_VolumeDown: "Vol-", kVK_Mute: "Mute",
+            kVK_F18: "F18", kVK_F19: "F19", kVK_F20: "F20", kVK_F5: "F5", kVK_F6: "F6", kVK_F7: "F7", kVK_F3: "F3", kVK_F8: "F8", kVK_F9: "F9", kVK_F11: "F11", kVK_F13: "F13", kVK_F16: "F16",
+            kVK_F14: "F14", kVK_F10: "F10", kVK_F12: "F12", kVK_F15: "F15", kVK_Help: "Help", kVK_Home: "Home", kVK_PageUp: "PgUp", kVK_ForwardDelete: "Del", kVK_F4: "F4", kVK_End: "End",
+            kVK_F2: "F2", kVK_PageDown: "PgDn", kVK_F1: "F1", kVK_LeftArrow: "←", kVK_RightArrow: "→", kVK_DownArrow: "↓", kVK_UpArrow: "↑"
+        ]
+        
+        return keyMap[Int(keyCode)] ?? "?"
+        #else
+        return "?"
+        #endif
+    }
+    
+    /// flags 转字符串（调试用）
+    private func flagsToString(_ flags: CGEventFlags) -> String {
+        var parts: [String] = []
+        if flags.contains(.maskCommand) { parts.append("⌘") }
+        if flags.contains(.maskAlternate) { parts.append("⌥") }
+        if flags.contains(.maskControl) { parts.append("⌃") }
+        if flags.contains(.maskShift) { parts.append("⇧") }
+        return parts.isEmpty ? "none" : parts.joined()
     }
     
     // MARK: - Modifier Release Check (Multi-Display Fix)
@@ -341,7 +456,39 @@ final class HotKeyService {
     /// 重置 Quick Ask 状态
     func resetQuickAskState() {
         isQuickAskActive = false
-        logger.info("🔄 Quick Ask state reset")
+        // 重新启用 event tap
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: true)
+        }
+        logger.info("🔄 Quick Ask state reset, event tap re-enabled")
+    }
+    
+    /// 设置 Quick Ask 激活状态（用于控制 event tap）
+    func setQuickAskActive(_ active: Bool) {
+        isQuickAskActive = active
+        // Quick Ask 激活时禁用 event tap，避免干扰输入法
+        if let tap = eventTap {
+            let shouldEnable = !active
+            print("🔥 Calling CGEvent.tapEnable(enable: \(shouldEnable)) on tap: \(tap)")
+            CGEvent.tapEnable(tap: tap, enable: shouldEnable)
+            // 验证是否生效
+            let actualState = CGEvent.tapIsEnabled(tap: tap)
+            print("🔥 Event tap actual state after toggle: \(actualState ? "ON" : "OFF")")
+            if actualState != shouldEnable {
+                print("⚠️⚠️⚠️ tapEnable FAILED! Expected \(shouldEnable ? "ON" : "OFF") but got \(actualState ? "ON" : "OFF")")
+            }
+        } else {
+            print("⚠️ Event tap is nil, cannot toggle!")
+        }
+    }
+    
+    // MARK: - Message Panel Handler
+    
+    private func handleMessagePanelToggle() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onMessagePanelToggle?()
+        }
+        logger.info("📋 Message Panel toggle triggered")
     }
     
     // MARK: - Recording Handlers

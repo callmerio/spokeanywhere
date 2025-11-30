@@ -165,6 +165,36 @@ class AppSettings: ObservableObject {
         self.quickAskModifiers = modifiers
     }
     
+    // MARK: - Message Panel Shortcut
+    
+    /// Message Panel 快捷键 keyCode (默认: P = 35)
+    @AppStorage("MessagePanelKeyCode") var messagePanelKeyCode: Int = kVK_ANSI_P {
+        didSet { notifyMessagePanelShortcutChange() }
+    }
+    
+    /// Message Panel 快捷键修饰符 (默认: Option = 524288)
+    @AppStorage("MessagePanelModifiers") var messagePanelModifiers: Int = Int(NSEvent.ModifierFlags.option.rawValue) {
+        didSet { notifyMessagePanelShortcutChange() }
+    }
+    
+    /// Message Panel 快捷键变更通知
+    static let messagePanelShortcutDidChangeNotification = Notification.Name("MessagePanelShortcutDidChange")
+    
+    private func notifyMessagePanelShortcutChange() {
+        NotificationCenter.default.post(name: Self.messagePanelShortcutDidChangeNotification, object: nil)
+    }
+    
+    /// 获取 Message Panel 快捷键显示字符串
+    var messagePanelShortcutDisplayString: String {
+        KeyComboFormatter.format(keyCode: messagePanelKeyCode, modifiers: messagePanelModifiers)
+    }
+    
+    /// 更新 Message Panel 快捷键
+    func updateMessagePanelShortcut(keyCode: Int, modifiers: Int) {
+        self.messagePanelKeyCode = keyCode
+        self.messagePanelModifiers = modifiers
+    }
+    
     enum RecordingMode: String, CaseIterable, Identifiable {
         case hold = "hold"
         case toggle = "toggle"

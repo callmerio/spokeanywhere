@@ -34,6 +34,11 @@ final class LLMPipeline {
         settings.isFullyConfigured
     }
     
+    /// 当前 Provider 名称（用于显示）
+    var currentProviderName: String {
+        settings.currentProviderName
+    }
+    
     /// 对话（Quick Ask 专用）
     /// - Parameter message: 用户消息
     /// - Returns: AI 回答

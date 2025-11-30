@@ -1,6 +1,6 @@
 # MM 学习卡片
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-28
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-30
 
 ## C001|HUD 动画实现
 
@@ -57,3 +57,16 @@ ID: C007 | Tags: #appkit #drag-drop #nstextview
 Q: 如何让 NSTextView 不拦截拖拽并转发给父视图？
 A: 重写 draggingEntered/performDragOperation 禁用默认行为，通过回调链转发给 SwiftUI 层
 REF: T052 | spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
+
+## C008|SwiftUI+NSTextView 输入法集成
+
+ID: C008 | Tags: #ime #swiftui #appkit #nsviewrepresentable
+
+Q: SwiftUI 中嵌套的 NSTextView 如何正确支持中文输入法？
+A: 关键要点:
+  1. updateNSView 中检查 hasMarkedText() 跳过更新，避免重绘干扰 marked text
+  2. 父视图频繁更新(如 audioLevel)会触发 updateNSView，需隔离
+  3. becomeFirstResponder 后调用 inputContext.activate()
+  4. 窗口必须是 keyWindow + mainWindow
+  5. CGEvent tap 在输入时应完全放行
+REF: T054,T055 | spoke/UI/HUD/QuickAskInputView.swift#updateNSView

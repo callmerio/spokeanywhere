@@ -45,6 +45,7 @@ final class RecordingController {
         setupAudioCallbacks()
         setupHUDCallbacks()
         setupQuickAskCallbacks()
+        setupMessagePanelCallbacks()
     }
     
     private func setupHUDCallbacks() {
@@ -85,6 +86,15 @@ final class RecordingController {
                 return
             }
             appDelegate.openSettings()
+        }
+    }
+    
+    private func setupMessagePanelCallbacks() {
+        // Message Panel 切换显示
+        hotKeyService.onMessagePanelToggle = {
+            Task { @MainActor in
+                MessagePanelManager.shared.toggle()
+            }
         }
     }
     
@@ -294,6 +304,12 @@ final class RecordingController {
             copyToClipboard(transcribedText)
             logger.info("📋 Clipboard #1: transcribed text")
             
+            // 发送 ASR 结果到 Message Panel
+            MessagePanelManager.shared.addASRResult(
+                model: "Apple Speech",
+                content: transcribedText
+            )
+            
             // 获取临时音频文件 URL
             let tempAudioURL = audioService.tempAudioFileURL
             let appBundleId = contextService.getCurrentTargetApp()?.bundleIdentifier
@@ -327,6 +343,12 @@ final class RecordingController {
                 // 第二次写入剪贴板（精炼后文本）
                 copyToClipboard(refinedText)
                 logger.info("📋 Clipboard #2: refined text")
+                
+                // 发送 LLM 结果到 Message Panel
+                MessagePanelManager.shared.addLLMResult(
+                    model: llmPipeline.currentProviderName,
+                    content: refinedText
+                )
                 
                 // 完成
                 hudManager.complete(with: refinedText)

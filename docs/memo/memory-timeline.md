@@ -1,9 +1,11 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-29 14:15
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-30 23:10
 
 ## Learns (Latest at top)
 
+- [T055] NSViewRepresentable.updateNSView 在 hasMarkedText() 时必须跳过，否则输入法 marked text 会被重置导致快速输入丢字
+- [T054] SwiftUI @Observable 频繁更新(如 audioLevel)会触发整个视图树重绘，干扰嵌套的 NSTextView 输入法状态
 - [T053] CGEvent.flagsChanged 在多屏切换时不可靠，需延迟 100ms + NSEvent.modifierFlags 二次确认真实键盘状态
 - [T052] NSTextView 拖拽转发：重写 draggingEntered/performDragOperation 禁用默认行为，通过回调转发给父视图
 - [T051] SwiftUI Menu 打开时 onHover 不触发，需额外状态(isMenuOpen)追踪菜单打开状态
@@ -38,9 +40,9 @@
 
 ## 智能索引
 
-技术栈: #swiftui(T023,T024,T027,T051) #cgevent(T026,T033,T053) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035,T046) #tts(T047) #attachment(T048,T049,T050,T052)
-架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026,T033) #security(@C003:T025,T032,T036) #context(@C004:T028,T029,T030,T031) #quick-ask(@C005:T033,T034,T035) #attachment-system(@C006:T048,T049,T050,T052)
-任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026,T035,T050,T051,T052) #performance(T025,T049) #design(T028,T034,T048) #prompt-engineering(T030,T031) #feature(T033,T034,T047,T048)
+技术栈: #swiftui(T023,T024,T027,T051,T054,T055) #cgevent(T026,T033,T053) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035,T046) #tts(T047) #attachment(T048,T049,T050,T052) #ime(T054,T055)
+架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026,T033) #security(@C003:T025,T032,T036) #context(@C004:T028,T029,T030,T031) #quick-ask(@C005:T033,T034,T035) #attachment-system(@C006:T048,T049,T050,T052) #ime-integration(@C008:T054,T055)
+任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026,T035,T050,T051,T052,T054,T055) #performance(T025,T049) #design(T028,T034,T048) #prompt-engineering(T030,T031) #feature(T033,T034,T047,T048)
 
 ## 记录条目 (Latest at bottom)
 
@@ -205,3 +207,24 @@
 - LINK: spoke/Services/HotKeyService.swift#scheduleModifierReleaseCheck
 - STAT: [√]完成 1/1 构建通过
 - NOTE: CGEvent.flagsChanged 在多屏切换时会发送虚假事件；用 NSEvent.modifierFlags 获取真实状态；keyUp 时取消待执行的防抖检查
+
+[2025-11-30 T054-T055] Quick Ask 中文输入法崩溃修复
+
+- PROB: Quick Ask 输入框使用中文输入法时崩溃/快速输入丢字；IMKCFRunLoopWakeUpReliable 错误
+- PLAN:
+  1. HotKeyService: isQuickAskActive 时完全放行事件(除 Quick Ask 快捷键)
+  2. QuickAskHUDManager: 先 orderFront 再 async 激活窗口
+  3. QuickAskNSTextView: becomeFirstResponder 后 inputContext.activate()
+  4. QuickAskTextEditor: 等待 keyWindow 后重试
+  5. startSession: 延迟 0.2s 启动录音避免阻塞主线程
+  6. updateNSView: hasMarkedText() 时跳过更新
+- TIME: 2h | TAGS: #ime #swiftui #appkit #nsviewrepresentable #bug-fix
+- LINK: spoke/UI/HUD/QuickAskInputView.swift#updateNSView
+- STAT: [√]完成 输入法正常工作
+- NOTE:
+  - SwiftUI @Observable 属性(audioLevel)频繁更新会触发整个视图树重绘
+  - NSViewRepresentable.updateNSView 会被父视图重绘触发
+  - 必须检查 hasMarkedText() 跳过更新，否则 marked text 状态会被重置
+  - CGEvent tap 即使 return passRetained 也可能干扰输入法
+  - 窗口必须是 keyWindow + mainWindow 才能正常接收输入法事件
+  - NSTextInputContext.activate() 是输入法工作的关键

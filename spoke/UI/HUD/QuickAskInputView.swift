@@ -131,18 +131,55 @@ struct QuickAskTextEditor: NSViewRepresentable {
         
         scrollView.documentView = textView
         
-        // 延迟聚焦
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            textView.window?.makeFirstResponder(textView)
+        // 🔥 使用更可靠的方式设置焦点
+        // 等待视图完全加载后再设置焦点
+        DispatchQueue.main.async {
+            // 第一次尝试
+            self.tryMakeFirstResponder(textView, attempt: 1)
         }
         
         return scrollView
     }
     
+    /// 尝试设置 FirstResponder，最多重试 5 次
+    private func tryMakeFirstResponder(_ textView: QuickAskNSTextView, attempt: Int) {
+        guard attempt <= 5, let window = textView.window else {
+            if attempt <= 5 {
+                // 窗口还没准备好，延迟重试
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05 * Double(attempt)) {
+                    self.tryMakeFirstResponder(textView, attempt: attempt + 1)
+                }
+            }
+            return
+        }
+        
+        // 等待窗口成为 key window
+        if !window.isKeyWindow {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.tryMakeFirstResponder(textView, attempt: attempt + 1)
+            }
+            return
+        }
+        
+        if window.makeFirstResponder(textView) {
+            textView.inputContext?.activate()
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.tryMakeFirstResponder(textView, attempt: attempt + 1)
+            }
+        }
+    }
+    
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? QuickAskNSTextView else { return }
         
-        // 更新文本
+        // 🔥 关键修复：如果有 marked text（输入法正在组词），跳过所有更新
+        // 避免干扰输入法状态
+        if textView.hasMarkedText() {
+            return
+        }
+        
+        // 更新文本（只有当外部修改时才更新，避免覆盖用户输入）
         if textView.string != text {
             textView.string = text
         }
@@ -154,9 +191,11 @@ struct QuickAskTextEditor: NSViewRepresentable {
         textView.onDragExited = onDragExited
         textView.onDrop = onDrop
         
-        // 更新 placeholder
-        textView.placeholderString = placeholder
-        textView.needsDisplay = true
+        // 更新 placeholder（只有当 placeholder 变化时才重绘）
+        if textView.placeholderString != placeholder {
+            textView.placeholderString = placeholder
+            textView.needsDisplay = true
+        }
     }
     
     func makeCoordinator() -> Coordinator {
@@ -211,8 +250,30 @@ class QuickAskNSTextView: NSTextView {
         isSelectable = true
         isEditable = true
         
+        // 🔥 确保输入法正常工作
+        allowsCharacterPickerTouchBarItem = true
+        isAutomaticTextCompletionEnabled = false  // 禁用自动补全，避免干扰输入法
+        
         // 注册拖拽类型（我们要自己处理）
         registerForDraggedTypes([.fileURL, .png, .tiff])
+        
+        // 🔥 设置 importsGraphics = false 确保纯文本输入，避免输入法干扰
+        importsGraphics = false
+    }
+    
+    override var canBecomeKeyView: Bool { true }
+    override var acceptsFirstResponder: Bool { true }
+    
+    // MARK: - NSTextInputClient 关键方法（确保输入法正常工作）
+    
+    
+    // 确保输入法上下文被激活
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder()
+        if result {
+            inputContext?.activate()
+        }
+        return result
     }
     
     // MARK: - Drag & Drop（禁用默认行为，转发给父视图）
@@ -265,22 +326,32 @@ class QuickAskNSTextView: NSTextView {
         }
     }
     
-    override func keyDown(with event: NSEvent) {
-        let isShiftPressed = event.modifierFlags.contains(.shift)
+    // Enter 键发送，Shift+Enter 换行
+    override func doCommand(by selector: Selector) {
         
-        // Enter 键
-        if event.keyCode == 36 { // Return key
-            if isShiftPressed {
-                // Shift+Enter: 换行
-                super.keyDown(with: event)
+        // insertNewline: 是 Enter 键的命令
+        if selector == #selector(insertNewline(_:)) {
+            // 检查是否有输入法正在组合文字
+            let markedRange = self.markedRange()
+            if markedRange.length > 0 {
+                // 有 marked text，让输入法确认（调用默认行为）
+                super.doCommand(by: selector)
             } else {
-                // Enter 或 ⌘+Enter: 发送
+                // 没有 marked text，触发发送
                 onSend?()
             }
             return
         }
         
-        super.keyDown(with: event)
+        // insertNewlineIgnoringFieldEditor: 是 Shift+Enter 的命令
+        if selector == #selector(insertNewlineIgnoringFieldEditor(_:)) {
+            // Shift+Enter 换行
+            super.doCommand(by: selector)
+            return
+        }
+        
+        // 其他命令默认处理
+        super.doCommand(by: selector)
     }
     
     /// 捕获 ⌘V 等快捷键

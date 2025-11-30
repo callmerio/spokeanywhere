@@ -169,6 +169,14 @@ final class LLMSettings {
         return true
     }
     
+    /// 当前 Provider 名称（用于显示）
+    var currentProviderName: String {
+        if let profile = selectedProfile {
+            return profile.name.isEmpty ? profile.modelName : profile.name
+        }
+        return selectedProviderType?.rawValue ?? "Unknown"
+    }
+    
     // MARK: - Init
     
     private init() {

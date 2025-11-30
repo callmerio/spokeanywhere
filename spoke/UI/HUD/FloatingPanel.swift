@@ -57,16 +57,19 @@ final class FloatingPanel: NSPanel {
 
 /// Quick Ask 悬浮面板 - 可以接收键盘输入
 /// 用于 Quick Ask 输入交互
-final class QuickAskPanel: NSPanel {
+/// 改为继承 NSWindow 以获得系统级的一等公民待遇，彻底解决输入法问题
+final class QuickAskPanel: NSWindow {
     
-    // 允许接收键盘输入
+    // 允许接收键盘输入和成为主窗口
     override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
+    override var canBecomeMain: Bool { true }
     
     init(contentRect: NSRect) {
+        // 关键修复：使用 .titled | .fullSizeContentView 来欺骗系统，获得完整的输入法支持
         super.init(
             contentRect: contentRect,
-            styleMask: [.borderless, .nonactivatingPanel],
+            // .titled + .fullSizeContentView 是让 InputContext 正常工作的关键
+            styleMask: [.titled, .fullSizeContentView, .resizable], 
             backing: .buffered,
             defer: false
         )
@@ -82,14 +85,25 @@ final class QuickAskPanel: NSPanel {
         isOpaque = false
         backgroundColor = .clear
         
+        // 关键配置：隐藏标题栏但保留 .titled 属性
+        titlebarAppearsTransparent = true
+        titleVisibility = .hidden
+        
+        // 禁用系统标准窗口按钮
+        standardWindowButton(.closeButton)?.isHidden = true
+        standardWindowButton(.miniaturizeButton)?.isHidden = true
+        standardWindowButton(.zoomButton)?.isHidden = true
+        
         // 不在 Dock/Mission Control 显示
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
         
         // 动画
         animationBehavior = .utilityWindow
         
-        // 圆角
-        isMovableByWindowBackground = false
+        // 允许通过背景拖动
+        isMovableByWindowBackground = true
+        
+        // 禁用阴影
         hasShadow = false
     }
     
