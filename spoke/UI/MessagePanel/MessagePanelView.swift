@@ -107,6 +107,7 @@ struct MessagePanelView: View {
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
     
     /// 处理历史记录点击

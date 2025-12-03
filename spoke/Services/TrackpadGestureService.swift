@@ -112,8 +112,8 @@ final class TrackpadGestureService {
     
     // MARK: - Configuration
     
-    /// 左边缘阈值（触控板宽度的百分比，0.50 = 左半边都可触发）
-    private let edgeThreshold: Float32 = 0.50
+    /// 左边缘阈值（触控板宽度的百分比，0.15 = 左侧 15%）
+    private let edgeThreshold: Float32 = 0.15
     
     /// 滑动距离阈值（触控板宽度的百分比，0.10 = 10%）
     private let swipeDistanceThreshold: Float32 = 0.10
