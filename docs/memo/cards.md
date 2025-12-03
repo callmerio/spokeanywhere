@@ -1,6 +1,6 @@
 # MM 学习卡片
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-30
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-03
 
 ## C001|HUD 动画实现
 
@@ -64,9 +64,41 @@ ID: C008 | Tags: #ime #swiftui #appkit #nsviewrepresentable
 
 Q: SwiftUI 中嵌套的 NSTextView 如何正确支持中文输入法？
 A: 关键要点:
-  1. updateNSView 中检查 hasMarkedText() 跳过更新，避免重绘干扰 marked text
-  2. 父视图频繁更新(如 audioLevel)会触发 updateNSView，需隔离
-  3. becomeFirstResponder 后调用 inputContext.activate()
-  4. 窗口必须是 keyWindow + mainWindow
-  5. CGEvent tap 在输入时应完全放行
-REF: T054,T055 | spoke/UI/HUD/QuickAskInputView.swift#updateNSView
+
+1. updateNSView 中检查 hasMarkedText() 跳过更新，避免重绘干扰 marked text
+2. 父视图频繁更新(如 audioLevel)会触发 updateNSView，需隔离
+3. becomeFirstResponder 后调用 inputContext.activate()
+4. 窗口必须是 keyWindow + mainWindow
+5. CGEvent tap 在输入时应完全放行
+   REF: T054,T055 | spoke/UI/HUD/QuickAskInputView.swift#updateNSView
+
+## C009|App Store 友好的纯模糊背景
+
+ID: C009 | Tags: #swiftui #blur #screencapturekit #appstore
+
+Q: 如何实现 App Store 友好的纯模糊背景（无系统色调）？
+A: ScreenCaptureKit 捕获背景 + SwiftUI Image + .blur(radius:)
+
+1. ScreenCaptureBlurService: 用 SCStream 捕获屏幕，排除自身窗口
+2. 输出原始帧 CGImage（不做模糊）
+3. View 层用 Image(nsImage:).blur(radius:) GPU 渲染
+4. 裁剪时注意坐标系转换（SwiftUI 左上 vs CGImage 左下）
+   REF: T060 | spoke/UI/Components/ScreenCaptureBlurBackground.swift
+
+## C010|CGImage 坐标系转换
+
+ID: C010 | Tags: #coregraphics #coordinate #swiftui
+
+Q: SwiftUI frame 如何转换为 CGImage 裁剪区域？
+A: SwiftUI origin 在左上，CGImage origin 在左下，需要翻转 Y 轴：
+
+```swift
+let cropRect = CGRect(
+    x: viewFrame.origin.x * scale,
+    y: screenHeight - (viewFrame.origin.y + viewFrame.height) * scale,
+    width: viewFrame.width * scale,
+    height: viewFrame.height * scale
+)
+```
+
+REF: T060 | spoke/UI/Components/ScreenCaptureBlurBackground.swift#croppedBlurredImage

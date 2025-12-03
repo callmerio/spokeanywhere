@@ -88,15 +88,15 @@ final class MessagePanelState: ObservableObject {
     
     // MARK: - Public API
     
-    /// 添加新卡片
+    /// 添加新卡片（新的在上面）
     func addCard(_ card: MessageCard) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            cards.append(card)  // 新卡片在底部（时间线顺序）
+            cards.insert(card, at: 0)  // 新卡片在顶部（越新越上）
         }
         
         // 限制数量（移除最旧的）
         if cards.count > maxCards {
-            cards = Array(cards.suffix(maxCards))
+            cards = Array(cards.prefix(maxCards))
         }
     }
     

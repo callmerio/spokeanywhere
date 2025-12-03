@@ -63,6 +63,25 @@ final class QuickAskService {
                 self?.cancelSession()
             }
         }
+        
+        // 监听追问通知
+        NotificationCenter.default.addObserver(
+            forName: .quickAskFollowUpRequested,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self,
+                  let userInfo = notification.userInfo,
+                  let panelId = userInfo["panelId"] as? UUID,
+                  let prompt = userInfo["prompt"] as? String,
+                  let attachments = userInfo["attachments"] as? [Attachment] else {
+                return
+            }
+            
+            Task {
+                await self.handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
+            }
+        }
     }
     
     private func setupAudioCallbacks() {
@@ -120,11 +139,11 @@ final class QuickAskService {
         
         logger.info("📤 Sending question: \(prompt.prefix(100))...")
         
-        // 隐藏输入 HUD
-        hudManager.hide()
+        // 隐藏输入 HUD (不恢复 Policy，因为 AnswerPanel 需要 Key Window)
+        hudManager.hide(restorePolicy: false)
         
-        // 显示回答窗口
-        AnswerPanelManager.shared.show(
+        // 显示回答窗口（每次创建新窗口）
+        let panelId = AnswerPanelManager.shared.show(
             question: state.userInput.isEmpty ? state.voiceTranscription : state.userInput,
             attachments: state.attachments
         )
@@ -134,11 +153,11 @@ final class QuickAskService {
         
         switch result {
         case .success(let answer):
-            AnswerPanelManager.shared.updateAnswer(answer)
+            AnswerPanelManager.shared.updateAnswer(answer, for: panelId)
             logger.info("✅ Quick Ask completed")
             
         case .failure(let error):
-            AnswerPanelManager.shared.showError(error.localizedDescription)
+            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
             logger.error("❌ Quick Ask failed: \(error)")
         }
         
@@ -185,6 +204,50 @@ final class QuickAskService {
             Task {
                 await sendQuestion()
             }
+        }
+    }
+    
+    /// 处理追问
+    private func handleFollowUp(panelId: UUID, prompt: String, attachments: [Attachment]) async {
+        logger.info("🔄 Handling follow-up [\(panelId)]: \(prompt)")
+        
+        // 1. 获取指定面板的历史记录
+        guard let panelState = AnswerPanelManager.shared.state(for: panelId) else {
+            logger.error("❌ Panel not found: \(panelId)")
+            return
+        }
+        
+        let history = panelState.messages
+        // 注意：此时 history 已经包含了当前最新的 user message (由 AnswerPanelView 添加)
+        
+        var finalPrompt = ""
+        
+        // 简单的 history 拼接 (排除最后一条，因为它是当前问题)
+        if history.count > 1 {
+            finalPrompt += "以下是之前的对话历史：\n\n"
+            for message in history.dropLast() {
+                let role = message.role == .user ? "用户" : "AI"
+                // 简单的防注入处理
+                let content = message.content.replacingOccurrences(of: "\n", with: " ")
+                finalPrompt += "\(role): \(content)\n"
+            }
+            finalPrompt += "\n---\n\n"
+        }
+        
+        // 2. 添加当前问题
+        finalPrompt += "用户当前问题: \(prompt)"
+        
+        // 3. 调用 LLM
+        let result = await llmPipeline.chat(finalPrompt)
+        
+        switch result {
+        case .success(let answer):
+            AnswerPanelManager.shared.updateAnswer(answer, for: panelId)
+            logger.info("✅ Follow-up completed [\(panelId)]")
+            
+        case .failure(let error):
+            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
+            logger.error("❌ Follow-up failed [\(panelId)]: \(error)")
         }
     }
     
@@ -359,7 +422,7 @@ final class QuickAskHUDManager {
         }
     }
     
-    func hide() {
+    func hide(restorePolicy: Bool = true) {
         // 关闭按键调试日志
         HotKeyService.shared.debugKeyEvents = false
         
@@ -374,7 +437,9 @@ final class QuickAskHUDManager {
                 self?.panel?.orderOut(nil)
                 self?.panel?.alphaValue = 1
                 // 恢复为辅助应用模式
-                NSApp.setActivationPolicy(.accessory)
+                if restorePolicy {
+                    NSApp.setActivationPolicy(.accessory)
+                }
             }
         }
     }

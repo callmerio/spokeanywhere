@@ -31,6 +31,8 @@ final class LLMSettings {
         static let hasConsolidatedAPIKeys = "llm.hasConsolidatedAPIKeys"
         static let transcriptionProfileId = "llm.transcriptionProfileId"
         static let chatProfileId = "llm.chatProfileId"
+        // AI 生成标题
+        static let aiGeneratedTitleEnabled = "llm.aiGeneratedTitleEnabled"
     }
     
     // MARK: - Default Prompt
@@ -113,6 +115,11 @@ final class LLMSettings {
     
     /// 请求超时时间（秒）
     var timeout: TimeInterval {
+        didSet { save() }
+    }
+    
+    /// AI 生成标题（用于历史记录）
+    var aiGeneratedTitleEnabled: Bool {
         didSet { save() }
     }
     
@@ -238,6 +245,7 @@ final class LLMSettings {
         self.includeActiveApp = defaults.object(forKey: Keys.includeActiveApp) as? Bool ?? true
         self.temperature = defaults.object(forKey: Keys.temperature) as? Double ?? 0.3
         self.timeout = defaults.object(forKey: Keys.timeout) as? TimeInterval ?? 30
+        self.aiGeneratedTitleEnabled = defaults.object(forKey: Keys.aiGeneratedTitleEnabled) as? Bool ?? false
         
         // 迁移旧数据到新 Profile 系统
         if !defaults.bool(forKey: Keys.hasMigrated) && !providerConfigs.isEmpty {
@@ -562,5 +570,38 @@ final class LLMSettings {
         defaults.set(includeActiveApp, forKey: Keys.includeActiveApp)
         defaults.set(temperature, forKey: Keys.temperature)
         defaults.set(timeout, forKey: Keys.timeout)
+        defaults.set(aiGeneratedTitleEnabled, forKey: Keys.aiGeneratedTitleEnabled)
+    }
+    
+    // MARK: - AI Title Generation
+    
+    /// AI 生成标题的 Prompt
+    static let titleGenerationPrompt = """
+    为以下对话内容生成一个简洁的标题（10字以内）。
+    只输出标题本身，不要加任何标点或引号。
+    """
+    
+    /// 使用 AI 生成标题
+    func generateTitle(from content: String) async -> String? {
+        guard aiGeneratedTitleEnabled,
+              let profile = chatProfile ?? selectedProfile,
+              let provider = createProvider(for: profile) else {
+            return nil
+        }
+        
+        let prompt = LLMPrompt(
+            systemPrompt: Self.titleGenerationPrompt,
+            userMessage: content
+        )
+        
+        do {
+            let response = try await provider.complete(prompt: prompt)
+            let title = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            // 限制长度
+            return String(title.prefix(20))
+        } catch {
+            logger.error("❌ AI title generation failed: \(error)")
+            return nil
+        }
     }
 }

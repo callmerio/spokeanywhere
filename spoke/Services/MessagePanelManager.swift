@@ -107,6 +107,10 @@ final class MessagePanelManager {
         let newPanel = MessagePanelWindow(contentRect: frame)
         newPanel.contentView = hostingView
         
+        // 关键：确保 contentView 也完全透明
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
+        
         self.panel = newPanel
         logger.info("📋 Message Panel created")
     }
@@ -150,7 +154,8 @@ final class MessagePanelWindow: NSPanel {
     init(contentRect: NSRect) {
         super.init(
             contentRect: contentRect,
-            styleMask: [.borderless, .nonactivatingPanel],
+            // 关键：加入 .fullSizeContentView 让内容穿透标题栏区域
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -162,9 +167,13 @@ final class MessagePanelWindow: NSPanel {
         // 窗口层级：悬浮在普通窗口之上
         level = .floating
         
-        // 透明背景
+        // 关键：窗口完全透明
         isOpaque = false
         backgroundColor = .clear
+        
+        // 关键：标题栏透明
+        titlebarAppearsTransparent = true
+        titleVisibility = .hidden
         
         // 不在 Dock/Mission Control 显示
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
@@ -172,7 +181,7 @@ final class MessagePanelWindow: NSPanel {
         // 动画
         animationBehavior = .utilityWindow
         
-        // 禁用阴影（视图自己处理）
+        // 禁用系统阴影（视图自己处理）
         hasShadow = false
         
         // 不可移动

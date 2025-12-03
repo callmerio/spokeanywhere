@@ -6,14 +6,15 @@ import AppKit
 /// 消息面板主视图
 struct MessagePanelView: View {
     @ObservedObject var state: MessagePanelState
+    @ObservedObject var historyService = SessionHistoryService.shared
     
     var body: some View {
         VStack(spacing: 12) {
             // 头部标题栏
             headerView
             
-            // 消息列表
-            messageListView
+            // 统一内容区域（Pipeline + 历史记录）
+            contentListView
             
             // 底部快捷提问按钮
             askButton
@@ -21,54 +22,116 @@ struct MessagePanelView: View {
         .padding(12)
         .frame(width: MessagePanelState.panelWidth)
         .frame(maxHeight: .infinity, alignment: .top)
+        .background(panelBackground)
         .offset(x: state.slideOffset)  // 滑动动画
+    }
+    
+    // MARK: - Panel Background
+    
+    /// 🔮 系统原生毛玻璃背景 (NSVisualEffectView)
+    /// 使用 .contentBackground 材质，更有质感
+    @ViewBuilder
+    private var panelBackground: some View {
+        VisualEffectBlur(
+            material: .popover,  // 更有质感的材质
+            cornerRadius: 16
+        )
     }
     
     // MARK: - Header
     
     private var headerView: some View {
-        HStack {
+        HStack(alignment: .center, spacing: 12) {
+            // 大标题（类似"通知中心"）
             Text("Pipeline")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(HUDTheme.textPrimary)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.white)
             
             Spacer()
             
-            // 卡片数量
-            if !state.cards.isEmpty {
-                Text("\(state.cards.count)")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(HUDTheme.textSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(Capsule())
-            }
-            
-            // 清空按钮
-            Button(action: { state.clearAll() }) {
-                Image(systemName: "trash")
-                    .font(.system(size: 12))
-                    .foregroundColor(HUDTheme.textSecondary)
-            }
-            .buttonStyle(.plain)
-            .opacity(state.cards.isEmpty ? 0.3 : 1)
-            .disabled(state.cards.isEmpty)
+            // 清空全部按钮（hover 效果）
+            let totalCount = state.cards.count + historyService.records.count
+            HoverCloseButton(action: clearAll, size: 24, iconSize: 10)
+                .opacity(totalCount > 0 ? 1 : 0.5)
+                .disabled(totalCount == 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(widgetBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 4)  // 和 Chat 行对齐
+        .padding(.top, 16)
+        .padding(.bottom, 8)
     }
     
-    // MARK: - Message List
     
-    private var messageListView: some View {
+    private func clearAll() {
+        state.clearAll()
+        historyService.clearAll()
+    }
+    
+    // MARK: - Content List (History + Pipeline)
+    
+    private var contentListView: some View {
         ScrollView {
-            LazyVStack(spacing: 10) {
+            LazyVStack(spacing: 12) {
+                // 历史记录分组（Chat 在上，Transcription 在下）
+                ForEach(SessionRecordType.allCases, id: \.self) { type in
+                    if let records = historyService.groupedRecords[type], !records.isEmpty {
+                        HistoryGroupView(
+                            type: type,
+                            records: records,
+                            onRecordTap: handleRecordTap,
+                            onClearType: { historyService.clearRecords(of: type) }
+                        )
+                    }
+                }
+                
+                // Pipeline 卡片（在最下面）
                 ForEach(state.cards) { card in
                     MessageCardView(card: card)
                 }
+            }
+        }
+    }
+    
+    /// 处理历史记录点击
+    private func handleRecordTap(_ record: SessionRecord) {
+        switch record.type {
+        case .conversation:
+            // 恢复对话窗口
+            restoreConversation(record)
+        case .transcription:
+            // 复制到剪贴板
+            if let text = record.transcriptionText {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+            }
+        }
+        
+        // 隐藏面板
+        MessagePanelManager.shared.hide()
+    }
+    
+    /// 恢复对话窗口
+    private func restoreConversation(_ record: SessionRecord) {
+        // 转换消息格式
+        let chatMessages = record.messages.map { msg in
+            ChatMessage(
+                role: msg.role == .user ? .user : .assistant,
+                content: msg.content,
+                attachments: []
+            )
+        }
+        
+        // 创建新面板并恢复消息
+        let panelId = AnswerPanelManager.shared.show(
+            question: record.title,
+            attachments: []
+        )
+        
+        // 延迟更新消息（等待窗口创建）
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            if let state = AnswerPanelManager.shared.state(for: panelId) {
+                state.messages = chatMessages
+                state.isLoading = false
             }
         }
     }
@@ -124,21 +187,19 @@ struct MessagePanelView: View {
     // MARK: - Widget Background
     
     private var widgetBackground: some View {
-        ZStack {
-            // 毛玻璃效果
-            VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
-            // 深色叠加，类似通知中心小组件
-            Color.black.opacity(0.35)
-        }
+        // Header 完全透明
+        Color.clear
     }
 }
 
 // MARK: - Message Card View
 
 /// 单个消息卡片视图（小组件风格）
+/// 点击即复制内容到剪贴板
 struct MessageCardView: View {
     let card: MessageCard
     @State private var isHovered = false
+    @State private var showCopied = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -197,6 +258,10 @@ struct MessageCardView: View {
         .padding(14)
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            copyContent()
+        }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
@@ -204,10 +269,32 @@ struct MessageCardView: View {
         }
     }
     
+    /// 复制内容到剪贴板
+    private func copyContent() {
+        NSPasteboard.general.clearContents()
+        guard NSPasteboard.general.setString(card.content, forType: .string) else { return }
+        
+        // 视觉反馈（使用 Task 避免 View 销毁后闭包执行问题）
+        withAnimation(.easeOut(duration: 0.15)) {
+            showCopied = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            withAnimation(.easeIn(duration: 0.2)) {
+                showCopied = false
+            }
+        }
+    }
+    
     private var cardBackground: some View {
         ZStack {
-            VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
-            Color.black.opacity(isHovered ? 0.4 : 0.35)
+            // 1. 底色：平时几乎透明，hover/复制时变亮
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(showCopied ? 0.15 : (isHovered ? 0.1 : 0.03)))
+            
+            // 2. 描边：给卡片一个极细的边缘，防止糊在一起
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.white.opacity(isHovered ? 0.2 : 0.08), lineWidth: 1)
         }
     }
     

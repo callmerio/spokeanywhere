@@ -307,23 +307,84 @@ struct FloatingCapsuleView: View {
     }
 }
 
-// MARK: - Visual Effect Background (毛玻璃)
+// MARK: - Custom Blur Background (CIGaussianBlur)
 
-struct VisualEffectBackground: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
+/// 自定义高斯模糊背景（可调节模糊强度）
+struct CustomBlurBackground: NSViewRepresentable {
+    var radius: CGFloat = 20
+    var cornerRadius: CGFloat = 0
+    var tintColor: NSColor? = nil
     
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.wantsLayer = true
+        
+        // 高斯模糊滤镜
+        if let blur = CIFilter(name: "CIGaussianBlur") {
+            blur.setValue(radius, forKey: kCIInputRadiusKey)
+            view.layer?.backgroundFilters = [blur]
+        }
+        
+        // 圆角
+        if cornerRadius > 0 {
+            view.layer?.cornerRadius = cornerRadius
+            view.layer?.masksToBounds = true
+        }
+        
+        // 染色层（可选）
+        if let tint = tintColor {
+            view.layer?.backgroundColor = tint.cgColor
+        }
+        
         return view
     }
     
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let blur = CIFilter(name: "CIGaussianBlur") {
+            blur.setValue(radius, forKey: kCIInputRadiusKey)
+            nsView.layer?.backgroundFilters = [blur]
+        }
+        if cornerRadius > 0 {
+            nsView.layer?.cornerRadius = cornerRadius
+            nsView.layer?.masksToBounds = true
+        }
+        if let tint = tintColor {
+            nsView.layer?.backgroundColor = tint.cgColor
+        }
+    }
+}
+
+// MARK: - Visual Effect Background (毛玻璃)
+
+struct VisualEffectBackground: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .underWindowBackground
+    var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+    var cornerRadius: CGFloat = 0
+    
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.material = material
+        v.blendingMode = blendingMode
+        v.state = .active
+        
+        // 强调模式：让模糊更明显
+        v.isEmphasized = true
+        
+        v.wantsLayer = true
+        v.layer?.cornerRadius = cornerRadius
+        v.layer?.masksToBounds = true
+        return v
+    }
+    
+    func updateNSView(_ v: NSVisualEffectView, context: Context) {
+        v.material = material
+        v.blendingMode = blendingMode
+        v.state = .active
+        
+        if cornerRadius > 0 {
+            v.layer?.cornerRadius = cornerRadius
+            v.layer?.masksToBounds = true
+        }
     }
 }
 

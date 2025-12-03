@@ -673,6 +673,24 @@ struct AISettingsContent: View {
                     .toggleStyle(.switch)
                     .tint(.blue)
                 }
+                
+                Divider().background(Color.white.opacity(0.06))
+                
+                // AI 生成标题
+                Toggle(isOn: Binding(
+                    get: { llmSettings.aiGeneratedTitleEnabled },
+                    set: { llmSettings.aiGeneratedTitleEnabled = $0 }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label("AI 生成标题", systemImage: "textformat")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("为历史记录自动生成简洁标题")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.gray)
+                    }
+                }
+                .toggleStyle(.switch)
+                .tint(.blue)
             }
             .padding(16)
         }

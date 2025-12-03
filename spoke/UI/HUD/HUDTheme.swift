@@ -47,6 +47,9 @@ enum HUDTheme {
         /// 主文字颜色
         static let textPrimary = NSColor.white.withAlphaComponent(0.9)
         
+        /// 次要文字颜色
+        static let textSecondary = NSColor.white.withAlphaComponent(0.7)
+        
         /// 占位符颜色
         static let textPlaceholder = NSColor.white.withAlphaComponent(0.4)
     }

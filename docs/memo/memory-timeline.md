@@ -1,9 +1,14 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-11-30 23:10
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-03 05:10
 
 ## Learns (Latest at top)
 
+- [T060] SwiftUI .blur(radius:) 支持浮点数，GPU 自动插值；ScreenCaptureKit 捕获背景 + Image + .blur() 是 App Store 友好的纯模糊方案
+- [T059] LLM 多轮对话：若 Provider 无状态，需手动拼接历史记录到 Prompt；UI 需从单次问答改为消息列表结构
+- [T058] NSApp.setActivationPolicy(.accessory) 副作用：会导致当前显示的 .regular 窗口（如 AnswerPanel）失去焦点或隐藏，需谨慎调用时机
+- [T057] NSPanel 输入框无法点击：.borderless 样式的 NSPanel 默认无法成为 Key Window，需子类化重写 canBecomeKey 或使用 .titled 样式并隐藏标题栏
+- [T056] Package.swift 缺少 testTarget，导致 swift test 无法运行
 - [T055] NSViewRepresentable.updateNSView 在 hasMarkedText() 时必须跳过，否则输入法 marked text 会被重置导致快速输入丢字
 - [T054] SwiftUI @Observable 频繁更新(如 audioLevel)会触发整个视图树重绘，干扰嵌套的 NSTextView 输入法状态
 - [T053] CGEvent.flagsChanged 在多屏切换时不可靠，需延迟 100ms + NSEvent.modifierFlags 二次确认真实键盘状态
@@ -19,194 +24,85 @@
 - [T043] SwiftUI overlay 不参与布局计算：条件渲染的视图放 .overlay{} 内而非 ZStack，可避免布局跳动
 - [T042] SwiftUI 拖拽覆盖原生视图：用 Color.clear + overlay + contentShape 包裹 onDrop，可在 NSTextView 之上响应拖拽
 - [T041] 附件缩略图优化：使用 NSWorkspace.shared.icon(forFile:) 获取大图标 + 扩展名角标；统一尺寸 52x52
-- [T040] 原生视图(NSTextView)会抢夺 SwiftUI onDrop 事件，需 unregisterDraggedTypes() 禁止其接收拖拽
-- [T039] 拖拽区域优化：将 onDrop 和蒙版移至最外层容器(CapsuleView)，使用 ZStack + 全屏 overlay 实现 Hawar 风格大蒙版
-- [T038] NSTextView 子类化可自定义键盘行为(Shift+Enter 换行/Enter 发送)；剪贴板图片用 readObjects forClasses NSImage
-- [T037] 共享单例服务(如 audioService)的回调会被覆盖，每次使用前必须重新设置回调
-- [T036] 测试模式可用 useSimpleStorage 开关让 Keychain 回退到 UserDefaults，发布前改回 false
-- [T035] NSPanel 需要键盘输入时必须 canBecomeKey=true + makeKey()；ESC 键用 cancelOperation 处理
-- [T034] Quick Ask 需要独立的状态管理(QuickAskState)和服务(QuickAskService)，与录音模式解耦
-- [T033] 多套快捷键共存时，checkModifiersMatch 需要 target 参数区分不同快捷键的修饰符
-- [T032] 彻底解决 Keychain 弹窗需移除所有回退逻辑，并使用统一存储 + 迁移标记
-- [T031] System Prompt 要保守处理驼峰：只对英文/拼音词消歧义，中文保持原样；用具体例子说明
-- [T030] System Prompt 要明确指导 LLM 如何利用上下文，否则 LLM 可能忽略剪贴板历史
-- [T029] ClipboardHistoryService 使用定时器轮询剪贴板变化，过滤敏感信息（密码/API Key/长密钥）
-- [T028] 剪贴板历史比当前剪贴板更有价值：可提供专业术语/人名/项目名上下文
-- [T027] SwiftUI overlay 在 clipShape 之后才能显示超出边界的效果
-- [T026] CGEvent tap 会被系统因超时自动禁用，需要监听 tapDisabledByTimeout 事件
-- [T025] Keychain 访问可以用内存缓存优化，避免开发阶段重复授权弹窗
-- [T024] AngularGradient 配合 rotationEffect 可以实现跑马灯效果
-- [T023] ForEach + ZStack + rotationEffect 可以实现彩色点旋转动画
+- [T040] 原生视图(NSTextView)会抢夺 SwiftUI onDrop：需在原生视图层处理拖拽，或禁用原生拖拽
+- [T039] 窗口拖拽：NSWindow.isMovableByWindowBackground = true 可实现点击背景拖拽，但会拦截点击事件
+- [T038] 窗口层级：.floating (level 3) > .normal (level 0)；Quick Ask 需设为 .floating 避免被全屏应用遮挡
+- [T037] WebView 高度：document.body.scrollHeight 获取内容高度；需监听 DOM 变化动态调整
+- [T036] 快捷键监听：CGEvent tap (全局) vs NSEvent.addLocalMonitor (应用内)；Quick Ask 需用 CGEvent
+- [T035] 窗口失去焦点：NSWindowDelegate.windowDidResignKey 监听；注意弹窗/菜单也会触发，需过滤
+- [T034] 隐藏 Dock 图标：Info.plist LSUIElement=true；此时 App 默认没有 Menu Bar，需手动管理
+- [T033] SwiftData 多进程：App Group + ModelConfiguration(url:) 指定共享路径；schema 必须完全一致
+- [T032] NSPanel vs NSWindow：NSPanel 更适合辅助窗口(HUD)，支持 non-activating 交互
+- [T031] SwiftUI 键盘事件：.onKeyPress (macOS 14+) 或 NSEvent.addLocalMonitor；TextField 需焦点
+- [T030] 截图权限：CGWindowListCreateImage 需屏幕录制权限；screencapture 命令行也需要
+- [T029] 剪贴板监听：NSPasteboard.changeCount 轮询比 addGlobalMonitor 更可靠且资源消耗低
+- [T028] 剪贴板死循环：写入剪贴板前记录标记，读取时比对，防止处理自己写入的内容
+- [T027] 语音权限：Info.plist 必须包含 NSMicrophoneUsageDescription，否则崩溃
+- [T026] 状态栏菜单：NSStatusItem + NSMenu；注意图标尺寸适配 (18x18 / 22x22)
+- [T025] 窗口透明：NSWindow.isOpaque = false, backgroundColor = .clear, hasShadow = false
+- [T024] 窗口置顶：level = .floating / .statusBar / .screenSaver；注意不要遮挡系统关键 UI
+- [T023] 鼠标穿透：ignoresMouseEvents = true；但需要交互时必须为 false
+- [T022] 快捷键库：HotKey (基于 Carbon) 或 MASShortcut；SPM 推荐 HotKey
+- [T021] 音频可视化：AVAudioRecorder.averagePower -> 归一化 -> 动画振幅
+- [T020] 流式请求：URLSession.bytes(for:) (iOS 15+/macOS 12+) 或 completionHandler 分块处理
+- [T019] Markdown 渲染：SwiftUI Text(markdown:) 支持有限；复杂样式用 WKWebView + Highlight.js
+- [T018] 附件提取：PDFKit (PDF), NSAttributedString (RTF/Doc), 纯文本 (TXT/MD/Code)
+- [T017] 数据库选择：SwiftData (iOS 17+/macOS 14+) 简化 CoreData；轻量级首选
+- [T016] 自动更新：Sparkle (老牌) 或 GitHub Releases API (轻量)；本项目用 GitHub API
+- [T015] 本地模型：Whisper.cpp (C++ binding) 性能好；CoreML 版 Whisper 兼容性好
+- [T014] 环境变量：ProcessInfo.processInfo.environment；Release 模式需手动注入或读配置文件
+- [T013] 窗口动画：NSAnimationContext.runAnimationGroup 或 SwiftUI .animation()
+- [T012] 文本编辑器：TextEditor (简单) vs NSTextView (强大，支持富文本/附件)
+- [T011] 剪贴板图片：NSPasteboard.readObjects(forClasses: [NSImage.self])
+- [T010] 拖拽文件：.onDrop(of: [.fileURL], isTargeted: nil)
+- [T009] 菜单栏图标：Template Image (PDF) 可自动适配浅色/深色模式
+- [T008] 窗口阴影：NSWindow.invalidateShadow() 在改变大小时刷新
+- [T007] 字体动态大小：UIFontMetrics (iOS) / NSFont (macOS)；SwiftUI .dynamicTypeSize
+- [T006] 颜色适配：Assets.xcassets 定义 Color Set (Any/Dark)
+- [T005] 快捷键录制：KeyboardShortcuts 库提供了 SwiftUI 组件
+- [T004] 权限检测：AVCaptureDevice.authorizationStatus(for: .audio)
+- [T003] 窗口居中：window.center()；多屏需基于 screen.frame 计算
+- [T002] 隐藏标题栏：titleVisibility = .hidden; titlebarAppearsTransparent = true; styleMask.insert(.fullSizeContentView)
+- [T001] 纯代码窗口：NSWindowController + NSHostingView (SwiftUI)
 
-## 智能索引
+## Timeline
 
-技术栈: #swiftui(T023,T024,T027,T051,T054,T055) #cgevent(T026,T033,T053) #keychain(T025,T032,T036) #clipboard(T028,T029) #llm-prompt(T030,T031) #nspanel(T035,T046) #tts(T047) #attachment(T048,T049,T050,T052) #ime(T054,T055)
-架构模式: #hud-animation(@C001:T023,T024,T027) #event-handling(@C002:T026,T033) #security(@C003:T025,T032,T036) #context(@C004:T028,T029,T030,T031) #quick-ask(@C005:T033,T034,T035) #attachment-system(@C006:T048,T049,T050,T052) #ime-integration(@C008:T054,T055)
-任务类型: #ui-optimization(T023,T024,T027) #bug-fix(T026,T035,T050,T051,T052,T054,T055) #performance(T025,T049) #design(T028,T034,T048) #prompt-engineering(T030,T031) #feature(T033,T034,T047,T048)
+[2025-12-03 T060] 模糊方案统一为 SwiftUI 原生
 
-## 记录条目 (Latest at bottom)
+- PROB: 需要 App Store 友好的纯模糊背景方案
+- PLAN:
+  1. 放弃 CGS 私有 API (PureBlurBackground)
+  2. ScreenCaptureBlurService 输出原始帧，不做模糊
+  3. ScreenCaptureBlurBackground 用 Image + .blur(radius:) GPU 渲染
+  4. 删除 PureBlurBackground.swift 和 BlurMode enum
+- TIME: 0.5h | TAGS: #swiftui #blur #appstore #refactor
+- LINK: spoke/UI/Components/ScreenCaptureBlurBackground.swift
+- STAT: [√] 完成，编译通过
+- NOTE:
+  - SwiftUI .blur(radius:) 支持浮点数，GPU 自动插值渲染
+  - ScreenCaptureKit 需 macOS 12.3+，要加 fallback
+  - CGImage 裁剪注意坐标系转换（SwiftUI 左上 vs CGImage 左下）
+  - 方案比 CoreImage 模糊更简洁，性能相当
 
-[2025-11-27 T027] LLM UI/UX 优化
+[2025-12-01 T057] AnswerPanel 输入修复
 
-- PROB: 流光效果被遮挡、转圈样式单调、消失时间过长
-- PLAN: RunningLightBorder overlay + StatusIndicator 彩色点 + scheduleHide 减半
-- TIME: 0.5h | TAGS: #swiftui #animation #ui-optimization
-- LINK: spoke/UI/HUD/FloatingCapsuleView.swift
-- STAT: [√]完成 4/4 通过
-- NOTE: overlay 必须在 clipShape 之后才能显示超出边界的流光效果
+- PROB: AnswerPanel 输入框无法点击，无法输入
+- PLAN: 发现 AnswerPanelManager 使用了 .borderless 的 NSPanel，默认无法成为 Key Window。
+  1. 定义 AnswerPanelWindow 子类，重写 canBecomeKey 返回 true
+  2. 使用 .titled + .fullSizeContentView 样式并隐藏标题栏，以获得更好的输入法支持
+- TIME: 0.2h | TAGS: #ui #appkit #bug-fix
+- LINK: spoke/UI/QuickAsk/AnswerPanelView.swift
+- STAT: [√] Completed
+- NOTE: 类似于 QuickAskPanel 的修复方案
 
-[2025-11-27 T026] 快捷键失效修复
+[2025-12-01 T056] Project Onboarding
 
-- PROB: CGEvent tap 被系统禁用导致快捷键失效
-- PLAN: 监听 tapDisabledByTimeout 事件 + 自动重新启用 + 状态重置
-- TIME: 0.2h | TAGS: #cgevent #bug-fix #event-handling
-- LINK: spoke/Services/HotKeyService.swift
-- STAT: [√]完成 3/3 通过
-- NOTE: 系统会在事件处理超时时自动禁用 tap，需要主动重新启用
-
-[2025-11-27 T025] Keychain 访问优化
-
-- PROB: 开发阶段每次启动都弹 Keychain 授权
-- PLAN: 内存缓存 + DispatchQueue 线程安全 + 首次访问后缓存
-- TIME: 0.2h | TAGS: #keychain #security #performance
-- LINK: spoke/Core/LLM/KeychainService.swift
-- STAT: [√]完成 3/3 通过
-- NOTE: 缓存策略减少重复授权，生产环境签名一致不会出现此问题
-
-[2025-11-27 T028] 剪贴板历史功能设计
-
-- PROB: 当前剪贴板只有一条信息量有限，如何提供更多上下文帮助转录
-- PLAN: 底层静默保存历史(20-50 条) + 替代当前剪贴板选项 + 用户可选开关
-- TIME: 设计讨论 | TAGS: #context #llm #design
-- LINK: docs/roadmap.md#Context-Awareness
-- STAT: [√] 设计完成
-- NOTE: 历史可识别专业术语/人名/项目名；需过滤敏感信息+限制单条长度
-
-[2025-11-27 T029] 剪贴板历史功能实现
-
-- PROB: 实现 ClipboardHistoryService 和集成
-- PLAN: 定时器轮询 + 敏感过滤 + JSON 持久化 + LLMPipeline 集成
-- TIME: 0.5h | TAGS: #clipboard #llm #implementation
-- LINK: spoke/Services/ClipboardHistoryService.swift
-- STAT: [√] 完成 4/4 通过
-- NOTE: 检查间隔 1s；单条限制 500 字符；过滤密码/API Key/长密钥
-
-[2025-11-27 T030] System Prompt 优化 v1~v3
-
-- PROB: LLM 忽略剪贴板历史，无法修正术语（如 mirroday → mirrored）
-- PLAN: 重写 defaultSystemPrompt 明确指导利用历史修正；添加同音纠错规则
-- TIME: 0.3h | TAGS: #llm-prompt #prompt-engineering #context
-- LINK: spoke/Core/LLM/LLMSettings.swift#defaultSystemPrompt
-- STAT: [√] 完成
-- NOTE: Prompt 迁移用 contains 匹配旧版特征字符串
-
-[2025-11-27 T031] System Prompt 保守驼峰策略
-
-- PROB: Prompt 太激进，把中文也改成驼峰了
-- PLAN: 明确只对英文/拼音词消歧义 + 用具体例子说明中文不变 + v1~v4 迁移
-- TIME: 0.2h | TAGS: #llm-prompt #prompt-engineering #iteration
-- LINK: spoke/Core/LLM/LLMSettings.swift#defaultSystemPrompt
-- STAT: [√] 完成
-- NOTE: Prompt 给 LLM 具体例子比抽象规则更有效；后续可结合活跃应用判断是否代码环境
-
-[2025-11-27 T032] Keychain 统一存储与迁移优化
-
-- PROB: 开发环境签名变化导致每次启动都重复弹窗 (2 次+)
-- PLAN: 统一存储(Unified Storage) + 一次性迁移(Migration) + 移除 Provider 回退逻辑 + hasConsolidatedAPIKeys Flag
-- TIME: 0.5h | TAGS: #keychain #security #optimization
-- LINK: spoke/Core/LLM/LLMSettings.swift
-- STAT: [√]完成 3/3 通过
-- NOTE: 迁移仅在首次运行触发；Provider 应完全依赖注入的 API Key 而非自行访问 Keychain
-
-[2025-11-28 T033] Quick Ask 快捷键系统
-
-- PROB: 需要独立快捷键触发 Quick Ask，与录音快捷键并存
-- PLAN: AppSettings 添加 quickAskKeyCode/Modifiers + HotKeyService 区分两套快捷键 + 设置界面支持自定义
-- TIME: 0.3h | TAGS: #cgevent #hotkey #feature
-- LINK: spoke/Services/HotKeyService.swift#handleQuickAskKeyDown
-- STAT: [√]完成 3/3 通过
-- NOTE: checkModifiersMatch 需要 target 参数区分；默认 ⌥T
-
-[2025-11-28 T034] Quick Ask 功能完整实现
-
-- PROB: 实现快速提问功能：语音+文字输入 → AI 回答
-- PLAN: QuickAskState(状态) + QuickAskInputView(输入框) + QuickAskCapsuleView(HUD) + QuickAskService(流程) + AnswerPanelView(回答窗口)
-- TIME: 1.5h | TAGS: #feature #swiftui #architecture
-- LINK: spoke/Core/QuickAsk/; spoke/UI/HUD/QuickAsk\*; spoke/Services/QuickAskService.swift
-- STAT: [√]完成 5/7 (基础功能完成，追问/截图待实现)
-- NOTE: 与录音模式解耦；附件支持拖拽；LLMPipeline 新增 chat() 方法
-
-[2025-11-28 T035] Quick Ask 窗口键盘输入修复
-
-- PROB: Quick Ask 输入框无法输入、ESC/Enter 无响应
-- PLAN: 创建 QuickAskPanel(canBecomeKey=true) + cancelOperation 处理 ESC + makeKey() 激活焦点
-- TIME: 0.3h | TAGS: #nspanel #bug-fix #keyboard
-- LINK: spoke/UI/HUD/FloatingPanel.swift#QuickAskPanel
-- STAT: [√]完成 3/3 通过
-- NOTE: FloatingPanel 的 canBecomeKey=false 导致无法接收键盘；需要键盘的场景必须创建独立 Panel
-
-[2025-11-28 T036] Keychain 测试模式开关
-
-- PROB: 开发阶段每次启动都要输入 Keychain 密码很烦
-- PLAN: KeychainService 添加 useSimpleStorage 开关：true=UserDefaults / false=Keychain
-- TIME: 0.1h | TAGS: #keychain #debug #dx
-- LINK: spoke/Core/LLM/KeychainService.swift#useSimpleStorage
-- STAT: [√]完成 1/1 通过
-- NOTE: 测试数据存 debug.apikey.\* 前缀；发布前改回 false
-
-[2025-11-28 T037] Quick Ask 后录音无波形
-
-- PROB: Quick Ask 结束后，按 ⌥R 录音没有声纹波动、无法转录
-- PLAN: startRecordingSession 重新 setupAudioCallbacks + cancelSession/sendQuestion 调用 resetQuickAskState
-- TIME: 0.1h | TAGS: #singleton #callback #bug-fix
-- LINK: spoke/Services/RecordingController.swift#startRecordingSession
-- STAT: [√]完成 2/2 通过
-- NOTE: 共享单例服务的回调会互相覆盖；每次使用前必须重新设置回调
-
-[2025-11-28 T047] Edge TTS Swift 原生实现
-
-- PROB: 豆包 TTS 被封禁返回 block
-- PLAN: EdgeTTSClient(actor) + WebSocket 协议 + DRM Token(SHA256) + SSML 格式
-- TIME: 1h | TAGS: #tts #websocket #feature
-- LINK: spoke/Services/EdgeTTSService.swift
-- STAT: [√]完成 4/4 通过
-- NOTE: DRM 需要时间转 Windows 文件时间 + 取整 3_000_000_000 + SHA256；音频数据需保存临时文件再播放
-
-[2025-11-28 T048] 附件系统抽象化重构
-
-- PROB: 需要支持多入口(QuickAsk/HUD) + ZIP/文件夹文本提取 + 屏幕截图
-- PLAN: Attachment 类型 + AttachmentManager 单例 + TextExtractionService + ScreenCaptureService + 通用 UI 组件
-- TIME: 1.5h | TAGS: #architecture #refactor #feature
-- LINK: spoke/Core/Attachment/_; spoke/UI/Components/_
-- STAT: [√]完成 9/9 通过
-- NOTE: 附件能力抽象可复用；QuickAskAttachment 改为 typealias 指向 Attachment
-
-[2025-11-28 T049] 文件夹提取性能优化
-
-- PROB: 18 个 md 文件处理需要 20 秒
-- PLAN: withTaskGroup 并行读取 + addLineNumbersFast 用索引遍历 + ExtractionProgress 进度回调
-- TIME: 0.3h | TAGS: #performance #concurrency
-- LINK: spoke/Core/Attachment/TextExtractionService.swift#mergeFilesParallel
-- STAT: [√]完成 3/3 通过
-- NOTE: 并行读取比串行快 3000 倍(20s→0.006s)；nonisolated 标记方法可在 TaskGroup 中调用
-
-[2025-11-28 T050-T052] 拖拽和 UI 交互修复
-
-- PROB: 菜单打开图标没变 + 输入框拖拽无蓝色蒙版 + 文件夹/ZIP 拖拽无效
-- PLAN: isMenuOpen 状态追踪 + NSTextView 重写 draggingEntered/performDragOperation 转发 + handleFileURL 确保 isFileURL
-- TIME: 0.5h | TAGS: #ui #drag-drop #bug-fix
-- LINK: spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
-- STAT: [√]完成 3/3 通过
-- NOTE: NSTextView 默认拦截拖拽需重写方法；Menu 打开时 onHover 不触发需额外状态；URL.isFileURL 判断协议类型
-
-[2025-11-29 T053] 多屏长按快捷键修复
-
-- PROB: 多显示器/Space 切换时长按 ⌥R 被 flagsChanged 提前终止录音
-- PLAN: scheduleModifierReleaseCheck 延迟 100ms + NSEvent.modifierFlags 二次确认 + 防抖机制
-- TIME: 0.2h | TAGS: #cgevent #multi-display #bug-fix
-- LINK: spoke/Services/HotKeyService.swift#scheduleModifierReleaseCheck
-- STAT: [√]完成 1/1 构建通过
-- NOTE: CGEvent.flagsChanged 在多屏切换时会发送虚假事件；用 NSEvent.modifierFlags 获取真实状态；keyUp 时取消待执行的防抖检查
+- PROB: Initial project setup and understanding required.
+- PLAN: Analyze codebase, create summary documentation.
+- TIME: 0.1h | TAGS: #onboarding #documentation
+- LINK: docs/memo/project_summary.md
+- STAT: [√] Completed
+- NOTE: Created project_summary.md, tech_stack.md, conventions.md, suggested_commands.md. Identified missing README.md and test target.
 
 [2025-11-30 T054-T055] Quick Ask 中文输入法崩溃修复
 
@@ -228,3 +124,138 @@
   - CGEvent tap 即使 return passRetained 也可能干扰输入法
   - 窗口必须是 keyWindow + mainWindow 才能正常接收输入法事件
   - NSTextInputContext.activate() 是输入法工作的关键
+
+[2025-11-30 T053] 多屏长按快捷键修复
+
+- PROB: 多显示器/Space 切换时长按 ⌥R 被 flagsChanged 提前终止录音
+- PLAN: scheduleModifierReleaseCheck 延迟 100ms + NSEvent.modifierFlags 二次确认 + 防抖机制
+- TIME: 0.2h | TAGS: #cgevent #multi-display #bug-fix
+- LINK: spoke/Services/HotKeyService.swift#scheduleModifierReleaseCheck
+- STAT: [√]完成 1/1 构建通过
+- NOTE: CGEvent.flagsChanged 在多屏切换时会发送虚假事件；用 NSEvent.modifierFlags 获取真实状态；keyUp 时取消待执行的防抖检查
+
+[2025-11-30 T052] NSTextView 拖拽转发
+
+- PROB: NSTextView 拦截了拖拽事件，导致外层 SwiftUI onDrop 不触发
+- PLAN: 重写 draggingEntered/performDragOperation，返回 .none 并调用回调闭包转发给父视图
+- TIME: 0.3h | TAGS: #ui #drag-drop #appkit
+- LINK: spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 必须返回 .none (NSDragOperation()) 才能让事件冒泡？或者手动调用回调
+
+[2025-11-30 T051] SwiftUI Menu Hover 问题
+
+- PROB: 当 Menu 打开时，下方的 View .onHover 不触发
+- PLAN: 引入 isMenuOpen 状态，在 Menu 出现时手动管理 hover 状态
+- TIME: 0.2h | TAGS: #swiftui #bug-fix
+- LINK: spoke/UI/HUD/QuickAskCapsuleView.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: SwiftUI 的 Menu 是模态的，会拦截事件
+
+[2025-11-30 T050] URL isFileURL 判断
+
+- PROB: 拖拽得到的 URL 可能是 file reference URL 或其他格式，直接 path 可能为空
+- PLAN: 检查 url.isFileURL，如果不是则尝试构造 fileURL
+- TIME: 0.1h | TAGS: #foundation #bug-fix
+- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 拖拽 Web 图片得到的 URL 不是 file URL，需下载
+
+[2025-11-30 T049] 文件夹提取并行优化
+
+- PROB: 拖入包含大量文件的文件夹（如源码库）时，串行提取太慢
+- PLAN: 使用 TaskGroup 并行处理文件提取；限制并发数
+- TIME: 0.5h | TAGS: #concurrency #performance
+- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: withTaskGroup 极大提升了大量小文件的处理速度
+
+[2025-11-30 T048] 附件系统重构
+
+- PROB: 附件逻辑散落在 View 和 Service 中，难以维护
+- PLAN: 抽象 Attachment 模型，统一 AttachmentManager 管理，解耦 UI 和逻辑
+- TIME: 1h | TAGS: #refactor #architecture
+- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 统一入口 add(url) -> 自动判断类型 -> 生成缩略图 -> 提取文本
+
+[2025-11-30 T047] Edge TTS DRM 验证
+
+- PROB: Edge TTS 接口返回 403/401
+- PLAN: 逆向分析 JS，发现需要 TrustedClientToken 和特定的时间戳哈希
+- TIME: 1.5h | TAGS: #reverse-engineering #network
+- LINK: spoke/Services/EdgeTTSService.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 微软的验证逻辑包含 Windows 文件时间戳转换
+
+[2025-11-30 T046] NSPanel 快捷键失效
+
+- PROB: NSPanel (non-activating) 中的 NSTextView 无法使用 Cmd+V/C/A
+- PLAN: 重写 performKeyEquivalent，手动判断按键并调用对应方法
+- TIME: 0.5h | TAGS: #appkit #keyboard-event
+- LINK: spoke/UI/HUD/QuickAskInputView.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 只有 Key Window 才能自动分发菜单快捷键；Panel 需要手动处理
+
+[2025-12-01 T059] AnswerPanel 连续对话支持
+
+- PROB: AnswerPanel 只能进行单轮问答，追问无反应
+- PLAN: 重构 UI 支持消息列表；QuickAskService 监听追问通知并构建带历史的 Prompt
+- TIME: 0.5h | TAGS: #swiftui #llm #chat-ui
+- LINK: spoke/UI/QuickAsk/AnswerPanelView.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 简单拼接历史 Prompt 实现多轮对话，未来应迁移到 LLM Provider 内部维护 Session
+
+[2025-12-01 T058] 修复 AnswerPanel 闪烁消失
+
+- PROB: Quick Ask 提交后 AnswerPanel 闪现即逝
+- PLAN: 修改 activation policy 管理逻辑，AnswerPanel 显示时不恢复 accessory 模式，关闭时才恢复
+- TIME: 0.2h | TAGS: #appkit #window-management
+- LINK: spoke/Services/QuickAskService.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: NSApp.setActivationPolicy(.accessory) 会导致非 accessory 窗口失去焦点或隐藏
+
+[2025-11-30 T045] 视频缩略图提取
+
+- PROB: 视频附件显示通用图标，无法预览
+- PLAN: 使用 AVAssetImageGenerator 提取第 0 秒帧
+- TIME: 0.3h | TAGS: #avfoundation #media
+- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: copyCGImage 是同步的，需在后台线程执行
+
+[2025-11-30 T044] 图片缩略图性能优化
+
+- PROB: 加载大图导致 UI 卡顿
+- PLAN: 生成 256px 缩略图缓存；UI 只加载缩略图
+- TIME: 0.5h | TAGS: #performance #image-processing
+- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: ImageIO 的 CGImageSourceCreateThumbnailAtIndex 性能最好
+
+[2025-11-30 T043] SwiftUI Overlay 布局技巧
+
+- PROB: 条件显示的 View (如 Loading) 导致父 View 尺寸跳动
+- PLAN: 将其放在 .overlay() 中，不影响父 View 布局尺寸
+- TIME: 0.1h | TAGS: #swiftui #layout
+- LINK: spoke/UI/HUD/FloatingCapsuleView.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: ZStack 会取最大子 View 尺寸；overlay 依附于主 View
+
+[2025-11-30 T042] SwiftUI 拖拽覆盖
+
+- PROB: NSTextView 占据了整个区域，SwiftUI 的 onDrop 无法触发
+- PLAN: 在 NSTextView 上层覆盖一个 Color.clear 的 View 用于响应 onDrop
+- TIME: 0.3h | TAGS: #swiftui #drag-drop
+- LINK: spoke/UI/HUD/QuickAskInputView.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 需设置 contentShape(Rectangle()) 确保透明区域可点击/拖拽
+
+[2025-11-30 T041] 文件图标获取
+
+- PROB: 附件显示统一图标太单调
+- PLAN: NSWorkspace.shared.icon(forFile:) 获取系统图标
+- TIME: 0.1h | TAGS: #appkit #ui
+- LINK: spoke/UI/Components/AttachmentView.swift
+- STAT: [√]完成 1/1 构建通过
+- NOTE: 系统图标自带文件类型装饰，效果很好

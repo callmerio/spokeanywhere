@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 /// Quick Ask 模式
 enum QuickAskMode: String, CaseIterable {
@@ -18,16 +19,34 @@ enum QuickAskMode: String, CaseIterable {
     }
 }
 
+/// 消息角色
+enum MessageRole: Equatable {
+    case user
+    case assistant
+}
+
+/// 聊天消息模型
+struct ChatMessage: Identifiable, Equatable {
+    let id = UUID()
+    let role: MessageRole
+    let content: String
+    let attachments: [QuickAskAttachment]
+    var timestamp = Date()
+}
+
 /// 回答面板状态
 @Observable
 @MainActor
 final class AnswerPanelState {
-    var question: String = ""
-    var attachments: [QuickAskAttachment] = []
-    var answer: String = ""
+    var messages: [ChatMessage] = []
     var isLoading: Bool = false
     var error: String?
     var suggestedQuestions: [String] = []
+    
+    // 兼容旧代码的计算属性
+    var answer: String {
+        messages.last(where: { $0.role == .assistant })?.content ?? ""
+    }
 }
 
 /// Quick Ask 回答面板视图
@@ -35,7 +54,6 @@ struct AnswerPanelView: View {
     @Bindable var state: AnswerPanelState
     
     @State private var followUpInput: String = ""
-    @FocusState private var isInputFocused: Bool
     
     /// 录音状态
     @State private var isRecording: Bool = false
@@ -59,10 +77,16 @@ struct AnswerPanelView: View {
     // 自动朗读追踪
     @State private var lastAutoReadAnswer: String = ""
     
+    // 待发送附件
+    @State private var pendingAttachments: [Attachment] = []
+    
+    // 拖拽状态
+    @State private var isDragOver: Bool = false
+    
     /// 关闭回调
     var onClose: (() -> Void)?
     /// 追问回调
-    var onFollowUp: ((String) -> Void)?
+    var onFollowUp: ((String, [Attachment]) -> Void)?
     /// 新对话回调
     var onNewChat: (() -> Void)?
     /// 重新生成回调
@@ -75,27 +99,37 @@ struct AnswerPanelView: View {
                 Color.clear.frame(height: 10)
                 
                 // 对话内容区
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        // 用户消息
-                        userMessageBubble
-                        
-                        // AI 回答
-                        if state.isLoading {
-                            loadingView
-                        } else if let error = state.error {
-                            errorView(error)
-                        } else if !state.answer.isEmpty {
-                            answerView
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            // 消息列表
+                            ForEach(state.messages) { message in
+                                MessageBubbleView(message: message)
+                                    .id(message.id)
+                            }
+                            
+                            // Loading
+                            if state.isLoading {
+                                loadingView
+                            } else if let error = state.error {
+                                errorView(error)
+                            }
+                            
+                            // 推荐问题 (仅在非 loading 且无错误时显示)
+                            if !state.isLoading && state.error == nil && !state.suggestedQuestions.isEmpty {
+                                suggestedQuestionsView
+                            }
                         }
-                        
-                        // 推荐问题
-                        if !state.suggestedQuestions.isEmpty {
-                            suggestedQuestionsView
+                        .padding(16)
+                        .padding(.top, 20) // 额外顶部内边距
+                    }
+                    .onChange(of: state.messages) { _, messages in
+                        if let lastId = messages.last?.id {
+                            withAnimation {
+                                proxy.scrollTo(lastId, anchor: .bottom)
+                            }
                         }
                     }
-                    .padding(16)
-                    .padding(.top, 20) // 额外顶部内边距
                 }
                 
                 // 底部输入框
@@ -137,6 +171,13 @@ struct AnswerPanelView: View {
             }
             .keyboardShortcut(",", modifiers: .command)
             .hidden()
+            
+            // Cmd + W 关闭窗口
+            Button("") {
+                onClose?()
+            }
+            .keyboardShortcut("w", modifiers: .command)
+            .hidden()
         }
         .onChange(of: state.isLoading) { _, isLoading in
             // 当 loading 结束且有回复时，触发自动朗读
@@ -147,6 +188,10 @@ struct AnswerPanelView: View {
                     ttsService.speak(state.answer)
                 }
             }
+        }
+        .onDisappear {
+            // 页面消失时停止 TTS
+            ttsService.stop()
         }
     }
     
@@ -204,152 +249,6 @@ struct AnswerPanelView: View {
         .padding(.bottom, 8)
     }
     
-    // MARK: - User Message
-    
-    private var userMessageBubble: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            // 附件缩略图
-            if !state.attachments.isEmpty {
-                HStack(spacing: 8) {
-                    ForEach(state.attachments) { attachment in
-                        if let thumbnail = attachment.thumbnail {
-                            Image(nsImage: thumbnail)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                    }
-                }
-            }
-            
-            // 问题文字
-            if !state.question.isEmpty {
-                Text(state.question)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.white)
-                    .padding(12)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
-    
-    // MARK: - Answer
-    
-    private var answerView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // AI 回答内容 (Markdown) - 自适应高度，不截断
-            MarkdownWebView(text: state.answer, dynamicHeight: $answerHeight)
-                .frame(minHeight: answerHeight)
-            
-            // 操作按钮
-            HStack(spacing: 16) {
-                // 朗读按钮 (切换)
-                Button(action: { ttsService.toggleSpeak(state.answer) }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: ttsService.isPlaying ? "stop.fill" : "speaker.wave.2")
-                            .font(.system(size: 12))
-                        Text(ttsService.isPlaying ? "停止" : "朗读")
-                            .font(.system(size: 11))
-                    }
-                    .foregroundStyle(ttsService.isPlaying ? Color.accentColor : .white.opacity(0.5))
-                }
-                .buttonStyle(.plain)
-                
-                // 复制按钮 (成功后打勾)
-                Button(action: { copyAnswer() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 12))
-                            .foregroundStyle(isCopied ? .green : .white.opacity(0.5))
-                        Text(isCopied ? "已复制" : "复制")
-                            .font(.system(size: 11))
-                            .foregroundStyle(isCopied ? .green : .white.opacity(0.5))
-                    }
-                    .animation(.easeInOut(duration: 0.2), value: isCopied)
-                }
-                .buttonStyle(.plain)
-                
-                // 重新生成
-                Button(action: { onRegenerate?() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12))
-                        Text("重新生成")
-                            .font(.system(size: 11))
-                    }
-                    .foregroundStyle(.white.opacity(0.5))
-                }
-                .buttonStyle(.plain)
-                
-                Spacer()
-                
-                // 模式选择器 (DeepResearch / Canvas / Mind)
-                modeSelector
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
-    private func actionButton(icon: String, label: String, action: @escaping () -> Void = {}) -> some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                Text(label)
-                    .font(.system(size: 11))
-            }
-            .foregroundStyle(.white.opacity(0.5))
-        }
-        .buttonStyle(.plain)
-    }
-    
-    /// 复制回答到剪贴板
-    private func copyAnswer() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(state.answer, forType: .string)
-        
-        withAnimation(.easeInOut(duration: 0.2)) {
-            isCopied = true
-        }
-        
-        // 2秒后恢复
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isCopied = false
-            }
-        }
-    }
-    
-    /// 模式选择器
-    private var modeSelector: some View {
-        Menu {
-            ForEach(QuickAskMode.allCases, id: \.self) { mode in
-                Button(action: { selectedMode = mode }) {
-                    Label(mode.rawValue, systemImage: mode.icon)
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: selectedMode.icon)
-                    .font(.system(size: 12))
-                Text(selectedMode.rawValue)
-                    .font(.system(size: 11))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8))
-            }
-            .foregroundStyle(.white.opacity(0.5))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Color.white.opacity(0.08))
-            .clipShape(Capsule())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-    }
-    
     // MARK: - Loading
     
     private var loadingView: some View {
@@ -384,7 +283,7 @@ struct AnswerPanelView: View {
     private var suggestedQuestionsView: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(state.suggestedQuestions, id: \.self) { question in
-                Button(action: { onFollowUp?(question) }) {
+                Button(action: { onFollowUp?(question, []) }) {
                     HStack {
                         Text(question)
                             .font(.system(size: 13))
@@ -405,99 +304,176 @@ struct AnswerPanelView: View {
     }
     
     // MARK: - Input Area
+    
     private var inputArea: some View {
+        inputAreaContent
+            .padding(14)
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .overlay {
+                AttachmentDropOverlay(cornerRadius: 14, isVisible: isDragOver)
+            }
+            .onDrop(of: [.image, .fileURL], isTargeted: $isDragOver) { providers in
+                handleDropProviders(providers)
+                return true
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+            .padding(.top, 8)
+    }
+    
+    private var inputAreaContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // 文本输入区域
+            // 待发送附件预览
+            if !pendingAttachments.isEmpty {
+                pendingAttachmentsView
+            }
+            
+            // 文本输入或录音
             if !isRecording {
-                TextField("继续追问...", text: $followUpInput, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15))
-                    .foregroundStyle(.white)
-                    .focused($isInputFocused)
-                    .lineLimit(2...6)
-                    .frame(minHeight: 24, alignment: .top)
+                textEditorView
             } else {
-                // 录音时显示波纹
                 recordingWaveform
             }
             
             // 底部工具栏
-            HStack(spacing: 12) {
-                // 添加按钮 (未来扩展附件等)
-                Button(action: {}) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .medium))
+            inputToolbar
+        }
+    }
+    
+    private var pendingAttachmentsView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(pendingAttachments) { attachment in
+                    AttachmentThumbnailView(
+                        attachment: attachment,
+                        onRemove: { removeAttachment(attachment.id) },
+                        size: 60
+                    )
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 4)
+        }
+    }
+    
+    private var textEditorView: some View {
+        AnswerPanelTextEditor(
+            text: $followUpInput,
+            placeholder: "继续追问...",
+            onSend: { sendMessage() },
+            onPasteImage: { image in handlePasteImage(image) }
+        )
+        .frame(minHeight: 24, maxHeight: 120)
+    }
+    
+    private var inputToolbar: some View {
+        HStack(spacing: 12) {
+            AttachmentPickerMenu(onAdd: { attachment in
+                withAnimation { pendingAttachments.append(attachment) }
+            })
+            
+            Spacer()
+            
+            if !isRecording {
+                Button(action: { toggleRecording() }) {
+                    Image(systemName: "mic")
+                        .font(.system(size: 16))
                         .foregroundStyle(.white.opacity(0.4))
                 }
                 .buttonStyle(.plain)
-                
-                Spacer()
-                
-                // 麦克风按钮
-                Button(action: { toggleRecording() }) {
-                    Image(systemName: isRecording ? "mic.fill" : "mic")
-                        .font(.system(size: 16))
-                        .foregroundStyle(isRecording ? Color.accentColor : .white.opacity(0.4))
-                }
-                .buttonStyle(.plain)
-                
-                // 发送按钮
-                Button(action: {
-                    if !followUpInput.isEmpty {
-                        onFollowUp?(followUpInput)
-                        followUpInput = ""
-                    }
-                }) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(followUpInput.isEmpty ? Color.white.opacity(0.2) : Color.accentColor)
-                }
-                .buttonStyle(.plain)
-                .disabled(followUpInput.isEmpty && !isRecording)
             }
-            .padding(.top, 4) // 工具栏往下移
+            
+            sendButton
         }
-        .padding(14)
-        .background(Color.white.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
-        .padding(.top, 8)
+        .padding(.top, 4)
+    }
+    
+    private var sendButton: some View {
+        Button(action: { sendMessage() }) {
+            Image(systemName: "arrow.up.circle.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(canSend ? Color.accentColor : Color.white.opacity(0.2))
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSend && !isRecording)
+    }
+    
+    private var canSend: Bool {
+        !followUpInput.isEmpty || !pendingAttachments.isEmpty
+    }
+    
+    private func sendMessage() {
+        guard canSend else { return }
+        onFollowUp?(followUpInput, pendingAttachments)
+        followUpInput = ""
+        pendingAttachments = []
+    }
+    
+    private func removeAttachment(_ id: UUID) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            pendingAttachments.removeAll { $0.id == id }
+        }
+    }
+    
+    private func handlePasteImage(_ image: NSImage) {
+        AttachmentManager.shared.addImage(image, source: .paste) { attachment in
+            withAnimation { pendingAttachments.append(attachment) }
+        }
+    }
+    
+    private func handleDropProviders(_ providers: [NSItemProvider]) {
+        AttachmentManager.shared.handleDrop(providers: providers) { attachment in
+            withAnimation { pendingAttachments.append(attachment) }
+        }
     }
     
     // MARK: - Recording Waveform
     
-    /// 录音波纹动画（类似 HUD 但拉满整个宽度）
+    /// 录音波纹动画（红色风格）
     private var recordingWaveform: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 8) {
             // 录音指示点
             Circle()
-                .fill(Color.white.opacity(0.6))
-                .frame(width: 6, height: 6)
+                .fill(Color.red)
+                .frame(width: 8, height: 8)
+                .opacity(isRecording ? 1 : 0.5)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isRecording)
             
             Text("Recording")
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.6))
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
             
-            // 波纹条 - 拉满剩余宽度
-            GeometryReader { geo in
-                HStack(spacing: 1.5) {
-                    ForEach(0..<Int(geo.size.width / 4), id: \.self) { index in
-                        let level = audioLevels[index % audioLevels.count]
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(Color.white.opacity(0.5))
-                            .frame(width: 2, height: CGFloat(level) * 20 + 2)
-                    }
+            Spacer()
+            
+            // 波纹条
+            HStack(spacing: 2) {
+                ForEach(0..<20, id: \.self) { index in
+                    let level = audioLevels[index % audioLevels.count]
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color.white.opacity(0.7))
+                        .frame(width: 2, height: CGFloat(level) * 16 + 4)
+                        .animation(.easeInOut(duration: 0.1), value: level)
                 }
-                .frame(height: 24, alignment: .center)
             }
             .frame(height: 24)
+            
+            Spacer()
+            
+            // 停止按钮
+            Button(action: { toggleRecording() }) {
+                Image(systemName: "stop.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
         }
-        .frame(minHeight: 24)
+        .padding(.horizontal, 4)
+        .frame(height: 32)
         .onAppear {
             startWaveformAnimation()
         }
@@ -541,9 +517,127 @@ struct AnswerPanelView: View {
     }
 }
 
+// MARK: - Message Bubble View
+
+struct MessageBubbleView: View {
+    let message: ChatMessage
+    @State private var answerHeight: CGFloat = 100
+    @ObservedObject private var ttsService = TTSService.shared
+    @State private var isCopied: Bool = false
+    @State private var selectedMode: QuickAskMode = .chat
+    
+    var body: some View {
+        if message.role == .user {
+            VStack(alignment: .trailing, spacing: 8) {
+                // 附件缩略图
+                if !message.attachments.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(message.attachments) { attachment in
+                            if let thumbnail = attachment.thumbnail {
+                                Image(nsImage: thumbnail)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                    }
+                }
+                
+                // 问题文字
+                if !message.content.isEmpty {
+                    Text(message.content)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                // AI 回答内容 (Markdown)
+                MarkdownWebView(text: message.content, dynamicHeight: $answerHeight)
+                    .frame(minHeight: answerHeight)
+                
+                // 操作按钮
+                HStack(spacing: 16) {
+                    // 朗读按钮
+                    Button(action: { ttsService.toggleSpeak(message.content) }) {
+                        Image(systemName: ttsService.isPlaying ? "stop.circle.fill" : "speaker.wave.2.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // 复制按钮
+                    Button(action: {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(message.content, forType: .string)
+                        isCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            isCopied = false
+                        }
+                    }) {
+                        Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(isCopied ? Color.green : .white.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Spacer()
+                    
+                    // 模式显示 (仅展示，不交互)
+                    HStack(spacing: 4) {
+                        Image(systemName: selectedMode.icon)
+                            .font(.system(size: 12))
+                        Text(selectedMode.rawValue)
+                            .font(.system(size: 11))
+                    }
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Notifications
+
+extension Notification.Name {
+    static let quickAskFollowUpRequested = Notification.Name("QuickAskFollowUpRequested")
+}
+
+// MARK: - Answer Panel Window
+
+/// 自定义 Panel 以支持 Key Window 和输入法
+class AnswerPanelWindow: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
+// MARK: - Answer Panel Instance
+
+/// 单个回答面板实例
+@MainActor
+final class AnswerPanelInstance {
+    let id: UUID
+    let state: AnswerPanelState
+    var window: NSWindow?
+    
+    init(id: UUID = UUID()) {
+        self.id = id
+        self.state = AnswerPanelState()
+    }
+}
+
 // MARK: - Answer Panel Manager
 
-/// 回答面板管理器
+/// 回答面板管理器（支持多窗口）
 @MainActor
 final class AnswerPanelManager {
     
@@ -553,8 +647,12 @@ final class AnswerPanelManager {
     
     // MARK: - Properties
     
-    private var window: NSWindow?
-    let state = AnswerPanelState()
+    /// 所有活跃的面板实例
+    private var panels: [UUID: AnswerPanelInstance] = [:]
+    
+    /// 窗口位置偏移（用于级联排列新窗口）
+    private var windowOffset: CGFloat = 0
+    private let offsetStep: CGFloat = 30
     
     // MARK: - Init
     
@@ -562,74 +660,155 @@ final class AnswerPanelManager {
     
     // MARK: - Public API
     
-    func show(question: String, attachments: [QuickAskAttachment]) {
-        state.question = question
-        state.attachments = attachments
-        state.answer = ""
-        state.isLoading = true
-        state.error = nil
-        state.suggestedQuestions = []
+    /// 创建并显示新的回答面板，返回 panelId
+    @discardableResult
+    func show(question: String, attachments: [QuickAskAttachment]) -> UUID {
+        let instance = AnswerPanelInstance()
+        let panelId = instance.id
         
-        createWindowIfNeeded()
-        window?.makeKeyAndOrderFront(nil)
+        // 初始化状态
+        instance.state.messages = [
+            ChatMessage(role: .user, content: question, attachments: attachments)
+        ]
+        instance.state.isLoading = true
+        instance.state.error = nil
+        instance.state.suggestedQuestions = []
+        
+        // 创建窗口
+        createWindow(for: instance)
+        
+        // 存储实例
+        panels[panelId] = instance
+        
+        // 显示窗口
+        instance.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-    }
-    
-    func updateAnswer(_ answer: String) {
-        state.answer = answer
-        state.isLoading = false
         
-        // TODO: 可以让 LLM 生成推荐问题
-        state.suggestedQuestions = []
+        return panelId
     }
     
+    /// 更新指定面板的回答
+    func updateAnswer(_ answer: String, for panelId: UUID) {
+        guard let instance = panels[panelId] else { return }
+        
+        if let lastMsg = instance.state.messages.last, lastMsg.role == .assistant {
+            let updatedMsg = ChatMessage(role: .assistant, content: answer, attachments: [])
+            instance.state.messages[instance.state.messages.count - 1] = updatedMsg
+        } else {
+            instance.state.messages.append(ChatMessage(role: .assistant, content: answer, attachments: []))
+        }
+        
+        instance.state.isLoading = false
+        instance.state.suggestedQuestions = []
+    }
+    
+    /// 兼容旧 API（更新最近创建的面板）
+    func updateAnswer(_ answer: String) {
+        guard let lastPanel = panels.values.max(by: { 
+            ($0.state.messages.first?.timestamp ?? .distantPast) < ($1.state.messages.first?.timestamp ?? .distantPast) 
+        }) else { return }
+        updateAnswer(answer, for: lastPanel.id)
+    }
+    
+    /// 追加用户消息到指定面板
+    func appendUserMessage(_ content: String, attachments: [QuickAskAttachment], for panelId: UUID) {
+        guard let instance = panels[panelId] else { return }
+        instance.state.messages.append(ChatMessage(role: .user, content: content, attachments: attachments))
+        instance.state.isLoading = true
+        instance.state.error = nil
+    }
+    
+    /// 显示错误到指定面板
+    func showError(_ message: String, for panelId: UUID) {
+        guard let instance = panels[panelId] else { return }
+        instance.state.error = message
+        instance.state.isLoading = false
+    }
+    
+    /// 兼容旧 API
     func showError(_ message: String) {
-        state.error = message
-        state.isLoading = false
+        guard let lastPanel = panels.values.max(by: { 
+            ($0.state.messages.first?.timestamp ?? .distantPast) < ($1.state.messages.first?.timestamp ?? .distantPast) 
+        }) else { return }
+        showError(message, for: lastPanel.id)
     }
     
-    func hide() {
-        window?.close()
+    /// 关闭指定面板
+    func hide(panelId: UUID) {
+        guard let instance = panels[panelId] else { return }
+        
+        // 保存对话到历史记录（如果有消息）
+        if !instance.state.messages.isEmpty {
+            SessionHistoryService.shared.saveConversation(
+                panelId: panelId,
+                messages: instance.state.messages
+            )
+        }
+        
+        instance.window?.close()
+        panels.removeValue(forKey: panelId)
+        
+        // 如果没有活跃面板，恢复辅助应用模式
+        if panels.isEmpty {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+    
+    /// 关闭所有面板
+    func hideAll() {
+        for (panelId, _) in panels {
+            hide(panelId: panelId)
+        }
+    }
+    
+    /// 获取指定面板的 state（用于追问）
+    func state(for panelId: UUID) -> AnswerPanelState? {
+        panels[panelId]?.state
     }
     
     // MARK: - Private
     
-    private func createWindowIfNeeded() {
-        guard window == nil else { return }
+    private func createWindow(for instance: AnswerPanelInstance) {
+        var contentView = AnswerPanelView(state: instance.state)
+        let panelId = instance.id
         
-        var contentView = AnswerPanelView(state: state)
         contentView.onClose = { [weak self] in
-            self?.hide()
+            self?.hide(panelId: panelId)
         }
         contentView.onNewChat = { [weak self] in
-            self?.state.question = ""
-            self?.state.attachments = []
-            self?.state.answer = ""
-            self?.state.error = nil
+            guard let state = self?.panels[panelId]?.state else { return }
+            state.messages = []
+            state.error = nil
         }
-        contentView.onFollowUp = { [weak self] question in
-            // TODO: 处理追问
-            print("Follow up: \(question)")
+        contentView.onFollowUp = { [weak self] question, attachments in
+            guard let self = self, self.panels[panelId] != nil else { return }
+            print("Follow up [\(panelId)]: \(question), attachments: \(attachments.count)")
             
-            // 暂时先进入加载状态，避免 UI 无反馈
-            self?.state.isLoading = true
+            // 添加用户消息并进入加载状态
+            self.appendUserMessage(question, attachments: attachments, for: panelId)
+            
+            // 发送追问通知，带上 panelId
+            NotificationCenter.default.post(
+                name: .quickAskFollowUpRequested,
+                object: nil,
+                userInfo: [
+                    "panelId": panelId,
+                    "prompt": question, 
+                    "attachments": attachments
+                ]
+            )
         }
         contentView.onRegenerate = { [weak self] in
-            guard let self = self else { return }
-            print("🔄 Regenerate answer for: \(self.state.question)")
-            
-            // 重新进入加载状态
-            self.state.isLoading = true
-            self.state.answer = ""
-            self.state.error = nil
-            
-            // TODO: 重新调用 LLM 生成回答
+            guard let state = self?.panels[panelId]?.state else { return }
+            print("🔄 Regenerate answer [\(panelId)]")
+            state.isLoading = true
+            state.error = nil
         }
         
-        // 使用 NSPanel 实现无边框窗口
-        let panel = NSPanel(
+        // 创建窗口
+        let panel = AnswerPanelWindow(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 600),
-            styleMask: [.borderless, .nonactivatingPanel, .resizable],
+            styleMask: [.titled, .fullSizeContentView, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -639,13 +818,241 @@ final class AnswerPanelManager {
         panel.hasShadow = true
         panel.isMovableByWindowBackground = true
         panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.animationBehavior = .utilityWindow
+        panel.hidesOnDeactivate = false
+        
+        // 隐藏标题栏
+        panel.titlebarAppearsTransparent = true
+        panel.titleVisibility = .hidden
+        panel.standardWindowButton(.closeButton)?.isHidden = true
+        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        panel.standardWindowButton(.zoomButton)?.isHidden = true
         
         panel.contentView = NSHostingView(rootView: contentView)
-        panel.center()
         
-        self.window = panel
+        // 级联排列窗口位置
+        panel.center()
+        if let frame = panel.screen?.visibleFrame {
+            let newOrigin = NSPoint(
+                x: panel.frame.origin.x + windowOffset,
+                y: panel.frame.origin.y - windowOffset
+            )
+            // 确保窗口在屏幕内
+            if frame.contains(NSRect(origin: newOrigin, size: panel.frame.size)) {
+                panel.setFrameOrigin(newOrigin)
+            }
+        }
+        windowOffset += offsetStep
+        if windowOffset > 150 { windowOffset = 0 }  // 重置偏移
+        
+        instance.window = panel
+    }
+}
+
+// MARK: - Answer Panel Text Editor
+
+/// 回答面板专用文本编辑器
+/// 复用 QuickAskNSTextView 的核心逻辑
+struct AnswerPanelTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+    var onSend: (() -> Void)?
+    var onPasteImage: ((NSImage) -> Void)?
+    
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.scrollerStyle = .overlay
+        
+        let textView = AnswerPanelNSTextView()
+        textView.delegate = context.coordinator
+        textView.isRichText = false
+        textView.allowsUndo = true
+        textView.font = NSFont.systemFont(ofSize: 15)
+        textView.textColor = .white
+        textView.backgroundColor = .clear
+        textView.drawsBackground = false
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainerInset = NSSize(width: 0, height: 4)
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = true
+        textView.autoresizingMask = [.width]
+        textView.isSelectable = true
+        textView.isEditable = true
+        textView.insertionPointColor = .white
+        textView.placeholderString = placeholder
+        
+        textView.onSend = onSend
+        textView.onPasteImage = onPasteImage
+        
+        scrollView.documentView = textView
+        
+        return scrollView
+    }
+    
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? AnswerPanelNSTextView else { return }
+        
+        // 避免干扰输入法
+        if textView.hasMarkedText() { return }
+        
+        if textView.string != text {
+            textView.string = text
+        }
+        
+        textView.onSend = onSend
+        textView.onPasteImage = onPasteImage
+        
+        if textView.placeholderString != placeholder {
+            textView.placeholderString = placeholder
+            textView.needsDisplay = true
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: AnswerPanelTextEditor
+        
+        init(_ parent: AnswerPanelTextEditor) {
+            self.parent = parent
+        }
+        
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.text = textView.string
+        }
+    }
+}
+
+/// 回答面板专用 NSTextView
+class AnswerPanelNSTextView: NSTextView {
+    var onSend: (() -> Void)?
+    var onPasteImage: ((NSImage) -> Void)?
+    var placeholderString: String = ""
+    
+    override var canBecomeKeyView: Bool { true }
+    override var acceptsFirstResponder: Bool { true }
+    
+    // 点击时获取焦点
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        window?.makeFirstResponder(self)
+    }
+    
+    // 成为 FirstResponder 时激活输入法
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder()
+        if result {
+            inputContext?.activate()
+        }
+        return result
+    }
+    
+    // Enter 发送，Shift+Enter 换行
+    override func doCommand(by selector: Selector) {
+        if selector == #selector(insertNewline(_:)) {
+            if markedRange().length > 0 {
+                super.doCommand(by: selector)
+            } else {
+                onSend?()
+            }
+            return
+        }
+        
+        if selector == #selector(insertNewlineIgnoringFieldEditor(_:)) {
+            super.doCommand(by: selector)
+            return
+        }
+        
+        super.doCommand(by: selector)
+    }
+    
+    /// 捕获 ⌘V 粘贴
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.contains(.command) {
+            switch event.charactersIgnoringModifiers {
+            case "v":
+                paste(nil)
+                return true
+            case "c":
+                copy(nil)
+                return true
+            case "x":
+                cut(nil)
+                return true
+            case "a":
+                selectAll(nil)
+                return true
+            default:
+                break
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+    
+    override func paste(_ sender: Any?) {
+        let pasteboard = NSPasteboard.general
+        
+        // 优先检查图片
+        if let tiffData = pasteboard.data(forType: .tiff),
+           let image = NSImage(data: tiffData) {
+            onPasteImage?(image)
+            return
+        }
+        
+        if let pngData = pasteboard.data(forType: .png),
+           let image = NSImage(data: pngData) {
+            onPasteImage?(image)
+            return
+        }
+        
+        if let image = pasteboard.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage {
+            onPasteImage?(image)
+            return
+        }
+        
+        // 检查图片文件 URL
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] {
+            for url in urls {
+                if let uti = UTType(filenameExtension: url.pathExtension),
+                   uti.conforms(to: .image),
+                   let image = NSImage(contentsOf: url) {
+                    onPasteImage?(image)
+                    return
+                }
+            }
+        }
+        
+        // 普通文本粘贴
+        super.paste(sender)
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        
+        // 绘制 placeholder
+        if string.isEmpty && !placeholderString.isEmpty {
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 15),
+                .foregroundColor: NSColor.white.withAlphaComponent(0.4)
+            ]
+            let placeholderRect = NSRect(
+                x: textContainerInset.width,
+                y: textContainerInset.height,
+                width: bounds.width,
+                height: bounds.height
+            )
+            placeholderString.draw(in: placeholderRect, withAttributes: attributes)
+        }
     }
 }
 
@@ -653,8 +1060,10 @@ final class AnswerPanelManager {
 
 #Preview {
     let state = AnswerPanelState()
-    state.question = "这个是什么"
-    state.answer = "这是一个名为 SpokenAnyWhere 的软件界面，看起来是一款用于语音处理、听写或 AI 语音相关的工具。\n\n从界面布局能看到：\n\n• 左侧是功能菜单（常规、听写模型、AI 处理、快捷键、历史记录）；\n• 右侧\"历史记录\"标签下，展示了过往的操作/对话记录，每条记录还配有导出、播放等功能按钮。"
+    state.messages = [
+        ChatMessage(role: .user, content: "这个是什么", attachments: []),
+        ChatMessage(role: .assistant, content: "这是一个名为 SpokenAnyWhere 的软件界面，看起来是一款用于语音处理、听写或 AI 语音相关的工具。\n\n从界面布局能看到：\n\n• 左侧是功能菜单（常规、听写模型、AI 处理、快捷键、历史记录）；\n• 右侧\"历史记录\"标签下，展示了过往的操作/对话记录，每条记录还配有导出、播放等功能按钮。", attachments: [])
+    ]
     state.suggestedQuestions = [
         "SpokenAnyWhere有哪些特色功能？",
         "如何使用SpokenAnyWhere进行语音转文字？"
