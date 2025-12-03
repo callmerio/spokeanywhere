@@ -162,52 +162,46 @@ struct HistoryRecordCard: View {
     @State private var showCopied = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                // 内容区
-                VStack(alignment: .leading, spacing: 6) {
-                    // 标题
-                    Text(record.title)
-                        .font(.system(size: style == .prominent ? 14 : 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    
-                    // 预览
-                    if !record.preview.isEmpty {
-                        Text(record.preview)
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.white.opacity(0.6))
-                            .lineLimit(3)  // 统一支持 3 行内容
-                    }
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            // 头部行：标题 + 时间 + X按钮（同一水平线）
+            HStack(alignment: .center, spacing: 8) {
+                // 标题
+                Text(record.title)
+                    .font(.system(size: style == .prominent ? 14 : 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
                 
                 Spacer(minLength: 8)
                 
-                // 时间 + 删除按钮（水平排列）
-                HStack(spacing: 8) {
-                    // 时间
-                    Text(record.detailedTime)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.4))
-                    
-                    // 删除按钮（hover 时显示）
-                    if isHovered && onDelete != nil {
-                        Button(action: { onDelete?() }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.5))
-                                .frame(width: 20, height: 20)
-                                .background(Color.white.opacity(0.08))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .transition(.opacity)
-                    }
+                // 时间
+                Text(record.detailedTime)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.4))
+                
+                // 删除按钮（始终占位，opacity 控制显示）
+                Button(action: { onDelete?() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.5))
+                        .frame(width: 20, height: 20)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
                 }
+                .buttonStyle(.plain)
+                .opacity(isHovered && onDelete != nil ? 1 : 0)
+                .animation(.easeInOut(duration: 0.12), value: isHovered)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 16)
+            
+            // 预览文本（独立一行）
+            if !record.preview.isEmpty {
+                Text(record.preview)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color.white.opacity(0.6))
+                    .lineLimit(3)
+            }
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(

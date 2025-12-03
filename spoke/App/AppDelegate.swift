@@ -66,6 +66,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             await TranscriptionManager.shared.prepareDictionary()
         }
+        
+        // 启动触控板手势监听
+        setupTrackpadGesture()
+    }
+    
+    private func setupTrackpadGesture() {
+        NSLog("🖐️ 设置触控板手势...")
+        let gesture = TrackpadGestureService.shared
+        let panel = MessagePanelManager.shared
+        
+        // 配置回调
+        gesture.onOpenPanel = {
+            if !panel.isVisible {
+                panel.show()
+            }
+        }
+        
+        gesture.onClosePanel = {
+            if panel.isVisible {
+                panel.hide()
+            }
+        }
+        
+        gesture.isPanelVisible = {
+            panel.isVisible
+        }
+        
+        // 启动监听
+        gesture.start()
     }
     
     private func performHistoryCleanup() {
@@ -87,6 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         RecordingController.shared.stop()
+        TrackpadGestureService.shared.stop()
     }
     
     // MARK: - Private
