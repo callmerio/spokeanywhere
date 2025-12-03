@@ -67,13 +67,29 @@ final class SFSpeechProvider: TranscriptionProvider {
         
         // 创建识别请求
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let request = recognitionRequest else {
+        guard var request = recognitionRequest else {
             throw TranscriptionError.engineNotReady
         }
         
         request.shouldReportPartialResults = true
         request.addsPunctuation = true
         request.taskHint = .dictation
+        
+        // 应用词典注入（如果启用且已准备好）
+        let manager = TranscriptionManager.shared
+        if manager.isDictionaryInjectionEnabled,
+           manager.isDictionaryPrepared,
+           let injector = manager.dictionaryInjector {
+            do {
+                try injector.apply(to: &request)
+                logger.info("📚 Dictionary applied to recognition request")
+            } catch {
+                logger.warning("⚠️ Failed to apply dictionary: \(error.localizedDescription)")
+            }
+        }
+        
+        // 更新 recognitionRequest
+        recognitionRequest = request
         
         // 启动识别任务
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in

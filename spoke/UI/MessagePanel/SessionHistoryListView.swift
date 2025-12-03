@@ -127,7 +127,12 @@ struct HistoryGroupView: View {
                 HistoryRecordCard(
                     record: record,
                     style: .normal,
-                    onTap: { onRecordTap?(record) }
+                    onTap: { onRecordTap?(record) },
+                    onDelete: {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            SessionHistoryService.shared.deleteRecord(record.id)
+                        }
+                    }
                 )
             }
         }
@@ -146,11 +151,12 @@ enum HistoryCardStyle {
 // MARK: - History Record Card
 
 /// 单条历史记录卡片（HUD 风格：毛玻璃 + 白色细边框）
-/// 点击即复制内容到剪贴板
+/// 点击即复制内容到剪贴板，hover 显示删除按钮
 struct HistoryRecordCard: View {
     let record: SessionRecord
     var style: HistoryCardStyle = .normal
     var onTap: (() -> Void)?
+    var onDelete: (() -> Void)?
     
     @State private var isHovered = false
     @State private var showCopied = false
@@ -177,10 +183,27 @@ struct HistoryRecordCard: View {
                 
                 Spacer(minLength: 8)
                 
-                // 时间
-                Text(record.detailedTime)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.4))
+                // 时间 + 删除按钮（水平排列）
+                HStack(spacing: 8) {
+                    // 时间
+                    Text(record.detailedTime)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.4))
+                    
+                    // 删除按钮（hover 时显示）
+                    if isHovered && onDelete != nil {
+                        Button(action: { onDelete?() }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.5))
+                                .frame(width: 20, height: 20)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.opacity)
+                    }
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 16)

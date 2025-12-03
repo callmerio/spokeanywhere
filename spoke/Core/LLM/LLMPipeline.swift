@@ -166,10 +166,54 @@ final class LLMPipeline {
             }
         }
         
+        // 智能纠错：检测词典匹配，让 AI 根据上下文判断
+        if UserDefaults.standard.useLLMForCorrection {
+            let correctionHints = buildCorrectionHints(for: text)
+            if !correctionHints.isEmpty {
+                systemPrompt += "\n\n" + correctionHints
+            }
+        }
+        
         return LLMPrompt(
             systemPrompt: systemPrompt,
             userMessage: text,
             contextAppName: contextService.getCurrentTargetApp()?.name
         )
+    }
+    
+    /// 构建词典纠错提示
+    /// 检测文本中可能匹配词典 corrections 的部分，让 AI 根据上下文决定是否替换
+    private func buildCorrectionHints(for text: String) -> String {
+        let dictionaryService = DictionaryService.shared
+        var hints: [(errorForm: String, correctWord: String)] = []
+        
+        // 遍历所有词条，检查是否有 corrections 匹配
+        for entry in dictionaryService.entries where entry.confirmedByUser {
+            for correction in entry.corrections {
+                // 不区分大小写检查是否包含
+                if text.range(of: correction, options: .caseInsensitive) != nil {
+                    hints.append((errorForm: correction, correctWord: entry.word))
+                }
+            }
+        }
+        
+        guard !hints.isEmpty else { return "" }
+        
+        // 构建提示文本
+        var prompt = """
+        【词典纠错提示】
+        检测到以下可能的识别错误，请根据上下文判断是否需要替换：
+        """
+        
+        for hint in hints {
+            prompt += "\n- 「\(hint.errorForm)」可能是「\(hint.correctWord)」的误识别"
+        }
+        
+        prompt += """
+        
+        注意：这只是提示，请结合上下文语义判断是否合理。如果上下文表明原词是正确的，则保持不变。
+        """
+        
+        return prompt
     }
 }

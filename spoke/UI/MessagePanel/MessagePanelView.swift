@@ -7,6 +7,7 @@ import AppKit
 struct MessagePanelView: View {
     @ObservedObject var state: MessagePanelState
     @ObservedObject var historyService = SessionHistoryService.shared
+    @StateObject private var dictionaryHandler = AddToDictionaryHandler.shared
     
     var body: some View {
         VStack(spacing: 12) {
@@ -24,6 +25,19 @@ struct MessagePanelView: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .background(panelBackground)
         .offset(x: state.slideOffset)  // 滑动动画
+        // 词典弹窗
+        .sheet(isPresented: $dictionaryHandler.isShowingAddSheet) {
+            QuickAddToDictionarySheet(
+                isPresented: $dictionaryHandler.isShowingAddSheet,
+                initialWord: dictionaryHandler.pendingWord
+            )
+        }
+        .sheet(isPresented: $dictionaryHandler.isShowingCorrectionSheet) {
+            CorrectToSheet(
+                isPresented: $dictionaryHandler.isShowingCorrectionSheet,
+                errorText: dictionaryHandler.pendingWord
+            )
+        }
     }
     
     // MARK: - Panel Background
@@ -85,7 +99,11 @@ struct MessagePanelView: View {
                 
                 // Pipeline 卡片（在最下面）
                 ForEach(state.cards) { card in
-                    MessageCardView(card: card)
+                    MessageCardView(card: card) {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            state.removeCard(card.id)
+                        }
+                    }
                 }
             }
         }
@@ -195,64 +213,38 @@ struct MessagePanelView: View {
 // MARK: - Message Card View
 
 /// 单个消息卡片视图（小组件风格）
-/// 点击即复制内容到剪贴板
+/// 支持折叠/展开、复制、删除
 struct MessageCardView: View {
     let card: MessageCard
+    var onDelete: (() -> Void)?
+    
     @State private var isHovered = false
     @State private var showCopied = false
+    @State private var isExpanded = false
+    
+    /// 折叠时显示的最大行数
+    private let collapsedMaxLines = 6
+    /// 每行大约的字符数（用于估算是否需要折叠）
+    private let charsPerLine = 25
+    
+    /// 是否需要折叠（内容超过阈值）
+    private var needsCollapse: Bool {
+        // 估算行数：总字符数 / 每行字符数
+        let estimatedLines = card.content.count / charsPerLine
+        return estimatedLines > collapsedMaxLines
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // 头部：阶段标签 + 时间
-            HStack {
-                // 阶段标签
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(card.stage.color)
-                        .frame(width: 6, height: 6)
-                    
-                    Text(card.stage.displayName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(HUDTheme.textSecondary)
-                }
-                
-                Spacer()
-                
-                // 时间戳
-                Text(card.formattedTime)
-                    .font(.system(size: 10))
-                    .foregroundColor(HUDTheme.textPlaceholder)
-                
-                // 重新润色按钮（悬浮显示）
-                if isHovered && canReprocess {
-                    Button(action: reprocess) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11))
-                            .foregroundColor(HUDTheme.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.opacity)
-                }
-            }
+            // 头部：阶段标签 + 时间 + 操作按钮
+            headerView
             
-            // 内容区域（可选择文本）
-            Text(card.content)
-                .font(.system(size: 13))
-                .foregroundColor(HUDTheme.textPrimary)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
+            // 内容区域（支持折叠）
+            contentView
             
             // 元数据
             if !card.metadata.isEmpty {
-                HStack(spacing: 8) {
-                    ForEach(Array(card.metadata.keys.sorted()), id: \.self) { key in
-                        if let value = card.metadata[key] {
-                            Text("\(key): \(value)")
-                                .font(.system(size: 9))
-                                .foregroundColor(HUDTheme.textPlaceholder)
-                        }
-                    }
-                }
+                metadataView
             }
         }
         .padding(14)
@@ -260,7 +252,14 @@ struct MessageCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
-            copyContent()
+            // 点击卡片：展开/折叠 或 复制
+            if needsCollapse {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } else {
+                copyContent()
+            }
         }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -269,12 +268,135 @@ struct MessageCardView: View {
         }
     }
     
+    // MARK: - Header
+    
+    private var headerView: some View {
+        HStack {
+            // 阶段标签
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(card.stage.color)
+                    .frame(width: 6, height: 6)
+                
+                Text(card.stage.displayName)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(HUDTheme.textSecondary)
+            }
+            
+            Spacer()
+            
+            // 时间戳
+            Text(card.formattedTime)
+                .font(.system(size: 10))
+                .foregroundColor(HUDTheme.textPlaceholder)
+            
+            // 操作按钮组（悬浮显示）
+            if isHovered {
+                HStack(spacing: 4) {
+                    // 重新处理按钮
+                    if canReprocess {
+                        cardActionButton(icon: "arrow.clockwise", action: reprocess)
+                    }
+                    
+                    // 展开/折叠按钮（只在需要折叠时显示）
+                    if needsCollapse {
+                        cardActionButton(
+                            icon: isExpanded ? "chevron.up" : "chevron.down",
+                            action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }
+                        )
+                    }
+                    
+                    // 删除按钮
+                    cardActionButton(icon: "xmark", action: { onDelete?() })
+                }
+                .transition(.opacity)
+            }
+        }
+    }
+    
+    // MARK: - Content
+    
+    private var contentView: some View {
+        ZStack(alignment: .topLeading) {
+            // 文本内容（固定从顶部开始显示）
+            DictionarySelectableText(
+                text: card.content,
+                font: .systemFont(ofSize: 13),
+                foregroundColor: HUDTheme.NS.textPrimary
+            )
+            .frame(minHeight: 20, alignment: .topLeading)
+            .frame(maxHeight: isExpanded || !needsCollapse ? nil : CGFloat(collapsedMaxLines * 20), alignment: .topLeading)
+            .clipped()
+            // 使用 mask 实现文字渐隐效果
+            .mask(
+                GeometryReader { geo in
+                    VStack(spacing: 0) {
+                        // 上方正常显示区域
+                        Rectangle()
+                            .frame(height: needsCollapse && !isExpanded ? geo.size.height - 30 : geo.size.height)
+                        
+                        // 底部渐隐区域（只在折叠时生效）
+                        if needsCollapse && !isExpanded {
+                            LinearGradient(
+                                colors: [.white, .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 30)
+                        }
+                    }
+                }
+            )
+            
+            // 折叠状态下，透明覆盖层拦截点击（NSTextView 会吃掉点击事件）
+            if needsCollapse && !isExpanded {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded = true
+                        }
+                    }
+            }
+        }
+    }
+    
+    // MARK: - Metadata
+    
+    private var metadataView: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(card.metadata.keys.sorted()), id: \.self) { key in
+                if let value = card.metadata[key] {
+                    Text("\(key): \(value)")
+                        .font(.system(size: 9))
+                        .foregroundColor(HUDTheme.textPlaceholder)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Action Button
+    
+    /// 卡片操作按钮（hover 时显示背景）
+    private func cardActionButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(HUDTheme.textSecondary)
+                .frame(width: 20, height: 20)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Actions
+    
     /// 复制内容到剪贴板
     private func copyContent() {
         NSPasteboard.general.clearContents()
         guard NSPasteboard.general.setString(card.content, forType: .string) else { return }
         
-        // 视觉反馈（使用 Task 避免 View 销毁后闭包执行问题）
         withAnimation(.easeOut(duration: 0.15)) {
             showCopied = true
         }
@@ -288,11 +410,9 @@ struct MessageCardView: View {
     
     private var cardBackground: some View {
         ZStack {
-            // 1. 底色：平时几乎透明，hover/复制时变亮
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.white.opacity(showCopied ? 0.15 : (isHovered ? 0.1 : 0.03)))
             
-            // 2. 描边：给卡片一个极细的边缘，防止糊在一起
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Color.white.opacity(isHovered ? 0.2 : 0.08), lineWidth: 1)
         }
@@ -300,8 +420,7 @@ struct MessageCardView: View {
     
     private var canReprocess: Bool {
         switch card.stage {
-        case .asr: return true
-        case .llm: return true
+        case .asr, .llm: return true
         default: return false
         }
     }

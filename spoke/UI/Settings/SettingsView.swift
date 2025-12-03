@@ -15,6 +15,7 @@ struct SettingsView: View {
         case general = "常规"
         case model = "听写模型"
         case ai = "AI 处理"
+        case dictionary = "词典"
         case tts = "语音合成"
         case shortcuts = "快捷键"
         case history = "历史记录"
@@ -24,6 +25,7 @@ struct SettingsView: View {
             case .general: return "gear"
             case .model: return "waveform"
             case .ai: return "sparkles"
+            case .dictionary: return "book.closed"
             case .tts: return "speaker.wave.2"
             case .shortcuts: return "keyboard"
             case .history: return "clock.arrow.circlepath"
@@ -98,6 +100,8 @@ struct SettingsView: View {
                     ModelsSettingsContent()
                 case .ai:
                     AISettingsContent()
+                case .dictionary:
+                    DictionarySettingsContent()
                 case .tts:
                     TTSSettingsContent()
                 case .shortcuts:

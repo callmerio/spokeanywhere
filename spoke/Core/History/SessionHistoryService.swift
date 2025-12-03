@@ -250,6 +250,13 @@ final class SessionHistoryService: ObservableObject {
         logger.info("🗑️ Record deleted: \(record.title)")
     }
     
+    /// 按 ID 删除记录
+    func deleteRecord(_ id: UUID) {
+        if let record = records.first(where: { $0.id == id }) {
+            deleteRecord(record)
+        }
+    }
+    
     /// 清空所有记录
     func clearAll() {
         records.removeAll()

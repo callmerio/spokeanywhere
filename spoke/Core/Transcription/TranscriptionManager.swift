@@ -43,15 +43,39 @@ final class TranscriptionManager {
     /// 当前引擎类型
     private(set) var currentEngineType: TranscriptionEngineType?
     
+    /// 当前词典注入器
+    private(set) var dictionaryInjector: DictionaryInjector?
+    
+    /// 词典是否已准备好
+    private(set) var isDictionaryPrepared = false
+    
     /// 首选语言
     var preferredLocale: Locale = Locale(identifier: "zh-CN")
     
     /// 是否强制使用特定引擎（用于测试/调试）
     var forceEngineType: TranscriptionEngineType?
     
+    /// 是否启用词典注入
+    var isDictionaryInjectionEnabled: Bool {
+        get { UserDefaults.standard.isDictionaryEnabled }
+        set { UserDefaults.standard.isDictionaryEnabled = newValue }
+    }
+    
     // MARK: - Init
     
-    private init() {}
+    private init() {
+        // 监听词典变化，标记需要重新准备
+        NotificationCenter.default.addObserver(
+            forName: .dictionaryDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.isDictionaryPrepared = false
+                self?.logger.info("📚 Dictionary changed, will re-prepare on next use")
+            }
+        }
+    }
     
     // MARK: - Public API
     
@@ -113,6 +137,10 @@ final class TranscriptionManager {
         if let provider = createProvider(type: engineType) {
             currentProvider = provider
             currentEngineType = engineType
+            
+            // 创建对应的词典注入器
+            dictionaryInjector = DictionaryInjectorFactory.createInjector(for: engineType)
+            
             logger.info("✅ Using engine: \(engineType.displayName)")
             return provider
         }
@@ -121,8 +149,58 @@ final class TranscriptionManager {
         let fallback = SFSpeechProvider(locale: preferredLocale)
         currentProvider = fallback
         currentEngineType = .sfSpeech
+        dictionaryInjector = DictionaryInjectorFactory.createInjector(for: .sfSpeech)
         logger.warning("⚠️ Fallback to SFSpeech")
         return fallback
+    }
+    
+    // MARK: - Dictionary Integration
+    
+    /// 准备词典（异步，可能耗时）
+    /// 建议在 App 启动时或设置变更后调用
+    func prepareDictionary() async {
+        guard isDictionaryInjectionEnabled else {
+            logger.info("📚 Dictionary injection disabled, skipping preparation")
+            return
+        }
+        
+        guard let injector = dictionaryInjector else {
+            // 如果还没有创建 provider，先创建一个临时的 injector
+            let engineType = bestAvailableEngine()
+            dictionaryInjector = DictionaryInjectorFactory.createInjector(for: engineType)
+            guard let injector = dictionaryInjector else { return }
+            await prepareInjector(injector)
+            return
+        }
+        
+        await prepareInjector(injector)
+    }
+    
+    private func prepareInjector(_ injector: DictionaryInjector) async {
+        let entries = DictionaryService.shared.activeEntries
+        
+        guard !entries.isEmpty else {
+            logger.info("📚 No dictionary entries, skipping preparation")
+            isDictionaryPrepared = true
+            return
+        }
+        
+        do {
+            logger.info("📚 Preparing dictionary with \(entries.count) entries...")
+            try await injector.prepare(with: entries)
+            isDictionaryPrepared = true
+            logger.info("✅ Dictionary prepared successfully")
+        } catch {
+            logger.error("❌ Dictionary preparation failed: \(error.localizedDescription)")
+            isDictionaryPrepared = false
+        }
+    }
+    
+    /// 检查词典是否需要重新准备
+    var needsDictionaryPreparation: Bool {
+        guard isDictionaryInjectionEnabled else { return false }
+        guard let injector = dictionaryInjector else { return true }
+        return !isDictionaryPrepared || injector.needsRePrepare
     }
     
     /// 请求所有必要权限

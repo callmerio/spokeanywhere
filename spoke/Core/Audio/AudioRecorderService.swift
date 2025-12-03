@@ -173,12 +173,15 @@ final class AudioRecorderService: NSObject {
     private func setupProviderCallbacks(_ provider: TranscriptionProvider) {
         provider.onResult = { [weak self] result in
             Task { @MainActor in
-                switch result.type {
+                // 应用词典后处理
+                let processedResult = TranscriptionPostProcessor.shared.process(result)
+                
+                switch processedResult.type {
                 case .partial:
                     // 传递完整的 TranscriptionResult
-                    self?.onPartialResult?(result)
+                    self?.onPartialResult?(processedResult)
                 case .final:
-                    self?.onFinalResult?(result.text)
+                    self?.onFinalResult?(processedResult.text)
                     self?.isProcessing = false
                 }
             }

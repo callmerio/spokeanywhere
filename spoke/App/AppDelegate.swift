@@ -61,6 +61,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 执行历史记录自动清理
         performHistoryCleanup()
+        
+        // 预热词典（后台异步）
+        Task {
+            await TranscriptionManager.shared.prepareDictionary()
+        }
     }
     
     private func performHistoryCleanup() {

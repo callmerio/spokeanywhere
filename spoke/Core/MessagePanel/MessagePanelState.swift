@@ -1,10 +1,13 @@
 import SwiftUI
 import Combine
+import OSLog
+
+private let logger = Logger(subsystem: "com.spokeanywhere", category: "MessagePanelState")
 
 // MARK: - Message Card Model
 
 /// 消息卡片阶段类型
-enum MessageStage: Equatable {
+enum MessageStage: Equatable, Codable {
     case welcome(String)           // 欢迎消息
     case keyPress(duration: TimeInterval)  // 按键事件
     case asr(model: String)        // ASR 转录 (Apple Speech / Whisper)
@@ -33,7 +36,7 @@ enum MessageStage: Equatable {
 }
 
 /// 消息卡片数据模型
-struct MessageCard: Identifiable, Equatable {
+struct MessageCard: Identifiable, Equatable, Codable {
     let id: UUID
     let timestamp: Date
     let stage: MessageStage
@@ -86,6 +89,19 @@ final class MessagePanelState: ObservableObject {
     /// 最大保存的卡片数量
     private let maxCards: Int = 500
     
+    /// 存储文件路径
+    private var storageURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
+        return spokeDir.appendingPathComponent("pipeline_history.json")
+    }
+    
+    // MARK: - Init
+    
+    init() {
+        loadCards()
+    }
+    
     // MARK: - Public API
     
     /// 添加新卡片（新的在上面）
@@ -98,6 +114,9 @@ final class MessagePanelState: ObservableObject {
         if cards.count > maxCards {
             cards = Array(cards.prefix(maxCards))
         }
+        
+        // 持久化保存
+        saveCards()
     }
     
     /// 添加 Welcome 消息
@@ -128,10 +147,69 @@ final class MessagePanelState: ObservableObject {
         addCard(MessageCard(stage: .system(message), content: message))
     }
     
+    /// 删除单个卡片
+    func removeCard(_ id: UUID) {
+        cards.removeAll { $0.id == id }
+        saveCards()
+    }
+    
     /// 清空所有卡片
     func clearAll() {
         withAnimation {
             cards.removeAll()
+        }
+        saveCards()
+    }
+    
+    // MARK: - Persistence
+    
+    /// 保存卡片到本地
+    private func saveCards() {
+        // 只保存 ASR 和 LLM 结果（过滤掉 welcome/keyPress/system）
+        let cardsToSave = cards.filter { card in
+            switch card.stage {
+            case .asr, .llm: return true
+            default: return false
+            }
+        }
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(cardsToSave)
+            
+            // 确保目录存在
+            let dir = storageURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            
+            try data.write(to: storageURL, options: .atomic)
+            logger.debug("💾 Saved \(cardsToSave.count) pipeline cards")
+        } catch {
+            logger.error("❌ Failed to save pipeline cards: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 从本地加载卡片
+    private func loadCards() {
+        guard FileManager.default.fileExists(atPath: storageURL.path) else {
+            logger.debug("📂 No pipeline history file found")
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: storageURL)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let loadedCards = try decoder.decode([MessageCard].self, from: data)
+            
+            // 只加载最近 24 小时的记录
+            let cutoff = Date().addingTimeInterval(-24 * 60 * 60)
+            cards = loadedCards.filter { $0.timestamp > cutoff }
+            
+            logger.info("📥 Loaded \(self.cards.count) pipeline cards from history")
+        } catch {
+            logger.error("❌ Failed to load pipeline cards: \(error.localizedDescription)")
         }
     }
     
