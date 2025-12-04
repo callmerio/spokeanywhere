@@ -299,24 +299,24 @@ final class RecordingController {
             let processStartTime = CFAbsoluteTimeGetCurrent()
             
             // 🚀 立即复制当前转录到剪贴板（用户可能急需）
-            if !lastTranscription.isEmpty {
-                copyToClipboard(lastTranscription)
-                logger.info("📋 Clipboard (immediate): \(self.lastTranscription.prefix(50))...")
+            let immediateText = lastTranscription
+            if !immediateText.isEmpty {
+                copyToClipboard(immediateText)
+                logger.info("📋 剪贴板(即时): \(immediateText.prefix(50))...")
             }
             
             // 等待最终结果（最多等待 2 秒，每 100ms 检查一次）
             var waitTime = 0
-            logger.info("⏳ Waiting for final result... isProcessing=\(self.audioService.isProcessing)")
+            logger.info("⏳ 等待最终结果... isProcessing=\(self.audioService.isProcessing)")
             
             while waitTime < Self.maxWaitForFinalResult {
                 try? await Task.sleep(for: .milliseconds(Self.checkInterval))
                 waitTime += Self.checkInterval
-                // 如果处理已完成，提前退出
                 if !audioService.isProcessing { break }
             }
             
             let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
-            logger.info("⏱️ Wait complete: \(String(format: "%.0f", waitElapsed))ms, isProcessing=\(self.audioService.isProcessing)")
+            logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed))ms, isProcessing=\(self.audioService.isProcessing)")
             
             let transcribedText = lastTranscription
             
@@ -326,9 +326,11 @@ final class RecordingController {
                 return
             }
             
-            // 如果等待期间文本有更新，再次复制
-            copyToClipboard(transcribedText)
-            logger.info("📋 Clipboard #1: transcribed text")
+            // 仅当文本有更新时再次复制（避免重复写入剪贴板）
+            if transcribedText != immediateText {
+                copyToClipboard(transcribedText)
+                logger.info("📋 剪贴板(最终): 文本已更新")
+            }
             
             // 发送 ASR 结果到 Message Panel
             MessagePanelManager.shared.addASRResult(

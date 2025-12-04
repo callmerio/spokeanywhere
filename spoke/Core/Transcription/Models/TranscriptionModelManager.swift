@@ -103,6 +103,64 @@ final class TranscriptionModelManager {
         }
     }
     
+    // MARK: - Role Management
+    
+    /// 设置模型为指定角色
+    func setModelRole(_ modelId: String, as role: TranscriptionModelRole) {
+        guard let model = TranscriptionModelDefinition.find(by: modelId) else {
+            logger.warning("⚠️ 尝试设置未知模型的角色: \(modelId)")
+            return
+        }
+        
+        // 检查实时字幕角色是否支持流式
+        if role == .liveCaption && !model.supportsStreaming {
+            logger.warning("⚠️ 模型不支持流式输出，无法设为实时字幕模型: \(modelId)")
+            return
+        }
+        
+        switch role {
+        case .transcription:
+            guard settings.transcriptionModelId != modelId else { return }
+            settings.transcriptionModelId = modelId
+            logger.info("🎯 设为转录模型: \(model.displayName, privacy: .public)")
+            
+        case .liveCaption:
+            guard settings.liveCaptionModelId != modelId else { return }
+            settings.liveCaptionModelId = modelId
+            logger.info("🎯 设为实时字幕模型: \(model.displayName, privacy: .public)")
+        }
+        
+        NotificationCenter.default.post(
+            name: .transcriptionModelRoleChanged,
+            object: nil,
+            userInfo: ["modelId": modelId, "role": role.rawValue]
+        )
+    }
+    
+    /// 获取指定角色的模型
+    func model(for role: TranscriptionModelRole) -> TranscriptionModelDefinition? {
+        settings.model(for: role)
+    }
+    
+    /// 获取模型的所有角色
+    func roles(for modelId: String) -> [TranscriptionModelRole] {
+        settings.roles(for: modelId)
+    }
+    
+    /// 检查模型是否可以设为某个角色
+    func canSetRole(_ role: TranscriptionModelRole, for modelId: String) -> Bool {
+        guard let model = TranscriptionModelDefinition.find(by: modelId) else {
+            return false
+        }
+        
+        switch role {
+        case .transcription:
+            return model.isAvailable
+        case .liveCaption:
+            return model.isAvailable && model.supportsStreaming
+        }
+    }
+    
     /// Get download state for a model
     func downloadState(for modelId: String) -> ModelDownloadState {
         downloadStates[modelId] ?? .notNeeded
@@ -257,4 +315,5 @@ struct TranscriptionProviderConfig {
 
 extension Notification.Name {
     static let transcriptionModelChanged = Notification.Name("transcriptionModelChanged")
+    static let transcriptionModelRoleChanged = Notification.Name("transcriptionModelRoleChanged")
 }

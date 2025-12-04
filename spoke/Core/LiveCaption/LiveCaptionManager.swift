@@ -4,6 +4,7 @@ import OSLog
 import AppKit
 import SwiftUI
 import ScreenCaptureKit
+import AVFoundation
 
 // MARK: - Caption Segment Model
 
@@ -34,6 +35,7 @@ struct CaptionSegment: Identifiable, Equatable {
 
 /// 实时字幕管理器
 /// 整合音频捕获、转录、翻译
+/// 使用 SpeechAnalyzerProvider (macOS 26+) 获得最佳识别效果
 @MainActor
 final class LiveCaptionManager: ObservableObject {
     
@@ -63,53 +65,52 @@ final class LiveCaptionManager: ObservableObject {
     /// 是否启用翻译
     @Published var translationEnabled: Bool = true
     
-    /// 源语言
-    /// - en-US: 纯英文
-    /// - zh-CN: 中文（能识别混入的英文，推荐中英混合场景）
-    @Published var sourceLanguage: String = "zh-CN"
+    /// 行缓冲区（折叠模式使用）
+    let lineBuffer = CaptionLineBuffer()
+    
+    /// 源语言（使用 TranscriptionModelManager 的设置）
+    var sourceLanguage: String {
+        TranscriptionModelManager.shared.settings.settings(
+            for: TranscriptionModelManager.shared.settings.liveCaptionModelId
+        ).locale
+    }
     
     /// 支持的语言列表
     static let supportedLanguages: [(id: String, name: String)] = [
         ("en-US", "英语 (English)"),
-        ("zh-CN", "中文 (混合英文)"),
+        ("zh-Hans", "中文 (混合英文)"),
         ("ja-JP", "日语 (Japanese)"),
         ("ko-KR", "韩语 (Korean)"),
     ]
     
     // MARK: - Dependencies
     
-    private let transcriber = LiveCaptionTranscriber()
+    /// 使用 SpeechAnalyzerProvider（复用主转录引擎）- 用 Any 类型避免 @available 限制
+    private var _provider: Any?
+    
+    @available(macOS 26.0, *)
+    private var provider: SpeechAnalyzerProvider? {
+        get { _provider as? SpeechAnalyzerProvider }
+        set { _provider = newValue }
+    }
+    
+    /// 回退：使用旧的 LiveCaptionTranscriber (macOS < 26)
+    private var legacyTranscriber: LiveCaptionTranscriber?
+    
     private let translator = TranslationService.shared
     
-    /// 最大保留段落数（用户可能听一整天，文本量不大，不做严格限制）
+    /// 最大保留段落数
     private let maxSegments = 10000
     
     /// 当前翻译任务
     private var translationTask: Task<Void, Never>?
     
-    /// 静默超时时间（秒）- partial result 停止更新超过这么久视为暂停
-    private let silenceTimeout: TimeInterval = 1.5
-    
-    /// 最大字符数（约 2 行，BBC 标准单行 37 字符）
-    private let maxCharsPerSegment: Int = 70
-    
-    /// 句子结束标点
-    private let sentenceEndPunctuation = CharacterSet(charactersIn: "。？！.?!")
-    
-    /// 上次 partial result 更新时间
-    private var lastPartialTime: Date = Date()
-    
-    /// 上次的 pending 文本（用于检测增量）
-    private var lastPendingText: String = ""
-    
-    /// 静默检测定时器
-    private var silenceTimer: Timer?
+    /// 上次的 finalizedText 长度（用于计算增量）
+    private var lastFinalizedLength: Int = 0
     
     // MARK: - Init
     
-    private init() {
-        setupCallbacks()
-    }
+    private init() {}
     
     // MARK: - Public API
     
@@ -122,6 +123,79 @@ final class LiveCaptionManager: ObservableObject {
             throw LiveCaptionError.systemNotSupported
         }
         
+        // macOS 26+ 使用 SpeechAnalyzerProvider，效果更好
+        if #available(macOS 26.0, *) {
+            try await startWithSpeechAnalyzer()
+        } else {
+            try await startWithLegacyTranscriber()
+        }
+        
+        isActive = true
+    }
+    
+    /// 使用 SpeechAnalyzerProvider (macOS 26+)
+    @available(macOS 26.0, *)
+    private func startWithSpeechAnalyzer() async throws {
+        // 获取用户配置的实时字幕模型
+        let modelManager = TranscriptionModelManager.shared
+        let liveCaptionModelId = modelManager.settings.liveCaptionModelId
+        let modelSettings = modelManager.settings.settings(for: liveCaptionModelId)
+        
+        guard let modelDef = TranscriptionModelDefinition.find(by: liveCaptionModelId) else {
+            throw LiveCaptionError.captureError("未找到实时字幕模型配置")
+        }
+        
+        logger.info("🎬 Starting LiveCaption with model: \(modelDef.displayName, privacy: .public)")
+        
+        // 创建 SpeechAnalyzerProvider
+        let speechProvider = SpeechAnalyzerProvider(
+            locale: Locale(identifier: modelSettings.locale),
+            modelType: modelDef.type
+        )
+        speechProvider.enablePrecompiledLM = modelDef.supportsPrecompiledLM && modelSettings.enablePrecompiledLM
+        
+        // 设置结果回调
+        speechProvider.onResult = { [weak self] result in
+            self?.handleTranscriptionResult(result)
+        }
+        
+        speechProvider.onError = { [weak self] error in
+            self?.logger.error("❌ Transcription error: \(error.localizedDescription)")
+        }
+        
+        // 准备引擎（包含词典注入）
+        try await speechProvider.prepare()
+        self.provider = speechProvider
+        
+        // 设置音频回调
+        let capture = SystemAudioCaptureService.shared
+        capture.onPCMBuffer = { [weak self] buffer in
+            guard let self = self else { return }
+            do {
+                try self.provider?.process(buffer: buffer)
+            } catch {
+                self.logger.error("❌ Process buffer error: \(error.localizedDescription)")
+            }
+        }
+        
+        capture.onError = { [weak self] error in
+            self?.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+        }
+        
+        // 启动音频捕获
+        do {
+            try await capture.startCapture()
+        } catch {
+            logger.error("❌ Failed to start audio capture: \(error.localizedDescription)")
+            throw LiveCaptionError.captureError("需要屏幕录制权限才能捕获系统音频。")
+        }
+        
+        logger.info("🎬 Live Caption started with SpeechAnalyzerProvider")
+    }
+    
+    /// 使用旧的 LiveCaptionTranscriber (macOS < 26)
+    @available(macOS 12.3, *)
+    private func startWithLegacyTranscriber() async throws {
         // 检查语音识别权限
         let authorized = await LiveCaptionTranscriber.requestAuthorization()
         guard authorized else {
@@ -129,11 +203,26 @@ final class LiveCaptionManager: ObservableObject {
             throw LiveCaptionError.notAuthorized
         }
         
-        // 启动音频捕获（会在内部处理权限问题）
+        // 创建 transcriber
+        let transcriber = LiveCaptionTranscriber()
+        self.legacyTranscriber = transcriber
+        
+        // 设置回调
+        transcriber.onTranscription = { [weak self] segment in
+            Task { @MainActor in
+                await self?.handleLegacyTranscription(segment)
+            }
+        }
+        
+        transcriber.onError = { [weak self] error in
+            self?.logger.error("❌ Transcription error: \(error.localizedDescription)")
+        }
+        
+        // 启动音频捕获
         let capture = SystemAudioCaptureService.shared
         
         capture.onAudioBuffer = { [weak self] buffer in
-            self?.transcriber.processAudioBuffer(buffer)
+            self?.legacyTranscriber?.processAudioBuffer(buffer)
         }
         
         capture.onError = { [weak self] error in
@@ -144,14 +233,13 @@ final class LiveCaptionManager: ObservableObject {
             try await capture.startCapture()
         } catch {
             logger.error("❌ Failed to start audio capture: \(error.localizedDescription)")
-            // 权限问题，抛出错误让 UI 层处理
             throw LiveCaptionError.captureError("需要屏幕录制权限才能捕获系统音频。")
         }
         
-        // 启动转录
+        // 启动转录（使用用户设置的源语言）
         transcriber.updateLocale(Locale(identifier: sourceLanguage))
         
-        // 注入词典词汇提高识别率
+        // 注入词典词汇
         let dictionaryWords = DictionaryService.shared.getAllWords()
         if !dictionaryWords.isEmpty {
             transcriber.contextualStrings = dictionaryWords
@@ -160,8 +248,7 @@ final class LiveCaptionManager: ObservableObject {
         
         try transcriber.startTranscribing()
         
-        isActive = true
-        logger.info("🎬 Live Caption started")
+        logger.info("🎬 Live Caption started with legacy transcriber")
     }
     
     /// 停止实时字幕
@@ -169,7 +256,15 @@ final class LiveCaptionManager: ObservableObject {
         guard isActive else { return }
         
         // 停止转录
-        transcriber.stopTranscribing()
+        if #available(macOS 26.0, *) {
+            if let p = provider {
+                try? await p.finishProcessing()
+                p.reset()
+            }
+            _provider = nil
+        }
+        legacyTranscriber?.stopTranscribing()
+        legacyTranscriber = nil
         
         // 停止音频捕获
         if #available(macOS 12.3, *) {
@@ -182,6 +277,7 @@ final class LiveCaptionManager: ObservableObject {
         
         isActive = false
         pendingText = ""
+        lastFinalizedLength = 0
         
         logger.info("🛑 Live Caption stopped")
     }
@@ -305,85 +401,44 @@ final class LiveCaptionManager: ObservableObject {
     func clearSegments() {
         segments.removeAll()
         pendingText = ""
+        lastFinalizedLength = 0
+        lineBuffer.clear()
     }
     
-    /// 更新源语言
-    func updateSourceLanguage(_ language: String) {
-        sourceLanguage = language
-        if isActive {
-            transcriber.updateLocale(Locale(identifier: language))
-        }
-    }
+    // MARK: - Result Handling
     
-    // MARK: - Private
-    
-    private func setupCallbacks() {
-        transcriber.onTranscription = { [weak self] segment in
-            Task { @MainActor in
-                await self?.handleTranscription(segment)
-            }
-        }
+    /// 处理 SpeechAnalyzerProvider 的结果 (macOS 26+)
+    private func handleTranscriptionResult(_ result: TranscriptionResult) {
+        // 更新 pendingText（实时预览）
+        pendingText = result.volatileText
         
-        transcriber.onError = { [weak self] error in
-            self?.logger.error("❌ Transcription error: \(error.localizedDescription)")
-        }
-    }
-    
-    private func handleTranscription(_ segment: TranscriptionSegment) async {
-        // 取消之前的静默检测定时器
-        silenceTimer?.invalidate()
+        // 更新行缓冲区的实时输入
+        lineBuffer.updatePending(result.volatileText)
         
-        if segment.isFinal {
-            // 最终结果：添加到段落列表
-            await saveSegment(text: segment.text)
-            lastPendingText = ""
+        // 计算增量：finalizedText 比上次长的部分就是新段落
+        let currentLength = result.finalizedText.count
+        
+        if currentLength > lastFinalizedLength {
+            // 提取新增部分
+            let startIndex = result.finalizedText.index(result.finalizedText.startIndex, offsetBy: lastFinalizedLength)
+            let newText = String(result.finalizedText[startIndex...]).trimmingCharacters(in: .whitespacesAndNewlines)
             
-        } else {
-            // 部分结果
-            let currentText = segment.text
-            pendingText = currentText
-            lastPartialTime = Date()
-            
-            // 检查是否需要分段
-            let shouldSegment = checkShouldSegment(text: currentText)
-            
-            if shouldSegment {
-                // 找到分段点，保存并重置
-                await saveSegment(text: currentText)
-                lastPendingText = currentText
-            } else {
-                // 启动静默检测定时器
-                startSilenceTimer()
-            }
-        }
-    }
-    
-    /// 检查是否需要分段
-    private func checkShouldSegment(text: String) -> Bool {
-        // 条件 1: 检测到句子结束标点
-        if let lastChar = text.last, sentenceEndPunctuation.contains(lastChar.unicodeScalars.first!) {
-            return true
-        }
-        
-        // 条件 2: 超过最大字符数（约 2 行）
-        if text.count >= maxCharsPerSegment {
-            return true
-        }
-        
-        return false
-    }
-    
-    /// 启动静默检测定时器
-    private func startSilenceTimer() {
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceTimeout, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
-                // 静默超时，保存当前 pending 内容
-                if !self.pendingText.isEmpty && self.pendingText != self.lastPendingText {
-                    await self.saveSegment(text: self.pendingText)
-                    self.lastPendingText = self.pendingText
+            if !newText.isEmpty {
+                Task {
+                    await saveSegment(text: newText)
                 }
             }
+            
+            lastFinalizedLength = currentLength
+        }
+    }
+    
+    /// 处理旧版 LiveCaptionTranscriber 的结果 (macOS < 26)
+    private func handleLegacyTranscription(_ segment: TranscriptionSegment) async {
+        if segment.isFinal {
+            await saveSegment(text: segment.text)
+        } else {
+            pendingText = segment.text
         }
     }
     
@@ -407,12 +462,19 @@ final class LiveCaptionManager: ObservableObject {
                     } else {
                         newSegment.translatedText = translated
                     }
+                    
+                    // 更新行缓冲区的译文
+                    lineBuffer.updateLastTranslation(translated)
                 }
             }
             
+            // 先添加到行缓冲区（无译文）
+            lineBuffer.append(text: text, translation: nil)
             addSegment(newSegment)
             await translationTask?.value
         } else {
+            // 无翻译模式
+            lineBuffer.append(text: text, translation: nil)
             addSegment(newSegment)
         }
     }

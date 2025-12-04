@@ -83,13 +83,21 @@ final class TranscriptionManager {
             }
         }
         
-        // 监听训练数据变更，后台触发预编译
+        // 监听训练数据变更，后台触发预编译（仅当模型支持时）
         NotificationCenter.default.addObserver(
             forName: .dictionaryTrainingDataChanged,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
+                // 检查当前模型是否支持预编译 LM
+                if #available(macOS 26.0, *) {
+                    let config = TranscriptionModelManager.shared.getProviderConfiguration()
+                    guard config.enablePrecompiledLM else {
+                        self?.logger.info("📚 训练数据变更，但当前模型不支持预编译 LM，跳过")
+                        return
+                    }
+                }
                 self?.logger.notice("📚 训练数据变更，后台预编译 LM...")
                 await self?.prepareDictionary()
             }
@@ -179,7 +187,19 @@ final class TranscriptionManager {
                 logger.info("📚 Created new dictionary injector for \(engineType.displayName)")
             }
             
-            logger.info("✅ Using engine: \(engineType.displayName), isDictionaryPrepared=\(self.isDictionaryPrepared)")
+            // 根据模型类型显示不同的词典状态
+            if #available(macOS 26.0, *) {
+                let config = TranscriptionModelManager.shared.getProviderConfiguration()
+                if config.modelType == .dictation {
+                    // DictationTranscriber: 预编译 LM + contextualStrings
+                    logger.info("✅ Using engine: \(engineType.displayName) [预编译LM=\(self.isDictionaryPrepared ? "✓" : "✗"), contextualStrings=✓]")
+                } else {
+                    // SpeechTranscriber: 仅 contextualStrings
+                    logger.info("✅ Using engine: \(engineType.displayName) [contextualStrings=✓] (不支持预编译LM)")
+                }
+            } else {
+                logger.info("✅ Using engine: \(engineType.displayName), isDictionaryPrepared=\(self.isDictionaryPrepared)")
+            }
             return provider
         }
         
@@ -201,6 +221,15 @@ final class TranscriptionManager {
     /// 准备词典（异步，可能耗时）
     /// 建议在 App 启动时或设置变更后调用
     func prepareDictionary() async {
+        // 检查当前模型是否支持预编译 LM
+        if #available(macOS 26.0, *) {
+            let config = TranscriptionModelManager.shared.getProviderConfiguration()
+            guard config.enablePrecompiledLM else {
+                logger.info("📚 [预编译 LM] 当前模型 \(config.modelType.rawValue, privacy: .public) 不支持预编译 LM，跳过")
+                return
+            }
+        }
+        
         logger.info("📚 [预编译 LM] 开始准备词典... isDictionaryInjectionEnabled=\(self.isDictionaryInjectionEnabled)")
         
         guard isDictionaryInjectionEnabled else {

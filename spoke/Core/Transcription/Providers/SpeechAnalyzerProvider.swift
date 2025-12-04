@@ -270,7 +270,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
             }
         }
         
-        logger.info("✅ DictationTranscriber setup complete for locale: \(supportedLocale.identifier)")
+        logger.info("✅ DictationTranscriber setup complete for locale: \(supportedLocale.identifier, privacy: .public)")
     }
     
     // MARK: - SpeechTranscriber Setup
@@ -326,7 +326,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
             }
         }
         
-        logger.info("✅ SpeechTranscriber setup complete for locale: \(supportedLocale.identifier)")
+        logger.info("✅ SpeechTranscriber setup complete for locale: \(supportedLocale.identifier, privacy: .public)")
     }
     
     // MARK: - Shared Setup Helpers
@@ -334,7 +334,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     /// Inject contextualStrings to analyzer (words + training phrases)
     private func injectContextualStrings(to analyzer: SpeechAnalyzer) async throws {
         guard TranscriptionManager.shared.isDictionaryInjectionEnabled else {
-            logger.notice("ℹ️ Dictionary injection disabled")
+            logger.info("ℹ️ [词典] 词典注入已禁用")
             return
         }
         
@@ -348,7 +348,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         }
         
         guard !allStrings.isEmpty else {
-            logger.notice("⚠️ Dictionary empty, skipping injection")
+            logger.info("⚠️ [词典] 词典为空，跳过注入")
             return
         }
         
@@ -356,7 +356,14 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         context.contextualStrings[.general] = allStrings
         try await analyzer.setContext(context)
         
-        logger.notice("📚 contextualStrings injected: \(allStrings.count) items (words + phrases)")
+        // 显示前 5 个词条用于调试（仅 DEBUG 模式显示具体内容）
+        #if DEBUG
+        let preview = allStrings.prefix(5).joined(separator: ", ")
+        let suffix = allStrings.count > 5 ? "..." : ""
+        logger.info("📚 [词典] contextualStrings 已注入: \(allStrings.count, privacy: .public) 个 [\(preview, privacy: .public)\(suffix, privacy: .public)]")
+        #else
+        logger.info("📚 [词典] contextualStrings 已注入: \(allStrings.count) 个")
+        #endif
     }
     
     /// 创建 DictationTranscriber

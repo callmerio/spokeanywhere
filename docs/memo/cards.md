@@ -1,6 +1,6 @@
 # MM 学习卡片
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-04
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05
 
 ## C001|HUD 动画实现
 
@@ -169,3 +169,57 @@ log stream --predicate 'process == "App"' --style compact
 ```
 
 REF: T075 | dev.sh; https://developer.apple.com/forums/thread/807898; TN3127
+
+## C015|词典双轨策略
+
+ID: C015 | Tags: #dictionary #asr #speechanalyzer
+
+Q: 如何同时利用 contextualStrings 和预编译 LM？
+A: 双轨并行策略:
+
+1. **contextualStrings** - 实时生效，只需单词列表，适合 SpeechTranscriber
+2. **预编译 LM** - 后台准备，需要短语+发音，适合 DictationTranscriber
+3. 用户纠正时自动收集整句作为训练短语(每词条最多 20 个)
+4. SpeechTranscriber 只支持前者，DictationTranscriber 两者都支持
+   REF: T061,T062 | DictionaryInjector.swift; SpeechAnalyzerProvider.swift
+
+## C016|多转录模型架构
+
+ID: C016 | Tags: #architecture #transcription #models
+
+Q: 如何支持多个转录模型切换？
+A: 三层架构:
+
+- **TranscriptionModelDefinition** - 模型元数据(type/source/capabilities/supportsStreaming)
+- **TranscriptionModelUserSettings** - 用户配置(selectedModelId/locale/enablePrecompiledLM)
+- **TranscriptionModelManager** - 状态管理(settings/downloadStates/roleAssignment)
+- 角色分配: transcriptionModelId(主转录) vs liveCaptionModelId(实时字幕)
+- @available 存储属性限制: 用 `Any?` + computed property 规避
+  REF: T066,T067 | Core/Transcription/Models/\*
+
+## C017|UnsafeRawPointer 内存安全
+
+ID: C017 | Tags: #swift #memory #unsafe
+
+Q: bindMemory vs assumingMemoryBound 如何选择？
+A: 根据内存类型绑定历史:
+
+- **bindMemory** - 改变内存的类型绑定，要求对齐+无先前绑定
+- **assumingMemoryBound** - 假定已绑定为目标类型，不做检查
+- CMBlockBuffer 返回的 Int8 指针实际是其他类型(Float32/Int16)，用 `assumingMemoryBound` 更安全
+- 典型场景: 音频 buffer 转换 CMSampleBuffer → AVAudioPCMBuffer
+  REF: T069 | SystemAudioCaptureService.swift#convertToPCMBuffer
+
+## C018|实时字幕增量计算
+
+ID: C018 | Tags: #live-caption #speechanalyzer #algorithm
+
+Q: SpeechAnalyzer 如何计算新增段落？
+A: 使用 finalizedText 长度差值:
+
+1. `finalizedText` - 已确认文本（累积）
+2. `volatileText` - 实时预览（覆盖式更新）
+3. 新段落 = `finalizedText[lastLength...]`
+4. 无需手动分段，SpeechAnalyzer 自动产生多个 isFinal
+5. CaptionLineBuffer 固定 2 行+智能分句(. ? ! 。？！)
+   REF: T068,T070 | LiveCaptionManager.swift; CaptionLineBuffer.swift

@@ -77,6 +77,9 @@ struct TranscriptionModelDefinition: Identifiable, Codable, Equatable {
     /// Whether this model supports multiple languages in one session
     let supportsMultilingual: Bool
     
+    /// Whether this model supports streaming output (required for live caption)
+    let supportsStreaming: Bool
+    
     // MARK: - Availability
     
     /// Whether this model is currently available for use
@@ -127,6 +130,7 @@ extension TranscriptionModelDefinition {
         supportsContextualStrings: true,
         supportsPrecompiledLM: true,
         supportsMultilingual: false,
+        supportsStreaming: true,  // ✅ 支持流式输出
         isAvailable: true,
         isComingSoon: false,
         minimumOS: nil
@@ -147,6 +151,7 @@ extension TranscriptionModelDefinition {
         supportsContextualStrings: true,
         supportsPrecompiledLM: false,
         supportsMultilingual: true,
+        supportsStreaming: true,  // ✅ 支持流式输出
         isAvailable: true,
         isComingSoon: false,
         minimumOS: "macOS 26"
@@ -165,6 +170,7 @@ extension TranscriptionModelDefinition {
         supportsContextualStrings: false,
         supportsPrecompiledLM: false,
         supportsMultilingual: true,
+        supportsStreaming: false,  // ❌ 不支持流式输出
         isAvailable: false,
         isComingSoon: true,
         minimumOS: nil
@@ -183,6 +189,7 @@ extension TranscriptionModelDefinition {
         supportsContextualStrings: false,
         supportsPrecompiledLM: false,
         supportsMultilingual: true,
+        supportsStreaming: false,  // ❌ 不支持流式输出
         isAvailable: false,
         isComingSoon: true,
         minimumOS: nil
@@ -193,9 +200,11 @@ extension TranscriptionModelDefinition {
 
 extension TranscriptionModelDefinition {
     
-    /// Whether language selection is needed (false for multilingual models)
+    /// Whether language selection is needed
+    /// 只有真正的 "multilingual" 模型（如 Whisper）不需要选择语言
+    /// SpeechTranscriber 虽然支持多语言，但仍需指定一个主语言
     var needsLanguageSelection: Bool {
-        !supportsMultilingual && supportedLocales.first != "multilingual"
+        supportedLocales.first != "multilingual"
     }
     
     /// Whether this model requires download before use

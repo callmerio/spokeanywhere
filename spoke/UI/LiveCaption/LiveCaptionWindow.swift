@@ -75,7 +75,7 @@ final class LiveCaptionWindowManager {
         
         // 计算初始位置（屏幕底部居中）
         let windowWidth: CGFloat = 620
-        let windowHeight: CGFloat = 140
+        let windowHeight: CGFloat = 200
         let x = screenFrame.midX - windowWidth / 2
         let y = screenFrame.minY + 60  // 距离底部 60pt
         

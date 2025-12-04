@@ -12,9 +12,14 @@ struct LiveCaptionView: View {
     
     // MARK: - Constants
     
-    private let collapsedHeight: CGFloat = 120
+    /// 字幕字体大小
+    private let captionFontSize: CGFloat = 18
+    /// 折叠高度（2行原文 + 2行译文 + padding）
+    private let collapsedHeight: CGFloat = 160
     private let expandedHeight: CGFloat = 400
     private let panelWidth: CGFloat = 600
+    /// 内边距
+    private let contentPadding: CGFloat = 20
     
     var body: some View {
         VStack(spacing: 0) {
@@ -45,41 +50,41 @@ struct LiveCaptionView: View {
     
     // MARK: - Content Views
     
-    /// 折叠状态 - 显示最新内容（不截断）
+    /// 折叠状态 - 固定2行滚动窗口，不可滚动
     private var collapsedContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                // 显示最近几段（不用省略号）
-                ForEach(recentSegments) { segment in
-                    CaptionSegmentView(
-                        segment: segment,
-                        showOriginal: manager.showOriginal
+        VStack(alignment: .leading, spacing: 10) {
+            // 使用行缓冲区显示
+            let lines = manager.lineBuffer.lines
+            
+            if lines.isEmpty && manager.lineBuffer.pendingFragment.isEmpty {
+                // 空状态
+                Text("等待音频...")
+                    .font(.system(size: captionFontSize))
+                    .foregroundColor(.white.opacity(0.4))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            } else {
+                // 显示缓冲区的行
+                ForEach(lines) { line in
+                    CaptionLineView(
+                        line: line,
+                        showOriginal: manager.showOriginal,
+                        fontSize: captionFontSize
                     )
                 }
                 
-                // 正在输入的文本
-                if !manager.pendingText.isEmpty {
-                    Text(manager.pendingText)
-                        .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.6))
+                // 正在输入的文本（pending）
+                if !manager.lineBuffer.pendingFragment.isEmpty {
+                    Text(manager.lineBuffer.pendingFragment)
+                        .font(.system(size: captionFontSize))
+                        .foregroundColor(.white.opacity(0.5))
+                        .lineLimit(1)
                 }
                 
-                // 空状态
-                if manager.segments.isEmpty && manager.pendingText.isEmpty {
-                    Text("等待音频...")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.4))
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
+                Spacer(minLength: 0)
             }
-            .padding(16)
         }
+        .padding(contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-    
-    /// 折叠状态显示的最近段落（最多3段）
-    private var recentSegments: [CaptionSegment] {
-        Array(manager.segments.suffix(3))
     }
     
     /// 展开状态 - 显示历史
@@ -123,15 +128,51 @@ struct LiveCaptionView: View {
             // 毛玻璃
             VisualEffectBlur(material: .hudWindow, cornerRadius: 12)
             
-            // 深色叠加
-            Color.black.opacity(0.4)
+            // 深色叠加 - 提高对比度
+            Color.black.opacity(0.6)
+        }
+    }
+}
+
+// MARK: - Caption Line View
+
+/// 单行字幕视图（用于折叠模式）
+struct CaptionLineView: View {
+    
+    let line: CaptionLine
+    let showOriginal: Bool
+    let fontSize: CGFloat
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // 原文
+            if showOriginal {
+                Text(line.original)
+                    .font(.system(size: fontSize, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+            }
+            
+            // 译文
+            if let translated = line.translated {
+                Text(translated)
+                    .font(.system(size: fontSize, weight: .medium))
+                    .foregroundColor(showOriginal ? .white.opacity(0.85) : .white)
+                    .lineLimit(1)
+            } else if !showOriginal {
+                // 没有译文且不显示原文时，显示原文
+                Text(line.original)
+                    .font(.system(size: fontSize, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+            }
         }
     }
 }
 
 // MARK: - Caption Segment View
 
-/// 单个字幕段落视图
+/// 单个字幕段落视图（用于展开模式）
 struct CaptionSegmentView: View {
     
     let segment: CaptionSegment
@@ -142,7 +183,7 @@ struct CaptionSegmentView: View {
             // 原文
             if showOriginal {
                 Text(segment.originalText)
-                    .font(.system(size: 15))
+                    .font(.system(size: 16))
                     .foregroundColor(.white)
                     .textSelection(.enabled)
             }
@@ -150,13 +191,13 @@ struct CaptionSegmentView: View {
             // 译文
             if let translated = segment.translatedText {
                 Text(translated)
-                    .font(.system(size: 15))
-                    .foregroundColor(showOriginal ? .white.opacity(0.7) : .white)
+                    .font(.system(size: 16))
+                    .foregroundColor(showOriginal ? .white.opacity(0.85) : .white)
                     .textSelection(.enabled)
             } else if !showOriginal {
                 // 没有译文且不显示原文时，显示原文
                 Text(segment.originalText)
-                    .font(.system(size: 15))
+                    .font(.system(size: 16))
                     .foregroundColor(.white)
                     .textSelection(.enabled)
             }

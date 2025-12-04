@@ -25,8 +25,11 @@ final class SystemAudioCaptureService: NSObject, ObservableObject {
     /// 是否正在捕获
     @Published private(set) var isCapturing: Bool = false
     
-    /// 音频缓冲区回调
+    /// 音频缓冲区回调（原始 CMSampleBuffer）
     var onAudioBuffer: ((CMSampleBuffer) -> Void)?
+    
+    /// PCM 缓冲区回调（用于 SpeechAnalyzerProvider）
+    var onPCMBuffer: ((AVAudioPCMBuffer) -> Void)?
     
     /// 错误回调
     var onError: ((Error) -> Void)?
@@ -143,7 +146,97 @@ extension SystemAudioCaptureService: SCStreamOutput {
         // 转发到主线程处理
         Task { @MainActor in
             self.onAudioBuffer?(sampleBuffer)
+            
+            // 转换为 PCM 并回调（用于 SpeechAnalyzerProvider）
+            if self.onPCMBuffer != nil, let pcmBuffer = self.convertToPCMBuffer(sampleBuffer) {
+                self.onPCMBuffer?(pcmBuffer)
+            }
         }
+    }
+    
+    /// 将 CMSampleBuffer 转换为 AVAudioPCMBuffer
+    /// SpeechAnalyzer 需要特定格式的 PCM 数据
+    @MainActor
+    private func convertToPCMBuffer(_ sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
+        guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer) else {
+            return nil
+        }
+        
+        guard let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)?.pointee else {
+            return nil
+        }
+        
+        let numSamples = CMSampleBufferGetNumSamples(sampleBuffer)
+        guard numSamples > 0 else { return nil }
+        
+        // 创建 AVAudioFormat
+        guard let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: asbd.mSampleRate,
+            channels: AVAudioChannelCount(asbd.mChannelsPerFrame),
+            interleaved: false
+        ) else {
+            return nil
+        }
+        
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(numSamples)) else {
+            return nil
+        }
+        outputBuffer.frameLength = AVAudioFrameCount(numSamples)
+        
+        // 获取原始音频数据
+        guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
+            return nil
+        }
+        
+        var lengthAtOffset: Int = 0
+        var totalLength: Int = 0
+        var dataPointer: UnsafeMutablePointer<Int8>?
+        
+        let status = CMBlockBufferGetDataPointer(
+            blockBuffer,
+            atOffset: 0,
+            lengthAtOffsetOut: &lengthAtOffset,
+            totalLengthOut: &totalLength,
+            dataPointerOut: &dataPointer
+        )
+        
+        guard status == kCMBlockBufferNoErr, let data = dataPointer else {
+            return nil
+        }
+        
+        guard let outputData = outputBuffer.floatChannelData?[0] else {
+            return nil
+        }
+        
+        // 根据输入格式转换数据
+        let formatFlags = asbd.mFormatFlags
+        let isFloat = (formatFlags & kAudioFormatFlagIsFloat) != 0
+        let isSignedInt = (formatFlags & kAudioFormatFlagIsSignedInteger) != 0
+        let bitsPerChannel = asbd.mBitsPerChannel
+        
+        if isFloat && bitsPerChannel == 32 {
+            // Float32 输入 - 直接复制（使用 assumingMemoryBound 避免 UB）
+            let floatData = UnsafeRawPointer(data).assumingMemoryBound(to: Float.self)
+            memcpy(outputData, floatData, numSamples * MemoryLayout<Float>.size)
+        } else if isSignedInt && bitsPerChannel == 16 {
+            // Int16 输入 - 转换为 Float32
+            let int16Data = UnsafeRawPointer(data).assumingMemoryBound(to: Int16.self)
+            for i in 0..<numSamples {
+                outputData[i] = Float(int16Data[i]) / 32768.0
+            }
+        } else if isSignedInt && bitsPerChannel == 32 {
+            // Int32 输入 - 转换为 Float32
+            let int32Data = UnsafeRawPointer(data).assumingMemoryBound(to: Int32.self)
+            for i in 0..<numSamples {
+                outputData[i] = Float(int32Data[i]) / Float(Int32.max)
+            }
+        } else {
+            // 不支持的格式
+            return nil
+        }
+        
+        return outputBuffer
     }
 }
 

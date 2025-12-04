@@ -1,9 +1,19 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-03 05:10
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05 05:40
 
 ## Learns (Latest at top)
 
+- [T070] 行缓冲区设计：CaptionLineBuffer 固定 2 行+智能分句(句号/问号/感叹号)；超过时滚动丢弃最老行；译文异步更新用 updateLastTranslation
+- [T069] UnsafeRawPointer 内存安全：assumingMemoryBound 比 bindMemory 更安全，适用于已知内存布局场景（如 CMSampleBuffer → Float32）
+- [T068] SpeechAnalyzer 增量计算：finalizedText.count 差值 = 新段落；volatileText = 实时预览；自动产生多个 isFinal 无需手动分段
+- [T067] 模型角色分配：transcriptionModelId vs liveCaptionModelId 双角色配置；只有 supportsStreaming=true 才能设为实时字幕模型
+- [T066] 多转录模型架构：TranscriptionModelDefinition(元数据) + UserSettings(用户配置) + Manager(状态管理)；@available 存储属性用 Any + computed property 规避
+- [T065] CGEvent tap 超时禁用：主线程阻塞>1s 导致 tapDisabledByTimeout；OCR/同步 IO 必须移到后台线程
+- [T064] TCC 权限绑定签名：每次编译签名变化 = 新应用需重新授权；用固定开发者证书签名避免；tccutil reset 清理累积条目
+- [T063] 触控板私有 API：MultitouchSupport.framework dlopen 加载；MTPoint 结构体 80bytes 布局必须精确匹配；state:3=开始/4=移动/5=静止/7=结束
+- [T062] 训练短语自动收集：用户纠正时 replacingOccurrences 生成正确句子；每词条最多 20 个短语；用于预编译 LM 强化识别
+- [T061] 词典双轨策略：contextualStrings 实时生效(单词) + 预编译 LM 后台准备(短语)；SpeechTranscriber 只支持前者
 - [T060] SwiftUI .blur(radius:) 支持浮点数，GPU 自动插值；ScreenCaptureKit 捕获背景 + Image + .blur() 是 App Store 友好的纯模糊方案
 - [T059] LLM 多轮对话：若 Provider 无状态，需手动拼接历史记录到 Prompt；UI 需从单次问答改为消息列表结构
 - [T058] NSApp.setActivationPolicy(.accessory) 副作用：会导致当前显示的 .regular 窗口（如 AnswerPanel）失去焦点或隐藏，需谨慎调用时机
@@ -66,6 +76,55 @@
 - [T001] 纯代码窗口：NSWindowController + NSHostingView (SwiftUI)
 
 ## Timeline
+
+[2025-12-05 T069-T070] 代码审查修复 + 实时字幕优化
+
+- PROB: 1.bindMemory 内存安全隐患 2.实时字幕折叠态体验差
+- PLAN:
+  1. bindMemory → assumingMemoryBound 避免类型绑定 UB
+  2. CaptionLineBuffer 行缓冲区：固定 2 行+智能分句
+  3. 字体 15→18pt，背景 0.4→0.6
+- TIME: 0.5h | TAGS: #memory-safety #live-caption #ux
+- LINK: SystemAudioCaptureService.swift; CaptionLineBuffer.swift
+- STAT: [√] 编译通过
+- NOTE: assumingMemoryBound 适用于已知内存布局；分句标点集合包含中英文
+
+[2025-12-05 T066-T068] 多转录模型架构 + 角色分配
+
+- PROB: 实时字幕需要流式输出但 Whisper 不支持；需分开配置
+- PLAN:
+  1. TranscriptionModelDefinition 定义模型元数据(type/source/capabilities)
+  2. TranscriptionModelRole 枚举(transcription/liveCaption)
+  3. LiveCaptionManager 改用 SpeechAnalyzerProvider
+  4. 增量计算 = finalizedText.count 差值
+- TIME: 3h | TAGS: #architecture #transcription #live-caption
+- LINK: Core/Transcription/Models/\*; LiveCaptionManager.swift
+- STAT: [√] 功能完整，UI 右键菜单可切换角色
+- NOTE: @available 存储属性用 Any + computed property 规避
+
+[2025-12-04 T063-T065] TCC 权限 + 触控板手势 + 主线程阻塞
+
+- PROB: 1.TCC 每次编译重授权 2.CGEvent tap 超时被禁用
+- PLAN:
+  1. 统一 BundleID + 开发者证书签名
+  2. OCR 移到后台线程避免阻塞主线程
+  3. MultitouchSupport.framework 实现边缘手势
+- TIME: 2h | TAGS: #tcc #performance #gesture
+- LINK: scripts/dev-build.sh; ScreenOCRService.swift; TrackpadGestureService.swift
+- STAT: [√] TCC 稳定；快捷键不再失效
+- NOTE: MTPoint 80bytes 布局必须精确匹配；主线程阻塞>1s 会禁用 tap
+
+[2025-12-04 T061-T062] 词典双轨策略 + 训练短语收集
+
+- PROB: 预编译 LM 需要短语但用户体验差
+- PLAN:
+  1. contextualStrings 实时生效(单词)
+  2. 用户纠正时自动收集正确句子作为训练短语
+  3. 预编译 LM 后台准备(短语)
+- TIME: 2h | TAGS: #dictionary #asr #ux
+- LINK: DictionaryEntry.swift; DictionaryService.swift; SpeechAnalyzerProvider.swift
+- STAT: [√] 双轨并行；UI 支持查看/编辑训练短语
+- NOTE: trainingPhrases 每词条最多 20 个；SpeechTranscriber 不支持预编译 LM
 
 [2025-12-03 T060] 模糊方案统一为 SwiftUI 原生
 

@@ -1,6 +1,9 @@
 # 实时字幕翻译功能设计
 
-创建: 2024-12-04 | 状态: `计划中`
+创建: 2024-12-04 | 状态: `进行中` | 更新: 2025-12-05
+
+> [!NOTE] 技术路线已从 SFSpeechRecognizer 改为 SpeechAnalyzer (macOS 26+)
+> 详细重构方案见 `design-live-caption-refactor.md`
 
 ## 需求概述
 

@@ -36,6 +36,7 @@ struct TranscriptionModelSettingsView: View {
                     ModelCard(
                         model: model,
                         isSelected: modelManager.settings.selectedModelId == model.id,
+                        roles: modelManager.roles(for: model.id),
                         settings: modelManager.settings.settings(for: model.id),
                         downloadState: modelManager.downloadState(for: model.id),
                         onSelect: {
@@ -54,6 +55,12 @@ struct TranscriptionModelSettingsView: View {
                         onDownload: {
                             modelToDownload = model
                             showDownloadAlert = true
+                        },
+                        onSetRole: { role in
+                            modelManager.setModelRole(model.id, as: role)
+                        },
+                        canSetRole: { role in
+                            modelManager.canSetRole(role, for: model.id)
                         }
                     )
                     
@@ -129,12 +136,15 @@ struct TranscriptionModelSettingsView: View {
 struct ModelCard: View {
     let model: TranscriptionModelDefinition
     let isSelected: Bool
+    let roles: [TranscriptionModelRole]
     let settings: PerModelSettings
     let downloadState: ModelDownloadState
     let onSelect: () -> Void
     let onLocaleChange: (String) -> Void
     let onPrecompiledLMToggle: (Bool) -> Void
     let onDownload: () -> Void
+    let onSetRole: (TranscriptionModelRole) -> Void
+    let canSetRole: (TranscriptionModelRole) -> Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -149,6 +159,11 @@ struct ModelCard: View {
                         Text(model.displayName)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(model.isAvailable ? .white : .gray)
+                        
+                        // Role Badges
+                        ForEach(roles, id: \.self) { role in
+                            RoleBadge(role: role)
+                        }
                         
                         if model.isComingSoon {
                             Text("Coming Soon")
@@ -192,6 +207,21 @@ struct ModelCard: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .opacity(model.isAvailable ? 1.0 : 0.6)
+        .contextMenu {
+            // 设为转录模型
+            if canSetRole(.transcription) {
+                Button(action: { onSetRole(.transcription) }) {
+                    Label("设为转录模型", systemImage: TranscriptionModelRole.transcription.icon)
+                }
+            }
+            
+            // 设为实时字幕模型（仅支持流式的模型显示）
+            if canSetRole(.liveCaption) {
+                Button(action: { onSetRole(.liveCaption) }) {
+                    Label("设为实时字幕模型", systemImage: TranscriptionModelRole.liveCaption.icon)
+                }
+            }
+        }
     }
     
     // MARK: - Subviews
@@ -360,5 +390,27 @@ struct CapabilityBadge: View {
         .padding(.vertical, 4)
         .background(ModelSettingsColors.badgeBackground)
         .cornerRadius(4)
+    }
+}
+
+// MARK: - Role Badge
+
+/// 角色徽章组件（类似 AI 配置中的"转录"、"对话"标签）
+struct RoleBadge: View {
+    let role: TranscriptionModelRole
+    
+    var body: some View {
+        Text(role.displayName)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(badgeColor)
+            .cornerRadius(4)
+    }
+    
+    private var badgeColor: Color {
+        let c = role.badgeColor
+        return Color(red: c.red, green: c.green, blue: c.blue).opacity(0.8)
     }
 }
