@@ -8,6 +8,15 @@ struct FloatingCapsuleView: View {
     @State private var isHovering = false
     @State private var isHoveringComplete = false
     @State private var isHoveringCancel = false
+    @State private var contentHeight: CGFloat = 0
+    
+    /// 窗口固定高度（和 FloatingHUDManager 保持一致）
+    private let windowHeight: CGFloat = 300
+    
+    /// 内容是否到达窗口顶部（需要显示遮罩）
+    private var isContentAtTop: Bool {
+        contentHeight >= windowHeight - 20 // 留 20px 的容差
+    }
     
     let state: RecordingState
     
@@ -83,6 +92,15 @@ struct FloatingCapsuleView: View {
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        // 跟踪内容高度
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: ContentHeightKey.self, value: geo.size.height)
+            }
+        )
+        .onPreferenceChange(ContentHeightKey.self) { height in
+            contentHeight = height
+        }
         .overlay(
             // 思考状态：跑马灯边框
             // 非思考状态：普通边框
@@ -117,6 +135,23 @@ struct FloatingCapsuleView: View {
             .hidden()
         }
         } // VStack 结束
+        // 窗口顶部渐变遮罩：只有当内容到达窗口顶部时才可见（“传送门”效果）
+        .overlay(alignment: .top) {
+            if isContentAtTop {
+                LinearGradient(
+                    colors: [
+                        Color.black.opacity(0.95),
+                        Color.black.opacity(0.6),
+                        Color.clear
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 50)
+                .allowsHitTesting(false)
+                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+            }
+        }
     }
     
     // MARK: - Text Area (上方，向上扩展)
@@ -566,5 +601,15 @@ struct RunningLightBorder: View {
                 rotation = 360
             }
         }
+    }
+}
+
+// MARK: - Content Height PreferenceKey
+
+/// 用于检测内容高度的 PreferenceKey
+private struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }

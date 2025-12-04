@@ -15,7 +15,14 @@ let package = Package(
             name: "SpokenAnyWhere",
             dependencies: [],
             path: ".",
-            exclude: ["Package.swift", "Resources/LocalModels", "Tests"],
+            exclude: [
+                "Package.swift",
+                "Resources/LocalModels",
+                "Tests",
+                "SpokenAnyWhere.app",  // 旧构建产物
+                "dev.sh",              // 开发脚本
+                "Bundler.toml"         // Swift Bundler 配置
+            ],
             sources: ["App", "Core", "Services", "UI"]
         )
     ]

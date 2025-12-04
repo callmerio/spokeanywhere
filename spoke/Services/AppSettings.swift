@@ -195,6 +195,50 @@ class AppSettings: ObservableObject {
         self.messagePanelModifiers = modifiers
     }
     
+    // MARK: - Live Caption Shortcut
+    
+    /// Live Caption 快捷键 keyCode (默认: S = 1)
+    @AppStorage("LiveCaptionKeyCode") var liveCaptionKeyCode: Int = kVK_ANSI_S {
+        didSet { notifyLiveCaptionShortcutChange() }
+    }
+    
+    /// Live Caption 快捷键修饰符 (默认: Option = 524288)
+    @AppStorage("LiveCaptionModifiers") var liveCaptionModifiers: Int = Int(NSEvent.ModifierFlags.option.rawValue) {
+        didSet { notifyLiveCaptionShortcutChange() }
+    }
+    
+    /// Live Caption 快捷键变更通知
+    static let liveCaptionShortcutDidChangeNotification = Notification.Name("LiveCaptionShortcutDidChange")
+    
+    private func notifyLiveCaptionShortcutChange() {
+        NotificationCenter.default.post(name: Self.liveCaptionShortcutDidChangeNotification, object: nil)
+    }
+    
+    /// 获取 Live Caption 快捷键显示字符串
+    var liveCaptionShortcutDisplayString: String {
+        KeyComboFormatter.format(keyCode: liveCaptionKeyCode, modifiers: liveCaptionModifiers)
+    }
+    
+    /// 更新 Live Caption 快捷键
+    func updateLiveCaptionShortcut(keyCode: Int, modifiers: Int) {
+        self.liveCaptionKeyCode = keyCode
+        self.liveCaptionModifiers = modifiers
+    }
+    
+    // MARK: - Live Caption Settings
+    
+    /// 实时字幕翻译目标语言
+    @AppStorage("LiveCaptionTargetLanguage") var liveCaptionTargetLanguage: String = "zh-Hans"
+    
+    /// 实时字幕源语言
+    @AppStorage("LiveCaptionSourceLanguage") var liveCaptionSourceLanguage: String = "en-US"
+    
+    /// 是否显示原文
+    @AppStorage("LiveCaptionShowOriginal") var liveCaptionShowOriginal: Bool = true
+    
+    /// 是否启用翻译
+    @AppStorage("LiveCaptionTranslationEnabled") var liveCaptionTranslationEnabled: Bool = true
+    
     enum RecordingMode: String, CaseIterable, Identifiable {
         case hold = "hold"
         case toggle = "toggle"

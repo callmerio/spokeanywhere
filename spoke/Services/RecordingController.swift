@@ -32,6 +32,7 @@ final class RecordingController {
     private let llmPipeline = LLMPipeline.shared
     private let historyManager = HistoryManager.shared
     private let quickAskService = QuickAskService.shared
+    private let screenOCR = ScreenOCRService.shared
     
     // MARK: - Properties
     
@@ -94,6 +95,13 @@ final class RecordingController {
         hotKeyService.onMessagePanelToggle = {
             Task { @MainActor in
                 MessagePanelManager.shared.toggle()
+            }
+        }
+        
+        // Live Caption 切换显示
+        hotKeyService.onLiveCaptionToggle = {
+            Task { @MainActor in
+                LiveCaptionWindowManager.shared.toggle()
             }
         }
     }
@@ -184,6 +192,11 @@ final class RecordingController {
         
         // ⚠️ 重新设置音频回调（Quick Ask 可能覆盖了）
         setupAudioCallbacks()
+        
+        // 🔍 预取 OCR（与录音并行，不阻塞）
+        if LLMSettings.shared.includeActiveApp {
+            screenOCR.prefetch()
+        }
         
         // 启动计时器更新时长
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in

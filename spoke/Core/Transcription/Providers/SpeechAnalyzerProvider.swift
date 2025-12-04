@@ -3,9 +3,9 @@ import Speech
 import os
 import CoreMedia
 
-/// SpeechAnalyzer 实现
+/// SpeechAnalyzer 实现（支持 DictationTranscriber 和 SpeechTranscriber）
 /// 适用于 macOS 26+ / iOS 26+
-/// 新一代设备端语音识别，更快更准确
+/// 新一代设备端语音识别，更快更准确，支持自定义词典
 @available(macOS 26.0, iOS 26.0, *)
 @MainActor
 final class SpeechAnalyzerProvider: TranscriptionProvider {
@@ -13,14 +13,27 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     // MARK: - Properties
     
     let identifier = "speech_analyzer"
-    let displayName = "Apple 语音分析器"
+    let displayName = "Apple SpeechAnalyzer"
     
     let capabilities: TranscriptionCapability = [.realtime, .offline, .longForm, .punctuation, .multilingual]
     
+    /// Model type to use (from TranscriptionModelManager)
+    var modelType: TranscriptionModelType {
+        didSet {
+            if modelType != oldValue {
+                needsRecreate = true
+            }
+        }
+    }
+    
+    /// Whether to enable precompiled LM (only for .dictation model)
+    var enablePrecompiledLM: Bool = true
+    
     var locale: Locale {
         didSet {
-            // 需要重新创建 transcriber
-            needsRecreate = true
+            if locale != oldValue {
+                needsRecreate = true
+            }
         }
     }
     
@@ -51,7 +64,8 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "SpeechAnalyzerProvider")
     
     private var analyzer: SpeechAnalyzer?
-    private var transcriber: SpeechTranscriber?
+    private var dictationTranscriber: DictationTranscriber?
+    private var speechTranscriber: SpeechTranscriber?
     private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
     private var resultsTask: Task<Void, Never>?
     private var analyzeTask: Task<Void, Never>?
@@ -66,8 +80,15 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     
     // MARK: - Init
     
-    init(locale: Locale = Locale(identifier: "zh-Hans")) {
+    init(locale: Locale = Locale(identifier: "zh-Hans"), modelType: TranscriptionModelType = .dictation) {
         self.locale = locale
+        self.modelType = modelType
+    }
+    
+    /// Initialize from TranscriptionModelManager configuration
+    convenience init(config: TranscriptionProviderConfig) {
+        self.init(locale: config.locale, modelType: config.modelType)
+        self.enablePrecompiledLM = config.enablePrecompiledLM
     }
     
     // MARK: - TranscriptionProvider
@@ -181,79 +202,258 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     // MARK: - Private - SpeechAnalyzer Setup
     
     private func setupSpeechAnalyzer() async throws {
+        let setupStartTime = CFAbsoluteTimeGetCurrent()
+        
+        logger.info("🚀 Setting up SpeechAnalyzer with model: \(self.modelType.rawValue)")
+        
+        // Route to appropriate setup based on model type
+        switch modelType {
+        case .dictation:
+            try await setupDictationTranscriber()
+        case .speechTranscriber:
+            try await setupSpeechTranscriber()
+        default:
+            throw TranscriptionError.processingFailed("Unsupported model type: \(modelType.rawValue)")
+        }
+        
+        let totalTime = (CFAbsoluteTimeGetCurrent() - setupStartTime) * 1000
+        logger.info("⏱️ Total setup time: \(String(format: "%.2f", totalTime))ms")
+    }
+    
+    // MARK: - DictationTranscriber Setup
+    
+    private func setupDictationTranscriber() async throws {
+        // Step 1: Get supported locale
+        guard let supportedLocale = await DictationTranscriber.supportedLocale(equivalentTo: locale) else {
+            logger.error("❌ Locale not supported: \(self.locale.identifier)")
+            throw TranscriptionError.unsupportedLocale(locale)
+        }
+        
+        // Step 2: Create DictationTranscriber (supports precompiled LM)
+        let transcriber = try await createDictationTranscriber(locale: supportedLocale)
+        self.dictationTranscriber = transcriber
+        
+        // Step 3: Ensure assets are installed
+        try await ensureAssetsInstalled(for: transcriber)
+        
+        // Step 4: Get best audio format
+        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
+            throw TranscriptionError.processingFailed("No compatible audio format")
+        }
+        self.targetAudioFormat = format
+        
+        // Step 5: Create input stream
+        let (inputSequence, inputBuilder) = AsyncStream.makeStream(of: AnalyzerInput.self)
+        self.inputContinuation = inputBuilder
+        
+        // Step 6: Create SpeechAnalyzer
+        let analyzer = SpeechAnalyzer(modules: [transcriber])
+        self.analyzer = analyzer
+        
+        // Step 7: Inject contextualStrings (words + training phrases)
+        try await injectContextualStrings(to: analyzer)
+        
+        // Step 8: Prepare analyzer
+        try await analyzer.prepareToAnalyze(in: format)
+        
+        // Step 9: Start listening for results
+        resultsTask = Task { [weak self] in
+            await self?.listenForDictationResults(transcriber: transcriber)
+        }
+        
+        // Step 10: Start analysis
+        analyzeTask = Task { [weak self] in
+            do {
+                try await analyzer.start(inputSequence: inputSequence)
+            } catch {
+                await MainActor.run { self?.onError?(error) }
+            }
+        }
+        
+        logger.info("✅ DictationTranscriber setup complete for locale: \(supportedLocale.identifier)")
+    }
+    
+    // MARK: - SpeechTranscriber Setup
+    
+    private func setupSpeechTranscriber() async throws {
+        // Step 1: Get supported locale
+        guard let supportedLocale = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
+            logger.error("❌ Locale not supported: \(self.locale.identifier)")
+            throw TranscriptionError.unsupportedLocale(locale)
+        }
+        
+        // Step 2: Create SpeechTranscriber (stronger model, no precompiled LM)
+        let transcriber = SpeechTranscriber(
+            locale: supportedLocale,
+            preset: .progressiveTranscription
+        )
+        self.speechTranscriber = transcriber
+        
+        // Step 3: Ensure assets are installed
+        try await ensureAssetsInstalled(for: transcriber)
+        
+        // Step 4: Get best audio format
+        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
+            throw TranscriptionError.processingFailed("No compatible audio format")
+        }
+        self.targetAudioFormat = format
+        
+        // Step 5: Create input stream
+        let (inputSequence, inputBuilder) = AsyncStream.makeStream(of: AnalyzerInput.self)
+        self.inputContinuation = inputBuilder
+        
+        // Step 6: Create SpeechAnalyzer
+        let analyzer = SpeechAnalyzer(modules: [transcriber])
+        self.analyzer = analyzer
+        
+        // Step 7: Inject contextualStrings (words + training phrases)
+        try await injectContextualStrings(to: analyzer)
+        
+        // Step 8: Prepare analyzer
+        try await analyzer.prepareToAnalyze(in: format)
+        
+        // Step 9: Start listening for results
+        resultsTask = Task { [weak self] in
+            await self?.listenForSpeechTranscriberResults(transcriber: transcriber)
+        }
+        
+        // Step 10: Start analysis
+        analyzeTask = Task { [weak self] in
+            do {
+                try await analyzer.start(inputSequence: inputSequence)
+            } catch {
+                await MainActor.run { self?.onError?(error) }
+            }
+        }
+        
+        logger.info("✅ SpeechTranscriber setup complete for locale: \(supportedLocale.identifier)")
+    }
+    
+    // MARK: - Shared Setup Helpers
+    
+    /// Inject contextualStrings to analyzer (words + training phrases)
+    private func injectContextualStrings(to analyzer: SpeechAnalyzer) async throws {
+        guard TranscriptionManager.shared.isDictionaryInjectionEnabled else {
+            logger.notice("ℹ️ Dictionary injection disabled")
+            return
+        }
+        
+        // Collect all words
+        var allStrings: [String] = DictionaryService.shared.getAllWords()
+        
+        // Add training phrases (for SpeechTranscriber, this compensates for lack of precompiled LM)
+        let trainingPhrases = DictionaryService.shared.getAllTrainingPhrases()
+        for (_, phrase) in trainingPhrases {
+            allStrings.append(phrase)
+        }
+        
+        guard !allStrings.isEmpty else {
+            logger.notice("⚠️ Dictionary empty, skipping injection")
+            return
+        }
+        
+        let context = AnalysisContext()
+        context.contextualStrings[.general] = allStrings
+        try await analyzer.setContext(context)
+        
+        logger.notice("📚 contextualStrings injected: \(allStrings.count) items (words + phrases)")
+    }
+    
+    /// 创建 DictationTranscriber
+    /// 双轨词典注入：
+    /// 1. contextualStrings（轻量级）- 通过 SpeechAnalyzer.context 注入
+    /// 2. 预编译 LM（当有训练短语时）- 通过 contentHints 注入
+    private func createDictationTranscriber(locale: Locale) async throws -> DictationTranscriber {
+        let basePreset = DictationTranscriber.Preset.progressiveShortDictation
+        var contentHints = basePreset.contentHints
+        var reportingOptions = basePreset.reportingOptions
+        
+        // Only enable precompiled LM if user setting allows it
+        let manager = TranscriptionManager.shared
+        if enablePrecompiledLM,
+           manager.isDictionaryInjectionEnabled,
+           DictionaryService.shared.hasTrainingPhrases,
+           manager.isDictionaryPrepared,
+           let injector = manager.dictionaryInjector as? AppleSpeechDictionaryInjector,
+           let lmConfiguration = injector.languageModelConfiguration {
+            
+            contentHints.insert(.customizedLanguage(modelConfiguration: lmConfiguration))
+            reportingOptions.insert(.frequentFinalization)
+            
+            let phraseCount = DictionaryService.shared.getAllTrainingPhrases().count
+            logger.notice("📚 Precompiled LM enabled, training phrases: \(phraseCount, privacy: .public)")
+        } else if !enablePrecompiledLM {
+            logger.notice("ℹ️ Precompiled LM disabled by user setting")
+        }
+        
+        let transcriber = DictationTranscriber(
+            locale: locale,
+            contentHints: contentHints,
+            transcriptionOptions: basePreset.transcriptionOptions,
+            reportingOptions: reportingOptions,
+            attributeOptions: basePreset.attributeOptions
+        )
+        
+        return transcriber
+    }
+    
+    // MARK: - [DEPRECATED] SpeechTranscriber Setup (保留用于 fallback)
+    // TODO: [Roadmap] 实时注入方案 - 预编译耗时过长时的快速 fallback
+    /*
+    private func setupSpeechTranscriberFallback() async throws {
         // Step 1: 获取支持的 locale
         guard let supportedLocale = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else {
             logger.error("❌ Locale not supported: \(self.locale.identifier)")
             throw TranscriptionError.unsupportedLocale(locale)
         }
         
-        // Step 2: 创建 SpeechTranscriber
-        // 使用 progressiveTranscription 预设支持实时转录
+        // Step 2: 创建 SpeechTranscriber（支持 contextualStrings 轻量级注入）
         let transcriber = SpeechTranscriber(
             locale: supportedLocale,
             preset: .progressiveTranscription
         )
         self.transcriber = transcriber
         
-        // Step 3: 检查并安装所需资产
-        try await ensureAssetsInstalled(for: transcriber)
-        
-        // Step 4: 获取最佳音频格式
-        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
-            logger.error("❌ No compatible audio format available")
-            throw TranscriptionError.processingFailed("No compatible audio format")
-        }
-        self.targetAudioFormat = format
-        logger.info("📢 Using audio format: \(format)")
-        
-        // Step 5: 创建输入流
-        let (inputSequence, inputBuilder) = AsyncStream.makeStream(of: AnalyzerInput.self)
-        self.inputContinuation = inputBuilder
-        
-        // Step 6: 创建 SpeechAnalyzer
-        let analyzer = SpeechAnalyzer(modules: [transcriber])
-        self.analyzer = analyzer
-        
-        // Step 7: 预热分析器
-        try await analyzer.prepareToAnalyze(in: format)
-        
-        // Step 8: 启动结果监听
-        resultsTask = Task { [weak self] in
-            await self?.listenForResults(transcriber: transcriber)
-        }
-        
-        // Step 9: 启动分析（自主模式）
-        analyzeTask = Task { [weak self] in
-            do {
-                try await analyzer.start(inputSequence: inputSequence)
-            } catch {
-                await MainActor.run {
-                    self?.onError?(error)
-                }
+        // Step 3: 配置 contextualStrings（实时注入，无需预编译）
+        if TranscriptionManager.shared.isDictionaryInjectionEnabled {
+            let context = AnalysisContext()
+            let words = DictionaryService.shared.getAllWords()
+            if !words.isEmpty {
+                context.contextualStrings[.general] = words
+                try await analyzer?.setContext(context)
+                logger.info("📚 [词典] contextualStrings 已注入: \(words.count) 个词")
             }
         }
         
-        logger.info("✅ SpeechAnalyzer setup complete for locale: \(supportedLocale.identifier)")
+        // ... 其余与 DictationTranscriber 相同 ...
     }
+    */
     
-    private func ensureAssetsInstalled(for transcriber: SpeechTranscriber) async throws {
-        // 检查是否需要下载资产
+    private func ensureAssetsInstalled(for transcriber: DictationTranscriber) async throws {
         if let installationRequest = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-            logger.info("📥 Downloading speech assets...")
-            
-            // 下载并安装
+            logger.info("📥 Downloading DictationTranscriber assets...")
             try await installationRequest.downloadAndInstall()
-            
-            logger.info("✅ Speech assets installed")
+            logger.info("✅ DictationTranscriber assets installed")
         } else {
-            logger.info("✅ Speech assets already installed")
+            logger.info("✅ DictationTranscriber assets already installed")
         }
     }
     
-    private func listenForResults(transcriber: SpeechTranscriber) async {
+    private func ensureAssetsInstalled(for transcriber: SpeechTranscriber) async throws {
+        if let installationRequest = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
+            logger.info("📥 Downloading SpeechTranscriber assets (~2GB)...")
+            try await installationRequest.downloadAndInstall()
+            logger.info("✅ SpeechTranscriber assets installed")
+        } else {
+            logger.info("✅ SpeechTranscriber assets already installed")
+        }
+    }
+    
+    /// 监听 DictationTranscriber 结果
+    private func listenForDictationResults(transcriber: DictationTranscriber) async {
         do {
             for try await result in transcriber.results {
-                await handleResult(result)
+                await handleDictationResult(result)
             }
         } catch {
             await MainActor.run { [weak self] in
@@ -263,7 +463,8 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         }
     }
     
-    private func handleResult(_ result: SpeechTranscriber.Result) async {
+    /// 处理 DictationTranscriber 结果
+    private func handleDictationResult(_ result: DictationTranscriber.Result) async {
         // 从 AttributedString 提取纯文本
         let segmentText = String(result.text.characters)
         let isFinal = result.isFinal
@@ -277,12 +478,17 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
                 self.volatileText = ""  // 清空 volatile
                 
                 self.logger.info("📝 Finalized segment: \(segmentText)")
-                self.logger.info("📝 Total: \(self.finalizedText)")
+                self.logger.info("📝 Total finalized: \(self.finalizedText)")
             } else {
-                // Volatile 结果：更新预览
+                // Volatile 结果：更新预览（注意：volatile 会被后续结果覆盖，不会累积）
+                // 如果新 volatile 比旧的短，可能是识别引擎重新分析了音频
+                if !self.volatileText.isEmpty && segmentText.count < self.volatileText.count {
+                    self.logger.warning("⚠️ Volatile shrunk: '\(self.volatileText)' -> '\(segmentText)'")
+                }
                 self.volatileText = segmentText
                 
-                self.logger.debug("📝 Volatile: \(segmentText)")
+                // 提升到 info 级别，便于调试识别问题
+                self.logger.info("📝 Volatile: \(segmentText)")
             }
             
             // 使用新的构造器，分离 finalized 和 volatile
@@ -295,12 +501,56 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         }
     }
     
+    // MARK: - SpeechTranscriber Results
+    
+    private func listenForSpeechTranscriberResults(transcriber: SpeechTranscriber) async {
+        do {
+            for try await result in transcriber.results {
+                await handleSpeechTranscriberResult(result)
+            }
+        } catch {
+            await MainActor.run { [weak self] in
+                self?.logger.error("❌ SpeechTranscriber results error: \(error.localizedDescription)")
+                self?.onError?(error)
+            }
+        }
+    }
+    
+    private func handleSpeechTranscriberResult(_ result: SpeechTranscriber.Result) async {
+        let segmentText = String(result.text.characters)
+        let isFinal = result.isFinal
+        
+        await MainActor.run { [weak self] in
+            guard let self = self else { return }
+            
+            if isFinal {
+                self.finalizedText += segmentText
+                self.volatileText = ""
+                self.logger.info("📝 [ST] Finalized: \(segmentText)")
+            } else {
+                if !self.volatileText.isEmpty && segmentText.count < self.volatileText.count {
+                    self.logger.warning("⚠️ [ST] Volatile shrunk: '\(self.volatileText)' -> '\(segmentText)'")
+                }
+                self.volatileText = segmentText
+                self.logger.info("📝 [ST] Volatile: \(segmentText)")
+            }
+            
+            let transcriptionResult = TranscriptionResult(
+                finalizedText: self.finalizedText,
+                volatileText: self.volatileText,
+                type: .partial
+            )
+            self.onResult?(transcriptionResult)
+        }
+    }
+    
     private func cleanup() {
         inputContinuation = nil
         resultsTask = nil
         analyzeTask = nil
         analyzer = nil
-        transcriber = nil
+        dictationTranscriber = nil
+        speechTranscriber = nil
         targetAudioFormat = nil
         audioConverter = nil
     }
@@ -314,7 +564,7 @@ extension SpeechAnalyzerProvider {
         TranscriptionProviderInfo(
             identifier: "speech_analyzer",
             displayName: "Apple 语音分析器",
-            description: "新一代设备端语音识别，更快更准确，完全离线，适用于 macOS 26+",
+            description: "新一代设备端语音识别，支持预编译词典，更快更准确，完全离线，适用于 macOS 26+",
             capabilities: [.realtime, .offline, .longForm, .punctuation, .multilingual],
             minOSVersion: "macOS 26.0",
             isAvailable: SpeechTranscriber.isAvailable

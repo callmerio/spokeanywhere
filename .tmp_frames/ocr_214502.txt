@@ -1,0 +1,130 @@
+资源管理器
+v digital-brain-mvp
+v 口 .agent/rules
+project-rule.md
+cache
+memories
+.gitignore
+project.yml
+components
+demo-notes
+dist
+docs
+hooks
+Ib
+node_modules
+public
+scripts
+services
+Ca
+utils
+availableEmoji.ts
+emojiUtils.ts
+frontmatterPar..•
+graphFilter.ts
+graphHelpers.ts
+graphLayout.ts
+mindmapParser...
+relationshipHel..
+renderHelpers.ts
+env
+.gitignore
+App.tsx
+constants.ts
+inbox.md
+index.css
+index.html
+index.tsx
+metadata.json
+package.json
+pnpm-lock.yaml
+postcss.config.js
+README.md
+Roadmap.md M
+tailwind.config.js
+test.md
+tsconfig.json
+types.ts
+Untitled-1.excali...
+＞时间线
+v all links （0）
+Nothing found for
+the selected
+resource and the
+current filter.
+>大纲
+> Tag Explorer （28）
+〉Notes
+> Orphans （196）
+> Placeholders （1）
+Q
+Y main* 04 10个
+digital-brain-mvp - Roadmap.md - 已修改
+graphLayout.ts
+Roadmap.md M ×
+Cor
+Reviewing Project Roadmap
+~Q
+9
+83
+34
+26
+24
+23
+22
+21
+20
+19
+18
+17
+16
+15
+14
+13
+12
+11
+10
+Roadmap.md>四#
+Digital Brain MVP - Roadmap〉四##仁技术债＞四###短期〉 。
+Digital
+Brain MVP - Roadmap
+##* Phase 3： 智能强
+### 3.2 多维视图
+- 【1时间线 - 按 created/modified 展示
+- ［1大纲 - 纯层级树视图
+- ［1局部图 - 只看 N 跳內的子图
+84
+10
+11
+12
+13
+14
+15
+16
+17
+问题
+### 3.3 发布＆分享
+- ［1静态导出 - 生成可分享的 HTML 图谱
+- ［1嵌入 - iframe 可嵌入 Notion/博客
+##
+Phase 4： 生态整合
+［］
+**0bsidian 双向同步** -监听.md 变化实时更新
+［］
+**Zotero 集成** - 导入文献自动创建节点
+- 【］**Anki 导出** -选中节点生成间隔重复卡片
+- ［1**多设备同步** -基于 CRDT 的冲突解决
+耕仁 技术债
+#林# 短期
+•
+- ［1 GraphView 拆分
+（2000+ 行 - useGraphLayout，
+useGraphInteraction，
+GraphRenderer）
+- ［］类型收窄（~VisualNode.level、变体过多）
+- ［1 布局算法单元测试
+#林# 中期
+［ ］ Zustand 状态管理
+-［］
+视口裁剪
+（节点>500 性

@@ -153,8 +153,19 @@ final class AudioRecorderService: NSObject {
                     
                     self.logger.info("✅ Engine ready, sending \(bufferedAudio.count) buffered chunks")
                     
+                    var successCount = 0
+                    var failCount = 0
                     for buffer in bufferedAudio {
-                        try? self.transcriptionProvider?.process(buffer: buffer)
+                        do {
+                            try self.transcriptionProvider?.process(buffer: buffer)
+                            successCount += 1
+                        } catch {
+                            failCount += 1
+                            self.logger.warning("⚠️ Failed to process buffered chunk: \(error.localizedDescription)")
+                        }
+                    }
+                    if failCount > 0 {
+                        self.logger.warning("⚠️ Buffered chunks: \(successCount) success, \(failCount) failed")
                     }
                     
                     // 标记引擎已准备好

@@ -1,0 +1,102 @@
+••
+Explorer
+~ lucid-group
+VD mvp
+TS types.ts
+vite.config.ts
+vocab_words.txt
+> C node_modules
+〉口
+openspec
+scripts
+volume-backups
+gitignore
+.npmrc
+M4 CLAUDE.md
+M4 CODE_REVIEW_FIXES.md
+M4CODE_REVIEW_REPORT.md
+M4 CODE_REVIEW_SUMMARY.md
+G
+COMMIT_MESSAGE_FIXES.txt
+COMMIT_MESSAGE_PERF.txt
+COMMIT_MESSAGE.txt
+M+ COMPLETE_FIX_SUMMARY.md
+M+ FIX.md
+M4 FIXES_SUMMARY.md
+M4 GETTING_STARTED.md
+t improve_translation.py
+M+ MIGRATION_SUMMARY.md
+MI OPTIMIZATION_SUMMARY.md
+19 package.json
+# pnpm-lock.yaml
+# pnpm-workspace.yaml
+d process_csv_translations.py
+M4 QUICK_TEST_GUIDE.md
+M4 README.md
+｛｝ res.json
+｛｝ Roadmap.excalidraw
+M+ ROADMAP.md
+M+ SuperClaudeUsage.md
+M+ TEST_VERIFICATION.md
+</ test.html
+M4 TESTING_GUIDE.md
+d translate_csv_chunk114.py
+> Outline
+> Timeline
+89main*
+6个
+x0AO
+M
+lucid-group - translate.log
+Open Agent Manager
+translate.log ×
+fix-severe-loss.py U
+prol
+个-…
+Finalize Data Quality Checks
+translate.log
+常用词验证⑦
+40
+39
+38
+37
+36
+35
+34
+33
+32
+31
+30
+29
+28
+27
+26
+25
+24
+23
+22
+21
+20
+19
+18
+17
+16
+15
+14
+13
+12
+11
+10
+AIZaSyDzvtPGKMqOwjRwx9_Mqz10_NPEgtNNOrQ
+AIzaSyB_s95tmXkRn21Ld9Cj8k4monsHDVPORjs
+AIzaSyBH_7xXdDWsZy9eb3SKeM53E16DUCUz0Z9
+AIzaSyAOMVpJdhxriwKi0o4pIkeU7fr6iVWADwk
+AIzaSyB39jFmNg］AZK6OeJrbu9FPTKFCe9f019M
+AIzaSyAgtM4jR5TQ0J7CYGVOaAr-SLqZSzLm5tA
+AIzaSyD7nKX_j2-75j10ANbWcocik1M5BPxyv5I
+AIzaSyC23RB3C0fKZrI0y1MH5dkJ8axwG］d0Mo8
+AIzaSyA82mm8UsuVKi8SOMN1Ds8_PKRwUCt6g0U
+AIzaSyC8SLw151VRn60L_eYGsZjZUdYsNLPI0OY
+AIzaSyB8emYpmTks4U1RVI42Xf7jAsjgULgpYyM
+AIzaSyD5KKUKHGBAIsBTgUVCu］4wPonX4eec1GU
+AIzaSyDVoth

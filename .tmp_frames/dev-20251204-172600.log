@@ -1,0 +1,290 @@
+Filtering the log data using "process == "SpokenAnyWhere" AND (NOT subsystem BEGINSWITH "com.apple.coreaudio") AND (NOT subsystem BEGINSWITH "com.apple.BoardServices") AND (NOT subsystem BEGINSWITH "com.apple.avfaudio") AND (NOT subsystem BEGINSWITH "com.apple.xpc")"
+Timestamp               Ty Process[PID:TID]
+2025-12-04 17:26:01.245 A  SpokenAnyWhere[34786:32c20] (libsystem_info.dylib) Retrieve User by ID
+2025-12-04 17:26:01.251 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) No windows open yet
+2025-12-04 17:26:01.251 A  SpokenAnyWhere[34786:32c20] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:26:01.266 Df SpokenAnyWhere[34786:32c20] [com.apple.SkyLight:default] server port 0x0000320f, session port 0x0000320f
+2025-12-04 17:26:01.280 Df SpokenAnyWhere[34786:32c20] [com.apple.SkyLight:default] New connection 0xb29a3 main
+2025-12-04 17:26:01.281 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] CHECKIN: pid=34786
+2025-12-04 17:26:01.285 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] CHECKEDIN: pid=34786 asn=0x0-0x10e10e foreground=0
+2025-12-04 17:26:01.286 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] FRONTLOGGING: version 1
+2025-12-04 17:26:01.286 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] Registered, pid=34786 ASN=0x0,0x10e10e
+2025-12-04 17:26:01.287 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] BringForward: pid=34786 asn=0x0-0x10e10e bringForward=0 foreground=0 uiElement=1 launchedByLS=1 modifiersCount=1 allDisabled=0
+2025-12-04 17:26:01.287 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] BringFrontModifier: pid=34786 asn=0x0-0x10e10e Modifier 0 hideAfter=0 hideOthers=0 dontMakeFrontmost=0 mouseDown=0/0 seed=0/0
+2025-12-04 17:26:01.288 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Appearance] Current system appearance, (HLTB: 2), (SLS: 1)
+2025-12-04 17:26:01.289 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) No persisted cache on this platform.
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) Could not get size of EAN data (IOConnectCallScalarMethod kAppleNVMeEANGetSize returned 0xE00002E2)
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) Failed to copy 'aptk' from EAN
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) Failed to copy APTicket properties. Falling back to default policy.
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) Creating default MGSysConfigPolicy
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) syscfg is not initialized!
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) CFDictionaryRef copySyscfgDictionary(void) enumeration of <private> failed.
+2025-12-04 17:26:01.291 Df SpokenAnyWhere[34786:32c20] (libMobileGestalt.dylib) Failed to find key <private>
+2025-12-04 17:26:01.292 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Appearance] Current system appearance, (HLTB: 2), (SLS: 1)
+2025-12-04 17:26:01.293 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Appearance] Post-registration system appearance: (HLTB: 2)
+2025-12-04 17:26:01.294 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] FBSWorkspace: endpoint monitoring is disabled.
+2025-12-04 17:26:01.294 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] FBSWorkspace: default shell endpoint is disabled.
+2025-12-04 17:26:01.295 Df SpokenAnyWhere[34786:32c20] [com.apple.runningboard:connection] Initializing connection
+2025-12-04 17:26:01.295 Df SpokenAnyWhere[34786:32c20] [com.apple.runningboard:process] Removing all cached process handles
+2025-12-04 17:26:01.295 Df SpokenAnyWhere[34786:32c5d] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2025-12-04 17:26:01.295 Df SpokenAnyWhere[34786:32c5d] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2025-12-04 17:26:01.295 A  SpokenAnyWhere[34786:32c5c] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:01.295 Df SpokenAnyWhere[34786:32c5d] [com.apple.runningboard:connection] Handshake succeeded
+2025-12-04 17:26:01.295 Df SpokenAnyWhere[34786:32c5d] [com.apple.runningboard:connection] Identity resolved as app<application.app.spokenly.330882672.330882683(501)>
+2025-12-04 17:26:01.302 Df SpokenAnyWhere[34786:32c5c] [com.apple.appintents:Connection] Created a new Process Instance Registry XPC connection (inactive)
+2025-12-04 17:26:01.302 Df SpokenAnyWhere[34786:32c5c] [com.apple.appintents:Connection] Activated connection to com.apple.linkd.autoShortcut (ApplicationService)
+2025-12-04 17:26:01.303 Df SpokenAnyWhere[34786:32c5c] [com.apple.appintents:Connection] Registered process with identifier 34786-77506
+2025-12-04 17:26:01.308 A  SpokenAnyWhere[34786:32c20] (libsystem_info.dylib) Membership API: translate identifier
+2025-12-04 17:26:01.325 A  SpokenAnyWhere[34786:32c5d] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:01.326 Df SpokenAnyWhere[34786:32c20] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2025-12-04 17:26:01.326 Df SpokenAnyWhere[34786:32c20] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 17:26:01.326 Df SpokenAnyWhere[34786:32c20] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 17:26:01.326 Df SpokenAnyWhere[34786:32c20] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 17:26:01.350 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From System CFPrefsD
+2025-12-04 17:26:01.352 Df SpokenAnyWhere[34786:32c20] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.gms.availability.notification
+2025-12-04 17:26:01.352 Df SpokenAnyWhere[34786:32c20] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.os-eligibility-domain.change.greymatter
+2025-12-04 17:26:01.352 Df SpokenAnyWhere[34786:32c20] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.language.changed
+2025-12-04 17:26:01.352 Df SpokenAnyWhere[34786:32c20] [com.apple.WritingTools:Default] isAvailable value changed: isMDMAllowed = true, gmAvailable (current) = true
+2025-12-04 17:26:01.353 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:01.356 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] SignalReady: pid=34786 asn=0x0-0x10e10e
+2025-12-04 17:26:01.356 Df SpokenAnyWhere[34786:32c20] [com.apple.processmanager:front-35286506] SIGNAL: pid=34786 asn=0x0x-0x10e10e
+2025-12-04 17:26:01.357 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From System CFPrefsD
+2025-12-04 17:26:01.366 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) Restoring windows
+2025-12-04 17:26:01.366 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:StateRestoration] -[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:withFullFidelity:completionHandler:] shouldRestoreState=1 hasPersistentStateToRestore=0 shouldStillRestoreStateAfterPrompting=0
+2025-12-04 17:26:01.367 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _NSEnableAutomaticTerminationAndLog(NSString *) Restoring windows
+2025-12-04 17:26:01.368 A  SpokenAnyWhere[34786:32c20] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:26:01.375 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:01.375 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:01.378 Df SpokenAnyWhere[34786:32c5c] [com.apple.CoreAnalytics:client] Received configuration update from daemon (initial)
+2025-12-04 17:26:01.384 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Appearance] NSApp cache appearance:
+-NSRequiresAquaSystemAppearance: 0
+-appearance: (null)
+-effectiveAppearance: <NSCompositeAppearance: 0x9534248c0
+ (
+    "<NSDarkAquaAppearance: 0x9534246e0>",
+    "<NSSystemAppearance: 0x953424820>"
+)>
+2025-12-04 17:26:01.387 A  SpokenAnyWhere[34786:32c5c] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:01.389 Df SpokenAnyWhere[34786:32c5d] [com.apple.corespotlight:index] (<private>) deleteSearchableItemsWithDomainIdentifiers, protectionClass:(null), domainIdentifiers number:1
+2025-12-04 17:26:01.389 A  SpokenAnyWhere[34786:32c5d] (CoreSpotlight) delete-domains
+2025-12-04 17:26:01.389 Df SpokenAnyWhere[34786:32c5d] (CoreSpotlight) sConnectionName: com.apple.spotlight.IndexAgent
+2025-12-04 17:26:01.389 Df SpokenAnyWhere[34786:32c5d] (CoreSpotlight) Start service name com.apple.spotlight.IndexAgent
+2025-12-04 17:26:01.390 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] FBSWorkspace registering source: <private>
+2025-12-04 17:26:01.390 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <private>
+2025-12-04 17:26:01.390 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x953427700 <private>> attempting immediate handshake from activate
+2025-12-04 17:26:01.391 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x953427700 <private>> sent handshake
+2025-12-04 17:26:01.391 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemSceneHostSettings__ on FBSSceneSettings
+2025-12-04 17:26:01.391 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemSceneClientSettings__ on FBSSceneClientSettings
+2025-12-04 17:26:01.391 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2025-12-04 17:26:01.392 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2025-12-04 17:26:01.392 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0x953427840; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C> from com.apple.controlcenter.statusitems
+2025-12-04 17:26:01.392 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x953427840; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C> complete!
+2025-12-04 17:26:01.392 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2025-12-04 17:26:01.393 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSHostedViewSceneSettings__ on FBSSceneSettings
+2025-12-04 17:26:01.393 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSClientHostedViewSceneSettings__ on FBSSceneClientSettings
+2025-12-04 17:26:01.393 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemAuxiliaryViewSceneSettings__ on FBSSceneSettings
+2025-12-04 17:26:01.393 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSClientStatusItemAuxiliaryViewSceneSettings__ on FBSSceneClientSettings
+2025-12-04 17:26:01.393 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0x953427980; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView> from com.apple.controlcenter.statusitems
+2025-12-04 17:26:01.393 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x953427980; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:26:01.395 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.395 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:26:01.396 A  SpokenAnyWhere[34786:32c5d] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:01.399 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.399 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:26:01.400 Df SpokenAnyWhere[34786:32c5c] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x953427840; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C> complete!
+2025-12-04 17:26:01.401 Df SpokenAnyWhere[34786:32c5c] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x953427980; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:26:01.401 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.401 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:26:01.402 Df SpokenAnyWhere[34786:32c5c] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x953427700 <private>> Reconnecting scene com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C
+2025-12-04 17:26:01.402 Df SpokenAnyWhere[34786:32c5c] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x953427700 <private>> Reconnecting scene com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView
+2025-12-04 17:26:01.501 A  SpokenAnyWhere[34786:32c20] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:26:01.511 Df SpokenAnyWhere[34786:32c20] [com.apple.SkyLight:default] server port 0x0000f113, session port 0x0000320f
+2025-12-04 17:26:01.515 Df SpokenAnyWhere[34786:32c20] (Foundation) <private>
+2025-12-04 17:26:01.519 Df SpokenAnyWhere[34786:32c20] (Foundation) <private>
+2025-12-04 17:26:01.520 Df SpokenAnyWhere[34786:32c20] (Foundation) <private>
+2025-12-04 17:26:01.520 Df SpokenAnyWhere[34786:32c20] (Foundation) <private>
+2025-12-04 17:26:01.520 Df SpokenAnyWhere[34786:32c20] (Foundation) <private>
+2025-12-04 17:26:01.526 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.545 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.546 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.549 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.549 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.555 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0x954432440; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView> from com.apple.controlcenter.statusitems
+2025-12-04 17:26:01.555 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x954432440; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:26:01.556 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.556 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:26:01.556 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 17:26:01.557 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.557 Df SpokenAnyWhere[34786:32c5d] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x954432440; com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:26:01.559 Df SpokenAnyWhere[34786:32c5c] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x953427700 <private>> Reconnecting scene com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView
+2025-12-04 17:26:01.561 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.566 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.568 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 17:26:01.570 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C-Replicant[1]-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 17:26:01.578 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.669 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.678 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:01.747 A  SpokenAnyWhere[34786:32c5c] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:01.747 Df SpokenAnyWhere[34786:32c5c] [com.apple.corespotlight:index] *warn* MailCS ======%%% _setMailMessageAttributes skip:1
+2025-12-04 17:26:01.749 Df SpokenAnyWhere[34786:32c62] (CoreSpotlight) Start service name com.apple.spotlightknowledged
+2025-12-04 17:26:01.750 Df SpokenAnyWhere[34786:32c62] [com.apple.corespotlight:default] [GMS] availability notification token 87
+2025-12-04 17:26:01.754 A  SpokenAnyWhere[34786:32c5c] (CoreSpotlight) index-items
+2025-12-04 17:26:06.380 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=1
+2025-12-04 17:26:08.917 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _NSEnableAutomaticTerminationAndLog(NSString *) No windows open yet
+2025-12-04 17:26:08.917 Df SpokenAnyWhere[34786:32c83] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 17:26:08.918 Df SpokenAnyWhere[34786:32c84] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 17:26:08.924 A  SpokenAnyWhere[34786:32c20] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:26:08.924 F  SpokenAnyWhere[34786:32c20] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:26:08.932 A  SpokenAnyWhere[34786:32c20] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:26:08.932 F  SpokenAnyWhere[34786:32c20] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:26:09.022 A  SpokenAnyWhere[34786:32c83] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:09.418 A  SpokenAnyWhere[34786:32c84] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:09.419 A  SpokenAnyWhere[34786:32c84] (CoreSpotlight) index-items
+2025-12-04 17:26:10.033 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:10.047 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2025-12-04 17:26:10.719 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:10.789 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:10.791 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:10.797 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:26:11.252 Df SpokenAnyWhere[34786:32e94] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 17:26:11.662 Df SpokenAnyWhere[34786:32c84] [com.apple.launchservices:default] LSExceptions shared instance invalidated for timeout.
+2025-12-04 17:26:12.086 Df SpokenAnyWhere[34786:32e94] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 17:26:12.148 A  SpokenAnyWhere[34786:32e94] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:12.151 A  SpokenAnyWhere[34786:32e94] (CoreSpotlight) index-items
+2025-12-04 17:26:12.282 Df SpokenAnyWhere[34786:32e8e] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 17:26:12.282 Df SpokenAnyWhere[34786:32e94] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 17:26:12.285 A  SpokenAnyWhere[34786:32e94] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:12.328 A  SpokenAnyWhere[34786:32e8e] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:12.362 A  SpokenAnyWhere[34786:32e94] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:26:12.773 A  SpokenAnyWhere[34786:32e8e] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:12.774 A  SpokenAnyWhere[34786:32e8e] (CoreSpotlight) index-items
+2025-12-04 17:26:18.651 A  SpokenAnyWhere[34786:32c20] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:26:18.651 F  SpokenAnyWhere[34786:32c20] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:26:18.934 A  SpokenAnyWhere[34786:32c20] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:26:18.934 F  SpokenAnyWhere[34786:32c20] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:26:25.908 Df SpokenAnyWhere[34786:32e8e] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:26:25.913 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:25.917 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:25.930 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:25.931 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:25.945 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:25.963 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:25.978 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:25.997 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.012 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.037 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.045 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.062 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.078 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.080 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:26.095 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:27.977 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:27.978 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:27.978 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:27.978 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:27.978 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:27.979 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:27.979 E  SpokenAnyWhere[34786:32c20] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:26:28.022 Df SpokenAnyWhere[34786:32c20] [com.apple.extensionkit:NSExtension] Class EXGetExtensionClass(void) returning EXConcreteExtension
+2025-12-04 17:26:28.022 A  SpokenAnyWhere[34786:32c20] (PlugInKit) continuous-discovery
+2025-12-04 17:26:28.022 Df SpokenAnyWhere[34786:32c20] [com.apple.PlugInKit:discovery] <PKDiscoveryDriver:0x952698b40> created discovery driver
+2025-12-04 17:26:28.022 Df SpokenAnyWhere[34786:32c20] [com.apple.PlugInKit:discovery] [d <private>] <PKHost:0x952478c40> Beginning discovery for flags: 0, point: multiple
+2025-12-04 17:26:28.024 Df SpokenAnyWhere[34786:32c20] [com.apple.sharekit:Framework] SHKSharingServicePicker: initialized with items (
+	NSConcreteMutableAttributedString
+)
+2025-12-04 17:26:28.028 Df SpokenAnyWhere[34786:32e95] [com.apple.PlugInKit:discovery] [d <private>] <PKHost:0x952478c40> Completed discovery. Final # of matches: 26
+2025-12-04 17:26:28.028 Df SpokenAnyWhere[34786:33177] [com.apple.PlugInKit:discovery] <PKDiscoveryDriver:0x952698b40> delivering update to host (26 plugins)
+2025-12-04 17:26:28.028 A  SpokenAnyWhere[34786:33177] (ExtensionFoundation) discovering extensions
+2025-12-04 17:26:28.031 Df SpokenAnyWhere[34786:33177] [com.apple.extensionkit:NSExtension] discovered extensions: attributes <private>, extensionSet {(
+    <EXConcreteExtension: 0x952691f80> {id = com.apple.dt.Instruments.InstrumentsShareExtension},
+    <EXConcreteExtension: 0x952692060> {id = com.apple.MarkupUI.Markup},
+    <EXConcreteExtension: 0x952692140> {id = com.apple.iBooksX.SharingExtension},
+    <EXConcreteExtension: 0x952692220> {id = com.apple.share.System.set-account-picture},
+    <EXConcreteExtension: 0x952692300> {id = com.apple.CloudSharingUI.CreateiCloudLinkExtension},
+    <EXConcreteExtension: 0x9526923e0> {id = ru.keepcoder.Telegram.TelegramShare},
+    <EXConcreteExtension: 0x9526924c0> {id = com.apple.share.System.add-to-safari-reading-list},
+    <EXConcreteExtension: 0x9526925a0> {id = com.apple.share.Mail.compose-back-to-sender},
+    <EXConcreteExtension: 0x952692680> {id = com.apple.CloudSharingUI.CopyLink},
+    <EXConcreteExtension: 0x952692760> {id = com.apple.Notes.SharingExtension},
+    <EXConcreteExtension: 0x952692840> {id = com.tencent.xinWeChat.WeChatMacShare},
+    <EXConcreteExtension: 0x952692920> {id = com.
+2025-12-04 17:26:28.031 Df SpokenAnyWhere[34786:33179] [com.apple.PlugInKit:discovery] <PKDiscoveryDriver:0x952698b40> installing watchers for continuous discovery
+2025-12-04 17:26:28.031 Df SpokenAnyWhere[34786:33179] [com.apple.launchservices:appinstallation] registering for distributed notification com.apple.LaunchServices.pluginsregistered in this process
+2025-12-04 17:26:28.031 Df SpokenAnyWhere[34786:33179] [com.apple.launchservices:appinstallation] registering for distributed notification com.apple.LaunchServices.pluginsunregistered in this process
+2025-12-04 17:26:28.050 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:28.120 E  SpokenAnyWhere[34786:33177] [com.apple.siri:Utility] AFIsDeviceGreymatterEligible Missing entitlements for os_eligibility lookup
+2025-12-04 17:26:28.120 Df SpokenAnyWhere[34786:33177] [com.apple.siri:Utility] -[AFSystemAssistantExperienceStatusManager fetchGenerativeModelsAvailability] #SAEStatus #cacheUpdate Updating cache:
+deviceSupportsSAE: 1 (0)
+       saeEnabled: 1 (0)
+     saeAvailable: 1 (0)
+      swaiEnabled: 0 (0)
+        viEnabled: 0 (0)
+2025-12-04 17:26:28.182 A  SpokenAnyWhere[34786:33177] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:28.183 A  SpokenAnyWhere[34786:33177] (CoreSpotlight) index-items
+2025-12-04 17:26:30.013 A  SpokenAnyWhere[34786:32c20] (AppKit) perform action for menu item
+2025-12-04 17:26:30.013 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:30.022 E  SpokenAnyWhere[34786:33179] [com.apple.BaseBoard:Common] Unable to obtain a task name port right for pid 406: (os/kern) failure (0x5)
+2025-12-04 17:26:30.023 Df SpokenAnyWhere[34786:33179] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2025-12-04 17:26:30.099 Df SpokenAnyWhere[34786:32c20] [com.apple.inputmethodkitClient:Client] +[IMKClient subclass]: chose IMKClient_Modern
+2025-12-04 17:26:30.099 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.119 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.119 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.121 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.127 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.137 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.137 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:26:30.427 Df SpokenAnyWhere[34786:32c20] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController activate:]_block_invoke: Create CursorUIViewService: TUINSRemoteViewController
+2025-12-04 17:26:30.499 A  SpokenAnyWhere[34786:32c84] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:30.499 A  SpokenAnyWhere[34786:32c84] (CoreSpotlight) index-items
+2025-12-04 17:26:30.651 Df SpokenAnyWhere[34786:32c20] [com.apple.inputmethodkitClient:Client] +[IMKInputSession subclass]: chose IMKInputSession_Modern
+2025-12-04 17:26:30.910 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=0
+2025-12-04 17:26:32.247 Df SpokenAnyWhere[34786:33177] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:26:32.249 Df SpokenAnyWhere[34786:33177] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:26:32.252 Df SpokenAnyWhere[34786:33177] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:26:32.494 Df SpokenAnyWhere[34786:32c20] [com.spokeanywhere:TranscriptionManager] 📚 训练数据变更，后台预编译 LM...
+2025-12-04 17:26:32.504 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:26:32.904 A  SpokenAnyWhere[34786:32c20] (libsystem_info.dylib) Retrieve Group by ID
+2025-12-04 17:26:32.905 Df SpokenAnyWhere[34786:32c20] (Speech) Created directory: <private>
+2025-12-04 17:26:33.343 A  SpokenAnyWhere[34786:33177] (CoreSpotlight) end-index-batch
+2025-12-04 17:26:33.344 A  SpokenAnyWhere[34786:33177] (CoreSpotlight) index-items
+2025-12-04 17:26:33.345 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:33.348 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:33.348 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:33.349 A  SpokenAnyWhere[34786:32c20] (AppKit) sendAction:
+2025-12-04 17:26:37.209 Df SpokenAnyWhere[34786:32c20] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=1
+2025-12-04 17:28:58.900 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:28:58.988 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:28:58.993 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:28:59.007 Df SpokenAnyWhere[34786:32c20] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:FD794869-0AF9-441C-B1B6-158BCD291A3C] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:29:01.950 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:05.725 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:06.633 Df SpokenAnyWhere[34786:32e8e] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 17:29:15.677 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:25.154 Df SpokenAnyWhere[34786:32c7d] (Foundation) <private>
+2025-12-04 17:29:25.574 Df SpokenAnyWhere[34786:32e8e] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 17:29:25.633 A  SpokenAnyWhere[34786:33e89] (CoreSpotlight) end-index-batch
+2025-12-04 17:29:25.637 A  SpokenAnyWhere[34786:33e89] (CoreSpotlight) index-items
+2025-12-04 17:29:25.844 A  SpokenAnyWhere[34786:33e85] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:29:26.335 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:26.347 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:26.984 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:27.000 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:29.777 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:30.041 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:35.299 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:35.782 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:36.740 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:44.088 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:45.926 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:47.225 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:29:48.454 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:31:14.829 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:31:16.789 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:31:16.800 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:32:06.790 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:32:28.279 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:32:28.285 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:32:29.609 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:32:38.770 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:32:40.186 A  SpokenAnyWhere[34786:32c20] (CoreFoundation) Loading Preferences From User CFPrefsD
+

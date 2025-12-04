@@ -39,6 +39,12 @@ final class HotKeyService {
     /// Message Panel 快捷键修饰符
     private var messagePanelModifiers: NSEvent.ModifierFlags = .option
     
+    /// Live Caption 快捷键 keyCode
+    private var liveCaptionKeyCode: UInt32 = UInt32(kVK_ANSI_S)
+    
+    /// Live Caption 快捷键修饰符
+    private var liveCaptionModifiers: NSEvent.ModifierFlags = .option
+    
     /// 是否正在录音
     var isRecording = false
     
@@ -69,6 +75,9 @@ final class HotKeyService {
     /// Message Panel 回调
     var onMessagePanelToggle: (() -> Void)?
     
+    /// Live Caption 回调
+    var onLiveCaptionToggle: (() -> Void)?
+    
     /// 打开设置回调
     var onOpenSettings: (() -> Void)?
     
@@ -87,6 +96,8 @@ final class HotKeyService {
         quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
         messagePanelKeyCode = UInt32(settings.messagePanelKeyCode)
         messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
+        liveCaptionKeyCode = UInt32(settings.liveCaptionKeyCode)
+        liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
     }
     
     private func setupShortcutObserver() {
@@ -121,6 +132,24 @@ final class HotKeyService {
                 self?.reloadMessagePanelShortcut()
             }
         }
+        
+        // Live Caption 快捷键变更观察
+        NotificationCenter.default.addObserver(
+            forName: AppSettings.liveCaptionShortcutDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadLiveCaptionShortcut()
+            }
+        }
+    }
+    
+    private func reloadLiveCaptionShortcut() {
+        let settings = AppSettings.shared
+        liveCaptionKeyCode = UInt32(settings.liveCaptionKeyCode)
+        liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
+        logger.info("🔄 Live Caption shortcut reloaded: \(settings.liveCaptionShortcutDisplayString)")
     }
     
     private func reloadMessagePanelShortcut() {
@@ -261,6 +290,10 @@ final class HotKeyService {
         let isMessagePanelModifiersPressed = checkModifiersMatch(flags: flags, target: messagePanelModifiers)
         let isMessagePanelKey = keyCode == messagePanelKeyCode
         
+        // 检查是否是 Live Caption 快捷键
+        let isLiveCaptionModifiersPressed = checkModifiersMatch(flags: flags, target: liveCaptionModifiers)
+        let isLiveCaptionKey = keyCode == liveCaptionKeyCode
+        
         // 检查是否是 Cmd+逗号 (打开设置)
         let isCommandPressed = checkModifiersMatch(flags: flags, target: .command)
         let isCommaKey = keyCode == UInt32(kVK_ANSI_Comma)
@@ -286,6 +319,12 @@ final class HotKeyService {
             // Message Panel 快捷键
             if isMessagePanelKey && isMessagePanelModifiersPressed {
                 handleMessagePanelToggle()
+                return nil
+            }
+            
+            // Live Caption 快捷键
+            if isLiveCaptionKey && isLiveCaptionModifiersPressed {
+                handleLiveCaptionToggle()
                 return nil
             }
             
@@ -386,11 +425,23 @@ final class HotKeyService {
     
     /// 延迟检查修饰键是否真的松开（修复多屏切换时的虚假事件）
     private func scheduleModifierReleaseCheck() {
+        // 如果已经是 Toggle 模式，不需要检查修饰键释放
+        if isToggleSession {
+            logger.debug("🔍 scheduleModifierReleaseCheck: Toggle mode, skip")
+            return
+        }
+        
         // 取消之前的检查（防抖）
         flagsDebounceWorkItem?.cancel()
         
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
+            
+            // 再次检查 Toggle 模式（可能在等待期间已经切换）
+            if self.isToggleSession {
+                self.logger.debug("🔍 Modifier check: Toggle mode now, skip")
+                return
+            }
             
             // 100ms 后再次检查当前修饰键状态
             let currentFlags = NSEvent.modifierFlags
@@ -491,6 +542,15 @@ final class HotKeyService {
         logger.info("📋 Message Panel toggle triggered")
     }
     
+    // MARK: - Live Caption Handler
+    
+    private func handleLiveCaptionToggle() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onLiveCaptionToggle?()
+        }
+        logger.info("🎬 Live Caption toggle triggered")
+    }
+    
     // MARK: - Recording Handlers
     
     private func handleKeyDown() {
@@ -529,15 +589,26 @@ final class HotKeyService {
         // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            guard self.isRecording else { return }
+            
+            // 调试日志：当前状态
+            self.logger.debug("🔍 handleRelease: isRecording=\(self.isRecording), isToggleSession=\(self.isToggleSession)")
+            
+            guard self.isRecording else {
+                self.logger.debug("🔍 handleRelease: not recording, skip")
+                return
+            }
             
             if self.isToggleSession {
                 // Toggle 模式下，松开键不停止录音
+                self.logger.debug("🔍 handleRelease: Toggle mode, skip")
                 return
             }
             
             // 检查按压时长
-            guard let startTime = self.recordingStartTime else { return }
+            guard let startTime = self.recordingStartTime else {
+                self.logger.debug("🔍 handleRelease: no startTime, skip")
+                return
+            }
             let duration = Date().timeIntervalSince(startTime)
             
             if duration < self.holdThreshold {

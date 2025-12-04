@@ -35,6 +35,35 @@ enum MessageStage: Equatable, Codable {
     }
 }
 
+// MARK: - Text Highlight
+
+/// 文本高亮类型
+enum TextHighlightType: String, Codable, Equatable {
+    /// 纠错：显示 ~~错误词~~ + 正确词（橙色）
+    case correction
+    /// 词典学习：显示目标词（橙色）
+    case dictionary
+}
+
+/// 文本高亮标记
+struct TextHighlight: Codable, Equatable {
+    let type: TextHighlightType
+    /// 原词（纠错模式：被替换的错误词；词典模式：不使用）
+    let originalWord: String?
+    /// 目标词（纠错模式：正确词；词典模式：学习的词）
+    let targetWord: String
+    
+    /// 纠错标记
+    static func correction(from original: String, to correct: String) -> TextHighlight {
+        TextHighlight(type: .correction, originalWord: original, targetWord: correct)
+    }
+    
+    /// 词典学习标记
+    static func dictionary(word: String) -> TextHighlight {
+        TextHighlight(type: .dictionary, originalWord: nil, targetWord: word)
+    }
+}
+
 /// 消息卡片数据模型
 struct MessageCard: Identifiable, Equatable, Codable {
     let id: UUID
@@ -42,19 +71,34 @@ struct MessageCard: Identifiable, Equatable, Codable {
     let stage: MessageStage
     let content: String
     var metadata: [String: String]
+    /// 文本高亮标记（用于显示纠错/词典学习样式）
+    var highlights: [TextHighlight]
     
     init(
         id: UUID = UUID(),
         timestamp: Date = Date(),
         stage: MessageStage,
         content: String,
-        metadata: [String: String] = [:]
+        metadata: [String: String] = [:],
+        highlights: [TextHighlight] = []
     ) {
         self.id = id
         self.timestamp = timestamp
         self.stage = stage
         self.content = content
         self.metadata = metadata
+        self.highlights = highlights
+    }
+    
+    // 自定义解码：兼容旧数据（没有 highlights 字段）
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+        stage = try container.decode(MessageStage.self, forKey: .stage)
+        content = try container.decode(String.self, forKey: .content)
+        metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata) ?? [:]
+        highlights = try container.decodeIfPresent([TextHighlight].self, forKey: .highlights) ?? []
     }
     
     var formattedTime: String {
@@ -69,6 +113,9 @@ struct MessageCard: Identifiable, Equatable, Codable {
 /// 消息面板状态管理
 @MainActor
 final class MessagePanelState: ObservableObject {
+    
+    /// 全局单例
+    static let shared = MessagePanelState()
     
     // MARK: - Published Properties
     
@@ -150,6 +197,38 @@ final class MessagePanelState: ObservableObject {
     /// 删除单个卡片
     func removeCard(_ id: UUID) {
         cards.removeAll { $0.id == id }
+        saveCards()
+    }
+    
+    /// 添加高亮标记到包含目标词的最近卡片（LLM 优先，其次 ASR）
+    /// - Parameter highlight: 高亮标记
+    func addHighlightToLatestCard(_ highlight: TextHighlight) {
+        // 查找包含目标词的卡片（纠错模式查找原词，词典模式查找目标词）
+        let searchWord = highlight.type == .correction 
+            ? (highlight.originalWord ?? highlight.targetWord)
+            : highlight.targetWord
+        
+        // 优先找 LLM 卡片，其次 ASR 卡片
+        let targetIndex = cards.firstIndex { card in
+            let isRelevantStage: Bool
+            switch card.stage {
+            case .llm, .asr: isRelevantStage = true
+            default: isRelevantStage = false
+            }
+            return isRelevantStage && card.content.localizedCaseInsensitiveContains(searchWord)
+        }
+        
+        guard let index = targetIndex else { return }
+        
+        // 检查是否已存在相同的高亮
+        let isDuplicate = cards[index].highlights.contains { h in
+            h.targetWord.lowercased() == highlight.targetWord.lowercased() &&
+            h.type == highlight.type
+        }
+        
+        guard !isDuplicate else { return }
+        
+        cards[index].highlights.append(highlight)
         saveCards()
     }
     

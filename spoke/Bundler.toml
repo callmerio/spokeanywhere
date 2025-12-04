@@ -1,0 +1,15 @@
+format_version = 2
+
+[apps.SpokenAnyWhere]
+identifier = "app.spokenly"
+product = "SpokenAnyWhere"
+version = "1.0.0"
+category = "public.app-category.productivity"
+
+# Info.plist 自定义
+[apps.SpokenAnyWhere.plist]
+NSScreenCaptureUsageDescription = "实时字幕功能需要捕获系统音频"
+NSMicrophoneUsageDescription = "语音输入功能需要使用麦克风"
+NSSpeechRecognitionUsageDescription = "语音识别功能需要使用语音识别服务"
+LSUIElement = true
+NSHighResolutionCapable = true

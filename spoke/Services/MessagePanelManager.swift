@@ -23,7 +23,7 @@ final class MessagePanelManager {
     // MARK: - Init
     
     private init() {
-        self.state = MessagePanelState()
+        self.state = MessagePanelState.shared
     }
     
     // MARK: - Public API

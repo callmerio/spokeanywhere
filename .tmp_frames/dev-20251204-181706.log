@@ -1,0 +1,490 @@
+Filtering the log data using "process == "SpokenAnyWhere" AND (NOT subsystem BEGINSWITH "com.apple.coreaudio") AND (NOT subsystem BEGINSWITH "com.apple.BoardServices") AND (NOT subsystem BEGINSWITH "com.apple.avfaudio") AND (NOT subsystem BEGINSWITH "com.apple.xpc")"
+Timestamp               Ty Process[PID:TID]
+2025-12-04 18:17:08.624 A  SpokenAnyWhere[49251:658a8] (libsystem_info.dylib) Retrieve User by ID
+2025-12-04 18:17:08.636 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) No windows open yet
+2025-12-04 18:17:08.637 A  SpokenAnyWhere[49251:658a8] (TCC) TCCAccessRequest() IPC
+2025-12-04 18:17:08.641 Df SpokenAnyWhere[49251:658a8] [com.apple.SkyLight:default] server port 0x00002e0f, session port 0x00002e0f
+2025-12-04 18:17:08.646 Df SpokenAnyWhere[49251:658a8] [com.apple.SkyLight:default] New connection 0x131f27 main
+2025-12-04 18:17:08.648 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] CHECKIN: pid=49251
+2025-12-04 18:17:08.651 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] CHECKEDIN: pid=49251 asn=0x0-0x146146 foreground=0
+2025-12-04 18:17:08.652 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] FRONTLOGGING: version 1
+2025-12-04 18:17:08.652 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] Registered, pid=49251 ASN=0x0,0x146146
+2025-12-04 18:17:08.654 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] BringForward: pid=49251 asn=0x0-0x146146 bringForward=0 foreground=0 uiElement=1 launchedByLS=1 modifiersCount=1 allDisabled=0
+2025-12-04 18:17:08.654 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] BringFrontModifier: pid=49251 asn=0x0-0x146146 Modifier 0 hideAfter=0 hideOthers=0 dontMakeFrontmost=0 mouseDown=0/0 seed=0/0
+2025-12-04 18:17:08.655 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Appearance] Current system appearance, (HLTB: 2), (SLS: 1)
+2025-12-04 18:17:08.656 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) No persisted cache on this platform.
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) Could not get size of EAN data (IOConnectCallScalarMethod kAppleNVMeEANGetSize returned 0xE00002E2)
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) Failed to copy 'aptk' from EAN
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) Failed to copy APTicket properties. Falling back to default policy.
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) Creating default MGSysConfigPolicy
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) syscfg is not initialized!
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) CFDictionaryRef copySyscfgDictionary(void) enumeration of <private> failed.
+2025-12-04 18:17:08.658 Df SpokenAnyWhere[49251:658a8] (libMobileGestalt.dylib) Failed to find key <private>
+2025-12-04 18:17:08.659 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Appearance] Current system appearance, (HLTB: 2), (SLS: 1)
+2025-12-04 18:17:08.659 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Appearance] Post-registration system appearance: (HLTB: 2)
+2025-12-04 18:17:08.661 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] FBSWorkspace: endpoint monitoring is disabled.
+2025-12-04 18:17:08.661 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] FBSWorkspace: default shell endpoint is disabled.
+2025-12-04 18:17:08.661 Df SpokenAnyWhere[49251:658a8] [com.apple.runningboard:connection] Initializing connection
+2025-12-04 18:17:08.661 Df SpokenAnyWhere[49251:658a8] [com.apple.runningboard:process] Removing all cached process handles
+2025-12-04 18:17:08.661 Df SpokenAnyWhere[49251:65928] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2025-12-04 18:17:08.661 Df SpokenAnyWhere[49251:65928] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2025-12-04 18:17:08.661 A  SpokenAnyWhere[49251:6592c] (RunningBoardServices) didChangeInheritances
+2025-12-04 18:17:08.662 Df SpokenAnyWhere[49251:65928] [com.apple.runningboard:connection] Handshake succeeded
+2025-12-04 18:17:08.662 Df SpokenAnyWhere[49251:65928] [com.apple.runningboard:connection] Identity resolved as app<application.app.spokenly.330964637.330964648(501)>
+2025-12-04 18:17:08.671 A  SpokenAnyWhere[49251:658a8] (libsystem_info.dylib) Membership API: translate identifier
+2025-12-04 18:17:08.678 A  SpokenAnyWhere[49251:65928] (RunningBoardServices) didChangeInheritances
+2025-12-04 18:17:08.686 Df SpokenAnyWhere[49251:658a8] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2025-12-04 18:17:08.686 A  SpokenAnyWhere[49251:65928] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:08.687 Df SpokenAnyWhere[49251:658a8] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 18:17:08.687 Df SpokenAnyWhere[49251:658a8] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 18:17:08.687 Df SpokenAnyWhere[49251:658a8] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 18:17:08.711 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From System CFPrefsD
+2025-12-04 18:17:08.712 Df SpokenAnyWhere[49251:6592d] [com.apple.appintents:Connection] Created a new Process Instance Registry XPC connection (inactive)
+2025-12-04 18:17:08.712 Df SpokenAnyWhere[49251:658a8] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.gms.availability.notification
+2025-12-04 18:17:08.712 Df SpokenAnyWhere[49251:658a8] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.os-eligibility-domain.change.greymatter
+2025-12-04 18:17:08.712 Df SpokenAnyWhere[49251:658a8] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.language.changed
+2025-12-04 18:17:08.712 Df SpokenAnyWhere[49251:658a8] [com.apple.WritingTools:Default] isAvailable value changed: isMDMAllowed = true, gmAvailable (current) = true
+2025-12-04 18:17:08.712 Df SpokenAnyWhere[49251:6592d] [com.apple.appintents:Connection] Activated connection to com.apple.linkd.autoShortcut (ApplicationService)
+2025-12-04 18:17:08.714 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:08.717 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] SignalReady: pid=49251 asn=0x0-0x146146
+2025-12-04 18:17:08.717 Df SpokenAnyWhere[49251:658a8] [com.apple.processmanager:front-35286506] SIGNAL: pid=49251 asn=0x0x-0x146146
+2025-12-04 18:17:08.717 Df SpokenAnyWhere[49251:6592d] [com.apple.appintents:Connection] Registered process with identifier 49251-115923
+2025-12-04 18:17:08.718 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From System CFPrefsD
+2025-12-04 18:17:08.729 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) Restoring windows
+2025-12-04 18:17:08.729 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:StateRestoration] -[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:withFullFidelity:completionHandler:] shouldRestoreState=1 hasPersistentStateToRestore=0 shouldStillRestoreStateAfterPrompting=0
+2025-12-04 18:17:08.730 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:AutomaticTermination] void _NSEnableAutomaticTerminationAndLog(NSString *) Restoring windows
+2025-12-04 18:17:08.730 A  SpokenAnyWhere[49251:658a8] (TCC) TCCAccessRequest() IPC
+2025-12-04 18:17:08.738 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:08.738 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:08.747 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Appearance] NSApp cache appearance:
+-NSRequiresAquaSystemAppearance: 0
+-appearance: (null)
+-effectiveAppearance: <NSCompositeAppearance: 0x8990586e0
+ (
+    "<NSDarkAquaAppearance: 0x899058960>",
+    "<NSSystemAppearance: 0x899058780>"
+)>
+2025-12-04 18:17:08.753 Df SpokenAnyWhere[49251:6592d] [com.apple.corespotlight:index] (<private>) deleteSearchableItemsWithDomainIdentifiers, protectionClass:(null), domainIdentifiers number:1
+2025-12-04 18:17:08.753 A  SpokenAnyWhere[49251:6592d] (CoreSpotlight) delete-domains
+2025-12-04 18:17:08.753 Df SpokenAnyWhere[49251:6592d] (CoreSpotlight) sConnectionName: com.apple.spotlight.IndexAgent
+2025-12-04 18:17:08.753 Df SpokenAnyWhere[49251:6592d] (CoreSpotlight) Start service name com.apple.spotlight.IndexAgent
+2025-12-04 18:17:08.754 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] FBSWorkspace registering source: <private>
+2025-12-04 18:17:08.754 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <private>
+2025-12-04 18:17:08.755 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x89905b660 <private>> attempting immediate handshake from activate
+2025-12-04 18:17:08.755 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x89905b660 <private>> sent handshake
+2025-12-04 18:17:08.755 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemSceneHostSettings__ on FBSSceneSettings
+2025-12-04 18:17:08.755 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemSceneClientSettings__ on FBSSceneClientSettings
+2025-12-04 18:17:08.756 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2025-12-04 18:17:08.756 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2025-12-04 18:17:08.756 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0x89905ba20; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F> from com.apple.controlcenter.statusitems
+2025-12-04 18:17:08.756 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x89905ba20; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F> complete!
+2025-12-04 18:17:08.756 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2025-12-04 18:17:08.757 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSHostedViewSceneSettings__ on FBSSceneSettings
+2025-12-04 18:17:08.757 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSClientHostedViewSceneSettings__ on FBSSceneClientSettings
+2025-12-04 18:17:08.757 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemAuxiliaryViewSceneSettings__ on FBSSceneSettings
+2025-12-04 18:17:08.757 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSClientStatusItemAuxiliaryViewSceneSettings__ on FBSSceneClientSettings
+2025-12-04 18:17:08.757 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0x89905bac0; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView> from com.apple.controlcenter.statusitems
+2025-12-04 18:17:08.758 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x89905bac0; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView> complete!
+2025-12-04 18:17:08.758 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.758 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 18:17:08.759 A  SpokenAnyWhere[49251:65928] (RunningBoardServices) didChangeInheritances
+2025-12-04 18:17:08.761 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.761 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 18:17:08.762 Df SpokenAnyWhere[49251:65928] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x89905ba20; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F> complete!
+2025-12-04 18:17:08.763 Df SpokenAnyWhere[49251:65928] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x89905bac0; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView> complete!
+2025-12-04 18:17:08.763 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.763 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 18:17:08.763 Df SpokenAnyWhere[49251:65928] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x89905b660 <private>> Reconnecting scene com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F
+2025-12-04 18:17:08.764 Df SpokenAnyWhere[49251:65928] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x89905b660 <private>> Reconnecting scene com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView
+2025-12-04 18:17:08.844 A  SpokenAnyWhere[49251:658a8] (TCC) TCCAccessRequest() IPC
+2025-12-04 18:17:08.851 Df SpokenAnyWhere[49251:658a8] [com.apple.SkyLight:default] server port 0x0000f10b, session port 0x00002e0f
+2025-12-04 18:17:08.855 Df SpokenAnyWhere[49251:658a8] (Foundation) <private>
+2025-12-04 18:17:08.857 Df SpokenAnyWhere[49251:658a8] (Foundation) <private>
+2025-12-04 18:17:08.859 Df SpokenAnyWhere[49251:658a8] (Foundation) <private>
+2025-12-04 18:17:08.859 Df SpokenAnyWhere[49251:658a8] (Foundation) <private>
+2025-12-04 18:17:08.859 Df SpokenAnyWhere[49251:658a8] (Foundation) <private>
+2025-12-04 18:17:08.863 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.880 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.882 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.887 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.888 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.888 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0x8997ed9a0; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView> from com.apple.controlcenter.statusitems
+2025-12-04 18:17:08.888 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x8997ed9a0; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView> complete!
+2025-12-04 18:17:08.889 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.889 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 18:17:08.890 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.890 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 18:17:08.890 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.890 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 18:17:08.891 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.892 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.893 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 18:17:08.894 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.898 Df SpokenAnyWhere[49251:6592c] [com.apple.FrontBoard:Common] Request for <FBSScene: 0x8997ed9a0; com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView> complete!
+2025-12-04 18:17:08.898 Df SpokenAnyWhere[49251:6592c] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x89905b660 <private>> Reconnecting scene com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView
+2025-12-04 18:17:08.898 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 18:17:08.899 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F-Replicant[1]-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 18:17:08.907 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:08.924 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:09.115 A  SpokenAnyWhere[49251:6593e] (CoreSpotlight) end-index-batch
+2025-12-04 18:17:09.115 Df SpokenAnyWhere[49251:6593e] [com.apple.corespotlight:index] *warn* MailCS ======%%% _setMailMessageAttributes skip:1
+2025-12-04 18:17:09.120 Df SpokenAnyWhere[49251:6593e] (CoreSpotlight) Start service name com.apple.spotlightknowledged
+2025-12-04 18:17:09.122 Df SpokenAnyWhere[49251:6593e] [com.apple.corespotlight:default] [GMS] availability notification token 87
+2025-12-04 18:17:09.126 A  SpokenAnyWhere[49251:6593e] (CoreSpotlight) index-items
+2025-12-04 18:17:13.552 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:13.743 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=1
+2025-12-04 18:17:16.154 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:17.766 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 18:17:18.045 Df SpokenAnyWhere[49251:6593e] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 18:17:20.086 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:20.167 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:20.174 Df SpokenAnyWhere[49251:658a8] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:D069A847-D3A0-4D33-BBDB-C7696A52DE2F] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 18:17:25.784 Df SpokenAnyWhere[49251:65ddc] [com.apple.launchservices:default] LSExceptions shared instance invalidated for timeout.
+2025-12-04 18:17:37.066 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:40.018 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:17:52.767 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 18:17:54.101 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:AutomaticTermination] void _NSEnableAutomaticTerminationAndLog(NSString *) No windows open yet
+2025-12-04 18:17:54.101 Df SpokenAnyWhere[49251:65ddc] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 18:17:54.102 Df SpokenAnyWhere[49251:66317] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 18:17:54.114 Df SpokenAnyWhere[49251:658a8] [com.apple.audio.caulk:alloc] Registered notify signal com.apple.caulk.alloc.rtdump (0)
+2025-12-04 18:17:54.124 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOInitializeListenersForBundleID: for <private> -> <private>
+2025-12-04 18:17:54.126 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> vpio_preferenceChangedListener: new value ((null)) for key AUVoiceIOClients/app-spokenly/AUVoiceIOChatFlavor, translatedBundleID app.spokenly, bundleIDs {(
+    "app.spokenly"
+)}
+2025-12-04 18:17:54.126 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> vpio_preferenceChangedListener: new value ((null)) for key AUVoiceIOClients/app-spokenly/AUVoiceIOIsAutoChatFlavorEnabled, translatedBundleID app.spokenly, bundleIDs {(
+    "app.spokenly"
+)}
+2025-12-04 18:17:54.126 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOGetSupportedChatFlavorsForBundleID: <private>-><private> get supported chat flavors: <private>
+2025-12-04 18:17:54.126 Df SpokenAnyWhere[49251:658a8] (CoreAudio)             HALSystem.cpp:134    Enabling HAL Voice Isolation support
+2025-12-04 18:17:54.126 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOSetHiddenChatFlavorsForBundleID: <private>-><private> setting to: <private>
+2025-12-04 18:17:54.126 A  SpokenAnyWhere[49251:658a8] (TCC) TCCAccessRequest() IPC
+2025-12-04 18:17:54.130 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOGetPreferredChatFlavorForBundleID: <private>-><private> get value: 0
+2025-12-04 18:17:54.130 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOSetSupportedChatFlavorsForBundleID: <private>-><private> setting to: <private>
+2025-12-04 18:17:54.146 Df SpokenAnyWhere[49251:658a8] (CoreAudio)   HALPlugInManagement.cpp:440    HALPlugInManagement::RegisterPlugIns: skipping in-process plug-ins
+2025-12-04 18:17:54.146 E  SpokenAnyWhere[49251:658a8] [com.apple.CFBundle:plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0x8998017a0> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+2025-12-04 18:17:54.172 Df SpokenAnyWhere[49251:66317] (CoreAudio)      HALC_ProxyObject.cpp:1456   HALC_Object_PropertyListener: not initialized
+2025-12-04 18:17:54.176 Df SpokenAnyWhere[49251:66317] (CoreAudio)      HALC_ProxyObject.cpp:1456   HALC_Object_PropertyListener: not initialized
+2025-12-04 18:17:54.212 Df SpokenAnyWhere[49251:658a8] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOGetPreferredChatFlavorForBundleID: <private>-><private> get value: 0
+2025-12-04 18:17:54.251 E  SpokenAnyWhere[49251:66317] [com.apple.audioanalytics:carc] Reporter disconnected. { function=sendMessage, reporterID=211531434295297 }
+2025-12-04 18:17:54.266 Df SpokenAnyWhere[49251:658a8] [com.apple.audio.caulk:alloc] Registered notify signal com.apple.caulk.alloc.audiodump (0)
+2025-12-04 18:17:54.274 E  SpokenAnyWhere[49251:66317] (CoreAudio) throwing -10877
+2025-12-04 18:17:54.275 E  SpokenAnyWhere[49251:66317] (CoreAudio) throwing -10877
+2025-12-04 18:17:54.290 Df SpokenAnyWhere[49251:658a8] (AVFAudio) Audio files cannot be non-interleaved. Ignoring setting AVLinearPCMIsNonInterleaved YES.
+2025-12-04 18:17:54.396 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] +[SCShareableContent getShareableContentExcludingDesktopWindows:onScreenWindowsOnly:completionHandler:]:56
+2025-12-04 18:17:54.396 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPDaemonProxy consumeSandboxExtension:processNewConnection:]:568
+2025-12-04 18:17:54.396 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPDaemonProxy fetchShareableContentWithOption:windowID:currentProcess:transactionID:withCompletionHandler:]:989
+2025-12-04 18:17:54.397 Df SpokenAnyWhere[49251:66317] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager supportedLanguagesForTaskHint:completion:] Fetching languages of supported Assistant assets.
+2025-12-04 18:17:54.401 Df SpokenAnyWhere[49251:664cc] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager fetchAssetWithConfig:clientIdentifier:expiration:progress:completion:] Client (<private>) fetching the Assistant asset for: <private>
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a240) processID=632
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfa20) windowID=27 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3419.000000,-2160.000000,38.000000,30.000000)
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a220) processID=632
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfb10) windowID=26 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3559.000000,-2160.000000,38.000000,30.000000)
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a200) processID=632
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfb60) windowID=28 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3628.000000,-2160.000000,42.000000,30.000000)
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800abe0) processID=632
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef3e0) windowID=210 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3323.000000,-2160.000000,32.000000,30.000000)
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ac00) processID=632
+2025-12-04 18:17:54.414 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef340) windowID=236 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(1832.000000,0.000000,34.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a1e0) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfbb0) windowID=211 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(2043.000000,0.000000,32.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a1c0) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfc00) windowID=204 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(2075.000000,0.000000,29.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a1a0) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfc50) windowID=203 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3355.000000,-2160.000000,29.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a180) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfca0) windowID=202 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(2104.000000,0.000000,35.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a160) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfcf0) windowID=176 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(2209.000000,0.000000,37.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a140) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfd40) windowID=175 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3489.000000,-2160.000000,37.000000,30.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a120) processID=409
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfd90) windowID=943 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(167.000000,988.000000,370.000000,320.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a100) processID=406
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfde0) windowID=4890 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3653.000000,-2154.000000,10.000000,18.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a0e0) processID=406
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfe30) windowID=4889 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(2373.000000,6.000000,10.000000,18.000000)
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a0c0) processID=632
+2025-12-04 18:17:54.415 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfe80) windowID=4782 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(2246.000000,0.000000,33.000000,30.000000)
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a0a0) processID=632
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cfed0) windowID=235 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3112.000000,-2160.000000,34.000000,30.000000)
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a080) processID=632
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cff20) windowID=709 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(1866.000000,0.000000,34.000000,30.000000)
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a060) processID=632
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997cff70) windowID=708 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3146.000000,-2160.000000,34.000000,30.000000)
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a040) processID=632
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0b40) windowID=705 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(1900.000000,0.000000,38.000000,30.000000)
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a020) processID=632
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0780) windowID=704 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3180.000000,-2160.000000,38.000000,30.000000)
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ac20) processID=632
+2025-12-04 18:17:54.416 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef7f0) windowID=201 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3384.000000,-2160.000000,35.000000,30.000000)
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c4a000) processID=632
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0410) windowID=4781 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3526.000000,-2160.000000,33.000000,30.000000)
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49fe0) processID=632
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d1400) windowID=4780 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(1800.000000,0.000000,32.000000,30.000000)
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ac40) processID=632
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef5c0) windowID=4779 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3080.000000,-2160.000000,32.000000,30.000000)
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ac60) processID=632
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef390) windowID=74 windowTitle=com.apple.Spotlight windowOwner=<private> isOnScreen=1 isActive=1 frame=(2177.000000,0.000000,32.000000,30.000000)
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ac80) processID=632
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994efac0) windowID=62 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(1938.000000,0.000000,105.000000,30.000000)
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800aca0) processID=632
+2025-12-04 18:17:54.417 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef890) windowID=73 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3457.000000,-2160.000000,32.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49fc0) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d13b0) windowID=61 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3218.000000,-2160.000000,105.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49fa0) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0550) windowID=58 windowTitle=com.apple.systemuiserver windowOwner=<private> isOnScreen=1 isActive=1 frame=(2317.000000,0.000000,31.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800acc0) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef750) windowID=57 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3597.000000,-2160.000000,31.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ace0) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef660) windowID=31 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(2139.000000,0.000000,38.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49f80) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d10e0) windowID=32 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(2279.000000,0.000000,38.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ad00) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef570) windowID=30 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(2348.000000,0.000000,42.000000,30.000000)
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ad20) processID=632
+2025-12-04 18:17:54.418 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef430) windowID=29 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(2390.000000,0.000000,170.000000,30.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ad40) processID=632
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef700) windowID=25 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(3670.000000,-2160.000000,170.000000,30.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ad60) processID=406
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef930) windowID=426 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,-2160.000000,3840.000000,30.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ad80) processID=406
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef9d0) windowID=43 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,30.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ada0) processID=631
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef8e0) windowID=11 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,1440.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49f60) processID=49251
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0aa0) windowID=4893 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(1750.000000,-380.000000,340.000000,300.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49f40) processID=10465
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d2350) windowID=393 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(936.000000,-2129.000000,2904.000000,2129.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49f20) processID=49125
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d06e0) windowID=4766 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,31.000000,853.000000,674.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49f00) processID=810
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d1360) windowID=225 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(475.000000,344.000000,1013.000000,563.000000)
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49ee0) processID=637
+2025-12-04 18:17:54.419 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0a50) windowID=3787 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(988.000000,541.000000,585.000000,328.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800adc0) processID=15583
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994efc50) windowID=781 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(2031.000000,63.000000,446.000000,978.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49ec0) processID=16139
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d2da0) windowID=856 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(224.000000,31.000000,2124.000000,1348.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49ea0) processID=637
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d38e0) windowID=3785 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(312.000000,494.000000,994.000000,885.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49e80) processID=17606
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d2300) windowID=1357 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(166.000000,601.000000,559.000000,382.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49e60) processID=17606
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d0370) windowID=954 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(1357.000000,548.000000,1099.000000,793.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49e40) processID=406
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d1310) windowID=427 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,-2160.000000,3840.000000,183.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49e20) processID=406
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d3890) windowID=44 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,122.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49e00) processID=637
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d03c0) windowID=42 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,-2160.000000,3840.000000,2160.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49de0) processID=637
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d1630) windowID=41 windowTitle= windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,1440.000000)
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ade0) processID=631
+2025-12-04 18:17:54.420 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994efa70) windowID=424 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,-2160.000000,3840.000000,2160.000000)
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49dc0) processID=631
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d2d50) windowID=12 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,1440.000000)
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ae00) processID=656
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994efa20) windowID=411 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,1440.000000)
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49da0) processID=406
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8997d16d0) windowID=2 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,0.000000,2560.000000,1440.000000)
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ae20) processID=406
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994ef980) windowID=3 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(0.000000,-2160.000000,3840.000000,2160.000000)
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCDisplay initWithDict:]:195 (0x898c0fa80) displayID=1 frame=(0.000000,0.000000,2560.000000,1440.000000) width=2560 height=1440
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCDisplay initWithDict:]:195 (0x898c0f700) displayID=2 frame=(0.000000,-2160.000000,3840.000000,2160.000000) width=3840 height=2160
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49d80) processID=656
+2025-12-04 18:17:54.421 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49d60) processID=49125
+2025-12-04 18:17:54.422 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49d40) processID=632
+2025-12-04 18:17:54.422 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ae40) processID=406
+2025-12-04 18:17:54.422 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ae60) processID=409
+2025-12-04 18:17:54.422 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800ae80) processID=631
+2025-12-04 18:17:54.423 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49d20) processID=49251
+2025-12-04 18:17:54.423 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49d00) processID=10465
+2025-12-04 18:17:54.423 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49ce0) processID=810
+2025-12-04 18:17:54.424 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49cc0) processID=637
+2025-12-04 18:17:54.424 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49ca0) processID=15583
+2025-12-04 18:17:54.424 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49c80) processID=16139
+2025-12-04 18:17:54.424 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x898c49c60) processID=17606
+2025-12-04 18:17:54.424 Df SpokenAnyWhere[49251:664cc] (ScreenCaptureKit)  [INFO] -[SCShareableContent initWithWindows:displays:runningApplications:]:39 (0x89800aea0) windows=<private> displays=<private> applications=<private>
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter initWithDesktopIndependentWindow:]:224
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter printProperties:]:375 (0x89961b300) includedWindows=(null) excludedWindows=(null) includedApplications=(null) excludedApplications=(null) display=(null) individualWindow=<private> filterID=<private> compositeConfig=(null) source=0 includeMenuBar=0
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter printProperties:]:376 (0x89961b300) pickerConfig=(null) defaultPickerConfig=(null)
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter setContentsAndStreamType]:495 streamType=0 contentRect=<private> pointPixelScale=1.000000
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCRunningApplication initWithPID:]:318 (0x89800aee0) processID=10465
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCWindow initWithDict:]:56 (0x8994efcf0) windowID=393 windowTitle=<private> windowOwner=<private> isOnScreen=1 isActive=1 frame=(936.000000,-2129.000000,2904.000000,2129.000000)
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter printProperties:]:375 (0x89961b3c0) includedWindows=(null) excludedWindows=(null) includedApplications=(null) excludedApplications=(null) display=(null) individualWindow=<private> filterID=<private> compositeConfig=(null) source=0 includeMenuBar=0
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter printProperties:]:376 (0x89961b3c0) pickerConfig=(null) defaultPickerConfig=(null)
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter setContentsAndStreamType]:495 streamType=0 contentRect=<private> pointPixelScale=1.000000
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCStream initWithFilter:configuration:delegate:]:422 (0x89946b600) content filter=<private>, streamID=<private>, output properties=<private>, delegate=(null)
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCStreamManager init]:52 0x899808de0
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder init]:138
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder updateStateWithActive:error:]:1457 update state with isActive 0 error 0
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder setCameraPosition:]:1355 camera position 1
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:66317] (ReplayKit)  [INFO] -[RPScreenRecorder isScreenRecordingAvailable]_block_invoke:1430 recording available 1 with display available 1, allowed 1, and supported on device 1
+2025-12-04 18:17:54.425 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCStreamManager registerStream:]:79 0x899808de0 Registering stream with streamID=<private>
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] [com.apple.coremedia:] <<<< FADC >>>> CMAudioDeviceClockCreate: PID 49251 create standalone audio device clock for BuiltIn route, BuiltInSpeakerDevice
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCStream serializeStreamProperties]:979
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ScreenCaptureKit)  [INFO] -[SCContentFilter(Internal) serialize]:560
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPDaemonProxy captureScreenshot:withRect:contentFilter:properties:completionHandler:]:930
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder removePipView]_block_invoke:1312 remove camera pip from view
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder setWindowRotationLocked:]_block_invoke:1631 setWindowRotationLocked: 0
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder setWindowRotationLocked:]_block_invoke:1648 enable window resizing
+2025-12-04 18:17:54.426 Df SpokenAnyWhere[49251:658a8] (ReplayKit)  [INFO] -[RPScreenRecorder applicationWindow]:1522 appWindow: app doesn't have the window property set on NSApplicationDelegate. Using first window.
+2025-12-04 18:17:54.443 A  SpokenAnyWhere[49251:66317] (RunningBoardServices) didChangeInheritances
+2025-12-04 18:17:54.466 Df SpokenAnyWhere[49251:66317] (ScreenCaptureKit)  [INFO] -[SCStream dealloc]:589 0x89946b600 streamID=<private>
+2025-12-04 18:17:54.466 Df SpokenAnyWhere[49251:66317] (ScreenCaptureKit)  [INFO] -[SCStreamManager deregisterStream:]:88 0x899808de0 Deregistering stream with streamID=<private>
+2025-12-04 18:17:54.468 Df SpokenAnyWhere[49251:658a8] [com.apple.TextRecognition:General] CRImageReader.init(options:): options=<private>
+2025-12-04 18:17:54.471 Df SpokenAnyWhere[49251:658a8] (CoreVideo) Pixel format registry initialized. Constant classes enabled.
+2025-12-04 18:17:54.498 Df SpokenAnyWhere[49251:658a8] [com.apple.TextRecognition:General] results(for:roi:options:withProgressHandler:): image={w:2904,h:2130} roi={x:0.000000,y:0.000000,w:1.000000,h:1.000000} options=<private>
+2025-12-04 18:17:54.674 A  SpokenAnyWhere[49251:664cc] (CoreSpotlight) end-index-batch
+2025-12-04 18:17:54.675 A  SpokenAnyWhere[49251:664cc] (CoreSpotlight) index-items
+2025-12-04 18:17:55.752 Df SpokenAnyWhere[49251:658a8] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 5 个词: Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 18:17:57.961 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:18:19.256 Df SpokenAnyWhere[49251:658a8] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2025-12-04 18:18:19.257 Df SpokenAnyWhere[49251:658a8] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2025-12-04 18:18:19.258 Df SpokenAnyWhere[49251:66872] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> resuming, timeouts(30.0, 30.0) qos(0x19) voucher(<private>) activity(00000000-0000-0000-0000-000000000000)
+2025-12-04 18:18:19.258 A  SpokenAnyWhere[49251:66872] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 18:18:19.258 Df SpokenAnyWhere[49251:664cc] [com.apple.AppSSO:SOConfigurationClient] -[SOConfigurationClient init]  on <private>
+2025-12-04 18:18:19.259 Df SpokenAnyWhere[49251:664cc] [com.apple.AppSSO:SOServiceConnection] <SOServiceConnection: 0x89819fc40>: new XPC connection
+2025-12-04 18:18:19.268 A  SpokenAnyWhere[49251:664cc] (libsystem_info.dylib) Retrieve Group by ID
+2025-12-04 18:18:19.269 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Initializing NSHTTPCookieStorage singleton
+2025-12-04 18:18:19.269 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Initializing CFHTTPCookieStorage singleton
+2025-12-04 18:18:19.269 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Creating default cookie storage with process/bundle identifier
+2025-12-04 18:18:19.269 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Initializing AlternativeServices Storage singleton
+2025-12-04 18:18:19.273 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Connection 0: creating secure tcp or quic connection
+2025-12-04 18:18:19.273 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Connection 1: enabling TLS
+2025-12-04 18:18:19.273 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Connection 1: starting, TC(0x0)
+2025-12-04 18:18:19.273 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1 6A27665F-5558-4136-9669-9C36DC0C1EC2 Hostname#77f9e1cd:443 quic-connection, url hash: 4f8741c3, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{3D15BC15-9FDF-4EB6-952B-AAF805861028}{(null)}{Y}{2}{0x0} (private), proc: 16E7A27D-7861-34E0-8CD8-B747EB8E8507, delegated upid: 0] start
+2025-12-04 18:18:19.273 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1 Hostname#77f9e1cd:443 initial parent-flow ((null))] event: path:start @0.000s
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1 Hostname#77f9e1cd:443 waiting parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: D006DD1E-2E0A-41B4-8F2A-10F95C1A19D6
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1 Hostname#77f9e1cd:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_connect @0.000s
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C1] reporting state preparing
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1 Hostname#77f9e1cd:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_child @0.000s
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1 Hostname#77f9e1cd:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1 Hostname#77f9e1cd:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: D006DD1E-2E0A-41B4-8F2A-10F95C1A19D6
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1 Hostname#77f9e1cd:443 in_progress transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: transform:start @0.000s
+2025-12-04 18:18:19.274 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 initial path ((null))] event: path:start @0.001s
+2025-12-04 18:18:19.275 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.001s, uuid: 0CF3479C-5FBE-4A03-95D8-E912ABB971F1
+2025-12-04 18:18:19.275 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_process @0.001s
+2025-12-04 18:18:19.275 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_process @0.002s
+2025-12-04 18:18:19.275 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_resolve @0.002s
+2025-12-04 18:18:19.275 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_resolve @0.002s
+2025-12-04 18:18:19.275 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Garbage collection for alternative services
+2025-12-04 18:18:19.276 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 initial path ((null))] event: path:start @0.002s
+2025-12-04 18:18:19.276 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.002s, uuid: FE8B76A0-7372-4FBA-9748-40C6D6373A74
+2025-12-04 18:18:19.276 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.002s
+2025-12-04 18:18:19.276 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> setting up Connection 1
+2025-12-04 18:18:19.276 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] nw_socket_handle_socket_event [C1.1.1.1:4] Socket received CONNECTED event
+2025-12-04 18:18:19.293 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] nw_flow_connected [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Transport protocol connected (socket)
+2025-12-04 18:18:19.293 Df SpokenAnyWhere[49251:664cc] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:finish_transport @0.019s
+2025-12-04 18:18:19.293 Df SpokenAnyWhere[49251:664cc] [com.apple.network:boringssl] boringssl_session_apply_protocol_options_for_transport_block_invoke(2280) [C1.1.1.1:2][0x898853c60] TLS configured [min_version(0x0303) max_version(0x0304) name(redacted) tickets(false) false_start(false) enforce_ev(false) enforce_ats(false) ats_non_pfs_ciphersuite_allowed(false) ech(false) pqtls(true), pake(false)]
+2025-12-04 18:18:19.293 Df SpokenAnyWhere[49251:664cc] [com.apple.network:boringssl] boringssl_context_info_handler(2377) [C1.1.1.1:2][0x898853c60] Client handshake started
+2025-12-04 18:18:19.294 Df SpokenAnyWhere[49251:664cc] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS client enter_early_data
+2025-12-04 18:18:19.294 Df SpokenAnyWhere[49251:664cc] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS client read_server_hello
+2025-12-04 18:18:19.766 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 18:18:20.557 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_hello_retry_request
+2025-12-04 18:18:20.557 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_server_hello
+2025-12-04 18:18:20.558 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_encrypted_extensions
+2025-12-04 18:18:20.558 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_certificate_request
+2025-12-04 18:18:20.558 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_server_certificate
+2025-12-04 18:18:20.558 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_server_certificate_verify
+2025-12-04 18:18:20.558 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async(1820) [C1.1.1.1:2][0x898853c60] Performing external trust evaluation
+2025-12-04 18:18:20.560 A  SpokenAnyWhere[49251:66317] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.560 A  SpokenAnyWhere[49251:66317] (Security) SecKeyCopyAttributes
+2025-12-04 18:18:20.560 A  SpokenAnyWhere[49251:66317] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.560 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external(1805) [C1.1.1.1:2][0x898853c60] Asyncing for external verify block
+2025-12-04 18:18:20.560 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Connection 1: asked to evaluate TLS Trust
+2025-12-04 18:18:20.560 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> auth completion disp=1 cred=0x0
+2025-12-04 18:18:20.561 Df SpokenAnyWhere[49251:66317] [com.apple.securityd:trust] (Trust 0x8991252c0) No pending evals, starting
+2025-12-04 18:18:20.562 A  SpokenAnyWhere[49251:66317] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 18:18:20.562 Df SpokenAnyWhere[49251:66317] [com.apple.securityd:keychain] Enabling System Keychain Always due to platform
+2025-12-04 18:18:20.562 Df SpokenAnyWhere[49251:66317] [com.apple.securityd:trust] (Trust 0x8991252c0) Completed async eval kickoff
+2025-12-04 18:18:20.567 Df SpokenAnyWhere[49251:664cc] [com.apple.securityd:trust] (Trust 0x8991252c0) trustd returned 4
+2025-12-04 18:18:20.567 Df SpokenAnyWhere[49251:664cc] [com.apple.CFNetwork:Default] System Trust Evaluation yielded status(0)
+2025-12-04 18:18:20.567 Df SpokenAnyWhere[49251:664cc] [com.apple.securityd:trust] (Trust 0x899125200) No pending evals, starting
+2025-12-04 18:18:20.567 A  SpokenAnyWhere[49251:664cc] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 18:18:20.567 Df SpokenAnyWhere[49251:664cc] [com.apple.securityd:trust] (Trust 0x899125200) Completed async eval kickoff
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.securityd:trust] (Trust 0x899125200) trustd returned 4
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Connection 1: TLS Trust result 0
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external_block_invoke_3(1760) [C1.1.1.1:2][0x898853c60] Returning from external verify block with result: true
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_certificate_verify_callback(2001) [C1.1.1.1:2][0x898853c60] Certificate verification result: OK
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client read_server_finished
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client send_end_of_early_data
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client send_client_encrypted_extensions
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client send_client_certificate
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client complete_second_flight
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS 1.3 client done
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS client finish_client_handshake
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0x898853c60] Client handshake state: TLS client done
+2025-12-04 18:18:20.572 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] boringssl_context_info_handler(2383) [C1.1.1.1:2][0x898853c60] Client handshake done
+2025-12-04 18:18:20.573 A  SpokenAnyWhere[49251:66317] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.573 A  SpokenAnyWhere[49251:66317] (Security) SecKeyCopyAttributes
+2025-12-04 18:18:20.573 A  SpokenAnyWhere[49251:66317] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:boringssl] nw_protocol_boringssl_signal_connected(895) [C1.1.1.1:2][0x898853c60] TLS connected [server(0) version(0x0304) ciphersuite(TLS_AES_256_GCM_SHA384) group(0x11ec) signature_alg(0x0403) alpn(h2) resumed(0) offered_ticket(0) in_early_data(0) early_data_accepted(0) false_started(0) ocsp_received(0) sct_received(0) connect_time(1280ms) flight_time(1264ms) rtt(1263ms) write_stalls(0) read_stalls(2) pake(0x0000)]
+2025-12-04 18:18:20.573 A  SpokenAnyWhere[49251:664cc] (Security) SecTrustReportNetworkingAnalytics
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] nw_flow_connected [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Output protocol connected (CFNetworkConnection-809639834)
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:child_finish_connect @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1.1 Hostname#77f9e1cd:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:changed_viability @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1.1.1 Hostname#77f9e1cd:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1.1 Hostname#77f9e1cd:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] nw_flow_connected [C1 127.0.0.1:7890 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] Output protocol connected (endpoint_flow)
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:finish_connect @1.299s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C1] reporting state ready
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @1.300s
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] nw_connection_send_viability_changed_on_nw_queue [C1] viability_changed_handler(true)
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Connection 1: connected successfully
+2025-12-04 18:18:20.573 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Connection 1: TLS handshake complete
+2025-12-04 18:18:20.574 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Connection 1: ready C(N) E(N)
+2025-12-04 18:18:20.574 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] [C1] event: client:connection_reused @1.301s
+2025-12-04 18:18:20.574 Df SpokenAnyWhere[49251:66317] [com.apple.network:connection] nw_protocol_socket_notify [C1.1.1.1:4] nw_protocol_notification_type_connection_idle is false
+2025-12-04 18:18:20.578 A  SpokenAnyWhere[49251:67152] (Security) SecKeychainAddCallback
+2025-12-04 18:18:20.578 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> now using Connection 1
+2025-12-04 18:18:20.578 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Connection 1: received viability advisory(Y)
+2025-12-04 18:18:20.579 Df SpokenAnyWhere[49251:66317] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> sent request, body S 4891
+2025-12-04 18:18:20.936 A  SpokenAnyWhere[49251:65ddc] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.936 A  SpokenAnyWhere[49251:65ddc] (Security) SecKeyCopyAttributes
+2025-12-04 18:18:20.936 A  SpokenAnyWhere[49251:65ddc] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.936 A  SpokenAnyWhere[49251:65ddc] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:20.936 A  SpokenAnyWhere[49251:65ddc] (Security) SecKeyCopyAttributes
+2025-12-04 18:18:20.936 A  SpokenAnyWhere[49251:65ddc] (Security) SecKeyCopyPublicBytes
+2025-12-04 18:18:22.785 Df SpokenAnyWhere[49251:65ddc] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> received response, status 200 content K
+2025-12-04 18:18:22.785 Df SpokenAnyWhere[49251:65ddc] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> done using Connection 1
+2025-12-04 18:18:22.785 Df SpokenAnyWhere[49251:65ddc] [com.apple.network:connection] [C1] event: client:connection_idle @3.512s
+2025-12-04 18:18:22.785 Df SpokenAnyWhere[49251:65ddc] [com.apple.network:connection] nw_protocol_socket_notify [C1.1.1.1:4] nw_protocol_notification_type_connection_idle is true
+2025-12-04 18:18:22.786 A  SpokenAnyWhere[49251:65ddc] (Security) SecTrustEvaluateIfNecessary
+2025-12-04 18:18:22.794 Df SpokenAnyWhere[49251:65ddc] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> response ended
+2025-12-04 18:18:22.795 Df SpokenAnyWhere[49251:65ddc] [com.apple.CFNetwork:Summary] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> summary for task success {transaction_duration_ms=3531, response_status=200, connection=1, protocol="h2", domain_lookup_duration_ms=0, connect_duration_ms=1297, secure_connection_duration_ms=1280, private_relay=false, request_start_ms=1315, request_duration_ms=1, response_start_ms=3521, response_duration_ms=9, request_bytes=5123, request_throughput_kbps=39372, response_bytes=936, response_throughput_kbps=783, cache_hit=true}
+2025-12-04 18:18:22.795 Df SpokenAnyWhere[49251:65ddc] [com.apple.CFNetwork:Default] Task <C73C3752-8409-4829-A3F7-451E0FAB2AA2>.<1> finished successfully
+2025-12-04 18:18:22.827 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<< URLAsset >>> FigAssetCreateWithURL: Called for asset 0x898099000 by client [], url [0x899e48ae0] <file // redacted-CF8400 // ???> createFlags 0x8 optionsDict (null)
+2025-12-04 18:18:22.827 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:playback-memory] <<< FigOSTransactionsUtilities >>> FigOSTransactionCreateWithProcessName: [Fig Transaction] Added transaction weak reference holder <0x8999edbc0>: <private>
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLLoaderCreate: newLoader: 0x897f25420
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.customurl.cfurlconnection.0x897ee7200 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0x897f25440: handler: 0x897ee7200 priority: 100
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.authkeychain.0x897ee6e80 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0x897f25440: handler: 0x897ee6e80 priority: 800
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: called (self: 0x899f35420, keys: (
+    duration
+), keysForCollectionKeys: (null), handler: non-nil)
+2025-12-04 18:18:22.828 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Calling FigAssetLoadValuesAsyncForProperties for properties (
+    Duration
+)
+2025-12-04 18:18:22.829 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Batch 0x89819f4a0: asset batch ID = 1 (err=0, alreadyLoaded=0)
+2025-12-04 18:18:22.830 Df SpokenAnyWhere[49251:67259] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification: Received kFigAssetNotification_BatchPropertyLoadComplete (payload: {
+    "assetPayload_BatchID" = 1;
+})
+2025-12-04 18:18:22.830 Df SpokenAnyWhere[49251:67259] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification_block_invoke: Batch 0x89819f4a0: Marking asset batch ID 1 as complete
+2025-12-04 18:18:22.830 Df SpokenAnyWhere[49251:67259] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader _invokeCompletionHandlerForLoadingBatches:]: Batch 0x89819f4a0: dispatching completion handler
+2025-12-04 18:18:22.831 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<< URLAsset >>> URLAssetFinalize: Called for asset 0x898099000
+2025-12-04 18:18:22.831 Df SpokenAnyWhere[49251:6705b] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_invalidate: 0x897f25420 called
+2025-12-04 18:18:23.766 Df SpokenAnyWhere[49251:658a8] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 18:18:23.870 Df SpokenAnyWhere[49251:66317] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 18:18:23.934 A  SpokenAnyWhere[49251:66872] (CoreSpotlight) end-index-batch
+2025-12-04 18:18:23.934 A  SpokenAnyWhere[49251:66872] (CoreSpotlight) index-items
+2025-12-04 18:18:24.105 A  SpokenAnyWhere[49251:66317] (RunningBoardServices) didChangeInheritances
+2025-12-04 18:18:31.373 A  SpokenAnyWhere[49251:658a8] (CoreFoundation) Loading Preferences From User CFPrefsD
+

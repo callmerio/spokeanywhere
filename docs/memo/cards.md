@@ -1,6 +1,6 @@
 # MM 学习卡片
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-03
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-04
 
 ## C001|HUD 动画实现
 
@@ -102,3 +102,70 @@ let cropRect = CGRect(
 ```
 
 REF: T060 | spoke/UI/Components/ScreenCaptureBlurBackground.swift#croppedBlurredImage
+
+## C011|ScreenCaptureKit 系统音频捕获
+
+ID: C011 | Tags: #screencapturekit #audio #macos
+
+Q: 如何用 ScreenCaptureKit 捕获系统音频（非麦克风）？
+A: SCStreamConfiguration 配置:
+
+- `capturesAudio = true` 开启音频捕获
+- `excludesCurrentProcessAudio = true` 排除自身声音
+- `sampleRate = 16000` SFSpeech 推荐采样率
+- `channelCount = 1` 单声道
+- 视频设为最小(1x1)避免性能浪费
+- 监听 `.audio` 类型的 sampleBuffer
+  REF: T073 | docs/memo/design-live-caption.md
+
+## C012|Apple Translation Framework
+
+ID: C012 | Tags: #translation #apple #macos14
+
+Q: 如何使用 Apple 原生翻译 API？
+A: Translation.framework (macOS 14.4+):
+
+- `TranslationSession.Configuration(source:target:)` 配置语言对
+- `session.translate(text)` 翻译文本，返回 `response.targetText`
+- SwiftUI: `.translationTask(config) { session in ... }`
+- 首次使用需下载语言包(100-300MB/语言对)
+- 完全本地运行，零 API 成本
+  REF: T073 | docs/memo/design-live-caption.md
+
+## C013|Apple Live Captions 无公开 API
+
+ID: C013 | Tags: #accessibility #livecaptions #research
+
+Q: 能否复用 Apple Live Captions 的字幕结果？
+A: 不能。Apple Live Captions 无公开 API，只能通过系统设置开关，无法:
+
+- 读取生成的字幕文本
+- 监听字幕事件
+- 自定义翻译语言
+  必须自建 pipeline: ScreenCaptureKit → SFSpeech → Translation
+  REF: T073 | docs/memo/design-live-caption.md
+
+## C014|macOS 26 TCC 崩溃与代码签名
+
+ID: C014 | Tags: #tcc #codesign #macos26 #screencapturekit
+
+Q: macOS 26 上 ScreenCaptureKit 调用导致 `__TCC_CRASHING_DUE_TO_PRIVACY_VIOLATION__` 崩溃如何解决？
+A: 三个关键条件缺一不可:
+
+1. **必须使用 .app bundle** - `swift run`/plain exe 无法在系统设置显示(Apple 确认 bug)
+2. **必须用开发者证书签名** - adhoc 签名(`--sign -`)会阻止 TCC 工作(参考 TN3127)
+3. **必须用 `open` 启动** - 直接运行 exe 不被识别为完整 bundle
+
+开发流程:
+
+```bash
+# 1. Swift Bundler 创建 .app
+swift-bundler bundle
+# 2. 开发者证书签名
+codesign --force --deep --sign "Apple Development" --identifier "app.id" .build/bundler/App.app
+# 3. open 启动 + log stream 看日志
+open .build/bundler/App.app
+log stream --predicate 'process == "App"' --style compact
+```
+
+REF: T075 | dev.sh; https://developer.apple.com/forums/thread/807898; TN3127

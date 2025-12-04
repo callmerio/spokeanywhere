@@ -54,6 +54,11 @@ struct DictionaryEntry: Identifiable, Codable, Equatable, Hashable {
     /// 自动推荐的热词需要用户确认后才会在转录中生效
     var confirmedByUser: Bool
     
+    /// 训练短语：包含该词的完整句子
+    /// 用于预编译 LM，提高 ASR 识别率（WWDC23 推荐方式）
+    /// 例如: ["Claude 是一个 AI 助手", "我想用 Claude 写代码"]
+    var trainingPhrases: [String]
+    
     // MARK: - Init
     
     init(
@@ -64,7 +69,8 @@ struct DictionaryEntry: Identifiable, Codable, Equatable, Hashable {
         frequency: Int = 0,
         createdAt: Date = Date(),
         lastUsedAt: Date? = nil,
-        confirmedByUser: Bool = true
+        confirmedByUser: Bool = true,
+        trainingPhrases: [String] = []
     ) {
         self.id = id
         self.word = word.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -75,6 +81,7 @@ struct DictionaryEntry: Identifiable, Codable, Equatable, Hashable {
         self.lastUsedAt = lastUsedAt
         // 手动添加的默认已确认，自动推荐的默认未确认
         self.confirmedByUser = source == .manual ? true : confirmedByUser
+        self.trainingPhrases = trainingPhrases
     }
     
     // MARK: - Computed Properties

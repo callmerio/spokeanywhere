@@ -1,0 +1,911 @@
+Filtering the log data using "process == "SpokenAnyWhere" AND (subsystem BEGINSWITH "com.spokeanywhere" OR subsystem == "app.spokenly" OR logType == 16 OR logType == 17)"
+Timestamp               Ty Process[PID:TID]
+2025-12-04 22:43:16.040 I  SpokenAnyWhere[83395:e70e0] [app.spokenly:CrashLogger] 💥 Crash logger installed
+2025-12-04 22:43:16.077 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Loaded 30 history items (cleaned from 30)
+2025-12-04 22:43:16.077 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 ClipboardHistoryService started
+2025-12-04 22:43:16.109 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMSettings] 🔓 Loaded 2 API keys from unified storage
+2025-12-04 22:43:16.109 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMSettings] 🔓 API keys already consolidated, skipping migration
+2025-12-04 22:43:16.109 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMSettings] 📦 LLMSettings loaded, enabled: true, profiles: 2
+2025-12-04 22:43:16.116 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ✅ HotKey registered: <private>
+2025-12-04 22:43:16.116 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 🎙️ RecordingController started
+2025-12-04 22:43:16.116 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] ✅ HistoryManager configured with ModelContext
+2025-12-04 22:43:16.119 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:MessagePanelState] 📥 Loaded 319 pipeline cards from history
+2025-12-04 22:43:16.121 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TrackpadGesture] ✅ 触控板手势监听已启动，设备数: 1
+2025-12-04 22:43:16.121 I  SpokenAnyWhere[83395:e70e0] [app.spokenly:ResourceMonitor] 📊 Resource monitor started (CPU: 150.000000%, Memory: 800.000000MB)
+2025-12-04 22:43:16.163 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] 开始准备词典... isDictionaryInjectionEnabled=true
+2025-12-04 22:43:16.163 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] dictionaryInjector 为 nil，创建新的 injector...
+2025-12-04 22:43:16.175 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:DictionaryService] 📂 Loaded 8 dictionary entries
+2025-12-04 22:43:16.176 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] 获取到词典条目数: 8
+2025-12-04 22:43:16.176 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] 开始预编译 8 个词条...
+2025-12-04 22:43:16.176 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:AppleSpeechInjector] 📚 [预编译 LM] 开始准备自定义语言模型，词条数: 8
+2025-12-04 22:43:16.176 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:AppleSpeechInjector] ⏱️ [预编译 LM] 构建训练数据耗时: <private>ms
+2025-12-04 22:43:16.222 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:AppleSpeechInjector] ⏱️ [预编译 LM] 写入临时文件耗时: <private>ms
+2025-12-04 22:43:17.481 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:AppleSpeechInjector] ⏱️ [预编译 LM] SFSpeechLanguageModel.prepareCustomLanguageModel 耗时: <private>ms
+2025-12-04 22:43:17.481 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:AppleSpeechInjector] ✅ [预编译 LM] 自定义语言模型准备完成，总耗时: <private>ms
+2025-12-04 22:43:17.481 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:AppleSpeechInjector] 📍 [预编译 LM] 模型路径: <private>
+2025-12-04 22:43:17.481 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ [预编译 LM] 词典准备完成！
+2025-12-04 22:43:41.874 E  SpokenAnyWhere[83395:e73fd] [com.apple.BaseBoard:Common] Unable to obtain a task name port right for pid 406: (os/kern) failure (0x5)
+2025-12-04 22:43:41.913 E  SpokenAnyWhere[83395:e70e0] [com.apple.CFBundle:plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0x9359246e0> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+2025-12-04 22:43:41.990 E  SpokenAnyWhere[83395:e70e0] [com.apple.CFBundle:loading] More than one bundle with the same factory UUID detected: {
+    "ff5ed090-1521-11ea-8d71-362b9e155667" = "BlackHole_Create";
+} in CFBundle 0x93410ed80 </Library/Audio/Plug-Ins/HAL/VirtualDesktopSpeakers.driver> (not loaded) and CFBundle/CFPlugIn 0x93410eca0 </Library/Audio/Plug-Ins/HAL/VirtualDesktopMicrophone.driver> (not loaded)
+2025-12-04 22:43:41.995 E  SpokenAnyWhere[83395:e7185] [com.apple.cmio:] CMIOExtensionProviderHostContext.m:75:-[CMIOExtensionProviderHostContext initWithConnection:delegate:]_block_invoke [0] received Connection invalid
+2025-12-04 22:43:41.995 E  SpokenAnyWhere[83395:e7185] [com.apple.cmio:] CMIOExtensionProviderHostContext.m:1282:-[CMIOExtensionProviderHostContext sendEmptyClientInfo]_block_invoke received Connection invalid
+2025-12-04 22:43:41.995 E  SpokenAnyWhere[83395:e70e0] [com.apple.cmio:] CMIOExtensionProviderHostContext.m:434:-[CMIOExtensionProviderHostContext pluginStates:] received Connection invalid
+2025-12-04 22:43:41.995 E  SpokenAnyWhere[83395:e70e0] [com.apple.cmio:] CMIOExtensionSession.m:1309:-[CMIOExtensionSessionProvider initWithEndpoint:delegate:]_block_invoke failed getting the states of the plugin error Error Domain=NSOSStatusErrorDomain Code=-7 "kCSIdentityInvalidPosixNameErr"
+2025-12-04 22:43:41.996 E  SpokenAnyWhere[83395:e70e0] [com.apple.cmio:] CMIO_DAL_CMIOExtension_PlugIn.mm:316:-[CMIODALExtensionPlugIn initWithPlugIn:endpoint:] plugin 32 / <CMIOExtensionSessionProvider> provider bundleID com.apple.appleh13camerad endpoint 0x933b2e620 could not call devices/properties initializer
+2025-12-04 22:43:41.996 E  SpokenAnyWhere[83395:e70e0] [com.apple.cmio:] CMIO_DAL_CMIOExtension_PlugIn.mm:754:Initialize invalid provider state
+2025-12-04 22:43:41.996 E  SpokenAnyWhere[83395:e70e0] [com.apple.cmio:] CMIO_DAL_CMIOExtension_PlugIn.mm:163:-[CMIODALExtensionSession updateStateWithExtensionsArrived:extensionsRemoved:] an error occurred
+2025-12-04 22:43:45.463 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionModelManager] ✅ TranscriptionModelManager initialized, selected: apple-dictation
+2025-12-04 22:43:47.710 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionModelManager] 📍 Selected model: apple-speech-transcriber
+2025-12-04 22:43:47.729 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 🔄 Transcription model changed, releasing provider
+2025-12-04 22:43:47.729 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 🔄 Provider released
+2025-12-04 22:44:42.819 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:44:42.819 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📍 Created SpeechAnalyzerProvider with model: speechTranscriber, locale: zh-Hans, precompiledLM: false
+2025-12-04 22:44:42.819 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:44:42.854 E  SpokenAnyWhere[83395:e7456] [com.apple.audioanalytics:carc] Reporter disconnected. { function=sendMessage, reporterID=358178797649921 }
+2025-12-04 22:44:42.871 E  SpokenAnyWhere[83395:e7456] (CoreAudio) throwing -10877
+2025-12-04 22:44:42.872 E  SpokenAnyWhere[83395:e7456] (CoreAudio) throwing -10877
+2025-12-04 22:44:42.963 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:44:42.963 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:44:42.978 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:44:42.978 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 🚀 Setting up SpeechAnalyzer with model: speechTranscriber
+2025-12-04 22:44:42.981 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading SpeechTranscriber assets (~2GB)...
+2025-12-04 22:44:42.996 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Antigravity | 窗口数: 1 | 选中: lucid-group — translate.log | 尺寸: 2913x2119
+2025-12-04 22:44:43.115 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Antigravity_1764859483.png | 尺寸: 2913x2119
+2025-12-04 22:44:43.115 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2913x2119 | 耗时: 139.8ms
+2025-12-04 22:44:43.988 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber assets installed
+2025-12-04 22:44:43.989 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 contextualStrings injected: 17 items (words + phrases)
+2025-12-04 22:44:44.217 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber setup complete for locale: <private>
+2025-12-04 22:44:44.217 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ Total setup time: <private>ms
+2025-12-04 22:44:44.217 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:44:44.217 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ✅ Engine ready, sending 12 buffered chunks
+2025-12-04 22:44:44.242 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.245 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.247 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.983 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.984 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.987 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.989 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.992 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:44.994 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:45.120 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 2005.0ms | 总计: 2144.8ms
+2025-12-04 22:44:45.121 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_224445.txt
+2025-12-04 22:44:45.994 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:45.996 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:45.998 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.001 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.003 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.005 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.985 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.988 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.990 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:46.993 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:47.888 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:47.891 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:48.895 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:48.897 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:48.901 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:48.903 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:48.905 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:49.790 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:49.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:49.795 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:50.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:50.797 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:51.785 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:51.787 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:51.789 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:51.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:51.795 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:51.796 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:52.692 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:52.695 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:53.691 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:53.694 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:54.589 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:54.592 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:54.595 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:54.597 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:55.602 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:55.605 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:55.607 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:55.609 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:56.346 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:44:56.395 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:44:56.395 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:44:56.418 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:44:56.460 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:44:56.464 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:45:01.590 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:45:01.596 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Antigravity
+2025-12-04 22:45:01.596 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:45:01.597 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1558 字符 | 耗时: 0.2ms
+2025-12-04 22:45:01.597 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:45:01.598 I  SpokenAnyWhere[83395:e7185] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:45:02.324 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:45:04.547 I  SpokenAnyWhere[83395:e7aa6] [com.spokeanywhere:LLM] ✅ Gemini response received (50 chars)
+2025-12-04 22:45:05.256 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:45:05.257 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:45:05.263 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:45:05.264 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:45:05.268 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:45:05.268 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:45:05.268 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:45:50.644 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:45:50.644 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📍 Created SpeechAnalyzerProvider with model: speechTranscriber, locale: zh-Hans, precompiledLM: false
+2025-12-04 22:45:50.644 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:45:50.681 E  SpokenAnyWhere[83395:e7baa] (CoreAudio) throwing -10877
+2025-12-04 22:45:50.683 E  SpokenAnyWhere[83395:e7baa] (CoreAudio) throwing -10877
+2025-12-04 22:45:50.785 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:45:50.785 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:45:50.790 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:45:50.790 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 🚀 Setting up SpeechAnalyzer with model: speechTranscriber
+2025-12-04 22:45:50.793 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading SpeechTranscriber assets (~2GB)...
+2025-12-04 22:45:50.822 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 22:45:51.004 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764859550.png | 尺寸: 3643x2068
+2025-12-04 22:45:51.004 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 215.3ms
+2025-12-04 22:45:52.481 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber assets installed
+2025-12-04 22:45:52.482 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 contextualStrings injected: 17 items (words + phrases)
+2025-12-04 22:45:52.568 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber setup complete for locale: <private>
+2025-12-04 22:45:52.568 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ Total setup time: <private>ms
+2025-12-04 22:45:52.568 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:45:52.568 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ✅ Engine ready, sending 17 buffered chunks
+2025-12-04 22:45:52.607 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:52.807 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:52.809 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:52.812 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:52.817 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:52.818 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.489 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 2481.5ms | 总计: 2696.8ms
+2025-12-04 22:45:53.490 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_224553.txt
+2025-12-04 22:45:53.813 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.816 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.818 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.819 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.826 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.827 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:53.828 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:54.805 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:54.811 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:54.812 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:55.712 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:55.714 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:55.716 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:56.716 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:56.720 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:56.724 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:57.615 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:57.620 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:57.628 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:58.616 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:58.618 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:58.622 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:58.626 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:58.627 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:58.629 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:59.619 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:59.626 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:59.629 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:59.631 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:59.636 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:45:59.643 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:00.512 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:00.515 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:01.515 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:02.411 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:02.415 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:02.419 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:02.421 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:03.413 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:03.416 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:04.404 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:04.408 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:04.410 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:04.418 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:04.426 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:05.314 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:05.316 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:05.318 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:05.324 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.314 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.316 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.319 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.322 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.325 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.328 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:06.330 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:07.222 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:07.231 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:07.234 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:07.237 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:08.216 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:08.218 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:08.221 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:09.076 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:46:09.122 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:46:09.122 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:46:09.155 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:09.160 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:46:09.237 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:46:09.252 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:46:11.306 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:46:11.310 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 22:46:11.310 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:46:11.310 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 22:46:11.310 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:46:11.310 I  SpokenAnyWhere[83395:e8b2f] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:46:12.123 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:46:13.387 I  SpokenAnyWhere[83395:e8ae4] [com.spokeanywhere:LLM] ✅ Gemini response received (84 chars)
+2025-12-04 22:46:13.389 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:46:13.389 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:46:13.393 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:46:13.397 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:46:13.397 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:46:13.397 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:46:14.077 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:48:34.075 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:48:38.075 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:48:38.557 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🚀 Quick Ask started
+2025-12-04 22:48:38.784 E  SpokenAnyWhere[83395:e70e0] [com.apple.TextInputUI:CursorUI] ViewBridge to RemoteViewService Terminated: Error Domain=com.apple.ViewBridge Code=18 UserInfo={com.apple.ViewBridge.error.hint=this process disconnected remote view controller -- benign unless unexpected, com.apple.ViewBridge.error.description=NSViewBridgeErrorCanceled}
+2025-12-04 22:48:38.812 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📍 Created SpeechAnalyzerProvider with model: speechTranscriber, locale: zh-Hans, precompiledLM: false
+2025-12-04 22:48:38.812 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:48:38.839 E  SpokenAnyWhere[83395:ec140] (CoreAudio) throwing -10877
+2025-12-04 22:48:38.840 E  SpokenAnyWhere[83395:ec140] (CoreAudio) throwing -10877
+2025-12-04 22:48:38.940 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:48:38.940 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:QuickAsk] 🎙️ Quick Ask session started
+2025-12-04 22:48:38.943 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:48:38.943 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 🚀 Setting up SpeechAnalyzer with model: speechTranscriber
+2025-12-04 22:48:38.946 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading SpeechTranscriber assets (~2GB)...
+2025-12-04 22:48:40.265 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber assets installed
+2025-12-04 22:48:40.265 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 contextualStrings injected: 17 items (words + phrases)
+2025-12-04 22:48:40.339 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber setup complete for locale: <private>
+2025-12-04 22:48:40.339 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ Total setup time: <private>ms
+2025-12-04 22:48:40.339 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:48:40.339 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ✅ Engine ready, sending 13 buffered chunks
+2025-12-04 22:48:40.965 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:40.967 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:40.970 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:40.972 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:40.975 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:41.967 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:42.964 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:42.965 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:42.967 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:43.865 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:43.866 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:43.870 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:43.872 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:43.873 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:43.877 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:44.872 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:44.875 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:44.875 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:44.878 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:44.881 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:44.883 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.599 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:48:45.599 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:QuickAsk] 📤 Sending question: <private>...
+2025-12-04 22:48:45.658 E  SpokenAnyWhere[83395:e70e0] [com.apple.AppKit:General] ERROR: Setting <private> as the first responder for window <SpokenAnyWhere.AnswerPanelWindow: 0x930cf5400> windowNumber=2f69, but it is in a different window ((null))! This would eventually crash when the view is freed. The first responder will be set to nil.\^M
+(
+	0   AppKit                              0x000000018e976ec8 -[NSWindow _validateFirstResponder:] + 348
+	1   AppKit                              0x000000018e976f9c -[NSWindow _setFirstResponder:] + 28
+	2   AppKit                              0x000000018e976968 -[NSWindow _realMakeFirstResponder:] + 516
+	3   AppKit                              0x000000018dd07ddc -[NSWindow _selectFirstKeyView] + 544
+	4   AppKit                              0x000000018dd07660 -[NSWindow _setUpFirstResponder] + 192
+	5   AppKit                              0x000000018e9814ac -[NSWindow _doWindowWillBeVisibleAsSheet:] + 108
+	6   AppKit                              0x000000018e982404 -[NSWindow _reallyDoOrderWindowAboveOrBelow:] + 1092
+	7   AppKit                              0x000000018e982fc0 -[NSWindow _reallyDoOrderWindow:] + 64
+	8   AppKit                              0x000000018e9834a8 -[NSWindow _doOrderWindow:] + 300
+	9   AppKit                              0x000000018e980c00 -[NSWindow makeKeyAndOrderFront:] + 40
+	10  SpokenAnyWhere                      0x0000000100610148 $s14SpokenAnyWhere18AnswerPanelManagerC4show8question11attachments10Foundation4UUIDVSS_SayAA10AttachmentOGtF + 1416
+	11  SpokenAnyWhere                      0x00000001008e87ac $s14SpokenAnyWhere15QuickAskServiceC12sendQuestionyyYaFTY0_ + 1908
+	12  SpokenAnyWhere                      0x00000001008e7dfd $s14SpokenAnyWhere15QuickAskServiceC17setupHUDCallbacks33_D420BEE2108618060DDFDA55F526FDD1LLyyFyycfU_ytSgyYacfU_TQ1_ + 1
+	13  SpokenAnyWhere                      0x00000001008f8409 $s14SpokenAnyWhere15QuickAskServiceC17setupHUDCallbacks33_D420BEE2108618060DDFDA55F526FDD1LLyyFyycfU_ytSgyYacfU_TATQ0_ + 1
+	14  SpokenAnyWhere                      0x0000000100640931 $sxIeAgHr_xs5Error_pIegHrzo_s8SendableRzs5NeverORs_r0_lTRTQ0_ + 1
+	15  SpokenAnyWhere                      0x0000000100640a8d $sxIeAgHr_xs5Error_pIegHrzo_s8SendableRzs5NeverORs_r0_lTRTATQ0_ + 1
+	16  libswift_Concurrency.dylib          0x0000000283c8a7c1 _ZL23completeTaskWithClosurePN5swift12AsyncContextEPNS_10SwiftErrorE + 1
+)
+2025-12-04 22:48:45.660 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 🤖 Quick Ask: <private>...
+2025-12-04 22:48:45.660 I  SpokenAnyWhere[83395:e8b2f] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:48:45.710 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.711 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.714 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.716 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.719 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.726 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:48:45.748 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:48:45.750 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:48:50.871 I  SpokenAnyWhere[83395:ec17e] [com.spokeanywhere:LLM] ✅ Gemini response received (1988 chars)
+2025-12-04 22:48:50.875 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] ✅ Quick Ask complete
+2025-12-04 22:48:50.875 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:QuickAsk] ✅ Quick Ask completed
+2025-12-04 22:48:50.875 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔄 Quick Ask state reset, event tap re-enabled
+2025-12-04 22:48:51.061 E  SpokenAnyWhere[83395:eb91d] [com.apple.siri:Utility] AFIsDeviceGreymatterEligible Missing entitlements for os_eligibility lookup
+2025-12-04 22:48:51.082 E  SpokenAnyWhere[83395:ec2b1] [com.apple.CFBundle:resources] Unable to create bundle at URL ((null)): normalized URL null
+2025-12-04 22:48:51.105 F  SpokenAnyWhere[83395:ec2b1] [com.apple.renderbox:error] precondition failure: <private>
+2025-12-04 22:48:51.163 E  SpokenAnyWhere[83395:ec2fc] [com.apple.WebKit:ResourceLoadStatistics] WebContent[88159] Unable to hide query parameters from script (missing data)
+2025-12-04 22:49:15.076 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:53:01.073 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:54:52.070 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:54:53.494 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:54:53.494 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📍 Created SpeechAnalyzerProvider with model: speechTranscriber, locale: zh-Hans, precompiledLM: false
+2025-12-04 22:54:53.495 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:54:53.521 E  SpokenAnyWhere[83395:ed3cb] (CoreAudio) throwing -10877
+2025-12-04 22:54:53.522 E  SpokenAnyWhere[83395:ed3cb] (CoreAudio) throwing -10877
+2025-12-04 22:54:53.605 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:54:53.605 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:54:53.615 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:54:53.615 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 🚀 Setting up SpeechAnalyzer with model: speechTranscriber
+2025-12-04 22:54:53.616 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading SpeechTranscriber assets (~2GB)...
+2025-12-04 22:54:53.640 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: lucid-mac — progress-and-model.md — 未跟踪的 | 尺寸: 2904x2068
+2025-12-04 22:54:53.754 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764860093.png | 尺寸: 2904x2068
+2025-12-04 22:54:53.754 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2904x2068 | 耗时: 140.6ms
+2025-12-04 22:54:54.637 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber assets installed
+2025-12-04 22:54:54.638 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 contextualStrings injected: 17 items (words + phrases)
+2025-12-04 22:54:54.696 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber setup complete for locale: <private>
+2025-12-04 22:54:54.696 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ Total setup time: <private>ms
+2025-12-04 22:54:54.696 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:54:54.696 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 22:54:54.733 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:55.380 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1064 字符 | OCR: 1625.8ms | 总计: 1766.4ms
+2025-12-04 22:54:55.381 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_225455.txt
+2025-12-04 22:54:56.635 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:56.638 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:56.641 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:57.623 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:57.624 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:57.627 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:57.629 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:58.529 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:58.532 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:58.535 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:58.536 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:58.539 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:59.535 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:59.538 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:59.540 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:54:59.542 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:00.428 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:00.429 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:00.432 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:01.434 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:01.436 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:01.441 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:01.443 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:02.426 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:02.429 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:02.431 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:02.433 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:02.436 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:02.437 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.328 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.330 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.331 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.333 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.335 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.336 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.338 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.829 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:55:03.879 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:55:03.879 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:55:03.900 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.904 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:55:03.936 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:55:03.938 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:55:06.024 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:55:06.030 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 22:55:06.030 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:55:06.030 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1126 字符 | 耗时: 0.1ms
+2025-12-04 22:55:06.030 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:55:06.030 I  SpokenAnyWhere[83395:edf1f] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:55:06.066 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:55:08.034 I  SpokenAnyWhere[83395:ed3cb] [com.spokeanywhere:LLM] ✅ Gemini response received (43 chars)
+2025-12-04 22:55:08.036 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:55:08.036 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:55:08.040 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:55:08.043 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:55:08.043 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:55:08.043 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:55:08.065 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:57:35.067 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:57:44.210 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 22:58:56.558 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:58:56.558 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📍 Created SpeechAnalyzerProvider with model: speechTranscriber, locale: zh-Hans, precompiledLM: false
+2025-12-04 22:58:56.558 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:58:56.580 E  SpokenAnyWhere[83395:f0cf8] (CoreAudio) throwing -10877
+2025-12-04 22:58:56.581 E  SpokenAnyWhere[83395:f0cf8] (CoreAudio) throwing -10877
+2025-12-04 22:58:56.666 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:58:56.666 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:58:56.674 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:58:56.674 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 🚀 Setting up SpeechAnalyzer with model: speechTranscriber
+2025-12-04 22:58:56.675 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading SpeechTranscriber assets (~2GB)...
+2025-12-04 22:58:56.698 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 22:58:56.849 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764860336.png | 尺寸: 3643x2068
+2025-12-04 22:58:56.849 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 176.4ms
+2025-12-04 22:58:57.655 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber assets installed
+2025-12-04 22:58:57.655 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 contextualStrings injected: 17 items (words + phrases)
+2025-12-04 22:58:57.697 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber setup complete for locale: <private>
+2025-12-04 22:58:57.697 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ Total setup time: <private>ms
+2025-12-04 22:58:57.697 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:58:57.697 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 22:58:57.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:58.685 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:58.687 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:58.689 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:58.691 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:58.727 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1877.6ms | 总计: 2054.0ms
+2025-12-04 22:58:58.728 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_225858.txt
+2025-12-04 22:58:59.694 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:59.696 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:59.700 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:58:59.703 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:00.684 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:00.687 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:00.689 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:00.691 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:02.592 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:04.520 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:59:04.520 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:04.521 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:04.523 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:04.526 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:04.528 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:05.484 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:05.487 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:05.489 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:06.391 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:06.394 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:06.396 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:06.399 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.393 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.395 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.399 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.400 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.403 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.406 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.409 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:07.411 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.290 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.295 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.300 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.302 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.306 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:08.308 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:09.293 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:09.295 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:09.301 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:09.302 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:09.303 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:10.284 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:10.287 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:10.290 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:10.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:10.294 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:11.190 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:11.193 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:11.196 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:11.200 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:11.202 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:12.195 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:12.197 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:12.200 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:13.090 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:13.092 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:13.095 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:14.093 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:14.095 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:14.097 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:14.099 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:14.101 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.084 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.087 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.089 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.091 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.092 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.995 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:15.996 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:16.995 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:16.997 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:16.999 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:17.891 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:17.894 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:17.897 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:17.901 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:17.903 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:18.892 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:18.895 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:18.899 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:18.901 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:18.903 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:19.885 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:19.891 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:19.893 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:20.791 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:20.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:20.858 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:59:21.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:24.692 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:59:24.699 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:24.700 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:25.589 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:25.591 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:25.593 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:26.594 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:26.596 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:26.600 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:26.604 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:27.490 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:27.492 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:27.494 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:27.496 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:27.499 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:27.500 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:28.494 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:28.499 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:28.501 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:29.484 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⚠️ [ST] Volatile shrunk: '<private>' -> '<private>'
+2025-12-04 22:59:29.484 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:29.487 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:30.391 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:31.393 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:31.395 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:31.399 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:31.400 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:31.403 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.294 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.296 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.306 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⚠️ [ST] Volatile shrunk: '<private>' -> '<private>'
+2025-12-04 22:59:32.306 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.307 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.309 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:32.311 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:33.293 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:33.294 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:33.296 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:33.299 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:34.320 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:59:35.188 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:35.191 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:35.193 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:35.195 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:35.197 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.192 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.194 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.196 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.201 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.202 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.204 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.205 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.207 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.208 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.209 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:36.211 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.089 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.092 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.095 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.097 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.100 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.100 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.102 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.105 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⚠️ [ST] Volatile shrunk: '<private>' -> '<private>'
+2025-12-04 22:59:37.105 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:37.107 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.091 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.092 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.094 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.096 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.100 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.102 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.105 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:38.107 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:39.083 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:39.086 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:39.090 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:39.091 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:39.990 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:40.995 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:40.998 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:40.999 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:41.001 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:41.004 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:41.006 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:41.006 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:41.891 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:41.895 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:42.892 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:42.894 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:42.896 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:42.899 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:42.902 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:42.905 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:43.884 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:43.887 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.791 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.793 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.797 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.799 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.800 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.802 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.804 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.806 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:44.808 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:45.793 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:45.796 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:45.799 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:45.800 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:46.692 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:46.694 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:47.739 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 22:59:47.739 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:49.590 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:49.593 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:49.596 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:49.599 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:50.592 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:51.493 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.491 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.492 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.494 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.496 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.498 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.500 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.502 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:52.504 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:53.487 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:53.492 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:54.389 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:54.392 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.391 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.394 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.396 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.401 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.403 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.404 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:55.406 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:56.289 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:56.291 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:56.293 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:56.296 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:56.298 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:56.300 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:57.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:57.293 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:57.296 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:58.283 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:58.285 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:58.288 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:58.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.191 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.193 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.195 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.199 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.201 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.203 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.206 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.208 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 22:59:59.210 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:00.223 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:00:01.090 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:01.095 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:01.096 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:02.090 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:02.092 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:02.093 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:02.095 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:02.096 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:03.087 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:03.089 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:03.990 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:03.993 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:03.996 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:04.992 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:04.995 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:04.998 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:05.890 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:05.892 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:05.894 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.891 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.893 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.895 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.898 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.901 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.903 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:06.904 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:07.884 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:07.886 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:07.889 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:07.891 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:07.894 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:07.898 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:08.789 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:08.790 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:08.791 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:08.793 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:08.796 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:09.794 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:10.689 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:10.691 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:11.720 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:00:12.682 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:20.291 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:20.293 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:20.294 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:20.296 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:20.299 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.291 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.292 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.294 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.296 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.300 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.301 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:21.302 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:22.283 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:22.285 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:22.287 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:22.289 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:24.209 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:00:24.210 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:24.211 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:25.092 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:25.094 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:25.095 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:27.084 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:27.991 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:28.993 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:28.995 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:28.998 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:28.999 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.002 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.004 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.006 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.889 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.890 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.892 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.894 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.898 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.900 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:29.902 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:31.882 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:32.816 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:00:33.792 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:33.796 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:33.800 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:34.688 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:34.690 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:34.692 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:34.699 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:34.700 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:35.690 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:36.683 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:36.685 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:36.687 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:36.689 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:36.691 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:36.694 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:37.589 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:38.591 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:40.508 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:00:41.485 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:41.487 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:41.491 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:41.493 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:42.388 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:42.390 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:42.392 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:42.394 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:42.396 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:00:42.942 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 23:00:42.992 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 23:00:42.992 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 23:00:43.025 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:00:43.076 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 23:01:23.507 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 23:01:23.512 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 23:01:23.512 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 23:01:23.513 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.5ms
+2025-12-04 23:01:23.514 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 23:01:23.514 I  SpokenAnyWhere[83395:f15c0] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 23:01:23.545 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ⚠️ Event tap was disabled by system, re-enabling...
+2025-12-04 23:01:24.059 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:01:26.789 I  SpokenAnyWhere[83395:f1aab] [com.spokeanywhere:LLM] ✅ Gemini response received (376 chars)
+2025-12-04 23:01:26.789 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 23:01:26.790 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 23:01:26.793 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 23:01:26.796 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 23:01:26.797 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 23:01:26.797 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 23:01:27.059 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:02:43.111 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 23:02:43.111 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] 📍 Created SpeechAnalyzerProvider with model: speechTranscriber, locale: zh-Hans, precompiledLM: false
+2025-12-04 23:02:43.111 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 23:02:43.131 E  SpokenAnyWhere[83395:f1d98] (CoreAudio) throwing -10877
+2025-12-04 23:02:43.132 E  SpokenAnyWhere[83395:f1d98] (CoreAudio) throwing -10877
+2025-12-04 23:02:43.219 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 23:02:43.219 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 23:02:43.226 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 23:02:43.226 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 🚀 Setting up SpeechAnalyzer with model: speechTranscriber
+2025-12-04 23:02:43.227 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading SpeechTranscriber assets (~2GB)...
+2025-12-04 23:02:43.250 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: lucid-mac — progress-and-model.md — 未跟踪的 | 尺寸: 2904x2068
+2025-12-04 23:02:43.362 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764860563.png | 尺寸: 2904x2068
+2025-12-04 23:02:43.362 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2904x2068 | 耗时: 137.4ms
+2025-12-04 23:02:44.182 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber assets installed
+2025-12-04 23:02:44.183 Df SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 contextualStrings injected: 17 items (words + phrases)
+2025-12-04 23:02:44.223 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechTranscriber setup complete for locale: <private>
+2025-12-04 23:02:44.224 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ Total setup time: <private>ms
+2025-12-04 23:02:44.224 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 23:02:44.224 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 23:02:44.344 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:45.238 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:45.240 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:45.242 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:45.318 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1955.6ms | 总计: 2093.0ms
+2025-12-04 23:02:45.319 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_230245.txt
+2025-12-04 23:02:46.244 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:46.246 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:46.248 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:46.250 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:46.252 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:46.255 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:46.256 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:47.237 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:47.238 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:47.242 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:47.244 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:47.246 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:47.248 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.146 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.147 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.149 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.151 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.153 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.156 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ⚠️ [ST] Volatile shrunk: '<private>' -> '<private>'
+2025-12-04 23:02:48.156 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.159 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.163 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.541 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 23:02:48.541 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 23:02:48.596 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 23:02:48.596 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 23:02:48.616 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.619 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.622 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Volatile: <private>
+2025-12-04 23:02:48.637 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 [ST] Finalized: <private>
+2025-12-04 23:02:48.638 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 23:02:50.701 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 23:02:50.705 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 23:02:50.705 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 23:02:50.705 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 23:02:50.706 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 23:02:50.706 I  SpokenAnyWhere[83395:f21ba] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 23:02:51.057 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:02:53.317 I  SpokenAnyWhere[83395:f206a] [com.spokeanywhere:LLM] ✅ Gemini response received (37 chars)
+2025-12-04 23:02:55.311 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 23:02:55.312 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 23:02:55.318 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 23:02:55.319 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:02:55.322 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 23:02:55.322 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 23:02:55.322 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 23:05:11.636 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🎬 Live Caption toggle triggered
+2025-12-04 23:05:11.664 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaptionWindow] 📺 Live Caption window created
+2025-12-04 23:05:11.667 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaptionWindow] 🎬 Live Caption window shown
+2025-12-04 23:05:14.027 E  SpokenAnyWhere[83395:f29ca] (ScreenCaptureKit)  [ERROR] _SCStream_RemoteVideoQueueOperationHandlerWithError:1459 stream output NOT found. Dropping frame
+2025-12-04 23:05:14.061 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SystemAudioCapture] 🎧 System audio capture started
+2025-12-04 23:05:14.062 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaption] 📚 Injected 8 dictionary words
+2025-12-04 23:05:14.063 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaptionTranscriber] 🎤 Transcription started with locale: <private>
+2025-12-04 23:05:14.063 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaption] 🎬 Live Caption started
+2025-12-04 23:05:15.612 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:HotKey] 🎬 Live Caption toggle triggered
+2025-12-04 23:05:15.624 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaptionWindow] 🛑 Live Caption window hidden
+2025-12-04 23:05:15.624 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaptionTranscriber] 🛑 Transcription stopped
+2025-12-04 23:05:15.647 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaptionTranscriber] ❌ Recognition error: <private>
+2025-12-04 23:05:15.647 E  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaption] ❌ Transcription error: <private>
+2025-12-04 23:05:15.651 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:SystemAudioCapture] 🛑 System audio capture stopped
+2025-12-04 23:05:15.651 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:LiveCaption] 🛑 Live Caption stopped
+2025-12-04 23:05:43.069 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:06:12.065 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:06:58.075 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 23:07:32.060 I  SpokenAnyWhere[83395:e70e0] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+

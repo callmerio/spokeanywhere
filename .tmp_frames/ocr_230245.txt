@@ -1,0 +1,102 @@
+•••
+lucid-mac - progress-and-model.md -未跟踪的
+w
+Q
+弱四
+源代码管理
+V 更改
+邸
+MAP.md
+M4
+progress-and-model.md ×
+⑤ 20
+日…
+docs > design
+progress-and-model.md
+>四＃转录进度显示与模型管理
+uV
+山*
+个
+Transcription Engine UI v
+D
+囚
+口
+中
+⋯••
+×
+⑧
+消息（8Enter 在“main"提交）
+Generate
+V 提交
+V 更改
+transcription-engine-design.md docs/design
+memory.csv docs/memo
+AppConfig.swift Sources/LexiStreamCore/Config
+TranscriptionEngine.swift Sources/LexiStreamCore..
+whisper_cpp Sources/LexiStreamCore/Core/AI
+WhisperEngine.swift Sources/LexiStreamCore/Core...U
+LexiStreamSettings.swift Sources/LexiStreamGUI/...
+M
+V 图形
+89自动
+◎
+O *t feat（settings）：实现 Whisper 模型下载与进..
+◎ main）
+• 艹 feat（player）：异步下载与自动恢复转录 callmerio
+• feat（project）：集成 Whisper 语音识别与完善GUI 组件....
+• refactor（player）：重构播放器视图以提升性能与交互体验..
+艹 feat（player）：重构播放器为沉浸式分屏布局并升级视⋯
+refactor（arch）：迁移至 SPM 结构并重构 GUI callmerio
+• fix： 恢复 doc.md 到根目录 callmerio
+• feat：创建 LexiStream 完整项目结构和核心代码 callmerio
+• feat： 初始化 LexiStream 项目结构和 memo 文档 callme...
+## 需求概述
+1. Library
+卡片显示转录进度（ApPle Store 圆
+圈风格）
+2. 支持 whisper 模型切换
+（tiny/sma11/medium）
+3.
+新增设置页面入口
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+## L1 架构层
+### 模块划分
+功能 1：转录进度 UI
+Libraryview
+L AssetCard
+— CircularProgressView（新增）
+功能 2： 模型管理
+AppConfig
+— WhisperModelConfig
+（新增）
+Libwhisper
+L 1oadMode1（path：）（新增）
+SettingsVie Review 6 files 〉
+ModolSolecton
+问题
+输出
+终端
+十～
+zsh
+×
+［Sync］ Checking folder: E9468EDD-8D1C-4488-BC5B-9A5E579C011E
+［Synci
+Asset already exists: E9468EDD-8D1C-4488-BC5B-9A5E579C011E
+Suna
+［Sync］
+Asset already exists: 322CE879-5EBE-417A-A617-13C158

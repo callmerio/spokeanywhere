@@ -243,7 +243,13 @@ extension UserDefaults {
     }
     
     var isDictionaryEnabled: Bool {
-        get { bool(forKey: DictionaryKeys.isDictionaryEnabled) }
+        get {
+            // 默认开启词典注入
+            if object(forKey: DictionaryKeys.isDictionaryEnabled) == nil {
+                return true
+            }
+            return bool(forKey: DictionaryKeys.isDictionaryEnabled)
+        }
         set { set(newValue, forKey: DictionaryKeys.isDictionaryEnabled) }
     }
     

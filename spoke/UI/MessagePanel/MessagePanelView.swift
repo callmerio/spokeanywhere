@@ -29,13 +29,15 @@ struct MessagePanelView: View {
         .sheet(isPresented: $dictionaryHandler.isShowingAddSheet) {
             QuickAddToDictionarySheet(
                 isPresented: $dictionaryHandler.isShowingAddSheet,
-                initialWord: dictionaryHandler.pendingWord
+                initialWord: dictionaryHandler.pendingWord,
+                fullText: dictionaryHandler.pendingFullText  // 用于训练短语
             )
         }
         .sheet(isPresented: $dictionaryHandler.isShowingCorrectionSheet) {
             CorrectToSheet(
                 isPresented: $dictionaryHandler.isShowingCorrectionSheet,
-                errorText: dictionaryHandler.pendingWord
+                errorText: dictionaryHandler.pendingWord,
+                fullText: dictionaryHandler.pendingFullText  // 用于训练短语
             )
         }
     }
@@ -320,11 +322,23 @@ struct MessageCardView: View {
     private var contentView: some View {
         ZStack(alignment: .topLeading) {
             // 文本内容（固定从顶部开始显示）
-            DictionarySelectableText(
-                text: card.content,
-                font: .systemFont(ofSize: 13),
-                foregroundColor: HUDTheme.NS.textPrimary
-            )
+            // 有高亮标记时使用 HighlightedContentText，否则使用 DictionarySelectableText
+            Group {
+                if !card.highlights.isEmpty {
+                    HighlightedContentText(
+                        text: card.content,
+                        highlights: card.highlights,
+                        font: .systemFont(ofSize: 13),
+                        foregroundColor: HUDTheme.NS.textPrimary
+                    )
+                } else {
+                    DictionarySelectableText(
+                        text: card.content,
+                        font: .systemFont(ofSize: 13),
+                        foregroundColor: HUDTheme.NS.textPrimary
+                    )
+                }
+            }
             .frame(minHeight: 20, alignment: .topLeading)
             .frame(maxHeight: isExpanded || !needsCollapse ? nil : CGFloat(collapsedMaxLines * 20), alignment: .topLeading)
             .clipped()

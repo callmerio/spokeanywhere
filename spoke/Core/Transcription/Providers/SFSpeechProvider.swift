@@ -174,6 +174,9 @@ final class SFSpeechProvider: TranscriptionProvider {
 // MARK: - Provider Info
 
 extension SFSpeechProvider {
+    /// 缓存的 SFSpeechRecognizer 实例，避免重复创建导致 SFLocalSpeechRecognitionClient 频繁 Invalidated
+    private static let cachedRecognizer: SFSpeechRecognizer? = SFSpeechRecognizer()
+    
     static var info: TranscriptionProviderInfo {
         TranscriptionProviderInfo(
             identifier: "sf_speech_recognizer",
@@ -181,7 +184,7 @@ extension SFSpeechProvider {
             description: "系统内置语音识别，需要网络，适用于 macOS 15+",
             capabilities: [.realtime, .punctuation],
             minOSVersion: "macOS 15.0",
-            isAvailable: SFSpeechRecognizer()?.isAvailable ?? false
+            isAvailable: cachedRecognizer?.isAvailable ?? false
         )
     }
 }

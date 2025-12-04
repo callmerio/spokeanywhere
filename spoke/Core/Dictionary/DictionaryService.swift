@@ -70,6 +70,11 @@ final class DictionaryService: ObservableObject {
         entries.filter { $0.isActive }
     }
     
+    /// 获取所有词语（用于 contextualStrings 注入）
+    func getAllWords() -> [String] {
+        activeEntries.map { $0.word }
+    }
+    
     // MARK: - CRUD Operations
     
     /// 添加单个词条
@@ -168,6 +173,121 @@ final class DictionaryService: ObservableObject {
             entries[index].corrections.append(trimmedErrorForm)
             saveEntries()
             logger.info("➕ Added correction '\(trimmedErrorForm)' to '\(self.entries[index].word)'")
+        }
+    }
+    
+    /// 添加训练短语到现有词条（用于预编译 LM）
+    /// - Parameters:
+    ///   - phrase: 包含目标词的完整句子
+    ///   - entryId: 词条 ID
+    func addTrainingPhrase(_ phrase: String, to entryId: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }) else { return }
+        
+        let trimmedPhrase = phrase.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedPhrase.isEmpty else { return }
+        
+        // 限制每个词条最多 20 个训练短语
+        if entries[index].trainingPhrases.count >= 20 {
+            entries[index].trainingPhrases.removeFirst()
+        }
+        
+        // 避免重复
+        if !entries[index].trainingPhrases.contains(where: { $0.lowercased() == trimmedPhrase.lowercased() }) {
+            entries[index].trainingPhrases.append(trimmedPhrase)
+            saveEntries()
+            logger.info("📝 Added training phrase to '\(self.entries[index].word)': \(trimmedPhrase.prefix(30))...")
+            
+            // 通知需要重新预编译 LM
+            NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+        }
+    }
+    
+    /// 获取所有训练短语（用于预编译 LM）
+    func getAllTrainingPhrases() -> [(word: String, phrase: String)] {
+        var result: [(word: String, phrase: String)] = []
+        for entry in entries where entry.isActive {
+            for phrase in entry.trainingPhrases {
+                result.append((word: entry.word, phrase: phrase))
+            }
+        }
+        return result
+    }
+    
+    /// 是否有训练短语（决定是否启用预编译 LM）
+    var hasTrainingPhrases: Bool {
+        entries.contains { !$0.trainingPhrases.isEmpty }
+    }
+    
+    /// 清空指定词条的训练短语
+    func clearTrainingPhrases(for entryId: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }) else { return }
+        
+        entries[index].trainingPhrases.removeAll()
+        saveEntries()
+        logger.info("🗑️ Cleared training phrases for '\(self.entries[index].word)'")
+        
+        NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+    }
+    
+    /// 删除指定词条的单条训练短语
+    func removeTrainingPhrase(at phraseIndex: Int, from entryId: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }),
+              phraseIndex >= 0 && phraseIndex < entries[index].trainingPhrases.count else { return }
+        
+        let removed = entries[index].trainingPhrases.remove(at: phraseIndex)
+        saveEntries()
+        logger.info("🗑️ Removed training phrase from '\(self.entries[index].word)': \(removed.prefix(20))...")
+        
+        NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+    }
+    
+    /// 更新指定词条的单条训练短语
+    func updateTrainingPhrase(at phraseIndex: Int, with newPhrase: String, for entryId: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }),
+              phraseIndex >= 0 && phraseIndex < entries[index].trainingPhrases.count else { return }
+        
+        let trimmedPhrase = newPhrase.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedPhrase.isEmpty else { return }
+        
+        // 检查是否与其他短语重复（排除自身）
+        let isDuplicate = entries[index].trainingPhrases.enumerated().contains { i, p in
+            i != phraseIndex && p.lowercased() == trimmedPhrase.lowercased()
+        }
+        
+        if isDuplicate {
+            // 重复则删除当前条目
+            entries[index].trainingPhrases.remove(at: phraseIndex)
+            logger.info("🗑️ Removed duplicate training phrase from '\(self.entries[index].word)'")
+        } else {
+            entries[index].trainingPhrases[phraseIndex] = trimmedPhrase
+            logger.info("✏️ Updated training phrase for '\(self.entries[index].word)': \(trimmedPhrase.prefix(30))...")
+        }
+        
+        saveEntries()
+        NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+    }
+    
+    /// 去重训练短语（清理已有的重复项）
+    func deduplicateTrainingPhrases(for entryId: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }) else { return }
+        
+        var seen = Set<String>()
+        let originalCount = entries[index].trainingPhrases.count
+        
+        entries[index].trainingPhrases = entries[index].trainingPhrases.filter { phrase in
+            let lowercased = phrase.lowercased()
+            if seen.contains(lowercased) {
+                return false
+            }
+            seen.insert(lowercased)
+            return true
+        }
+        
+        let removedCount = originalCount - entries[index].trainingPhrases.count
+        if removedCount > 0 {
+            saveEntries()
+            logger.info("🧹 Deduplicated \(removedCount) training phrases for '\(self.entries[index].word)'")
+            NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
         }
     }
     
@@ -403,4 +523,7 @@ extension Notification.Name {
     
     /// 请求添加词到词典（从 Pipeline 右键菜单触发）
     static let requestAddToDictionary = Notification.Name("RequestAddToDictionary")
+    
+    /// 训练数据变更通知（触发预编译 LM 更新）
+    static let dictionaryTrainingDataChanged = Notification.Name("DictionaryTrainingDataChanged")
 }

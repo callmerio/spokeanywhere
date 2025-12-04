@@ -1,0 +1,92 @@
+digital-brain-mvp - GraphView.tsx —已修改
+个 Codemaps
+GraphView Refactoring Continued v C
+十
+9
+心I日
+GraphView 节点层级系统
+A口
+一四
+与 D3 渲染流程
+Created 2025年12月4日 21:50
+本 codemap 梳理了 GraphView.tsx 中
+VisualNode.level 字段的完整生命周期：从
+semanticLevels Map 的构建、样式映射、到
+D3 渲染的全流程。重点关注两层扩展逻辑（一
+级关系 ［1c］ 和二级关系［1e］）、样式计算［2b］
+［2c］、以及 D3的 enter/update/exit 模式［3b］
+［3dJ［3e］。
+1 semanticLevels Map 构建流程
+当激活节点时，通过 getNodeContext
+获取邻居关系，构建两层语义层级映射
+（active •一级扩展 二级扩展）.
+See more
+GraphView useEffect 渲染流程
+uSeEftect.触发（activeThoughtld.变化）
+1a 记录历史节点
+GraphView.tsx:7...
+visitedNodeIdsRef.curre.
+接在我们代码中修复，但功能上不影响使用。
+6c
+VisitedNodeldsRef.current.add（）
+过滤数据
+getFilteredGraph（）.调用
+1b 初始化 semanticLevels
+Grap..
+const semanticLevels = -
+1c 获取激活节点的邻居
+GraphVie...
+const activeNodeContext..
+getNodeContext （）返回 4 向关系
+第一层扩展：标记直接邻居
+1d 标记一级父节点
+GraphVie..
+semanticLevels.set（p..
+标记子节点为‘child！
+标记入链为.jump-in'
+标记出链为 jump-out！
+第二层扩展：标记邻居的邻居
+遍历 firstLayerlds
+getNodeContext（firstLayerld）
+1e 标记二级祖父节点
+GraphV..
+semanticLevels.set（p.-
+标记孙子节点为‘grandchild：
+标记二级跳转为.“-secondary"
+构建 VisualNode 数组
+1f
+获取level 或 fallback
+Gra.
+const
+Level = semanti.
+D3 渲染流程
+nodeJoin.data（visualNodesArray）
+2 level 字段的样式映射逻辑
+level 值通过 getNodeStyle 和
+getFontStyle 转换为视觉属性
+（scale/opacity/fontSize），最终应用到
+VisualNode 对象.
+3
+D3 节点渲染的 Enter/Update/Exit...
+使用D3 的数据绑定模式渲染节点：
+enter 创建新元素、update 更新现有元
+素、exit 移除旧元素.
+types.ts
+GraphView.tsx M X
+components
+GraphView.tsx
+33
+onRenameThought： （id：|
+string，
+newTitle：
+string）
+32
+onLinkNodes：（
+31
+sourCeId：
+string，
+30
+targetId：
+string，
+29
+direction： "up"

@@ -35,7 +35,7 @@ cat > dist/SpokenAnyWhere.app/Contents/Info.plist << 'EOF'
   <key>CFBundleExecutable</key>
   <string>SpokenAnyWhere</string>
   <key>CFBundleIdentifier</key>
-  <string>com.spokeanywhere</string>
+  <string>app.spokenly</string>
   <key>CFBundleName</key>
   <string>SpokenAnyWhere</string>
   <key>CFBundlePackageType</key>
@@ -52,9 +52,23 @@ cat > dist/SpokenAnyWhere.app/Contents/Info.plist << 'EOF'
   <true/>
   <key>NSMicrophoneUsageDescription</key>
   <string>SpokenAnyWhere needs microphone access for voice transcription.</string>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>实时字幕功能需要捕获系统音频</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>语音识别功能需要使用语音识别服务</string>
 </dict>
 </plist>
 EOF
+
+# 签名 (使用开发者证书)
+echo "🔏 Signing App..."
+if security find-identity -v -p codesigning | grep -q "Apple Development"; then
+    codesign --force --deep --sign "Apple Development" --identifier "app.spokenly" dist/SpokenAnyWhere.app
+    echo "✅ Signed with Apple Development certificate"
+else
+    echo "⚠️  No developer certificate found, using adhoc signing"
+    codesign --force --deep --sign - --identifier "app.spokenly" dist/SpokenAnyWhere.app
+fi
 
 echo "📀 Creating DMG..."
 hdiutil create -volname "SpokenAnyWhere" \

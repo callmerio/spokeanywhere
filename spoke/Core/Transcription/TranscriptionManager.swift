@@ -46,11 +46,18 @@ final class TranscriptionManager {
     /// 当前词典注入器
     private(set) var dictionaryInjector: DictionaryInjector?
     
-    /// 词典是否已准备好
+    /// 词典是否已准备好（预编译 LM 是否完成）
+    /// 注意：contextualStrings 是轻量级注入，不需要预编译，实时生效
     private(set) var isDictionaryPrepared = false
     
-    /// 首选语言
-    var preferredLocale: Locale = Locale(identifier: "zh-CN")
+    /// 首选语言 (now derived from TranscriptionModelManager)
+    var preferredLocale: Locale {
+        if #available(macOS 26.0, *) {
+            let config = TranscriptionModelManager.shared.getProviderConfiguration()
+            return config.locale
+        }
+        return Locale(identifier: "zh-CN")
+    }
     
     /// 是否强制使用特定引擎（用于测试/调试）
     var forceEngineType: TranscriptionEngineType?
@@ -73,6 +80,30 @@ final class TranscriptionManager {
             Task { @MainActor in
                 self?.isDictionaryPrepared = false
                 self?.logger.info("📚 Dictionary changed, will re-prepare on next use")
+            }
+        }
+        
+        // 监听训练数据变更，后台触发预编译
+        NotificationCenter.default.addObserver(
+            forName: .dictionaryTrainingDataChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.logger.notice("📚 训练数据变更，后台预编译 LM...")
+                await self?.prepareDictionary()
+            }
+        }
+        
+        // 监听模型切换，释放当前 provider
+        NotificationCenter.default.addObserver(
+            forName: .transcriptionModelChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.logger.notice("🔄 Transcription model changed, releasing provider")
+                self?.releaseProvider()
             }
         }
     }
@@ -116,7 +147,11 @@ final class TranscriptionManager {
         switch type {
         case .speechAnalyzer:
             if #available(macOS 26.0, *) {
-                return SpeechAnalyzerProvider(locale: preferredLocale)
+                // Use TranscriptionModelManager configuration
+                let config = TranscriptionModelManager.shared.getProviderConfiguration()
+                let provider = SpeechAnalyzerProvider(config: config)
+                logger.info("📍 Created SpeechAnalyzerProvider with model: \(config.modelType.rawValue, privacy: .public), locale: \(config.locale.identifier, privacy: .public), precompiledLM: \(config.enablePrecompiledLM, privacy: .public)")
+                return provider
             }
             return nil
             
@@ -138,10 +173,13 @@ final class TranscriptionManager {
             currentProvider = provider
             currentEngineType = engineType
             
-            // 创建对应的词典注入器
-            dictionaryInjector = DictionaryInjectorFactory.createInjector(for: engineType)
+            // 只在 injector 不存在时才创建，避免覆盖已准备好的 injector
+            if dictionaryInjector == nil {
+                dictionaryInjector = DictionaryInjectorFactory.createInjector(for: engineType)
+                logger.info("📚 Created new dictionary injector for \(engineType.displayName)")
+            }
             
-            logger.info("✅ Using engine: \(engineType.displayName)")
+            logger.info("✅ Using engine: \(engineType.displayName), isDictionaryPrepared=\(self.isDictionaryPrepared)")
             return provider
         }
         
@@ -149,7 +187,11 @@ final class TranscriptionManager {
         let fallback = SFSpeechProvider(locale: preferredLocale)
         currentProvider = fallback
         currentEngineType = .sfSpeech
-        dictionaryInjector = DictionaryInjectorFactory.createInjector(for: .sfSpeech)
+        
+        // 只在 injector 不存在时才创建
+        if dictionaryInjector == nil {
+            dictionaryInjector = DictionaryInjectorFactory.createInjector(for: .sfSpeech)
+        }
         logger.warning("⚠️ Fallback to SFSpeech")
         return fallback
     }
@@ -159,6 +201,8 @@ final class TranscriptionManager {
     /// 准备词典（异步，可能耗时）
     /// 建议在 App 启动时或设置变更后调用
     func prepareDictionary() async {
+        logger.info("📚 [预编译 LM] 开始准备词典... isDictionaryInjectionEnabled=\(self.isDictionaryInjectionEnabled)")
+        
         guard isDictionaryInjectionEnabled else {
             logger.info("📚 Dictionary injection disabled, skipping preparation")
             return
@@ -166,9 +210,13 @@ final class TranscriptionManager {
         
         guard let injector = dictionaryInjector else {
             // 如果还没有创建 provider，先创建一个临时的 injector
+            logger.info("📚 [预编译 LM] dictionaryInjector 为 nil，创建新的 injector...")
             let engineType = bestAvailableEngine()
             dictionaryInjector = DictionaryInjectorFactory.createInjector(for: engineType)
-            guard let injector = dictionaryInjector else { return }
+            guard let injector = dictionaryInjector else {
+                logger.error("❌ [预编译 LM] 无法创建 dictionaryInjector")
+                return
+            }
             await prepareInjector(injector)
             return
         }
@@ -177,7 +225,10 @@ final class TranscriptionManager {
     }
     
     private func prepareInjector(_ injector: DictionaryInjector) async {
-        let entries = DictionaryService.shared.activeEntries
+        // 在主线程获取词典条目
+        let entries = await MainActor.run { DictionaryService.shared.activeEntries }
+        
+        logger.info("📚 [预编译 LM] 获取到词典条目数: \(entries.count)")
         
         guard !entries.isEmpty else {
             logger.info("📚 No dictionary entries, skipping preparation")
@@ -186,12 +237,12 @@ final class TranscriptionManager {
         }
         
         do {
-            logger.info("📚 Preparing dictionary with \(entries.count) entries...")
+            logger.info("📚 [预编译 LM] 开始预编译 \(entries.count) 个词条...")
             try await injector.prepare(with: entries)
             isDictionaryPrepared = true
-            logger.info("✅ Dictionary prepared successfully")
+            logger.info("✅ [预编译 LM] 词典准备完成！")
         } catch {
-            logger.error("❌ Dictionary preparation failed: \(error.localizedDescription)")
+            logger.error("❌ [预编译 LM] 词典预编译失败: \(error.localizedDescription)")
             isDictionaryPrepared = false
         }
     }

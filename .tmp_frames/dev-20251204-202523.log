@@ -1,0 +1,1458 @@
+Filtering the log data using "process == "SpokenAnyWhere" AND (subsystem BEGINSWITH "com.spokeanywhere" OR subsystem == "app.spokenly" OR logType == 16 OR logType == 17)"
+Timestamp               Ty Process[PID:TID]
+2025-12-04 20:25:24.987 I  SpokenAnyWhere[75899:be6c9] [app.spokenly:CrashLogger] 💥 Crash logger installed
+2025-12-04 20:25:25.023 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Loaded 30 history items (cleaned from 30)
+2025-12-04 20:25:25.023 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 ClipboardHistoryService started
+2025-12-04 20:25:25.053 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMSettings] 🔓 Loaded 2 API keys from unified storage
+2025-12-04 20:25:25.053 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMSettings] 🔓 API keys already consolidated, skipping migration
+2025-12-04 20:25:25.053 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMSettings] 📦 LLMSettings loaded, enabled: true, profiles: 2
+2025-12-04 20:25:25.059 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✅ HotKey registered: <private>
+2025-12-04 20:25:25.059 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🎙️ RecordingController started
+2025-12-04 20:25:25.059 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ HistoryManager configured with ModelContext
+2025-12-04 20:25:25.062 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:MessagePanelState] 📥 Loaded 267 pipeline cards from history
+2025-12-04 20:25:25.064 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TrackpadGesture] ✅ 触控板手势监听已启动，设备数: 1
+2025-12-04 20:25:25.064 I  SpokenAnyWhere[75899:be6c9] [app.spokenly:ResourceMonitor] 📊 Resource monitor started (CPU: 150.000000%, Memory: 800.000000MB)
+2025-12-04 20:25:25.092 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] 开始准备词典... isDictionaryInjectionEnabled=true
+2025-12-04 20:25:25.092 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] dictionaryInjector 为 nil，创建新的 injector...
+2025-12-04 20:25:25.094 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:DictionaryService] 📂 Loaded 7 dictionary entries
+2025-12-04 20:25:25.094 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] 获取到词典条目数: 7
+2025-12-04 20:25:25.094 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] 📚 [预编译 LM] 开始预编译 7 个词条...
+2025-12-04 20:25:25.094 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:AppleSpeechInjector] 📚 [预编译 LM] 开始准备自定义语言模型，词条数: 7
+2025-12-04 20:25:25.094 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:AppleSpeechInjector] ⏱️ [预编译 LM] 构建训练数据耗时: <private>ms
+2025-12-04 20:25:25.107 E  SpokenAnyWhere[75899:be6c9] [com.apple.AppKit:WarnOnce] It's not legal to call -layoutSubtreeIfNeeded on a view which is already being laid out.  If you are implementing the view's -layout method, you can call -[super layout] instead.  Break on void _NSDetectedLayoutRecursion(void) to debug.  This will be logged only once.  This may break in the future.
+2025-12-04 20:25:25.113 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:AppleSpeechInjector] ⏱️ [预编译 LM] 写入临时文件耗时: <private>ms
+2025-12-04 20:25:26.099 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:AppleSpeechInjector] ⏱️ [预编译 LM] SFSpeechLanguageModel.prepareCustomLanguageModel 耗时: <private>ms
+2025-12-04 20:25:26.099 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:AppleSpeechInjector] ✅ [预编译 LM] 自定义语言模型准备完成，总耗时: <private>ms
+2025-12-04 20:25:26.099 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:AppleSpeechInjector] 📍 [预编译 LM] 模型路径: <private>
+2025-12-04 20:25:26.099 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ [预编译 LM] 词典准备完成！
+2025-12-04 20:25:29.530 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 20:25:29.530 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 20:25:29.575 E  SpokenAnyWhere[75899:be6c9] [com.apple.CFBundle:plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0xc125034a0> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+2025-12-04 20:25:29.655 E  SpokenAnyWhere[75899:be72e] [com.apple.audioanalytics:carc] Reporter disconnected. { function=sendMessage, reporterID=325983722799105 }
+2025-12-04 20:25:29.669 E  SpokenAnyWhere[75899:be72e] (CoreAudio) throwing -10877
+2025-12-04 20:25:29.670 E  SpokenAnyWhere[75899:be72e] (CoreAudio) throwing -10877
+2025-12-04 20:25:29.749 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 20:25:29.749 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 20:25:29.772 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 20:25:29.773 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 20:25:29.773 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 20:25:29.773 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 20:25:29.774 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 20:25:29.787 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 20:25:29.926 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764851129.png | 尺寸: 3643x2068
+2025-12-04 20:25:29.926 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 155.1ms
+2025-12-04 20:25:30.766 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 20:25:30.766 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 20:25:30.767 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 20:25:30.767 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 20:25:30.987 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 20:25:30.987 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 20:25:30.987 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 20:25:30.987 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 20:25:30.987 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 12 buffered chunks
+2025-12-04 20:25:31.647 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1720.9ms | 总计: 1876.1ms
+2025-12-04 20:25:31.647 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_202531.txt
+2025-12-04 20:25:39.064 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:25:39.064 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:25:46.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:25:46.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:26:04.684 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:26:04.684 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:26:12.682 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:26:12.682 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:26:16.737 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:26:16.737 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:26:25.876 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:26:25.876 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:26:27.616 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 20:26:27.616 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 20:26:27.675 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 20:26:27.675 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 20:26:27.745 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:26:27.745 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:26:27.964 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 20:26:29.819 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 20:26:29.828 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 20:26:29.828 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 20:26:29.828 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.2ms
+2025-12-04 20:26:29.828 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 20:26:29.829 I  SpokenAnyWhere[75899:be730] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 20:26:30.033 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 20:26:32.080 I  SpokenAnyWhere[75899:bebeb] [com.spokeanywhere:LLM] ✅ Gemini response received (187 chars)
+2025-12-04 20:26:32.080 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 20:26:32.080 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 20:26:32.084 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 20:26:32.093 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 20:26:32.093 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 20:26:32.093 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 20:26:33.026 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 20:26:52.738 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 20:26:52.739 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 20:26:52.792 E  SpokenAnyWhere[75899:be6f6] (CoreAudio) throwing -10877
+2025-12-04 20:26:52.793 E  SpokenAnyWhere[75899:be6f6] (CoreAudio) throwing -10877
+2025-12-04 20:26:52.889 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 20:26:52.889 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 20:26:52.896 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 20:26:52.897 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 20:26:52.897 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 20:26:52.897 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 20:26:52.897 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 20:26:52.935 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 20:26:53.086 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764851212.png | 尺寸: 3643x2068
+2025-12-04 20:26:53.086 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 190.8ms
+2025-12-04 20:26:53.857 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 20:26:53.857 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 20:26:53.858 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 20:26:53.858 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 20:26:53.927 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 20:26:53.927 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 20:26:53.927 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 20:26:53.927 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 20:26:53.927 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 20:26:54.630 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1544.3ms | 总计: 1735.1ms
+2025-12-04 20:26:54.631 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_202654.txt
+2025-12-04 20:27:03.444 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 20:27:03.445 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 20:27:03.493 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 20:27:03.494 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 20:27:03.681 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 20:27:03.681 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 20:27:03.757 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 20:27:05.613 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 20:27:05.624 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 20:27:05.624 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 20:27:05.624 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.2ms
+2025-12-04 20:27:05.625 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 20:27:05.625 I  SpokenAnyWhere[75899:bee8b] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 20:27:06.034 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 20:27:07.808 I  SpokenAnyWhere[75899:bed17] [com.spokeanywhere:LLM] ✅ Gemini response received (49 chars)
+2025-12-04 20:27:07.810 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 20:27:07.811 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 20:27:07.823 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 20:27:07.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 20:27:07.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 20:27:07.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 20:27:08.026 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:00:21.378 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:00:21.378 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:00:21.414 E  SpokenAnyWhere[75899:bf430] (CoreAudio) throwing -10877
+2025-12-04 21:00:21.415 E  SpokenAnyWhere[75899:bf430] (CoreAudio) throwing -10877
+2025-12-04 21:00:21.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:00:21.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:00:21.509 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:00:21.510 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:00:21.511 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:00:21.511 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:00:21.511 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:00:21.529 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:00:21.681 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764853221.png | 尺寸: 3643x2068
+2025-12-04 21:00:21.681 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 172.4ms
+2025-12-04 21:00:22.501 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:00:22.501 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:00:22.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:00:22.502 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:00:22.585 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:00:22.585 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:00:22.585 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:00:22.585 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:00:22.585 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:00:23.250 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1568.6ms | 总计: 1741.0ms
+2025-12-04 21:00:23.251 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_210023.txt
+2025-12-04 21:00:35.178 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:00:35.233 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:00:35.233 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:00:35.427 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:00:35.427 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:00:35.509 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:00:37.346 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:00:37.356 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:00:37.356 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:00:37.356 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1561 字符 | 耗时: 0.1ms
+2025-12-04 21:00:37.356 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:00:37.357 I  SpokenAnyWhere[75899:c6f5c] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:00:37.998 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:00:39.894 I  SpokenAnyWhere[75899:c6f5c] [com.spokeanywhere:LLM] ✅ Gemini response received (61 chars)
+2025-12-04 21:00:39.894 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:00:39.895 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:00:39.901 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:00:39.904 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:00:39.904 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:00:39.904 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:00:39.997 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:05:08.620 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:05:08.620 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:05:08.665 E  SpokenAnyWhere[75899:c6f5c] (CoreAudio) throwing -10877
+2025-12-04 21:05:08.666 E  SpokenAnyWhere[75899:c6f5c] (CoreAudio) throwing -10877
+2025-12-04 21:05:08.765 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:05:08.765 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:05:08.768 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:05:08.769 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:05:08.769 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:05:08.769 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:05:08.770 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:05:08.784 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: lucid-mac — progress-and-model.md — 未跟踪的 | 尺寸: 2904x2068
+2025-12-04 21:05:08.898 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764853508.png | 尺寸: 2904x2068
+2025-12-04 21:05:08.898 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2904x2068 | 耗时: 130.5ms
+2025-12-04 21:05:09.745 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:05:09.745 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:05:09.746 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:05:09.746 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:05:09.821 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:05:09.821 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:05:09.821 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:05:09.821 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:05:09.821 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:05:10.650 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1751.3ms | 总计: 1881.8ms
+2025-12-04 21:05:10.651 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_210510.txt
+2025-12-04 21:05:24.526 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:05:24.575 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:05:24.575 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:05:24.902 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:05:24.902 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:05:24.988 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:05:26.713 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:05:26.727 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:05:26.727 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:05:26.727 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.2ms
+2025-12-04 21:05:26.728 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:05:26.728 I  SpokenAnyWhere[75899:c806e] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:05:26.997 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:05:28.848 I  SpokenAnyWhere[75899:c806c] [com.spokeanywhere:LLM] ✅ Gemini response received (64 chars)
+2025-12-04 21:05:28.848 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:05:28.849 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:05:28.859 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:05:28.863 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:05:28.863 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:05:28.863 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:05:28.996 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:07:43.795 E  SpokenAnyWhere[75899:be6c9] [com.apple.siri:Utility] AFIsDeviceGreymatterEligible Missing entitlements for os_eligibility lookup
+2025-12-04 21:09:24.101 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:09:24.101 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:09:24.139 E  SpokenAnyWhere[75899:c8fca] (CoreAudio) throwing -10877
+2025-12-04 21:09:24.141 E  SpokenAnyWhere[75899:c8fca] (CoreAudio) throwing -10877
+2025-12-04 21:09:24.231 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:09:24.231 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:09:24.239 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:09:24.240 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:09:24.240 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:09:24.240 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:09:24.241 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:09:24.259 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: lucid-mac — progress-and-model.md — 未跟踪的 | 尺寸: 2904x2068
+2025-12-04 21:09:24.372 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764853764.png | 尺寸: 2904x2068
+2025-12-04 21:09:24.372 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2904x2068 | 耗时: 133.7ms
+2025-12-04 21:09:25.190 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:09:25.190 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:09:25.191 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:09:25.191 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:09:25.287 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:09:25.287 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:09:25.287 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:09:25.287 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:09:25.287 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:09:26.254 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1881.5ms | 总计: 2015.3ms
+2025-12-04 21:09:26.255 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_210926.txt
+2025-12-04 21:09:29.032 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:09:29.032 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:09:38.190 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:09:38.245 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:09:38.245 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:09:38.454 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:09:38.454 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:09:38.529 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:09:40.403 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:09:40.412 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:09:40.412 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:09:40.412 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.2ms
+2025-12-04 21:09:40.413 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:09:40.413 I  SpokenAnyWhere[75899:c96ed] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:09:40.995 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:09:42.365 I  SpokenAnyWhere[75899:c96e0] [com.spokeanywhere:LLM] ✅ Gemini response received (47 chars)
+2025-12-04 21:09:42.365 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:09:42.366 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:09:42.373 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:09:42.376 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:09:42.377 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:09:42.377 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:09:42.993 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:12:24.573 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:12:24.573 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:12:24.604 E  SpokenAnyWhere[75899:ca4e0] (CoreAudio) throwing -10877
+2025-12-04 21:12:24.605 E  SpokenAnyWhere[75899:ca4e0] (CoreAudio) throwing -10877
+2025-12-04 21:12:24.712 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:12:24.712 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:12:24.717 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:12:24.718 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:12:24.718 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:12:24.718 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:12:24.719 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:12:24.736 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:12:24.893 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764853944.png | 尺寸: 3643x2068
+2025-12-04 21:12:24.893 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 175.9ms
+2025-12-04 21:12:25.692 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:12:25.692 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:12:25.693 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:12:25.693 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:12:25.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:12:25.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:12:25.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:12:25.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:12:25.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:12:26.600 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1706.8ms | 总计: 1882.7ms
+2025-12-04 21:12:26.601 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_211226.txt
+2025-12-04 21:12:35.996 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:12:35.996 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:12:42.709 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:12:42.709 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:12:59.328 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:12:59.328 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:12:59.329 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:12:59.329 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:05.034 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:05.034 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:05.035 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:05.035 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:17.569 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:17.569 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:17.570 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:17.570 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:20.775 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:20.775 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:28.014 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:28.014 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:33.743 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:33.743 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:42.205 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:13:42.205 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:13:42.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:13:42.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:13:42.488 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:13:42.488 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:13:42.688 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:13:44.362 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:13:44.371 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:13:44.371 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:13:44.371 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1561 字符 | 耗时: 0.2ms
+2025-12-04 21:13:44.372 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:13:44.372 I  SpokenAnyWhere[75899:ca53b] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:13:44.994 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:13:47.103 I  SpokenAnyWhere[75899:c9a5f] [com.spokeanywhere:LLM] ✅ Gemini response received (228 chars)
+2025-12-04 21:13:47.104 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:13:47.105 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:13:47.113 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:13:47.117 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:13:47.117 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:13:47.117 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:13:47.992 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 Added to history: <private>...
+2025-12-04 21:17:19.766 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:17:19.766 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:17:19.803 E  SpokenAnyWhere[75899:ca94a] (CoreAudio) throwing -10877
+2025-12-04 21:17:19.804 E  SpokenAnyWhere[75899:ca94a] (CoreAudio) throwing -10877
+2025-12-04 21:17:19.888 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:17:19.888 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:17:19.894 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:17:19.895 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:17:19.896 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:17:19.896 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:17:19.897 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:17:19.934 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:17:20.087 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764854239.png | 尺寸: 3643x2068
+2025-12-04 21:17:20.087 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 193.5ms
+2025-12-04 21:17:20.804 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:17:20.804 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:17:20.805 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:17:20.805 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:17:20.874 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:17:20.874 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:17:20.874 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:17:20.874 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:17:20.874 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 9 buffered chunks
+2025-12-04 21:17:21.746 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1658.3ms | 总计: 1851.8ms
+2025-12-04 21:17:21.747 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_211721.txt
+2025-12-04 21:17:22.066 E  SpokenAnyWhere[75899:be6c9] [app.spokenly:ResourceMonitor] ⚠️ Resource overload! CPU: 175.9%, Memory: 174.1MB
+2025-12-04 21:17:22.067 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 ClipboardHistoryService stopped
+2025-12-04 21:17:22.067 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:MessagePanel] 📋 Message Panel hidden
+2025-12-04 21:17:35.843 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:17:35.896 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:17:35.896 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:17:36.189 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:17:36.189 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:17:36.274 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:17:38.033 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:17:38.042 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:17:38.042 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:17:38.042 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:17:38.042 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:17:38.043 I  SpokenAnyWhere[75899:ca53b] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:17:40.141 I  SpokenAnyWhere[75899:cb416] [com.spokeanywhere:LLM] ✅ Gemini response received (61 chars)
+2025-12-04 21:17:40.145 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:17:40.146 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:17:40.155 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:17:40.162 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:17:40.162 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:17:40.162 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:18:27.368 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:18:27.368 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:18:27.402 E  SpokenAnyWhere[75899:cb3d2] (CoreAudio) throwing -10877
+2025-12-04 21:18:27.404 E  SpokenAnyWhere[75899:cb3d2] (CoreAudio) throwing -10877
+2025-12-04 21:18:27.486 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:18:27.486 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:18:27.492 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:18:27.493 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:18:27.493 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:18:27.493 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:18:27.493 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:18:27.513 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:18:27.663 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764854307.png | 尺寸: 3643x2068
+2025-12-04 21:18:27.663 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 172.1ms
+2025-12-04 21:18:28.413 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:18:28.413 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:18:28.413 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:18:28.414 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:18:28.481 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:18:28.481 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:18:28.481 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:18:28.481 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:18:28.481 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 9 buffered chunks
+2025-12-04 21:18:29.190 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1526.8ms | 总计: 1699.0ms
+2025-12-04 21:18:29.191 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_211829.txt
+2025-12-04 21:18:49.317 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:18:49.317 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:19:19.719 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:19:19.719 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:19:41.197 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:19:41.197 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:02.587 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:02.587 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:12.322 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:12.322 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:15.637 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:15.637 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:19.316 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:19.316 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:25.266 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:25.266 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:43.401 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:43.401 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:46.340 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:46.340 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:58.081 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:20:58.081 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:20:58.610 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:20:58.610 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:20:58.658 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:20:58.658 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:20:59.037 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:21:00.812 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:21:00.817 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:21:00.817 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:21:00.817 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:21:00.819 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:21:00.819 I  SpokenAnyWhere[75899:cbea8] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:21:04.782 I  SpokenAnyWhere[75899:cc07c] [com.spokeanywhere:LLM] ✅ Gemini response received (978 chars)
+2025-12-04 21:21:04.784 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:21:04.784 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:21:04.788 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:21:04.792 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:21:04.792 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:21:04.792 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:22:30.016 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:22:30.016 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:22:30.053 E  SpokenAnyWhere[75899:cb82c] (CoreAudio) throwing -10877
+2025-12-04 21:22:30.054 E  SpokenAnyWhere[75899:cb82c] (CoreAudio) throwing -10877
+2025-12-04 21:22:30.143 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:22:30.143 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:22:30.149 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:22:30.150 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:22:30.150 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:22:30.151 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:22:30.151 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:22:30.182 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:22:30.330 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764854550.png | 尺寸: 3643x2068
+2025-12-04 21:22:30.331 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 181.8ms
+2025-12-04 21:22:31.201 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:22:31.201 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:22:31.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:22:31.202 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:22:31.279 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:22:31.279 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:22:31.279 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:22:31.279 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:22:31.279 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 11 buffered chunks
+2025-12-04 21:22:31.863 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1532.0ms | 总计: 1713.9ms
+2025-12-04 21:22:31.864 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_212231.txt
+2025-12-04 21:22:47.662 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:22:47.662 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:22:47.664 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:22:47.664 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:22:56.783 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:22:56.783 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:22:56.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:22:56.785 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:22:59.480 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:22:59.481 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:22:59.535 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:22:59.538 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:22:59.595 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:22:59.595 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:22:59.751 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:23:01.634 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:23:01.644 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:23:01.644 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:23:01.644 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:23:01.644 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:23:01.645 I  SpokenAnyWhere[75899:cc972] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:23:03.939 I  SpokenAnyWhere[75899:cc972] [com.spokeanywhere:LLM] ✅ Gemini response received (104 chars)
+2025-12-04 21:23:03.939 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:23:03.940 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:23:03.946 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:23:03.950 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:23:03.950 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:23:03.950 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:23:24.434 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:23:24.434 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:23:24.477 E  SpokenAnyWhere[75899:cc97f] (CoreAudio) throwing -10877
+2025-12-04 21:23:24.479 E  SpokenAnyWhere[75899:cc97f] (CoreAudio) throwing -10877
+2025-12-04 21:23:24.566 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:23:24.566 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:23:24.574 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:23:24.575 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:23:24.579 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:23:24.580 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:23:24.580 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:23:24.604 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Antigravity | 窗口数: 1 | 选中: lucid-group — translate.log | 尺寸: 2913x2119
+2025-12-04 21:23:24.715 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Antigravity_1764854604.png | 尺寸: 2913x2119
+2025-12-04 21:23:24.715 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2913x2119 | 耗时: 142.2ms
+2025-12-04 21:23:25.572 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:23:25.572 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:23:25.573 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:23:25.573 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:23:25.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:23:25.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:23:25.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:23:25.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:23:25.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:23:26.369 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1653.8ms | 总计: 1796.0ms
+2025-12-04 21:23:26.370 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_212326.txt
+2025-12-04 21:23:34.876 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:23:34.876 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:23:34.905 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:23:34.905 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:23:34.956 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:23:34.956 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:23:35.066 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:23:37.085 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:23:37.095 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Antigravity
+2025-12-04 21:23:37.095 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:23:37.095 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1558 字符 | 耗时: 0.3ms
+2025-12-04 21:23:37.095 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:23:37.096 I  SpokenAnyWhere[75899:cb82c] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:23:39.180 I  SpokenAnyWhere[75899:cceb7] [com.spokeanywhere:LLM] ✅ Gemini response received (31 chars)
+2025-12-04 21:23:39.180 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:23:39.181 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:23:39.187 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:23:39.189 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:23:39.190 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:23:39.190 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:26:26.553 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:26:26.553 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:26:26.589 E  SpokenAnyWhere[75899:cd7dc] (CoreAudio) throwing -10877
+2025-12-04 21:26:26.590 E  SpokenAnyWhere[75899:cd7dc] (CoreAudio) throwing -10877
+2025-12-04 21:26:26.686 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:26:26.686 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:26:26.690 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:26:26.693 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:26:26.693 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:26:26.693 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:26:26.694 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:26:26.718 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:26:26.886 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764854786.png | 尺寸: 3643x2068
+2025-12-04 21:26:26.886 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 196.0ms
+2025-12-04 21:26:27.758 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:26:27.758 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:26:27.759 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:26:27.759 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:26:27.883 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:26:27.883 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:26:27.883 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:26:27.883 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:26:27.883 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 11 buffered chunks
+2025-12-04 21:26:28.792 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1906.1ms | 总计: 2102.1ms
+2025-12-04 21:26:28.793 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_212628.txt
+2025-12-04 21:26:32.308 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:26:32.308 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:26:32.309 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:26:32.309 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:26:36.622 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:26:36.674 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:26:36.674 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:26:36.751 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:26:36.751 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:26:36.778 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:26:38.786 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:26:38.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:26:38.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:26:38.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1561 字符 | 耗时: 0.1ms
+2025-12-04 21:26:38.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:26:38.795 I  SpokenAnyWhere[75899:cde89] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:26:41.560 I  SpokenAnyWhere[75899:cde89] [com.spokeanywhere:LLM] ✅ Gemini response received (29 chars)
+2025-12-04 21:26:41.564 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:26:41.565 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:26:41.571 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:26:41.575 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:26:41.575 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:26:41.575 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:26:44.142 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:26:44.142 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:26:44.168 E  SpokenAnyWhere[75899:cde89] (CoreAudio) throwing -10877
+2025-12-04 21:26:44.170 E  SpokenAnyWhere[75899:cde89] (CoreAudio) throwing -10877
+2025-12-04 21:26:44.257 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:26:44.257 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:26:44.262 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:26:44.263 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:26:44.263 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:26:44.263 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:26:44.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:26:44.296 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:26:44.459 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764854804.png | 尺寸: 3643x2068
+2025-12-04 21:26:44.459 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 197.8ms
+2025-12-04 21:26:45.270 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:26:45.270 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:26:45.270 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:26:45.270 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:26:45.349 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:26:45.349 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:26:45.349 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:26:45.349 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:26:45.349 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:26:46.064 E  SpokenAnyWhere[75899:be6c9] [app.spokenly:ResourceMonitor] ⚠️ Resource overload! CPU: 412.5%, Memory: 216.2MB
+2025-12-04 21:26:46.064 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 ClipboardHistoryService stopped
+2025-12-04 21:26:46.065 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:MessagePanel] 📋 Message Panel hidden
+2025-12-04 21:26:46.276 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1816.7ms | 总计: 2014.6ms
+2025-12-04 21:26:46.278 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_212646.txt
+2025-12-04 21:26:54.367 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:26:54.367 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:26:54.369 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:26:54.369 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:00.791 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:00.791 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:00.793 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:00.793 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:07.731 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:07.731 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:07.732 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:07.732 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:10.797 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:10.797 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:10.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:10.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:21.168 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:21.168 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:36.276 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:36.276 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:38.684 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:38.684 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:51.849 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:27:51.849 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:27:51.900 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:27:51.900 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:27:52.274 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:27:52.274 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:27:52.572 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:27:54.014 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:27:54.018 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:27:54.018 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:27:54.018 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:27:54.019 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:27:54.019 I  SpokenAnyWhere[75899:cde8a] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:27:56.273 I  SpokenAnyWhere[75899:ce11b] [com.spokeanywhere:LLM] ✅ Gemini response received (215 chars)
+2025-12-04 21:27:56.273 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:27:56.273 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:27:56.277 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:27:56.280 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:27:56.280 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:27:56.280 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:30:29.431 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:30:29.431 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:30:29.466 E  SpokenAnyWhere[75899:cec84] (CoreAudio) throwing -10877
+2025-12-04 21:30:29.468 E  SpokenAnyWhere[75899:cec84] (CoreAudio) throwing -10877
+2025-12-04 21:30:29.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:30:29.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:30:29.589 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:30:29.590 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:30:29.590 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:30:29.590 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:30:29.591 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:30:29.615 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:30:29.815 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855029.png | 尺寸: 3643x2068
+2025-12-04 21:30:29.815 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 225.8ms
+2025-12-04 21:30:30.672 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:30:30.672 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:30:30.673 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:30:30.673 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:30:30.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:30:30.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:30:30.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:30:30.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:30:30.800 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 12 buffered chunks
+2025-12-04 21:30:31.719 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1903.8ms | 总计: 2129.6ms
+2025-12-04 21:30:31.719 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213031.txt
+2025-12-04 21:30:48.813 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:30:48.813 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:30:48.814 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:30:48.814 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:31:09.670 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:31:09.671 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:31:09.672 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:31:09.672 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:31:38.173 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:31:38.173 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:31:57.820 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:31:57.820 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:32:13.730 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:32:13.730 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:32:30.252 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:32:30.302 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:32:30.302 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:32:30.542 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:32:30.542 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:32:30.936 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:32:32.473 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:32:32.477 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:32:32.477 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:32:32.477 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.2ms
+2025-12-04 21:32:32.480 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:32:32.480 I  SpokenAnyWhere[75899:cde8b] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:32:35.361 I  SpokenAnyWhere[75899:cf219] [com.spokeanywhere:LLM] ✅ Gemini response received (489 chars)
+2025-12-04 21:32:35.361 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:32:35.361 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:32:35.369 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:32:35.373 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:32:35.373 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:32:35.373 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:33:01.685 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:33:01.685 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:33:01.710 E  SpokenAnyWhere[75899:cde8b] (CoreAudio) throwing -10877
+2025-12-04 21:33:01.711 E  SpokenAnyWhere[75899:cde8b] (CoreAudio) throwing -10877
+2025-12-04 21:33:01.804 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:33:01.804 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:33:01.809 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:33:01.810 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:33:01.810 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:33:01.810 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:33:01.811 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:33:01.834 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:33:01.988 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855181.png | 尺寸: 3643x2068
+2025-12-04 21:33:01.988 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 179.0ms
+2025-12-04 21:33:02.791 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:33:02.791 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:33:02.792 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:33:02.792 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:33:02.862 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:33:02.862 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:33:02.862 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:33:02.862 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:33:02.862 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:33:03.705 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1717.5ms | 总计: 1896.6ms
+2025-12-04 21:33:03.707 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213303.txt
+2025-12-04 21:33:15.079 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:33:15.126 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:33:15.126 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:33:15.240 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:33:15.240 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:33:15.319 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:33:17.235 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:33:17.247 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:33:17.247 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:33:17.247 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:33:17.247 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:33:17.248 I  SpokenAnyWhere[75899:cf683] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:33:19.203 I  SpokenAnyWhere[75899:cf683] [com.spokeanywhere:LLM] ✅ Gemini response received (49 chars)
+2025-12-04 21:33:19.203 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:33:19.204 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:33:19.212 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:33:19.215 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:33:19.215 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:33:19.215 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:34:01.538 E  SpokenAnyWhere[75899:cf978] [com.apple.BaseBoard:Common] Unable to obtain a task name port right for pid 406: (os/kern) failure (0x5)
+2025-12-04 21:34:01.583 E  SpokenAnyWhere[75899:be6c9] [com.apple.CFBundle:loading] More than one bundle with the same factory UUID detected: {
+    "ff5ed090-1521-11ea-8d71-362b9e155667" = "BlackHole_Create";
+} in CFBundle 0xc14bc9340 </Library/Audio/Plug-Ins/HAL/VirtualDesktopSpeakers.driver> (not loaded) and CFBundle/CFPlugIn 0xc14bc9260 </Library/Audio/Plug-Ins/HAL/VirtualDesktopMicrophone.driver> (not loaded)
+2025-12-04 21:34:01.593 E  SpokenAnyWhere[75899:cf978] [com.apple.cmio:] CMIOExtensionProviderHostContext.m:75:-[CMIOExtensionProviderHostContext initWithConnection:delegate:]_block_invoke [0] received Connection invalid
+2025-12-04 21:34:01.593 E  SpokenAnyWhere[75899:cf978] [com.apple.cmio:] CMIOExtensionProviderHostContext.m:1282:-[CMIOExtensionProviderHostContext sendEmptyClientInfo]_block_invoke received Connection invalid
+2025-12-04 21:34:01.593 E  SpokenAnyWhere[75899:be6c9] [com.apple.cmio:] CMIOExtensionProviderHostContext.m:434:-[CMIOExtensionProviderHostContext pluginStates:] received Connection invalid
+2025-12-04 21:34:01.593 E  SpokenAnyWhere[75899:be6c9] [com.apple.cmio:] CMIOExtensionSession.m:1309:-[CMIOExtensionSessionProvider initWithEndpoint:delegate:]_block_invoke failed getting the states of the plugin error Error Domain=NSOSStatusErrorDomain Code=-7 "kCSIdentityInvalidPosixNameErr"
+2025-12-04 21:34:01.593 E  SpokenAnyWhere[75899:be6c9] [com.apple.cmio:] CMIO_DAL_CMIOExtension_PlugIn.mm:316:-[CMIODALExtensionPlugIn initWithPlugIn:endpoint:] plugin 32 / <CMIOExtensionSessionProvider> provider bundleID com.apple.appleh13camerad endpoint 0xc0fd4bbc0 could not call devices/properties initializer
+2025-12-04 21:34:01.593 E  SpokenAnyWhere[75899:be6c9] [com.apple.cmio:] CMIO_DAL_CMIOExtension_PlugIn.mm:754:Initialize invalid provider state
+2025-12-04 21:34:01.594 E  SpokenAnyWhere[75899:be6c9] [com.apple.cmio:] CMIO_DAL_CMIOExtension_PlugIn.mm:163:-[CMIODALExtensionSession updateStateWithExtensionsArrived:extensionsRemoved:] an error occurred
+2025-12-04 21:34:10.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:34:10.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:34:10.154 E  SpokenAnyWhere[75899:cfde1] (CoreAudio) throwing -10877
+2025-12-04 21:34:10.155 E  SpokenAnyWhere[75899:cfde1] (CoreAudio) throwing -10877
+2025-12-04 21:34:10.241 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:34:10.241 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:34:10.246 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:34:10.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:34:10.249 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:34:10.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:34:10.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:34:10.270 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:34:10.432 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855250.png | 尺寸: 3643x2068
+2025-12-04 21:34:10.432 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 186.6ms
+2025-12-04 21:34:11.221 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:34:11.221 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:34:11.222 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:34:11.222 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:34:11.307 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:34:11.307 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:34:11.307 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:34:11.307 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:34:11.307 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:34:12.042 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:34:12.042 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:34:12.087 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:34:12.087 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:34:12.141 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:34:12.141 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:34:12.157 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:34:12.258 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1826.4ms | 总计: 2013.1ms
+2025-12-04 21:34:12.259 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213412.txt
+2025-12-04 21:34:22.412 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:34:22.412 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:34:22.418 E  SpokenAnyWhere[75899:cff7d] (CoreAudio) AudioHardware-mac-imp.cpp:1512   AudioObjectRemovePropertyListener: no object with given ID 0
+2025-12-04 21:34:22.418 E  SpokenAnyWhere[75899:cff8d] (CoreAudio) AudioHardware-mac-imp.cpp:1512   AudioObjectRemovePropertyListener: no object with given ID 0
+2025-12-04 21:34:22.435 E  SpokenAnyWhere[75899:cff89] (CoreAudio) throwing -10877
+2025-12-04 21:34:22.436 E  SpokenAnyWhere[75899:cff89] (CoreAudio) throwing -10877
+2025-12-04 21:34:22.523 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:34:22.523 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:34:22.528 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:34:22.528 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:34:22.530 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:34:22.530 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:34:22.530 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:34:22.530 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:34:22.551 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:34:22.711 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855262.png | 尺寸: 3643x2068
+2025-12-04 21:34:22.711 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 184.1ms
+2025-12-04 21:34:23.513 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:34:23.513 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:34:23.514 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:34:23.514 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:34:23.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:34:23.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:34:23.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:34:23.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:34:23.584 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:34:24.139 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:34:24.139 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:34:24.223 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:34:24.393 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855264.png | 尺寸: 3643x2068
+2025-12-04 21:34:24.393 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 249.2ms
+2025-12-04 21:34:24.401 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1690.3ms | 总计: 1874.4ms
+2025-12-04 21:34:24.402 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213424.txt
+2025-12-04 21:34:25.990 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1597.3ms | 总计: 1846.5ms
+2025-12-04 21:34:25.991 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213425.txt
+2025-12-04 21:34:27.096 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:34:27.146 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:34:27.147 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:34:27.227 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:34:27.227 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:34:27.240 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:34:27.335 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:34:27.335 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:34:27.357 E  SpokenAnyWhere[75899:d0078] (CoreAudio) throwing -10877
+2025-12-04 21:34:27.359 E  SpokenAnyWhere[75899:d0078] (CoreAudio) throwing -10877
+2025-12-04 21:34:27.442 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:34:27.442 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:34:27.448 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:34:27.449 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:34:27.450 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:34:27.450 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:34:27.451 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:34:27.470 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:34:27.625 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855267.png | 尺寸: 3643x2068
+2025-12-04 21:34:27.625 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 178.4ms
+2025-12-04 21:34:28.338 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:34:28.338 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:34:28.339 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:34:28.339 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:34:28.408 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:34:28.408 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:34:28.408 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:34:28.408 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:34:28.408 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 9 buffered chunks
+2025-12-04 21:34:29.262 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1636.5ms | 总计: 1814.9ms
+2025-12-04 21:34:29.263 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213429.txt
+2025-12-04 21:34:29.398 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:34:29.402 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:34:29.402 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:34:29.402 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:34:29.402 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:34:29.402 I  SpokenAnyWhere[75899:d0078] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:34:32.319 I  SpokenAnyWhere[75899:cff89] [com.spokeanywhere:LLM] ✅ Gemini response received (5 chars)
+2025-12-04 21:34:32.319 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:34:32.320 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:34:32.325 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:34:32.329 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:34:32.329 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:34:32.329 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:34:32.340 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:34:32.340 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:34:32.373 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:34:32.542 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855272.png | 尺寸: 3643x2068
+2025-12-04 21:34:32.542 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 198.5ms
+2025-12-04 21:34:33.992 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:34:33.992 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:34:34.047 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:34:34.047 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:34:34.083 E  SpokenAnyWhere[75899:be6c9] [app.spokenly:ResourceMonitor] ⚠️ Resource overload! CPU: 396.5%, Memory: 208.1MB
+2025-12-04 21:34:34.083 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ClipboardHistory] 📋 ClipboardHistoryService stopped
+2025-12-04 21:34:34.083 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:MessagePanel] 📋 Message Panel hidden
+2025-12-04 21:34:34.099 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1557.0ms | 总计: 1755.5ms
+2025-12-04 21:34:34.100 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213434.txt
+2025-12-04 21:34:34.215 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:34:34.215 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:34:34.282 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:34:36.173 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:34:36.176 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:34:36.176 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:34:36.177 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:34:36.177 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:34:36.177 I  SpokenAnyWhere[75899:cff8d] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:34:38.029 I  SpokenAnyWhere[75899:cff89] [com.spokeanywhere:LLM] ✅ Gemini response received (29 chars)
+2025-12-04 21:34:38.029 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:34:38.029 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:34:38.033 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:34:38.033 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:34:38.033 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:37:53.564 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:37:53.564 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:37:53.598 E  SpokenAnyWhere[75899:d0bb8] (CoreAudio) throwing -10877
+2025-12-04 21:37:53.599 E  SpokenAnyWhere[75899:d0bb8] (CoreAudio) throwing -10877
+2025-12-04 21:37:53.679 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:37:53.679 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:37:53.685 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:37:53.686 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:37:53.686 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:37:53.686 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:37:53.686 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:37:53.714 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf | 窗口数: 1 | 选中: digital-brain-mvp — graphLayout.ts | 尺寸: 2029x2068
+2025-12-04 21:37:53.808 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_1764855473.png | 尺寸: 2029x2068
+2025-12-04 21:37:53.808 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2029x2068 | 耗时: 122.9ms
+2025-12-04 21:37:54.676 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:37:54.676 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:37:54.676 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:37:54.676 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:37:54.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:37:54.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:37:54.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:37:54.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:37:54.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:37:56.041 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 2232.9ms | 总计: 2355.8ms
+2025-12-04 21:37:56.041 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_213756.txt
+2025-12-04 21:38:27.160 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:38:27.160 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:38:35.671 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:38:35.671 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:38:52.604 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:38:52.604 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:38:57.782 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:38:57.782 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:38:57.784 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:38:57.784 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:39:04.602 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 21:39:04.602 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:39:04.660 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:39:04.660 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:39:04.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:39:04.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:39:05.141 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:39:09.497 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:39:09.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf
+2025-12-04 21:39:09.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:39:09.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1555 字符 | 耗时: 0.1ms
+2025-12-04 21:39:09.503 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:39:09.503 I  SpokenAnyWhere[75899:d0f00] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:39:11.674 I  SpokenAnyWhere[75899:d157b] [com.spokeanywhere:LLM] ✅ Gemini response received (287 chars)
+2025-12-04 21:39:11.763 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:39:11.763 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:39:11.767 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:39:11.770 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:39:11.771 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:39:11.771 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:40:05.893 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:40:05.893 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:40:05.929 E  SpokenAnyWhere[75899:d0f50] (CoreAudio) throwing -10877
+2025-12-04 21:40:05.930 E  SpokenAnyWhere[75899:d0f50] (CoreAudio) throwing -10877
+2025-12-04 21:40:06.019 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:40:06.019 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:40:06.026 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:40:06.027 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:40:06.027 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:40:06.029 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:40:06.029 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:40:06.059 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:40:06.210 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855606.png | 尺寸: 3643x2068
+2025-12-04 21:40:06.210 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 185.7ms
+2025-12-04 21:40:07.022 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:40:07.022 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:40:07.023 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:40:07.023 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:40:07.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:40:07.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:40:07.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:40:07.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:40:07.123 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 21:40:07.771 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1561.0ms | 总计: 1746.7ms
+2025-12-04 21:40:07.773 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_214007.txt
+2025-12-04 21:40:16.067 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:40:16.124 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:40:16.125 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:40:16.291 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:40:16.291 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:40:16.363 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:40:18.882 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:40:18.886 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:40:18.886 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:40:18.886 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:40:18.886 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:40:18.887 I  SpokenAnyWhere[75899:d16ad] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:40:20.802 I  SpokenAnyWhere[75899:d1a32] [com.spokeanywhere:LLM] ✅ Gemini response received (64 chars)
+2025-12-04 21:40:20.982 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:40:20.982 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:40:20.987 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:40:20.990 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:40:20.990 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:40:20.990 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:40:22.729 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:40:22.729 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:40:22.761 E  SpokenAnyWhere[75899:d1a32] (CoreAudio) throwing -10877
+2025-12-04 21:40:22.762 E  SpokenAnyWhere[75899:d1a32] (CoreAudio) throwing -10877
+2025-12-04 21:40:22.845 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:40:22.845 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:40:22.849 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:40:22.850 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:40:22.850 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:40:22.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:40:22.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:40:22.873 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:40:23.027 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855622.png | 尺寸: 3643x2068
+2025-12-04 21:40:23.027 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 179.7ms
+2025-12-04 21:40:23.776 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:40:23.776 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:40:23.777 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:40:23.777 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:40:23.843 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:40:23.843 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:40:23.843 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:40:23.843 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:40:23.843 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 9 buffered chunks
+2025-12-04 21:40:24.530 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1503.0ms | 总计: 1682.7ms
+2025-12-04 21:40:24.531 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_214024.txt
+2025-12-04 21:40:32.760 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:40:32.812 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:40:32.812 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:40:33.035 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:40:33.035 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:40:33.145 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:40:40.498 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:40:40.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:40:40.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:40:40.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:40:40.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:40:40.502 I  SpokenAnyWhere[75899:d1a4e] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:40:42.292 I  SpokenAnyWhere[75899:d1a4e] [com.spokeanywhere:LLM] ✅ Gemini response received (49 chars)
+2025-12-04 21:40:42.431 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:40:42.432 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:40:42.435 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:40:42.439 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:40:42.439 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:40:42.439 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:40:52.661 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:40:52.661 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:40:52.695 E  SpokenAnyWhere[75899:d1a4e] (CoreAudio) throwing -10877
+2025-12-04 21:40:52.696 E  SpokenAnyWhere[75899:d1a4e] (CoreAudio) throwing -10877
+2025-12-04 21:40:52.782 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:40:52.782 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:40:52.788 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:40:52.789 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:40:52.789 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:40:52.789 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:40:52.789 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:40:52.817 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: spokeanywhere — progress.md | 尺寸: 3643x2068
+2025-12-04 21:40:52.969 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764855652.png | 尺寸: 3643x2068
+2025-12-04 21:40:52.969 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 3643x2068 | 耗时: 182.5ms
+2025-12-04 21:40:53.693 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:40:53.693 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:40:53.693 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:40:53.693 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:40:53.761 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:40:53.761 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:40:53.761 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:40:53.761 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:40:53.761 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 9 buffered chunks
+2025-12-04 21:40:54.551 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1581.9ms | 总计: 1764.5ms
+2025-12-04 21:40:54.552 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_214054.txt
+2025-12-04 21:41:14.114 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:41:14.114 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:41:27.749 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:41:27.749 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:41:31.611 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:41:31.611 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:41:42.046 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:41:42.046 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:41:58.178 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:41:58.178 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:42:08.423 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:42:08.477 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:42:08.478 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:42:08.688 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:42:08.688 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:42:08.957 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:42:24.199 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:42:24.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 21:42:24.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:42:24.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 21:42:24.203 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:42:24.203 I  SpokenAnyWhere[75899:d1e4e] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:42:26.553 I  SpokenAnyWhere[75899:d2417] [com.spokeanywhere:LLM] ✅ Gemini response received (288 chars)
+2025-12-04 21:42:26.998 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:42:26.999 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:42:27.004 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:42:27.007 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:42:27.007 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:42:27.007 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:45:00.009 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:45:00.010 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:45:00.019 E  SpokenAnyWhere[75899:d260d] (CoreAudio) AudioHardware-mac-imp.cpp:1512   AudioObjectRemovePropertyListener: no object with given ID 0
+2025-12-04 21:45:00.019 E  SpokenAnyWhere[75899:d2c08] (CoreAudio) AudioHardware-mac-imp.cpp:1512   AudioObjectRemovePropertyListener: no object with given ID 0
+2025-12-04 21:45:00.042 E  SpokenAnyWhere[75899:d30ce] (CoreAudio) throwing -10877
+2025-12-04 21:45:00.043 E  SpokenAnyWhere[75899:d30ce] (CoreAudio) throwing -10877
+2025-12-04 21:45:00.125 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:45:00.125 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:45:00.131 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:45:00.132 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:45:00.132 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:45:00.132 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:45:00.133 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:45:00.151 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf | 窗口数: 1 | 选中: digital-brain-mvp — Roadmap.md — 已修改 | 尺寸: 2029x2068
+2025-12-04 21:45:00.246 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_1764855900.png | 尺寸: 2029x2068
+2025-12-04 21:45:00.247 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2029x2068 | 耗时: 115.8ms
+2025-12-04 21:45:01.164 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:45:01.164 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:45:01.165 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:45:01.165 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:45:01.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:45:01.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:45:01.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:45:01.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:45:01.264 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 11 buffered chunks
+2025-12-04 21:45:02.156 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1909.2ms | 总计: 2025.1ms
+2025-12-04 21:45:02.156 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_214502.txt
+2025-12-04 21:45:27.545 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:45:27.594 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:45:27.595 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:45:28.046 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:45:28.046 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:45:28.213 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:45:31.918 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:45:31.922 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf
+2025-12-04 21:45:31.922 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:45:31.922 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1555 字符 | 耗时: 0.1ms
+2025-12-04 21:45:31.923 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:45:31.923 I  SpokenAnyWhere[75899:d32f6] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:45:34.253 I  SpokenAnyWhere[75899:d33cc] [com.spokeanywhere:LLM] ✅ Gemini response received (125 chars)
+2025-12-04 21:45:34.284 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:45:34.284 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:45:34.288 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:45:34.291 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:45:34.291 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:45:34.291 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 21:45:55.284 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 21:45:55.284 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 21:45:55.313 E  SpokenAnyWhere[75899:d35c8] (CoreAudio) throwing -10877
+2025-12-04 21:45:55.314 E  SpokenAnyWhere[75899:d35c8] (CoreAudio) throwing -10877
+2025-12-04 21:45:55.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 21:45:55.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 21:45:55.400 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 21:45:55.403 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 21:45:55.403 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 21:45:55.403 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 21:45:55.404 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 21:45:55.421 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Antigravity | 窗口数: 1 | 选中: lucid-group — translate.log | 尺寸: 2913x2119
+2025-12-04 21:45:55.531 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Antigravity_1764855955.png | 尺寸: 2913x2119
+2025-12-04 21:45:55.531 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2913x2119 | 耗时: 130.9ms
+2025-12-04 21:45:56.437 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 21:45:56.437 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 21:45:56.438 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 21:45:56.438 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 21:45:56.516 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 21:45:56.516 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 21:45:56.516 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 21:45:56.516 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 21:45:56.516 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 11 buffered chunks
+2025-12-04 21:45:57.222 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1691.4ms | 总计: 1822.4ms
+2025-12-04 21:45:57.223 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_214557.txt
+2025-12-04 21:46:04.429 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:46:04.429 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:46:12.562 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 21:46:12.623 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 21:46:12.623 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 21:46:12.872 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 21:46:12.872 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 21:46:12.960 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 21:46:14.748 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 21:46:14.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Antigravity
+2025-12-04 21:46:14.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 21:46:14.752 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1558 字符 | 耗时: 0.1ms
+2025-12-04 21:46:14.753 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 21:46:14.753 I  SpokenAnyWhere[75899:d35c7] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 21:46:16.728 I  SpokenAnyWhere[75899:d374c] [com.spokeanywhere:LLM] ✅ Gemini response received (68 chars)
+2025-12-04 21:46:16.728 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 21:46:16.729 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 21:46:16.733 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 21:46:16.735 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 21:46:16.735 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 21:46:16.736 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:00:00.525 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:00:00.525 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:00:00.557 E  SpokenAnyWhere[75899:d6f76] (CoreAudio) throwing -10877
+2025-12-04 22:00:00.558 E  SpokenAnyWhere[75899:d6f76] (CoreAudio) throwing -10877
+2025-12-04 22:00:00.641 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:00:00.641 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:00:00.649 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:00:00.652 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 22:00:00.652 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 22:00:00.652 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 22:00:00.654 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 22:00:00.671 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Antigravity | 窗口数: 1 | 选中: lucid-group — translate.log | 尺寸: 2913x2119
+2025-12-04 22:00:00.787 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Antigravity_1764856800.png | 尺寸: 2913x2119
+2025-12-04 22:00:00.787 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2913x2119 | 耗时: 139.0ms
+2025-12-04 22:00:01.670 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 22:00:01.670 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 22:00:01.671 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 22:00:01.672 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 22:00:01.793 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 22:00:01.793 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 22:00:01.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 22:00:01.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:00:01.794 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 11 buffered chunks
+2025-12-04 22:00:02.455 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1667.5ms | 总计: 1806.6ms
+2025-12-04 22:00:02.456 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_220002.txt
+2025-12-04 22:00:07.879 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:00:07.927 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:00:07.928 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:00:08.053 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:00:08.053 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:00:08.104 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:00:10.047 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:00:10.051 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Antigravity
+2025-12-04 22:00:10.051 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:00:10.052 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1558 字符 | 耗时: 0.1ms
+2025-12-04 22:00:10.052 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:00:10.052 I  SpokenAnyWhere[75899:d6fcc] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:00:12.729 I  SpokenAnyWhere[75899:d6f76] [com.spokeanywhere:LLM] ✅ Gemini response received (27 chars)
+2025-12-04 22:00:12.820 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:00:12.821 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:00:12.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:00:12.831 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:00:12.831 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:00:12.831 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:01:42.119 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:01:42.119 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:01:42.152 E  SpokenAnyWhere[75899:d6fd1] (CoreAudio) throwing -10877
+2025-12-04 22:01:42.153 E  SpokenAnyWhere[75899:d6fd1] (CoreAudio) throwing -10877
+2025-12-04 22:01:42.237 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:01:42.237 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:01:42.243 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:01:42.244 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 22:01:42.245 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 22:01:42.245 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 22:01:42.245 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 22:01:42.281 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: lucid-mac — progress-and-model.md — 未跟踪的 | 尺寸: 2904x2068
+2025-12-04 22:01:42.384 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764856902.png | 尺寸: 2904x2068
+2025-12-04 22:01:42.384 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2904x2068 | 耗时: 142.2ms
+2025-12-04 22:01:43.282 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 22:01:43.282 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 22:01:43.282 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 22:01:43.282 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 22:01:43.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 22:01:43.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 22:01:43.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 22:01:43.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:01:43.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 11 buffered chunks
+2025-12-04 22:01:44.043 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1658.4ms | 总计: 1800.6ms
+2025-12-04 22:01:44.044 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_220144.txt
+2025-12-04 22:02:09.495 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:02:09.495 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:02:13.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:02:13.390 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:02:13.392 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:02:13.392 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:02:48.063 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:02:48.063 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:03:12.405 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:03:12.456 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:03:12.456 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:03:12.865 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:03:12.865 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:03:13.149 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:03:22.502 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:03:22.506 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 22:03:22.506 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:03:22.506 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 22:03:22.507 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:03:22.507 I  SpokenAnyWhere[75899:d6fd1] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:03:25.461 I  SpokenAnyWhere[75899:d8107] [com.spokeanywhere:LLM] ✅ Gemini response received (368 chars)
+2025-12-04 22:03:25.819 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:03:25.819 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:03:25.823 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:03:25.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:03:25.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:03:25.827 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:03:48.095 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:03:48.095 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:03:48.129 E  SpokenAnyWhere[75899:d8107] (CoreAudio) throwing -10877
+2025-12-04 22:03:48.130 E  SpokenAnyWhere[75899:d8107] (CoreAudio) throwing -10877
+2025-12-04 22:03:48.213 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:03:48.213 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:03:48.219 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:03:48.220 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 22:03:48.220 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 22:03:48.220 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 22:03:48.220 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 22:03:48.239 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf - Next | 窗口数: 1 | 选中: lucid-mac — progress-and-model.md — 未跟踪的 | 尺寸: 2904x2068
+2025-12-04 22:03:48.348 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_-_Next_1764857028.png | 尺寸: 2904x2068
+2025-12-04 22:03:48.348 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2904x2068 | 耗时: 129.8ms
+2025-12-04 22:03:49.169 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 22:03:49.169 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 22:03:49.170 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 22:03:49.170 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 22:03:49.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 22:03:49.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 22:03:49.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 22:03:49.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:03:49.249 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 22:03:50.097 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1749.6ms | 总计: 1879.4ms
+2025-12-04 22:03:50.098 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_220350.txt
+2025-12-04 22:03:58.366 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔍 Modifier release confirmed after delay check
+2025-12-04 22:03:58.366 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:03:58.425 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:03:58.425 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:03:58.591 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:03:58.591 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:03:58.664 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:04:03.969 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:04:03.973 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf - Next
+2025-12-04 22:04:03.973 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:04:03.973 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1562 字符 | 耗时: 0.1ms
+2025-12-04 22:04:03.974 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:04:03.974 I  SpokenAnyWhere[75899:d815f] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:04:06.237 I  SpokenAnyWhere[75899:d815e] [com.spokeanywhere:LLM] ✅ Gemini response received (41 chars)
+2025-12-04 22:04:06.953 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:04:06.953 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:04:06.961 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:04:06.964 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:04:06.964 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:04:06.964 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:05:05.209 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:05:05.209 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:05:05.243 E  SpokenAnyWhere[75899:d8b63] (CoreAudio) throwing -10877
+2025-12-04 22:05:05.243 E  SpokenAnyWhere[75899:d8b63] (CoreAudio) throwing -10877
+2025-12-04 22:05:05.325 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:05:05.325 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:05:05.332 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:05:05.333 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 22:05:05.333 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 22:05:05.333 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 22:05:05.334 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 22:05:05.358 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Windsurf | 窗口数: 1 | 选中: digital-brain-mvp — GraphView 节点层级系统与 D3 渲染流程 | 尺寸: 2029x2068
+2025-12-04 22:05:05.455 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Windsurf_1764857105.png | 尺寸: 2029x2068
+2025-12-04 22:05:05.455 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2029x2068 | 耗时: 123.2ms
+2025-12-04 22:05:06.317 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 22:05:06.317 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 22:05:06.318 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 22:05:06.318 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 22:05:06.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 22:05:06.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 22:05:06.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 22:05:06.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:05:06.396 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 22:05:07.719 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 2263.5ms | 总计: 2386.7ms
+2025-12-04 22:05:07.720 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_220507.txt
+2025-12-04 22:05:21.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:05:21.653 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:05:52.254 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:05:52.254 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:05:55.201 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:05:55.201 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:06:09.695 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:06:09.743 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:06:09.743 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:06:09.957 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:06:09.957 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:06:10.258 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:06:14.852 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:06:14.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Windsurf
+2025-12-04 22:06:14.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:06:14.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1555 字符 | 耗时: 0.1ms
+2025-12-04 22:06:14.856 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:06:14.857 I  SpokenAnyWhere[75899:d89a7] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:06:17.332 I  SpokenAnyWhere[75899:d8f70] [com.spokeanywhere:LLM] ✅ Gemini response received (320 chars)
+2025-12-04 22:06:18.001 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:06:18.002 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:06:18.010 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:06:18.013 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:06:18.013 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:06:18.013 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset
+2025-12-04 22:09:59.309 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 🚀 开始预取...
+2025-12-04 22:09:59.309 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:TranscriptionManager] ✅ Using engine: Apple 语音分析器, isDictionaryPrepared=true
+2025-12-04 22:09:59.341 E  SpokenAnyWhere[75899:d8f70] (CoreAudio) throwing -10877
+2025-12-04 22:09:59.342 E  SpokenAnyWhere[75899:d8f70] (CoreAudio) throwing -10877
+2025-12-04 22:09:59.426 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] 🎙️ Recording started (engine preparing in background)
+2025-12-04 22:09:59.426 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 🔴 Recording started for: <private>
+2025-12-04 22:09:59.432 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏳ Preparing transcription engine...
+2025-12-04 22:09:59.435 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] Locale 检查耗时: <private>ms
+2025-12-04 22:09:59.435 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 8
+2025-12-04 22:09:59.435 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] DictationTranscriber 创建耗时: <private>ms
+2025-12-04 22:09:59.435 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📥 Downloading speech assets...
+2025-12-04 22:09:59.451 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口选择 | 应用: Antigravity | 窗口数: 1 | 选中: lucid-group — translate.log | 尺寸: 2913x2119
+2025-12-04 22:09:59.569 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📸 截图已保存: OCR_Antigravity_1764857399.png | 尺寸: 2913x2119
+2025-12-04 22:09:59.569 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 窗口捕获 | 2913x2119 | 耗时: 137.4ms
+2025-12-04 22:10:00.405 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ Speech assets installed
+2025-12-04 22:10:00.405 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 资产安装检查耗时: <private>ms
+2025-12-04 22:10:00.406 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📢 Using audio format: <private>
+2025-12-04 22:10:00.406 Df SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 7 个词: 相辅相成, 日志, Claude, Anthropic, Pipeline, hoverd, Gemini
+2025-12-04 22:10:00.504 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 分析器预热耗时: <private>ms
+2025-12-04 22:10:00.504 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzer setup complete for locale: <private>
+2025-12-04 22:10:00.504 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ⏱️ [词典] 总耗时: <private>ms (从 prepare() 开始到可用)
+2025-12-04 22:10:00.504 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider prepared
+2025-12-04 22:10:00.504 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ✅ Engine ready, sending 10 buffered chunks
+2025-12-04 22:10:01.336 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] ✅ 识别完成 | 长度: 1500 字符 | OCR: 1767.3ms | 总计: 1904.7ms
+2025-12-04 22:10:01.337 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📝 文本已保存: ocr_221001.txt
+2025-12-04 22:10:10.436 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:10:10.436 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:10:21.559 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:10:21.559 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:10:52.984 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:10:52.984 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:11:22.554 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:11:22.554 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:11:24.737 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] ✋ Long press (<private>s) released. Stopping.
+2025-12-04 22:11:24.798 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Audio] ⏹️ Recording stopped
+2025-12-04 22:11:24.798 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ⏹️ Recording stopped, AI thinking...
+2025-12-04 22:11:24.957 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Finalized segment: <private>
+2025-12-04 22:11:24.958 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] 📝 Total: <private>
+2025-12-04 22:11:25.364 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:SpeechAnalyzerProvider] ✅ SpeechAnalyzerProvider finished processing
+2025-12-04 22:11:34.198 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #1: transcribed text
+2025-12-04 22:11:34.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 开始构建 | 应用: Antigravity
+2025-12-04 22:11:34.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:ScreenOCRService] 🔍 [OCR] 📋 使用缓存
+2025-12-04 22:11:34.202 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 📱 [AppContext] 构建完成 | 总长度: 1558 字符 | 耗时: 0.1ms
+2025-12-04 22:11:34.203 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] 🤖 Starting LLM refinement...
+2025-12-04 22:11:34.203 I  SpokenAnyWhere[75899:d9fa0] [com.spokeanywhere:LLM] 🤖 LLM request to <private>
+2025-12-04 22:11:37.959 I  SpokenAnyWhere[75899:d9fa0] [com.spokeanywhere:LLM] ✅ Gemini response received (424 chars)
+2025-12-04 22:11:38.114 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:LLMPipeline] ✅ LLM refinement complete
+2025-12-04 22:11:38.114 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] 📋 Clipboard #2: refined text
+2025-12-04 22:11:38.120 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:Recording] ✅ LLM refinement complete: <private>
+2025-12-04 22:11:38.124 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] 📁 Audio saved: <private>
+2025-12-04 22:11:38.125 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HistoryManager] ✅ History item saved: <private>...
+2025-12-04 22:11:38.125 I  SpokenAnyWhere[75899:be6c9] [com.spokeanywhere:HotKey] 🔄 HotKey state reset

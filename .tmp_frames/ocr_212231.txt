@@ -1,0 +1,71 @@
+资源管理器
+v sookeanvwhere
+.serena
+cache/swift
+document_symbols.pkl
+raw_document_symbols.pkl
+memories
+-gitignore
+project.yml
+.tmp_frames
+dev-20251204-164535.log U
+dev-20251204-164853.1og U
+dev-20251204-170634.log U
+dev-20251204-170923.log u
+dev-20251204-171427.log U
+dev-20251204-172131.log U
+dev-20251204-172600.log U
+dev-20251204-173255.log U
+dev-20251204-175823.log U
+dev-20251204-180908.log U
+dev-20251204-181706.log U
+= dev-20251204-181852.1og U
+dev-20251204-182455.log U
+dev-20251204-182738.log U
+dev-20251204-183916.log U
+dev-20251204-184251.log U
+= dev-20251204-184644.1og U
+dev-20251204-185707.log U
+dev-20251204-193759.log u
+dev-20251204-193853.log U
+dev-20251204-194734.log U
+dev-20251204-194908.log U
+dev-20251204-195158.log U
+dev-20251204-195538.log U
+dev-20251204-195624.log U
+dev-20251204-195910.log u
+= dev-20251204-200018.log U
+dev-20251204-200307.log U
+dev-20251204-200907.log U
+日 dev-20251204-200941.log u
+dev-20251204-201519.log u
+曰 dev-20251204-202037log u
+〉大纲
+〉时间线
+〉 Connections
+〉 Tag Explorer
+>Notes
+> Orphans
+g9 main* Cov 6个
+、 spokeanywhere -progress.md
+w
+sereeneerseryiceswit
+2 OCR_Windsurf_-_Next_1764845976.png U
+Users > bigdan >.codeium >windsurf-next>global_workflows 〉m progress.md
+progress.ma
+Package.swift M
+Multilingual Recognition Fix v
+LLMI 元広追芯际4以 11公
+可行方案分析
+Create Workflow
+Description
+方案 A：优化 Apple ASR（当前路线）
+问题：Apple on-device 模型的中英混合能力有限，这是模型层面的限制，无法通过代码改进。
+方案 B：使用 Whisper 等更好的模型
+通用项目进度获取
+Execution Mode
+auroo Maoe
+可行，但需要：
+• 部署服务端（或使用 OpenAI Whisper API）
+• 延迟会增加
+•

@@ -1,0 +1,75 @@
+资源管理器
+V spokeanvwhere
+.serena
+cache /swift
+document_symbols.pkl
+raw_document_symbols.pkl
+memories
+-gitignore
+］ project.yml
+.tmp_frames
+dev-20251204-164535.log U
+dev-20251204-164853.log U
+dev-20251204-170634.log U
+dev-20251204-170923.log u
+= dev-20251204-171427.log U
+dev-20251204-172131.log U
+deV-20251204-172600.log U
+dev-20251204-173255.log U
+dev-20251204-175823.log U
+J dev-20251204-180908.log u
+dev-20251204-181706.log U
+日 dev-20251204-181852.log U
+dev-20251204-182455.log U
+dev-20251204-182738.log U
+dev-20251204-183916.log U
+dev-20251204-184251.log U
+日 dev-20251204-184644.log U
+dev-20251204-185707.log U
+dev-20251204-193759.log u
+dev-20251204-193853.log U
+dev-20251204-194734.log U
+dev-20251204-194908.log U
+dev-20251204-195158.log U
+dev-20251204-195538.log U
+dev-20251204-195624.log U
+dev-20251204-195910.log u
+= dev-20251204-200018.|oa U
+dev-20251204-200307log U
+dev-20251204-200907loa U
+= ocr 195322.txt
+ocr 195551.txt
+= oer 195558 txt
+〉大纲
+〉时间线
+〉 Connections
+〉 Tag Explorer
+>Notes
+> Orphans
+> Placeholders
+89 main* o ov 6个
+⑧0A0
+Q spokeanywhere -Snipaste_2025-12-04_19-11-53.png一 未跟踪的
+w
+D口
+菜
+⑧
+ScreenOCRService.swift U
+.tmp_frames 〉
+2 OCR_Windsurf_-_Next_1764845976.png U
+snipaste_2025-12-04_19-11-53.ong U X
+Snipaste_2025-12-04_19-11-53.png
+Refining App Launch Behavior v Ciy
+十目
+中
+本次修复
+1.⑦ 构建警告已修复
+warning：
+'spoke'： found 5 file（s） which are unhandled
+修复：
+Package.swift 添加 exclude：
+SpokenAnyWhere.app（旧构建产物）
+回dev.sh（开发脚本）
+Bundler.toml （Swift Bundler 配置）
+2.⑦ 日志格式大幅优化
+之前：1.4MB 日志，充满 LaunchSe

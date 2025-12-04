@@ -1,12 +1,15 @@
 import AppKit
 import SwiftUI
 import SwiftData
+import os
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Singleton (for access from HotKeyService)
     static var shared: AppDelegate?
+    
+    private let logger = Logger(subsystem: "com.spokeanywhere", category: "AppDelegate")
     
     // MARK: - Shared ModelContainer (专属路径避免冲突)
     static let sharedModelContainer: ModelContainer = {
@@ -37,38 +40,62 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var shortcutObserver: NSObjectProtocol?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 设置 shared 引用
-        AppDelegate.shared = self
-        // 确保应用可以显示窗口（非 accessory 模式）
-        NSApp.setActivationPolicy(.regular)
-        
-        // 配置 HistoryManager (使用共享 Container)
-        HistoryManager.shared.configure(with: Self.sharedModelContainer.mainContext)
-        
         print("🚀 SpokenAnyWhere started")
         
+        print("📍 Step 0: Installing crash logger...")
+        // 安装崩溃日志记录器
+        CrashLogger.shared.install()
+        
+        print("📍 Step 1: Checking accessibility permission...")
         // 检查辅助功能权限
         checkAccessibilityPermission()
         
-        // 设置菜单栏图标
+        print("📍 Step 2: Setting up status bar...")
+        // 创建状态栏图标
         setupMenuBar()
         
-        // 启动剪贴板历史服务
+        print("📍 Step 3: Starting clipboard service...")
         ClipboardHistoryService.shared.start()
         
-        // 启动录音控制器
+        print("📍 Step 4: Starting recording controller...")
         RecordingController.shared.start()
         
-        // 执行历史记录自动清理
+        print("📍 Step 5: Configuring HistoryManager...")
+        // 先配置 HistoryManager 的 ModelContext
+        HistoryManager.shared.configure(with: Self.sharedModelContainer.mainContext)
+        
+        print("📍 Step 6: Performing history cleanup...")
         performHistoryCleanup()
         
-        // 预热词典（后台异步）
-        Task {
-            await TranscriptionManager.shared.prepareDictionary()
+        // 双轨词典注入策略：
+        // 1. contextualStrings（轻量级）- 每次录音时实时注入，无需预编译
+        // 2. 预编译 LM（重量级）- 启动时后台准备，准备好后提供更强识别效果
+        // 只有当前选择的模型支持预编译 LM 时才执行
+        if #available(macOS 26.0, *) {
+            let config = TranscriptionModelManager.shared.getProviderConfiguration()
+            if config.enablePrecompiledLM {
+                print("📍 Step 6.5: Starting dictionary precompilation (background)...")
+                Task.detached(priority: .background) {
+                    await TranscriptionManager.shared.prepareDictionary()
+                }
+            } else {
+                print("📍 Step 6.5: Skipping precompilation (model doesn't support it)")
+            }
+        } else {
+            // macOS 25 及以下，使用 SFSpeechRecognizer，支持预编译
+            print("📍 Step 6.5: Starting dictionary precompilation (background)...")
+            Task.detached(priority: .background) {
+                await TranscriptionManager.shared.prepareDictionary()
+            }
         }
         
-        // 启动触控板手势监听
+        print("📍 Step 7: Setting up trackpad gesture...")
         setupTrackpadGesture()
+        
+        print("📍 Step 8: Starting resource monitor...")
+        setupResourceMonitor()
+        
+        print("📍 Step 9: Application launch complete!")
     }
     
     private func setupTrackpadGesture() {
@@ -114,9 +141,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    private func setupResourceMonitor() {
+        let monitor = ResourceMonitor.shared
+        
+        // 阈值配置
+        monitor.cpuThreshold = 150  // CPU 150%（多核可能超100%）
+        monitor.memoryThresholdMB = 800  // 内存 800MB
+        
+        // 启动监控，超限时降级
+        monitor.start(interval: 3.0) {
+            NSLog("⚠️ 资源超限！执行降级策略...")
+            
+            // 降级策略：停止非关键服务
+            Task { @MainActor in
+                // 1. 停止剪贴板监控
+                ClipboardHistoryService.shared.stop()
+                
+                // 2. 关闭 MessagePanel
+                MessagePanelManager.shared.hide()
+                
+                NSLog("🔻 已降级：停止剪贴板监控、关闭面板")
+            }
+        }
+    }
+    
     func applicationWillTerminate(_ notification: Notification) {
         RecordingController.shared.stop()
         TrackpadGestureService.shared.stop()
+        ResourceMonitor.shared.stop()
     }
     
     // MARK: - Private
@@ -157,6 +209,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
         
         menu.addItem(NSMenuItem.separator())
+        
+        // 实时字幕
+        let captionItem = NSMenuItem(title: "实时字幕", action: #selector(toggleLiveCaption), keyEquivalent: "s")
+        captionItem.keyEquivalentModifierMask = .option
+        menu.addItem(captionItem)
+        
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
         statusItem?.menu = menu
@@ -179,6 +238,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func updateHotkeyMenuItem() {
         hotkeyMenuItem?.title = "快捷键: \(AppSettings.shared.shortcutDisplayString)"
+    }
+    
+    @objc func toggleLiveCaption() {
+        LiveCaptionWindowManager.shared.toggle()
     }
     
     @objc func openSettings() {

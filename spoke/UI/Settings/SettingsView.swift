@@ -345,11 +345,23 @@ struct GeneralSettingsContent: View {
 // MARK: - Models Settings
 
 struct ModelsSettingsContent: View {
+    var body: some View {
+        if #available(macOS 26.0, *) {
+            TranscriptionModelSettingsView()
+        } else {
+            // Fallback for older macOS versions
+            ModelsSettingsContentLegacy()
+        }
+    }
+}
+
+/// Legacy model settings for macOS < 26
+struct ModelsSettingsContentLegacy: View {
     @AppStorage("SelectedDictationModel") private var selectedModel: String = "apple_ondevice"
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("语音转文字引擎")
+            Text("Speech Recognition Engine")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.gray)
                 .padding(.leading, 4)
@@ -358,7 +370,7 @@ struct ModelsSettingsContent: View {
                 ModelOptionRow(
                     icon: "apple.logo",
                     title: "Apple Dictation",
-                    description: "系统内置，离线可用，隐私安全",
+                    description: "Built-in, offline, privacy-first",
                     isSelected: selectedModel == "apple_ondevice",
                     isAvailable: true
                 ) {
@@ -368,28 +380,24 @@ struct ModelsSettingsContent: View {
                 Divider().background(Color.white.opacity(0.06))
                 
                 ModelOptionRow(
-                    icon: "cloud",
-                    title: "OpenAI Whisper",
-                    description: "云端处理，高精度，需要 API Key",
-                    isSelected: selectedModel == "openai_whisper",
+                    icon: "waveform.badge.magnifyingglass",
+                    title: "Apple SpeechTranscriber",
+                    description: "Stronger model, requires macOS 26+",
+                    isSelected: false,
                     isAvailable: false,
                     comingSoon: true
-                ) {
-                    // Coming soon
-                }
+                ) { }
                 
                 Divider().background(Color.white.opacity(0.06))
                 
                 ModelOptionRow(
-                    icon: "cpu",
-                    title: "Whisper.cpp 本地",
-                    description: "本地 CoreML 模型，完全离线",
-                    isSelected: selectedModel == "local_whisper",
+                    icon: "cloud",
+                    title: "OpenAI Whisper",
+                    description: "Cloud processing, high accuracy",
+                    isSelected: selectedModel == "openai_whisper",
                     isAvailable: false,
                     comingSoon: true
-                ) {
-                    // Coming soon
-                }
+                ) { }
             }
         }
     }
@@ -661,7 +669,7 @@ struct AISettingsContent: View {
                         get: { llmSettings.includeActiveApp },
                         set: { llmSettings.includeActiveApp = $0 }
                     )) {
-                        Label("包含当前应用", systemImage: "app.badge")
+                        Label("应用上下文", systemImage: "text.viewfinder")
                             .font(.system(size: 12))
                     }
                     .toggleStyle(.switch)

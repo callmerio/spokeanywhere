@@ -312,7 +312,9 @@ final class TrackpadGestureService {
                 timestamp: timestamp,
                 fingerCount: fingerCount
             )
-            NSLog("👆 双指手势开始: x=%.3f, 左边缘=%@, 手指=%d", avgX, isFromLeftEdge ? "YES" : "NO", fingerCount)
+            if debugMode {
+                NSLog("👆 双指手势开始: x=%.3f, 左边缘=%@, 手指=%d", avgX, isFromLeftEdge ? "YES" : "NO", fingerCount)
+            }
         }
         
         guard let start = gestureStart else { return }

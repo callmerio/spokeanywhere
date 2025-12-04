@@ -41,8 +41,9 @@ enum DictionaryInjectionResult {
 
 // MARK: - Apple Speech Injector
 
-/// Apple SFSpeechRecognizer 词典注入器
-/// 使用 iOS 17+ 的 SFSpeechLanguageModel 自定义语言模型
+/// Apple SFSpeechRecognizer / DictationTranscriber 词典注入器
+/// 使用 iOS 17+ / macOS 14+ 的 SFSpeechLanguageModel 自定义语言模型
+/// 支持预编译 LM，适用于 SFSpeechRecognizer 和 DictationTranscriber
 @available(macOS 14.0, iOS 17.0, *)
 final class AppleSpeechDictionaryInjector: DictionaryInjector {
     
@@ -63,6 +64,16 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
     /// 是否已准备好
     private var isPrepared = false
     
+    /// 预编译 LM 配置（供 DictationTranscriber 使用）
+    /// 注意：此属性在 prepare() 成功后可用
+    var languageModelConfiguration: SFSpeechLanguageModel.Configuration? {
+        guard isPrepared, let outputURL = modelOutputURL else { return nil }
+        if let lexiconURL = lexiconOutputURL {
+            return SFSpeechLanguageModel.Configuration(languageModel: outputURL, vocabulary: lexiconURL)
+        }
+        return SFSpeechLanguageModel.Configuration(languageModel: outputURL)
+    }
+    
     // MARK: - DictionaryInjector
     
     var needsRePrepare: Bool {
@@ -80,22 +91,28 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
         
         // 检查缓存是否有效
         if isPrepared && currentEntriesHash == newHash && modelOutputURL != nil {
-            logger.info("📚 Using cached language model")
+            logger.info("📚 Using cached language model (词典未变化)")
             return
         }
         
-        logger.info("📚 Preparing custom language model with \(entries.count) entries...")
+        let totalStartTime = CFAbsoluteTimeGetCurrent()
+        logger.info("📚 [预编译 LM] 开始准备自定义语言模型，词条数: \(entries.count)")
         
         // 1. 构建训练数据
-        let trainingData = try buildTrainingData(from: entries)
+        let buildStartTime = CFAbsoluteTimeGetCurrent()
+        let trainingData = buildTrainingData(from: entries)
+        logger.info("⏱️ [预编译 LM] 构建训练数据耗时: \(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - buildStartTime) * 1000))ms")
         
         // 2. 写入临时文件
+        let writeStartTime = CFAbsoluteTimeGetCurrent()
         let inputURL = try await writeTrainingData(trainingData)
+        logger.info("⏱️ [预编译 LM] 写入临时文件耗时: \(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - writeStartTime) * 1000))ms")
         
         // 3. 准备输出路径
         let (outputURL, lexiconURL) = prepareOutputURLs()
         
         // 4. 执行预处理（耗时操作）
+        let prepareStartTime = CFAbsoluteTimeGetCurrent()
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             SFSpeechLanguageModel.prepareCustomLanguageModel(
                 for: inputURL,
@@ -109,6 +126,8 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
                 }
             }
         }
+        let prepareTime = (CFAbsoluteTimeGetCurrent() - prepareStartTime) * 1000
+        logger.info("⏱️ [预编译 LM] SFSpeechLanguageModel.prepareCustomLanguageModel 耗时: \(String(format: "%.2f", prepareTime))ms")
         
         // 5. 更新状态
         self.modelOutputURL = outputURL
@@ -116,7 +135,9 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
         self.currentEntriesHash = newHash
         self.isPrepared = true
         
-        logger.info("✅ Custom language model prepared successfully")
+        let totalTime = (CFAbsoluteTimeGetCurrent() - totalStartTime) * 1000
+        logger.info("✅ [预编译 LM] 自定义语言模型准备完成，总耗时: \(String(format: "%.2f", totalTime))ms")
+        logger.info("📍 [预编译 LM] 模型路径: \(outputURL.path)")
     }
     
     func apply<T>(to request: inout T) throws {
@@ -164,33 +185,36 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
         return currentHash != currentEntriesHash
     }
     
-    private func buildTrainingData(from entries: [DictionaryEntry]) throws -> SFCustomLanguageModelData {
+    private func buildTrainingData(from entries: [DictionaryEntry]) -> SFCustomLanguageModelData {
         let locale = Locale(identifier: "zh-CN")
         
-        return try SFCustomLanguageModelData(
+        return SFCustomLanguageModelData(
             locale: locale,
             identifier: "com.spokeanywhere.dictionary",
             version: "1.0"
         ) {
+            // 双轨策略：
+            // 1. 单词本身作为基础（contextualStrings 也会注入）
+            // 2. 用户纠正时收集的完整句子作为训练短语（WWDC23 推荐方式）
+            
+            let weightLevel = UserDefaults.standard.dictionaryWeightLevel
+            
             for entry in entries {
-                // ✅ 只加入正确词形，提高其识别概率
-                // ❌ corrections 不应该加入，它们是错误形式，应该在后处理阶段处理
-                //
-                // count 是软权重（相对频率），不是强制替换：
-                // - 高 count = ASR 更倾向于识别成这个词
-                // - 但上下文不对时，ASR 仍会选择更合适的词
-                //
-                // 权重策略（根据用户设置）：
-                // - 基础权重：由 weightLevel 决定（轻量=3, 标准=8, 增强=20）
-                // - 加上使用频率：高频词更容易识别
-                // - 上限：由 weightLevel 决定（轻量=15, 标准=40, 增强=80）
-                let weightLevel = UserDefaults.standard.dictionaryWeightLevel
-                let weight = min(weightLevel.baseWeight + entry.frequency, weightLevel.maxWeight)
+                let weight = weightLevel.baseWeight + entry.frequency
                 
+                // 单词本身
                 SFCustomLanguageModelData.PhraseCount(
                     phrase: entry.word,
                     count: weight
                 )
+                
+                // 用户收集的训练短语（效果更强）
+                for phrase in entry.trainingPhrases {
+                    SFCustomLanguageModelData.PhraseCount(
+                        phrase: phrase,
+                        count: weight * 2  // 用户主动收集的短语给更高权重
+                    )
+                }
             }
         }
     }

@@ -17,6 +17,7 @@ final class LLMPipeline {
     private let settings = LLMSettings.shared
     private let contextService = ContextService.shared
     private let clipboardHistory = ClipboardHistoryService.shared
+    private let screenOCR = ScreenOCRService.shared
     
     // MARK: - Properties
     
@@ -122,7 +123,7 @@ final class LLMPipeline {
             )
         } else {
             // 使用默认设置构建提示词
-            prompt = buildPrompt(for: text)
+            prompt = await buildPrompt(for: text)
         }
         
         // 调试：打印完整 Prompt
@@ -148,13 +149,15 @@ final class LLMPipeline {
     
     // MARK: - Private
     
-    private func buildPrompt(for text: String) -> LLMPrompt {
+    private func buildPrompt(for text: String) async -> LLMPrompt {
         var systemPrompt = settings.systemPrompt
         
-        // 添加上下文信息
+        // 添加应用上下文（OCR 内容）
         if settings.includeActiveApp {
-            if let appName = contextService.getCurrentTargetApp()?.name {
-                systemPrompt += "\n\n当前应用: \(appName)"
+            let appContext = await buildAppContext()
+            if !appContext.isEmpty {
+                // 放在独立区块，明确告知这是参考上下文，不要影响转录核心任务
+                systemPrompt += "\n\n" + appContext
             }
         }
         
@@ -179,6 +182,44 @@ final class LLMPipeline {
             userMessage: text,
             contextAppName: contextService.getCurrentTargetApp()?.name
         )
+    }
+    
+    /// 构建应用上下文（应用名 + 窗口 OCR）
+    private func buildAppContext() async -> String {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        
+        guard let app = contextService.getCurrentTargetApp() else {
+            logger.info("📱 [AppContext] 无聚焦应用")
+            return ""
+        }
+        
+        logger.info("📱 [AppContext] 开始构建 | 应用: \(app.name, privacy: .public)")
+        
+        var context = "【应用上下文 - 仅用于理解用户意图，不要将无关内容混入转录】"
+        context += "\n当前应用: \(app.name)"
+        
+        // 优先等待预取结果（已在录音开始时触发），否则实时获取
+        var ocrText = await screenOCR.awaitPrefetch()
+        if ocrText == nil {
+            ocrText = await screenOCR.getActiveWindowText(maxLength: 1500)
+        }
+        
+        if let ocrText = ocrText {
+            // 清理 OCR 文本：移除过多空白行
+            let cleanedText = ocrText
+                .components(separatedBy: .newlines)
+                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+                .joined(separator: "\n")
+            
+            if !cleanedText.isEmpty {
+                context += "\n窗口内容摘要:\n\(cleanedText)"
+            }
+        }
+        
+        let totalTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+        logger.info("📱 [AppContext] 构建完成 | 总长度: \(context.count, privacy: .public) 字符 | 耗时: \(String(format: "%.1f", totalTime), privacy: .public)ms")
+        
+        return context
     }
     
     /// 构建词典纠错提示

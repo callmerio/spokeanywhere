@@ -1,0 +1,933 @@
+Filtering the log data using "process == "SpokenAnyWhere" AND (NOT subsystem BEGINSWITH "com.apple.coreaudio") AND (NOT subsystem BEGINSWITH "com.apple.BoardServices") AND (NOT subsystem BEGINSWITH "com.apple.avfaudio") AND (NOT subsystem BEGINSWITH "com.apple.xpc")"
+Timestamp               Ty Process[PID:TID]
+2025-12-04 17:14:28.836 A  SpokenAnyWhere[32176:2cc6b] (libsystem_info.dylib) Retrieve User by ID
+2025-12-04 17:14:28.845 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) No windows open yet
+2025-12-04 17:14:28.845 A  SpokenAnyWhere[32176:2cc6b] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:14:28.850 Df SpokenAnyWhere[32176:2cc6b] [com.apple.SkyLight:default] server port 0x00003007, session port 0x00003007
+2025-12-04 17:14:28.875 Df SpokenAnyWhere[32176:2cc6b] [com.apple.SkyLight:default] New connection 0x112767 main
+2025-12-04 17:14:28.878 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] CHECKIN: pid=32176
+2025-12-04 17:14:28.882 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] CHECKEDIN: pid=32176 asn=0x0-0x108108 foreground=0
+2025-12-04 17:14:28.883 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] FRONTLOGGING: version 1
+2025-12-04 17:14:28.883 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] Registered, pid=32176 ASN=0x0,0x108108
+2025-12-04 17:14:28.884 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] BringForward: pid=32176 asn=0x0-0x108108 bringForward=0 foreground=0 uiElement=1 launchedByLS=1 modifiersCount=1 allDisabled=0
+2025-12-04 17:14:28.884 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] BringFrontModifier: pid=32176 asn=0x0-0x108108 Modifier 0 hideAfter=0 hideOthers=0 dontMakeFrontmost=0 mouseDown=0/0 seed=0/0
+2025-12-04 17:14:28.884 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Appearance] Current system appearance, (HLTB: 2), (SLS: 1)
+2025-12-04 17:14:28.886 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) No persisted cache on this platform.
+2025-12-04 17:14:28.887 Df SpokenAnyWhere[32176:2cc9f] [com.apple.CoreAnalytics:client] Received configuration update from daemon (initial)
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) Could not get size of EAN data (IOConnectCallScalarMethod kAppleNVMeEANGetSize returned 0xE00002E2)
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) Failed to copy 'aptk' from EAN
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) Failed to copy APTicket properties. Falling back to default policy.
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) Creating default MGSysConfigPolicy
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) syscfg is not initialized!
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) CFDictionaryRef copySyscfgDictionary(void) enumeration of <private> failed.
+2025-12-04 17:14:28.889 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) Failed to find key <private>
+2025-12-04 17:14:28.890 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Appearance] Current system appearance, (HLTB: 2), (SLS: 1)
+2025-12-04 17:14:28.892 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Appearance] Post-registration system appearance: (HLTB: 2)
+2025-12-04 17:14:28.893 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] FBSWorkspace: endpoint monitoring is disabled.
+2025-12-04 17:14:28.893 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] FBSWorkspace: default shell endpoint is disabled.
+2025-12-04 17:14:28.893 Df SpokenAnyWhere[32176:2cc6b] [com.apple.runningboard:connection] Initializing connection
+2025-12-04 17:14:28.893 Df SpokenAnyWhere[32176:2cc6b] [com.apple.runningboard:process] Removing all cached process handles
+2025-12-04 17:14:28.893 Df SpokenAnyWhere[32176:2cc9f] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2025-12-04 17:14:28.893 Df SpokenAnyWhere[32176:2cc9f] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2025-12-04 17:14:28.894 A  SpokenAnyWhere[32176:2cc9d] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:14:28.894 Df SpokenAnyWhere[32176:2cc9f] [com.apple.runningboard:connection] Handshake succeeded
+2025-12-04 17:14:28.894 Df SpokenAnyWhere[32176:2cc9f] [com.apple.runningboard:connection] Identity resolved as app<application.app.spokenly.330876405.330876416(501)>
+2025-12-04 17:14:28.909 Df SpokenAnyWhere[32176:2cc9d] [com.apple.appintents:Connection] Created a new Process Instance Registry XPC connection (inactive)
+2025-12-04 17:14:28.909 Df SpokenAnyWhere[32176:2cc9d] [com.apple.appintents:Connection] Activated connection to com.apple.linkd.autoShortcut (ApplicationService)
+2025-12-04 17:14:28.910 Df SpokenAnyWhere[32176:2cc9d] [com.apple.appintents:Connection] Registered process with identifier 32176-69920
+2025-12-04 17:14:28.915 A  SpokenAnyWhere[32176:2cc6b] (libsystem_info.dylib) Membership API: translate identifier
+2025-12-04 17:14:28.920 A  SpokenAnyWhere[32176:2cc9f] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:28.920 Df SpokenAnyWhere[32176:2cc6b] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2025-12-04 17:14:28.921 Df SpokenAnyWhere[32176:2cc6b] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 17:14:28.921 Df SpokenAnyWhere[32176:2cc6b] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 17:14:28.921 Df SpokenAnyWhere[32176:2cc6b] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2025-12-04 17:14:28.945 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From System CFPrefsD
+2025-12-04 17:14:28.946 Df SpokenAnyWhere[32176:2cc6b] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.gms.availability.notification
+2025-12-04 17:14:28.946 Df SpokenAnyWhere[32176:2cc6b] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.os-eligibility-domain.change.greymatter
+2025-12-04 17:14:28.946 Df SpokenAnyWhere[32176:2cc6b] [com.apple.GenerativeModels:availability] registering darwin observer for name: com.apple.language.changed
+2025-12-04 17:14:28.946 Df SpokenAnyWhere[32176:2cc6b] [com.apple.WritingTools:Default] isAvailable value changed: isMDMAllowed = true, gmAvailable (current) = true
+2025-12-04 17:14:28.948 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:28.953 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] SignalReady: pid=32176 asn=0x0-0x108108
+2025-12-04 17:14:28.953 Df SpokenAnyWhere[32176:2cc6b] [com.apple.processmanager:front-35286506] SIGNAL: pid=32176 asn=0x0x-0x108108
+2025-12-04 17:14:28.954 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From System CFPrefsD
+2025-12-04 17:14:28.969 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) Restoring windows
+2025-12-04 17:14:28.969 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:StateRestoration] -[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:withFullFidelity:completionHandler:] shouldRestoreState=1 hasPersistentStateToRestore=0 shouldStillRestoreStateAfterPrompting=0
+2025-12-04 17:14:28.970 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _NSEnableAutomaticTerminationAndLog(NSString *) Restoring windows
+2025-12-04 17:14:28.971 A  SpokenAnyWhere[32176:2cc6b] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:14:28.978 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:28.978 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:28.989 A  SpokenAnyWhere[32176:2cc9f] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:14:28.991 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Appearance] NSApp cache appearance:
+-NSRequiresAquaSystemAppearance: 0
+-appearance: (null)
+-effectiveAppearance: <NSCompositeAppearance: 0xa2ac30460
+ (
+    "<NSDarkAquaAppearance: 0xa2ac308c0>",
+    "<NSSystemAppearance: 0xa2ac30820>"
+)>
+2025-12-04 17:14:28.996 Df SpokenAnyWhere[32176:2cc9d] [com.apple.corespotlight:index] (<private>) deleteSearchableItemsWithDomainIdentifiers, protectionClass:(null), domainIdentifiers number:1
+2025-12-04 17:14:28.996 A  SpokenAnyWhere[32176:2cc9d] (CoreSpotlight) delete-domains
+2025-12-04 17:14:28.996 Df SpokenAnyWhere[32176:2cc9e] (CoreSpotlight) sConnectionName: com.apple.spotlight.IndexAgent
+2025-12-04 17:14:28.996 Df SpokenAnyWhere[32176:2cc9e] (CoreSpotlight) Start service name com.apple.spotlight.IndexAgent
+2025-12-04 17:14:28.997 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] FBSWorkspace registering source: <private>
+2025-12-04 17:14:28.997 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <private>
+2025-12-04 17:14:28.998 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0xa2ac33480 <private>> attempting immediate handshake from activate
+2025-12-04 17:14:28.998 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0xa2ac33480 <private>> sent handshake
+2025-12-04 17:14:28.998 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemSceneHostSettings__ on FBSSceneSettings
+2025-12-04 17:14:28.998 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemSceneClientSettings__ on FBSSceneClientSettings
+2025-12-04 17:14:28.998 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2025-12-04 17:14:28.999 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2025-12-04 17:14:29.000 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0xa2ac338e0; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5> from com.apple.controlcenter.statusitems
+2025-12-04 17:14:29.000 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] Request for <FBSScene: 0xa2ac338e0; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5> complete!
+2025-12-04 17:14:29.000 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2025-12-04 17:14:29.001 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSHostedViewSceneSettings__ on FBSSceneSettings
+2025-12-04 17:14:29.001 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSClientHostedViewSceneSettings__ on FBSSceneClientSettings
+2025-12-04 17:14:29.002 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSStatusItemAuxiliaryViewSceneSettings__ on FBSSceneSettings
+2025-12-04 17:14:29.002 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension __NSClientStatusItemAuxiliaryViewSceneSettings__ on FBSSceneClientSettings
+2025-12-04 17:14:29.002 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0xa2ac33980; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView> from com.apple.controlcenter.statusitems
+2025-12-04 17:14:29.002 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] Request for <FBSScene: 0xa2ac33980; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:14:29.003 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.003 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:14:29.006 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.006 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:14:29.007 Df SpokenAnyWhere[32176:2cc9f] [com.apple.FrontBoard:Common] Request for <FBSScene: 0xa2ac338e0; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5> complete!
+2025-12-04 17:14:29.008 Df SpokenAnyWhere[32176:2cc9f] [com.apple.FrontBoard:Common] Request for <FBSScene: 0xa2ac33980; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:14:29.009 Df SpokenAnyWhere[32176:2cc9f] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0xa2ac33480 <private>> Reconnecting scene com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5
+2025-12-04 17:14:29.009 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.009 Df SpokenAnyWhere[32176:2cc9f] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0xa2ac33480 <private>> Reconnecting scene com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView
+2025-12-04 17:14:29.004 A  SpokenAnyWhere[32176:2cc9e] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:14:29.125 A  SpokenAnyWhere[32176:2cc6b] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:14:29.128 Df SpokenAnyWhere[32176:2cc6b] [com.apple.SkyLight:default] server port 0x0000b70b, session port 0x00003007
+2025-12-04 17:14:29.135 Df SpokenAnyWhere[32176:2cc6b] (Foundation) <private>
+2025-12-04 17:14:29.137 Df SpokenAnyWhere[32176:2cc6b] (Foundation) <private>
+2025-12-04 17:14:29.138 Df SpokenAnyWhere[32176:2cc6b] (Foundation) <private>
+2025-12-04 17:14:29.138 Df SpokenAnyWhere[32176:2cc6b] (Foundation) <private>
+2025-12-04 17:14:29.138 Df SpokenAnyWhere[32176:2cc6b] (Foundation) <private>
+2025-12-04 17:14:29.142 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.158 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.159 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.166 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] Requesting scene <FBSScene: 0xa2a056260; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView> from com.apple.controlcenter.statusitems
+2025-12-04 17:14:29.167 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] Request for <FBSScene: 0xa2a056260; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:14:29.167 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.167 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView] Dropping transition context because the scene is reconnecting
+2025-12-04 17:14:29.167 Df SpokenAnyWhere[32176:2cc9e] [com.apple.FrontBoard:Common] Request for <FBSScene: 0xa2a056260; com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView> complete!
+2025-12-04 17:14:29.167 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 17:14:29.167 Df SpokenAnyWhere[32176:2cc9e] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0xa2ac33480 <private>> Reconnecting scene com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView
+2025-12-04 17:14:29.170 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.173 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.173 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:WarnOnce] It's not legal to call -layoutSubtreeIfNeeded on a view which is already being laid out.  If you are implementing the view's -layout method, you can call -[super layout] instead.  Break on void _NSDetectedLayoutRecursion(void) to debug.  This will be logged only once.  This may break in the future.
+2025-12-04 17:14:29.173 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Aux[1]-NSStatusItemView] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.174 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.177 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 17:14:29.178 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5-Replicant[1]-Aux[1]-NSStatusItemView] Received action(s) in scene-update: NSSceneFenceAction
+2025-12-04 17:14:29.185 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.273 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.285 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:29.353 A  SpokenAnyWhere[32176:2ccb7] (CoreSpotlight) end-index-batch
+2025-12-04 17:14:29.353 Df SpokenAnyWhere[32176:2ccb7] [com.apple.corespotlight:index] *warn* MailCS ======%%% _setMailMessageAttributes skip:1
+2025-12-04 17:14:29.353 Df SpokenAnyWhere[32176:2ccb7] (CoreSpotlight) Start service name com.apple.spotlightknowledged
+2025-12-04 17:14:29.354 Df SpokenAnyWhere[32176:2ccb7] [com.apple.corespotlight:default] [GMS] availability notification token 87
+2025-12-04 17:14:29.356 A  SpokenAnyWhere[32176:2ccb7] (CoreSpotlight) index-items
+2025-12-04 17:14:33.986 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=1
+2025-12-04 17:14:38.887 Df SpokenAnyWhere[32176:2ccc3] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 17:14:39.974 Df SpokenAnyWhere[32176:2cc9f] [com.apple.launchservices:default] LSExceptions shared instance invalidated for timeout.
+2025-12-04 17:14:43.372 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _NSEnableAutomaticTerminationAndLog(NSString *) No windows open yet
+2025-12-04 17:14:43.373 Df SpokenAnyWhere[32176:2cc9f] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 17:14:43.374 Df SpokenAnyWhere[32176:2cc9f] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 17:14:43.379 A  SpokenAnyWhere[32176:2cc6b] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:14:43.379 F  SpokenAnyWhere[32176:2cc6b] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:14:43.380 A  SpokenAnyWhere[32176:2cc6b] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:14:43.380 F  SpokenAnyWhere[32176:2cc6b] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:14:43.385 A  SpokenAnyWhere[32176:2cc6b] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:14:43.385 F  SpokenAnyWhere[32176:2cc6b] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:14:43.385 A  SpokenAnyWhere[32176:2cc6b] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:14:43.385 F  SpokenAnyWhere[32176:2cc6b] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:14:43.470 A  SpokenAnyWhere[32176:2cc9f] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:14:43.874 A  SpokenAnyWhere[32176:2ccc3] (CoreSpotlight) end-index-batch
+2025-12-04 17:14:43.875 A  SpokenAnyWhere[32176:2ccc3] (CoreSpotlight) index-items
+2025-12-04 17:14:44.476 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:44.479 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2025-12-04 17:14:45.577 Df SpokenAnyWhere[32176:2ce06] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:14:45.578 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:45.580 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.586 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.590 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.604 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.620 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.635 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.652 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.696 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:45.698 Df SpokenAnyWhere[32176:2ccc3] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:14:48.283 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:48.292 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:48.292 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:48.303 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:48.333 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:48.365 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.541 Df SpokenAnyWhere[32176:2cc9f] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:14:49.542 Df SpokenAnyWhere[32176:2cc9f] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:14:49.543 Df SpokenAnyWhere[32176:2cc9f] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:14:49.544 Df SpokenAnyWhere[32176:2cc9f] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:14:49.546 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.557 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.560 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.568 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.585 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.604 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.619 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:49.645 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:52.091 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:52.131 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:52.138 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:52.154 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:14:52.982 Df SpokenAnyWhere[32176:2cf63] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 17:14:53.065 A  SpokenAnyWhere[32176:2cf63] (CoreSpotlight) end-index-batch
+2025-12-04 17:14:53.065 A  SpokenAnyWhere[32176:2cf63] (CoreSpotlight) index-items
+2025-12-04 17:14:53.258 Df SpokenAnyWhere[32176:2cf63] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 17:14:53.258 Df SpokenAnyWhere[32176:2cf63] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 17:14:53.265 A  SpokenAnyWhere[32176:2cf63] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:14:53.285 A  SpokenAnyWhere[32176:2cf60] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:14:53.745 A  SpokenAnyWhere[32176:2cc9f] (CoreSpotlight) end-index-batch
+2025-12-04 17:14:53.746 A  SpokenAnyWhere[32176:2cc9f] (CoreSpotlight) index-items
+2025-12-04 17:14:55.283 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.295 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.296 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.307 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.323 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.338 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.355 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.369 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.385 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.402 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.419 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.435 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.452 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.469 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:55.485 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:57.428 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.429 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.429 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.429 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.429 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.430 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.430 E  SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Menu] Internal inconsistency in menus - menu <private> believes it has <private> as a supermenu, but the supermenu does not seem to have any item with that submenu
+2025-12-04 17:14:57.459 Df SpokenAnyWhere[32176:2cc6b] [com.apple.extensionkit:NSExtension] Class EXGetExtensionClass(void) returning EXConcreteExtension
+2025-12-04 17:14:57.460 A  SpokenAnyWhere[32176:2cc6b] (PlugInKit) continuous-discovery
+2025-12-04 17:14:57.460 Df SpokenAnyWhere[32176:2cc6b] [com.apple.PlugInKit:discovery] <PKDiscoveryDriver:0xa29dc0780> created discovery driver
+2025-12-04 17:14:57.460 Df SpokenAnyWhere[32176:2cc6b] [com.apple.PlugInKit:discovery] [d <private>] <PKHost:0xa29c34740> Beginning discovery for flags: 0, point: multiple
+2025-12-04 17:14:57.461 Df SpokenAnyWhere[32176:2cc6b] [com.apple.sharekit:Framework] SHKSharingServicePicker: initialized with items (
+	NSConcreteMutableAttributedString
+)
+2025-12-04 17:14:57.465 Df SpokenAnyWhere[32176:2cf63] [com.apple.PlugInKit:discovery] [d <private>] <PKHost:0xa29c34740> Completed discovery. Final # of matches: 26
+2025-12-04 17:14:57.465 Df SpokenAnyWhere[32176:2cf62] [com.apple.PlugInKit:discovery] <PKDiscoveryDriver:0xa29dc0780> delivering update to host (26 plugins)
+2025-12-04 17:14:57.465 A  SpokenAnyWhere[32176:2cf62] (ExtensionFoundation) discovering extensions
+2025-12-04 17:14:57.467 Df SpokenAnyWhere[32176:2cf62] [com.apple.extensionkit:NSExtension] discovered extensions: attributes <private>, extensionSet {(
+    <EXConcreteExtension: 0xa29d46300> {id = com.apple.dt.Instruments.InstrumentsShareExtension},
+    <EXConcreteExtension: 0xa29d463e0> {id = com.apple.MarkupUI.Markup},
+    <EXConcreteExtension: 0xa29d464c0> {id = com.apple.iBooksX.SharingExtension},
+    <EXConcreteExtension: 0xa29d465a0> {id = com.apple.share.System.set-account-picture},
+    <EXConcreteExtension: 0xa29d46680> {id = com.apple.CloudSharingUI.CreateiCloudLinkExtension},
+    <EXConcreteExtension: 0xa29d46760> {id = ru.keepcoder.Telegram.TelegramShare},
+    <EXConcreteExtension: 0xa29d46840> {id = com.apple.share.System.add-to-safari-reading-list},
+    <EXConcreteExtension: 0xa29d46920> {id = com.apple.share.Mail.compose-back-to-sender},
+    <EXConcreteExtension: 0xa29d46a00> {id = com.apple.CloudSharingUI.CopyLink},
+    <EXConcreteExtension: 0xa29d46ae0> {id = com.apple.Notes.SharingExtension},
+    <EXConcreteExtension: 0xa29d46bc0> {id = com.tencent.xinWeChat.WeChatMacShare},
+    <EXConcreteExtension: 0xa29d46ca0> {id = com.
+2025-12-04 17:14:57.467 Df SpokenAnyWhere[32176:2cf63] [com.apple.PlugInKit:discovery] <PKDiscoveryDriver:0xa29dc0780> installing watchers for continuous discovery
+2025-12-04 17:14:57.467 Df SpokenAnyWhere[32176:2cf63] [com.apple.launchservices:appinstallation] registering for distributed notification com.apple.LaunchServices.pluginsregistered in this process
+2025-12-04 17:14:57.467 Df SpokenAnyWhere[32176:2cf63] [com.apple.launchservices:appinstallation] registering for distributed notification com.apple.LaunchServices.pluginsunregistered in this process
+2025-12-04 17:14:57.484 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:14:57.546 E  SpokenAnyWhere[32176:2cf61] [com.apple.siri:Utility] AFIsDeviceGreymatterEligible Missing entitlements for os_eligibility lookup
+2025-12-04 17:14:57.546 Df SpokenAnyWhere[32176:2cf61] [com.apple.siri:Utility] -[AFSystemAssistantExperienceStatusManager fetchGenerativeModelsAvailability] #SAEStatus #cacheUpdate Updating cache:
+deviceSupportsSAE: 1 (0)
+       saeEnabled: 1 (0)
+     saeAvailable: 1 (0)
+      swaiEnabled: 0 (0)
+        viEnabled: 0 (0)
+2025-12-04 17:14:57.609 A  SpokenAnyWhere[32176:2cf61] (CoreSpotlight) end-index-batch
+2025-12-04 17:14:57.609 A  SpokenAnyWhere[32176:2cf61] (CoreSpotlight) index-items
+2025-12-04 17:14:58.977 E  SpokenAnyWhere[32176:2cf63] [com.apple.BaseBoard:Common] Unable to obtain a task name port right for pid 406: (os/kern) failure (0x5)
+2025-12-04 17:14:58.978 A  SpokenAnyWhere[32176:2cc6b] (AppKit) perform action for menu item
+2025-12-04 17:14:58.978 Df SpokenAnyWhere[32176:2cf63] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2025-12-04 17:14:58.978 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:14:59.049 Df SpokenAnyWhere[32176:2cc6b] [com.apple.inputmethodkitClient:Client] +[IMKClient subclass]: chose IMKClient_Modern
+2025-12-04 17:14:59.051 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:14:59.058 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:14:59.084 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:14:59.092 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:14:59.393 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController activate:]_block_invoke: Create CursorUIViewService: TUINSRemoteViewController
+2025-12-04 17:14:59.467 A  SpokenAnyWhere[32176:2cf63] (CoreSpotlight) end-index-batch
+2025-12-04 17:14:59.467 A  SpokenAnyWhere[32176:2cf63] (CoreSpotlight) index-items
+2025-12-04 17:14:59.607 Df SpokenAnyWhere[32176:2cc6b] [com.apple.inputmethodkitClient:Client] +[IMKInputSession subclass]: chose IMKInputSession_Modern
+2025-12-04 17:15:00.628 Df SpokenAnyWhere[32176:2cc6b] (libMobileGestalt.dylib) Failed to find key <private>
+2025-12-04 17:15:00.643 Df SpokenAnyWhere[32176:2cc6b] (HIToolbox) TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2025-12-04 17:15:00.652 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:00.653 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:00.653 Df SpokenAnyWhere[32176:2cc6b] (HIToolbox) error messaging the mach port for IMKCFRunLoopWakeUpReliable
+2025-12-04 17:15:00.653 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:00.896 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:00.897 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:01.082 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:01.082 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:01.479 Df SpokenAnyWhere[32176:2cf60] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:01.480 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:01.499 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:01.626 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:02.142 Df SpokenAnyWhere[32176:2cf60] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:02.145 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:02.351 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:02.648 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:02.661 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:02.820 Df SpokenAnyWhere[32176:2cc6b] [com.apple.iohid:oversized] Released connection: 01B29BB4-3752-41B6-B4DD-26F1EFE8F784
+{
+    UUID = "01B29BB4-3752-41B6-B4DD-26F1EFE8F784";
+    caller = "HIToolbox: _TISCopyAttachedKeyboardLanguages + 112";
+    dispatchQueue = 0;
+    eventCount = 0;
+    eventMask = 0;
+    port = 97675;
+    resetCount = 0;
+    runloop = 0;
+    services =     (
+        4294971590,
+        4294971611,
+        4294972299
+    );
+    virtualServices =     (
+    );
+}
+2025-12-04 17:15:02.825 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:03.050 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:03.100 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:03.103 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:03.301 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:03.443 Df SpokenAnyWhere[32176:2cc6b] [com.apple.TextInputUI:CursorUI] -[TUINSCursorUIController scheduleUpdateCursorLocation]
+2025-12-04 17:15:03.982 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=0
+2025-12-04 17:15:05.291 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:05.293 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:05.294 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:05.570 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:TranscriptionManager] 📚 训练数据变更，后台预编译 LM...
+2025-12-04 17:15:05.571 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:05.971 A  SpokenAnyWhere[32176:2cc6b] (libsystem_info.dylib) Retrieve Group by ID
+2025-12-04 17:15:05.972 Df SpokenAnyWhere[32176:2cc6b] (Speech) Created directory: <private>
+2025-12-04 17:15:06.407 A  SpokenAnyWhere[32176:2cf62] (CoreSpotlight) end-index-batch
+2025-12-04 17:15:06.407 A  SpokenAnyWhere[32176:2cf62] (CoreSpotlight) index-items
+2025-12-04 17:15:08.021 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:08.022 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.030 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.033 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.034 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.044 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.046 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.089 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.675 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:08.677 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:08.678 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:08.679 Df SpokenAnyWhere[32176:2cf62] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:08.680 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.690 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.693 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.702 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.719 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.735 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:08.764 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:09.172 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _updateToReflectAutomaticTerminationState(void) Setting _kLSApplicationWouldBeTerminatedByTALKey=1
+2025-12-04 17:15:09.755 Df SpokenAnyWhere[32176:2cf63] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:09.756 Df SpokenAnyWhere[32176:2cf63] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:09.760 Df SpokenAnyWhere[32176:2cf63] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:09.760 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:09.761 Df SpokenAnyWhere[32176:2cf63] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:09.767 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:09.771 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:09.772 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:09.819 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:10.220 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:10.220 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:10.221 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:10.221 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:10.222 Df SpokenAnyWhere[32176:2cf61] [com.apple.inputAnalytics.client:IASignalAnalytics] channel:<private> signal:<private> sessionID:<private> timestamp:<private> payload:<private>
+2025-12-04 17:15:10.225 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:10.235 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:10.252 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:10.311 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:15:12.246 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:12.289 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:15:12.295 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:15:12.312 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:15:17.013 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:15:18.330 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:18.409 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:23.095 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:23.098 A  SpokenAnyWhere[32176:2cc6b] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:15:23.116 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) NSAccessibility Request Received
+2025-12-04 17:15:38.038 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:39.014 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:15:40.248 Df SpokenAnyWhere[32176:2cc6b] [com.apple.audio.caulk:alloc] Registered notify signal com.apple.caulk.alloc.rtdump (0)
+2025-12-04 17:15:40.254 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOInitializeListenersForBundleID: for <private> -> <private>
+2025-12-04 17:15:40.255 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> vpio_preferenceChangedListener: new value ((null)) for key AUVoiceIOClients/app-spokenly/AUVoiceIOChatFlavor, translatedBundleID app.spokenly, bundleIDs {(
+    "app.spokenly"
+)}
+2025-12-04 17:15:40.255 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> vpio_preferenceChangedListener: new value ((null)) for key AUVoiceIOClients/app-spokenly/AUVoiceIOIsAutoChatFlavorEnabled, translatedBundleID app.spokenly, bundleIDs {(
+    "app.spokenly"
+)}
+2025-12-04 17:15:40.256 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOGetSupportedChatFlavorsForBundleID: <private>-><private> get supported chat flavors: <private>
+2025-12-04 17:15:40.256 Df SpokenAnyWhere[32176:2cc6b] (CoreAudio)             HALSystem.cpp:134    Enabling HAL Voice Isolation support
+2025-12-04 17:15:40.256 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOSetHiddenChatFlavorsForBundleID: <private>-><private> setting to: <private>
+2025-12-04 17:15:40.256 A  SpokenAnyWhere[32176:2cc6b] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:15:40.259 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOSetSupportedChatFlavorsForBundleID: <private>-><private> setting to: <private>
+2025-12-04 17:15:40.271 Df SpokenAnyWhere[32176:2cc6b] (CoreAudio)   HALPlugInManagement.cpp:440    HALPlugInManagement::RegisterPlugIns: skipping in-process plug-ins
+2025-12-04 17:15:40.271 E  SpokenAnyWhere[32176:2cc6b] [com.apple.CFBundle:plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0xa299cee60> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+2025-12-04 17:15:40.320 Df SpokenAnyWhere[32176:2cc6b] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOGetPreferredChatFlavorForBundleID: <private>-><private> get value: 0
+2025-12-04 17:15:40.360 E  SpokenAnyWhere[32176:2d30e] [com.apple.audioanalytics:carc] Reporter disconnected. { function=sendMessage, reporterID=138194867716097 }
+2025-12-04 17:15:42.952 Df SpokenAnyWhere[32176:2cc6b] [com.apple.audio.caulk:alloc] Registered notify signal com.apple.caulk.alloc.audiodump (0)
+2025-12-04 17:15:42.964 E  SpokenAnyWhere[32176:2d30e] (CoreAudio) throwing -10877
+2025-12-04 17:15:42.966 E  SpokenAnyWhere[32176:2d30e] (CoreAudio) throwing -10877
+2025-12-04 17:15:42.995 Df SpokenAnyWhere[32176:2cc6b] (AVFAudio) Audio files cannot be non-interleaved. Ignoring setting AVLinearPCMIsNonInterleaved YES.
+2025-12-04 17:15:43.050 A  SpokenAnyWhere[32176:2d4ba] (TCC) TCCAccessRequest() IPC
+2025-12-04 17:15:43.050 Df SpokenAnyWhere[32176:2d4ba] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOGetPreferredChatFlavorForBundleID: <private>-><private> get value: 0
+2025-12-04 17:15:43.060 Df SpokenAnyWhere[32176:2d4ba] [com.apple.cameracapture:] <<<< AVAUVoiceIOChatFlavor >>>> AVAUVoiceIOSetSupportedChatFlavorsForBundleID: <private>-><private> setting to: <private>
+2025-12-04 17:15:43.110 A  SpokenAnyWhere[32176:2d4ba] (CoreSpotlight) end-index-batch
+2025-12-04 17:15:43.111 A  SpokenAnyWhere[32176:2d4ba] (CoreSpotlight) index-items
+2025-12-04 17:15:43.111 Df SpokenAnyWhere[32176:2d30e] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager supportedLanguagesForTaskHint:completion:] Fetching languages of supported Assistant assets.
+2025-12-04 17:15:43.121 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:15:43.122 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 5
+2025-12-04 17:15:43.123 Df SpokenAnyWhere[32176:2d30e] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager fetchAssetWithConfig:clientIdentifier:expiration:progress:completion:] Client (<private>) fetching the Assistant asset for: <private>
+2025-12-04 17:15:43.201 E  SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:HotKey] ⚠️ Event tap was disabled by system, re-enabling...
+2025-12-04 17:15:44.111 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 3 个词: Pipeline, hoverd, Gemini
+2025-12-04 17:16:22.041 Df SpokenAnyWhere[32176:2cc6b] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2025-12-04 17:16:22.041 Df SpokenAnyWhere[32176:2cc6b] [com.apple.network:] networkd_settings_read_from_file initialized networkd settings by reading plist directly
+2025-12-04 17:16:22.042 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:16:22.042 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> resuming, timeouts(30.0, 30.0) qos(0x19) voucher(<private>) activity(00000000-0000-0000-0000-000000000000)
+2025-12-04 17:16:22.042 A  SpokenAnyWhere[32176:2d7f3] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:22.043 Df SpokenAnyWhere[32176:2d7f3] [com.apple.AppSSO:SOConfigurationClient] -[SOConfigurationClient init]  on <private>
+2025-12-04 17:16:22.043 Df SpokenAnyWhere[32176:2d7f3] [com.apple.AppSSO:SOServiceConnection] <SOServiceConnection: 0xa2994bdc0>: new XPC connection
+2025-12-04 17:16:22.051 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Initializing NSHTTPCookieStorage singleton
+2025-12-04 17:16:22.051 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Initializing CFHTTPCookieStorage singleton
+2025-12-04 17:16:22.051 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Creating default cookie storage with process/bundle identifier
+2025-12-04 17:16:22.051 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Initializing AlternativeServices Storage singleton
+2025-12-04 17:16:22.054 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Garbage collection for alternative services
+2025-12-04 17:16:22.054 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Connection 0: creating secure tcp or quic connection
+2025-12-04 17:16:22.054 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Connection 1: enabling TLS
+2025-12-04 17:16:22.054 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Connection 1: starting, TC(0x0)
+2025-12-04 17:16:22.054 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1 95593BF3-85F3-47D7-BBFB-6A95146DA42D Hostname#3c17972b:443 quic-connection, url hash: 5ba500d9, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{DB1B1959-E522-4533-8230-D6DDBF6D571F}{(null)}{Y}{2}{0x0} (private), proc: 61B73621-F036-3A82-8911-0964E4A5B046, delegated upid: 0] start
+2025-12-04 17:16:22.054 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1 Hostname#3c17972b:443 initial parent-flow ((null))] event: path:start @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1 Hostname#3c17972b:443 waiting parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1 Hostname#3c17972b:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_connect @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C1] reporting state preparing
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1 Hostname#3c17972b:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_child @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 in_progress transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: transform:start @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: B6372ED8-5DEA-48E2-ABDE-C83EF7FF5AAB
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_process @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_process @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_resolve @0.000s
+2025-12-04 17:16:22.055 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_resolve @0.000s
+2025-12-04 17:16:22.056 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 initial path ((null))] event: path:start @0.001s
+2025-12-04 17:16:22.056 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.001s, uuid: 4EE8630A-2157-4C0C-9C32-8DBC3CF6B420
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.002s
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> setting up Connection 1
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] nw_socket_handle_socket_event [C1.1.1.1:4] Socket received CONNECTED event
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] nw_flow_connected [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Transport protocol connected (socket)
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:finish_transport @0.002s
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:boringssl] boringssl_session_apply_protocol_options_for_transport_block_invoke(2280) [C1.1.1.1:2][0xa2ddf3260] TLS configured [min_version(0x0303) max_version(0x0304) name(redacted) tickets(false) false_start(false) enforce_ev(false) enforce_ats(false) ats_non_pfs_ciphersuite_allowed(false) ech(false) pqtls(true), pake(false)]
+2025-12-04 17:16:22.057 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:boringssl] boringssl_context_info_handler(2377) [C1.1.1.1:2][0xa2ddf3260] Client handshake started
+2025-12-04 17:16:22.058 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS client enter_early_data
+2025-12-04 17:16:22.058 Df SpokenAnyWhere[32176:2d4ba] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS client read_server_hello
+2025-12-04 17:16:22.422 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_hello_retry_request
+2025-12-04 17:16:22.422 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_server_hello
+2025-12-04 17:16:22.422 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_encrypted_extensions
+2025-12-04 17:16:22.422 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_certificate_request
+2025-12-04 17:16:22.422 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_server_certificate
+2025-12-04 17:16:22.422 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_server_certificate_verify
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async(1820) [C1.1.1.1:2][0xa2ddf3260] Performing external trust evaluation
+2025-12-04 17:16:22.423 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.423 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyAttributes
+2025-12-04 17:16:22.423 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external(1805) [C1.1.1.1:2][0xa2ddf3260] Asyncing for external verify block
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.CFNetwork:Default] Connection 1: asked to evaluate TLS Trust
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> auth completion disp=1 cred=0x0
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.securityd:trust] (Trust 0xa29a00780) No pending evals, starting
+2025-12-04 17:16:22.423 A  SpokenAnyWhere[32176:2d949] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.securityd:keychain] Enabling System Keychain Always due to platform
+2025-12-04 17:16:22.423 Df SpokenAnyWhere[32176:2d949] [com.apple.securityd:trust] (Trust 0xa29a00780) Completed async eval kickoff
+2025-12-04 17:16:22.425 Df SpokenAnyWhere[32176:2d7f3] [com.apple.securityd:trust] (Trust 0xa29a00780) trustd returned 4
+2025-12-04 17:16:22.425 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] System Trust Evaluation yielded status(0)
+2025-12-04 17:16:22.425 Df SpokenAnyWhere[32176:2d7f3] [com.apple.securityd:trust] (Trust 0xa29a006c0) No pending evals, starting
+2025-12-04 17:16:22.425 A  SpokenAnyWhere[32176:2d7f3] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 17:16:22.425 Df SpokenAnyWhere[32176:2d7f3] [com.apple.securityd:trust] (Trust 0xa29a006c0) Completed async eval kickoff
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.securityd:trust] (Trust 0xa29a006c0) trustd returned 4
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Connection 1: TLS Trust result 0
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external_block_invoke_3(1760) [C1.1.1.1:2][0xa2ddf3260] Returning from external verify block with result: true
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_certificate_verify_callback(2001) [C1.1.1.1:2][0xa2ddf3260] Certificate verification result: OK
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client read_server_finished
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client send_end_of_early_data
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client send_client_encrypted_extensions
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client send_client_certificate
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client complete_second_flight
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS 1.3 client done
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS client finish_client_handshake
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C1.1.1.1:2][0xa2ddf3260] Client handshake state: TLS client done
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] boringssl_context_info_handler(2383) [C1.1.1.1:2][0xa2ddf3260] Client handshake done
+2025-12-04 17:16:22.427 A  SpokenAnyWhere[32176:2d7f3] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.427 A  SpokenAnyWhere[32176:2d7f3] (Security) SecKeyCopyAttributes
+2025-12-04 17:16:22.427 A  SpokenAnyWhere[32176:2d7f3] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:boringssl] nw_protocol_boringssl_signal_connected(895) [C1.1.1.1:2][0xa2ddf3260] TLS connected [server(0) version(0x0304) ciphersuite(TLS_AES_256_GCM_SHA384) group(0x11ec) signature_alg(0x0403) alpn(h2) resumed(0) offered_ticket(0) in_early_data(0) early_data_accepted(0) false_started(0) ocsp_received(0) sct_received(0) connect_time(370ms) flight_time(364ms) rtt(364ms) write_stalls(0) read_stalls(2) pake(0x0000)]
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] nw_flow_connected [C1.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Output protocol connected (CFNetworkConnection-2128001678)
+2025-12-04 17:16:22.427 A  SpokenAnyWhere[32176:2d949] (Security) SecTrustReportNetworkingAnalytics
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:child_finish_connect @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:changed_viability @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] nw_flow_connected [C1 127.0.0.1:7890 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] Output protocol connected (endpoint_flow)
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:finish_connect @0.372s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C1] reporting state ready
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.373s
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] nw_connection_send_viability_changed_on_nw_queue [C1] viability_changed_handler(true)
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Connection 1: connected successfully
+2025-12-04 17:16:22.427 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Connection 1: TLS handshake complete
+2025-12-04 17:16:22.428 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Connection 1: ready C(N) E(N)
+2025-12-04 17:16:22.428 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] [C1] event: client:connection_reused @0.373s
+2025-12-04 17:16:22.428 Df SpokenAnyWhere[32176:2d7f3] [com.apple.network:connection] nw_protocol_socket_notify [C1.1.1.1:4] nw_protocol_notification_type_connection_idle is false
+2025-12-04 17:16:22.428 A  SpokenAnyWhere[32176:2d96f] (Security) SecKeychainAddCallback
+2025-12-04 17:16:22.428 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> now using Connection 1
+2025-12-04 17:16:22.429 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Connection 1: received viability advisory(Y)
+2025-12-04 17:16:22.429 Df SpokenAnyWhere[32176:2d7f3] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> sent request, body S 4038
+2025-12-04 17:16:22.604 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.604 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyAttributes
+2025-12-04 17:16:22.604 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.604 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:22.604 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyAttributes
+2025-12-04 17:16:22.604 A  SpokenAnyWhere[32176:2d949] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:16:23.036 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:23.322 Df SpokenAnyWhere[32176:2d949] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> received response, status 200 content K
+2025-12-04 17:16:23.322 A  SpokenAnyWhere[32176:2d949] (Security) SecTrustEvaluateIfNecessary
+2025-12-04 17:16:23.329 Df SpokenAnyWhere[32176:2d949] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> done using Connection 1
+2025-12-04 17:16:23.329 Df SpokenAnyWhere[32176:2d949] [com.apple.network:connection] [C1] event: client:connection_idle @1.274s
+2025-12-04 17:16:23.329 Df SpokenAnyWhere[32176:2d949] [com.apple.network:connection] nw_protocol_socket_notify [C1.1.1.1:4] nw_protocol_notification_type_connection_idle is true
+2025-12-04 17:16:23.329 Df SpokenAnyWhere[32176:2d949] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> response ended
+2025-12-04 17:16:23.329 Df SpokenAnyWhere[32176:2d94a] [com.apple.CFNetwork:Summary] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> summary for task success {transaction_duration_ms=1284, response_status=200, connection=1, protocol="h2", domain_lookup_duration_ms=0, connect_duration_ms=370, secure_connection_duration_ms=370, private_relay=false, request_start_ms=384, request_duration_ms=0, response_start_ms=1277, response_duration_ms=6, request_bytes=4270, request_throughput_kbps=258857, response_bytes=958, response_throughput_kbps=1144, cache_hit=true}
+2025-12-04 17:16:23.329 Df SpokenAnyWhere[32176:2d94a] [com.apple.CFNetwork:Default] Task <6035BF08-61D5-4DF2-B02A-EC5BF8D02380>.<1> finished successfully
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<< URLAsset >>> FigAssetCreateWithURL: Called for asset 0xa2de913c0 by client [], url [0xa2cdf9a40] <file // redacted-6P+E40 // ???> createFlags 0x8 optionsDict (null)
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:playback-memory] <<< FigOSTransactionsUtilities >>> FigOSTransactionCreateWithProcessName: [Fig Transaction] Added transaction weak reference holder <0xa2b19f4a0>: <private>
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLLoaderCreate: newLoader: 0xa29ab3c60
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.customurl.cfurlconnection.0xa2c61de80 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0xa29ab3c80: handler: 0xa2c61de80 priority: 100
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.authkeychain.0xa2c61ec00 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 17:16:23.364 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0xa29ab3c80: handler: 0xa2c61ec00 priority: 800
+2025-12-04 17:16:23.365 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: called (self: 0xa2b7e3d40, keys: (
+    duration
+), keysForCollectionKeys: (null), handler: non-nil)
+2025-12-04 17:16:23.365 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Calling FigAssetLoadValuesAsyncForProperties for properties (
+    Duration
+)
+2025-12-04 17:16:23.365 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Batch 0xa2a528460: asset batch ID = 1 (err=0, alreadyLoaded=0)
+2025-12-04 17:16:23.369 Df SpokenAnyWhere[32176:2d99f] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification: Received kFigAssetNotification_BatchPropertyLoadComplete (payload: {
+    "assetPayload_BatchID" = 1;
+})
+2025-12-04 17:16:23.369 Df SpokenAnyWhere[32176:2d99f] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification_block_invoke: Batch 0xa2a528460: Marking asset batch ID 1 as complete
+2025-12-04 17:16:23.369 Df SpokenAnyWhere[32176:2d99f] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader _invokeCompletionHandlerForLoadingBatches:]: Batch 0xa2a528460: dispatching completion handler
+2025-12-04 17:16:23.369 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<< URLAsset >>> URLAssetFinalize: Called for asset 0xa2de913c0
+2025-12-04 17:16:23.369 Df SpokenAnyWhere[32176:2d4ba] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_invalidate: 0xa29ab3c60 called
+2025-12-04 17:16:24.013 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:16:24.479 A  SpokenAnyWhere[32176:2d948] (CoreSpotlight) end-index-batch
+2025-12-04 17:16:24.481 A  SpokenAnyWhere[32176:2d948] (CoreSpotlight) index-items
+2025-12-04 17:16:24.678 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:37.848 Df SpokenAnyWhere[32176:2ccb3] (Foundation) <private>
+2025-12-04 17:16:38.272 Df SpokenAnyWhere[32176:2d9a2] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 17:16:38.330 A  SpokenAnyWhere[32176:2d9a2] (CoreSpotlight) end-index-batch
+2025-12-04 17:16:38.331 A  SpokenAnyWhere[32176:2d9a2] (CoreSpotlight) index-items
+2025-12-04 17:16:38.479 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:38.529 A  SpokenAnyWhere[32176:2d946] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:16:40.271 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:43.365 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:49.021 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:49.883 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:16:49.890 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:10.712 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:17.488 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:19.021 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:20.828 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:29.237 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:31.684 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:17:47.196 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @85.140s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:47.196 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @85.141s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:47.196 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @85.141s, uuid: B6372ED8-5DEA-48E2-ABDE-C83EF7FF5AAB
+2025-12-04 17:17:47.196 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @85.141s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:47.197 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @85.141s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:51.304 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @89.248s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:51.304 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @89.249s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:51.305 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @89.249s, uuid: B6372ED8-5DEA-48E2-ABDE-C83EF7FF5AAB
+2025-12-04 17:17:51.307 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @89.251s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:51.307 Df SpokenAnyWhere[32176:2e2c2] [com.apple.network:connection] [C1 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied_change @89.251s, uuid: 33C80DDB-3A7A-4710-A89C-4FEC10BB12C5
+2025-12-04 17:17:57.856 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:18:05.251 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:18:06.014 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:18:06.907 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:18:09.138 Df SpokenAnyWhere[32176:2e580] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 17:18:09.140 Df SpokenAnyWhere[32176:2e6af] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 17:18:09.171 E  SpokenAnyWhere[32176:2e6af] (CoreAudio) throwing -10877
+2025-12-04 17:18:09.172 E  SpokenAnyWhere[32176:2e6af] (CoreAudio) throwing -10877
+2025-12-04 17:18:09.183 Df SpokenAnyWhere[32176:2cc6b] (AVFAudio) Audio files cannot be non-interleaved. Ignoring setting AVLinearPCMIsNonInterleaved YES.
+2025-12-04 17:18:09.273 Df SpokenAnyWhere[32176:2e6af] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager supportedLanguagesForTaskHint:completion:] Fetching languages of supported Assistant assets.
+2025-12-04 17:18:09.273 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 5
+2025-12-04 17:18:09.274 Df SpokenAnyWhere[32176:2e79c] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager fetchAssetWithConfig:clientIdentifier:expiration:progress:completion:] Client (<private>) fetching the Assistant asset for: <private>
+2025-12-04 17:18:09.318 A  SpokenAnyWhere[32176:2e79c] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:18:09.638 A  SpokenAnyWhere[32176:2e580] (CoreSpotlight) end-index-batch
+2025-12-04 17:18:09.639 A  SpokenAnyWhere[32176:2e580] (CoreSpotlight) index-items
+2025-12-04 17:18:10.228 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 3 个词: Pipeline, hoverd, Gemini
+2025-12-04 17:18:30.639 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_socket_handle_socket_event [C1.1.1.1:4] Socket received READ_CLOSE event
+2025-12-04 17:18:30.639 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 1: final read 0:0, complete[Y], final[N]
+2025-12-04 17:18:30.640 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 1: cleaning up
+2025-12-04 17:18:30.640 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C1 95593BF3-85F3-47D7-BBFB-6A95146DA42D Hostname#3c17972b:443 quic-connection, url hash: 5ba500d9, definite, attribution: developer] cancel
+2025-12-04 17:18:30.640 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C1 95593BF3-85F3-47D7-BBFB-6A95146DA42D Hostname#3c17972b:443 quic-connection, url hash: 5ba500d9, definite, attribution: developer] cancelled
+	[C1.1.1.1 4EE8630A-2157-4C0C-9C32-8DBC3CF6B420 127.0.0.1:54792<->127.0.0.1:7890]
+	Connected Path: satisfied (Path is satisfied), viable, interface: lo0
+	Privacy Stance: Not Eligible
+	Duration: 128.584s, TCP @0.002s took 0.000s, TLS 1.3 took 0.370s
+	bytes in/out: 7380/6229, packets in/out: 15/7, rtt: 0.001s, retransmitted bytes: 0, out-of-order bytes: 0
+	ecn packets sent/acked/marked/lost: 0/0/0/0
+2025-12-04 17:18:30.640 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C1] reporting state cancelled
+2025-12-04 17:18:30.640 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 1: done
+2025-12-04 17:19:02.307 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:19:02.307 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> resuming, timeouts(30.0, 30.0) qos(0x19) voucher(<private>) activity(00000000-0000-0000-0000-000000000000)
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 0: creating secure tcp or quic connection
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: enabling TLS
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: starting, TC(0x0)
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 E96E32BF-8379-4C28-AF51-D76298852876 Hostname#3c17972b:443 quic-connection, url hash: 5ba500d9, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{DC6A21A6-81F4-439D-BC93-C131F3F71B0A}{(null)}{Y}{2}{0x0} (private), proc: 61B73621-F036-3A82-8911-0964E4A5B046, delegated upid: 0] start
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 Hostname#3c17972b:443 initial parent-flow ((null))] event: path:start @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 Hostname#3c17972b:443 waiting parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 04EEA677-1111-4B6F-ADCA-DEB362979621
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 Hostname#3c17972b:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_connect @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C3] reporting state preparing
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 Hostname#3c17972b:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_child @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1 Hostname#3c17972b:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1 Hostname#3c17972b:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 04EEA677-1111-4B6F-ADCA-DEB362979621
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1 Hostname#3c17972b:443 in_progress transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: transform:start @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 93494F77-3443-44AE-976E-9749C9A0BCBD
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_process @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_process @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_resolve @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_resolve @0.000s
+2025-12-04 17:19:02.309 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1.1 127.0.0.1:7890 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:19:02.310 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1.1 127.0.0.1:7890 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.000s, uuid: 9256A394-24A6-42E8-B600-2844BDEB73FB
+2025-12-04 17:19:02.310 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.000s
+2025-12-04 17:19:02.310 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> setting up Connection 3
+2025-12-04 17:19:02.310 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_socket_handle_socket_event [C3.1.1.1:4] Socket received CONNECTED event
+2025-12-04 17:19:02.311 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_flow_connected [C3.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Transport protocol connected (socket)
+2025-12-04 17:19:02.311 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:finish_transport @0.002s
+2025-12-04 17:19:02.311 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_session_apply_protocol_options_for_transport_block_invoke(2280) [C3.1.1.1:2][0xa2c765e60] TLS configured [min_version(0x0303) max_version(0x0304) name(redacted) tickets(false) false_start(false) enforce_ev(false) enforce_ats(false) ats_non_pfs_ciphersuite_allowed(false) ech(false) pqtls(true), pake(false)]
+2025-12-04 17:19:02.311 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2377) [C3.1.1.1:2][0xa2c765e60] Client handshake started
+2025-12-04 17:19:02.311 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS client enter_early_data
+2025-12-04 17:19:02.311 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS client read_server_hello
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_hello_retry_request
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_server_hello
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_encrypted_extensions
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_certificate_request
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_server_certificate
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_server_certificate_verify
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async(1820) [C3.1.1.1:2][0xa2c765e60] Performing external trust evaluation
+2025-12-04 17:19:02.681 A  SpokenAnyWhere[32176:2e74e] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.681 A  SpokenAnyWhere[32176:2e74e] (Security) SecKeyCopyAttributes
+2025-12-04 17:19:02.681 A  SpokenAnyWhere[32176:2e74e] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external(1805) [C3.1.1.1:2][0xa2c765e60] Asyncing for external verify block
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: asked to evaluate TLS Trust
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> auth completion disp=1 cred=0x0
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e580] [com.apple.securityd:trust] (Trust 0xa299fda40) No pending evals, starting
+2025-12-04 17:19:02.681 A  SpokenAnyWhere[32176:2e580] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 17:19:02.681 Df SpokenAnyWhere[32176:2e580] [com.apple.securityd:trust] (Trust 0xa299fda40) Completed async eval kickoff
+2025-12-04 17:19:02.683 Df SpokenAnyWhere[32176:2e580] [com.apple.securityd:trust] (Trust 0xa299fda40) trustd returned 4
+2025-12-04 17:19:02.683 Df SpokenAnyWhere[32176:2e580] [com.apple.CFNetwork:Default] System Trust Evaluation yielded status(0)
+2025-12-04 17:19:02.683 Df SpokenAnyWhere[32176:2e580] [com.apple.securityd:trust] (Trust 0xa299fd980) No pending evals, starting
+2025-12-04 17:19:02.683 A  SpokenAnyWhere[32176:2e580] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 17:19:02.683 Df SpokenAnyWhere[32176:2e580] [com.apple.securityd:trust] (Trust 0xa299fd980) Completed async eval kickoff
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.securityd:trust] (Trust 0xa299fd980) trustd returned 4
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: TLS Trust result 0
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external_block_invoke_3(1760) [C3.1.1.1:2][0xa2c765e60] Returning from external verify block with result: true
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_certificate_verify_callback(2001) [C3.1.1.1:2][0xa2c765e60] Certificate verification result: OK
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client read_server_finished
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client send_end_of_early_data
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client send_client_encrypted_extensions
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client send_client_certificate
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client complete_second_flight
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS 1.3 client done
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS client finish_client_handshake
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C3.1.1.1:2][0xa2c765e60] Client handshake state: TLS client done
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] boringssl_context_info_handler(2383) [C3.1.1.1:2][0xa2c765e60] Client handshake done
+2025-12-04 17:19:02.684 A  SpokenAnyWhere[32176:2e74e] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.684 A  SpokenAnyWhere[32176:2e74e] (Security) SecKeyCopyAttributes
+2025-12-04 17:19:02.684 A  SpokenAnyWhere[32176:2e74e] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:boringssl] nw_protocol_boringssl_signal_connected(895) [C3.1.1.1:2][0xa2c765e60] TLS connected [server(0) version(0x0304) ciphersuite(TLS_AES_256_GCM_SHA384) group(0x11ec) signature_alg(0x0403) alpn(h2) resumed(0) offered_ticket(0) in_early_data(0) early_data_accepted(0) false_started(0) ocsp_received(0) sct_received(0) connect_time(373ms) flight_time(370ms) rtt(370ms) write_stalls(0) read_stalls(2) pake(0x0000)]
+2025-12-04 17:19:02.684 A  SpokenAnyWhere[32176:2e580] (Security) SecTrustReportNetworkingAnalytics
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_flow_connected [C3.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Output protocol connected (CFNetworkConnection-2128001678)
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:child_finish_connect @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:changed_viability @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_flow_connected [C3 127.0.0.1:7890 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] Output protocol connected (endpoint_flow)
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:finish_connect @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C3] reporting state ready
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.375s
+2025-12-04 17:19:02.684 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_connection_send_viability_changed_on_nw_queue [C3] viability_changed_handler(true)
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: connected successfully
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: TLS handshake complete
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: ready C(N) E(N)
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3] event: client:connection_reused @0.375s
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_protocol_socket_notify [C3.1.1.1:4] nw_protocol_notification_type_connection_idle is false
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> now using Connection 3
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Connection 3: received viability advisory(Y)
+2025-12-04 17:19:02.685 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> sent request, body S 4785
+2025-12-04 17:19:02.859 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.859 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyAttributes
+2025-12-04 17:19:02.859 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.859 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:02.859 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyAttributes
+2025-12-04 17:19:02.859 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:19:03.765 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> received response, status 200 content K
+2025-12-04 17:19:03.765 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> done using Connection 3
+2025-12-04 17:19:03.765 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] [C3] event: client:connection_idle @1.456s
+2025-12-04 17:19:03.765 Df SpokenAnyWhere[32176:2e74e] [com.apple.network:connection] nw_protocol_socket_notify [C3.1.1.1:4] nw_protocol_notification_type_connection_idle is true
+2025-12-04 17:19:03.765 A  SpokenAnyWhere[32176:2e74e] (Security) SecTrustEvaluateIfNecessary
+2025-12-04 17:19:03.767 Df SpokenAnyWhere[32176:2e74e] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> response ended
+2025-12-04 17:19:03.767 Df SpokenAnyWhere[32176:2e580] [com.apple.CFNetwork:Summary] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> summary for task success {transaction_duration_ms=1459, response_status=200, connection=3, protocol="h2", domain_lookup_duration_ms=0, connect_duration_ms=375, secure_connection_duration_ms=373, private_relay=false, request_start_ms=376, request_duration_ms=0, response_start_ms=1457, response_duration_ms=1, request_bytes=5017, request_throughput_kbps=389681, response_bytes=1095, response_throughput_kbps=4620, cache_hit=true}
+2025-12-04 17:19:03.767 Df SpokenAnyWhere[32176:2e580] [com.apple.CFNetwork:Default] Task <B319897D-B4F5-41B1-9771-EECAE4BE73B3>.<1> finished successfully
+2025-12-04 17:19:03.947 A  SpokenAnyWhere[32176:2cc6b] (libsystem_trace.dylib) Activity for state dumps
+2025-12-04 17:19:03.947 F  SpokenAnyWhere[32176:2cc6b] [com.apple.runtime-issues:SwiftUI] Invalid frame dimension (negative or non-finite).
+2025-12-04 17:19:03.962 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<< URLAsset >>> FigAssetCreateWithURL: Called for asset 0xa2dc7b440 by client [], url [0xa2ded12c0] <file // redacted-Y63QUG // ???> createFlags 0x8 optionsDict (null)
+2025-12-04 17:19:03.962 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:playback-memory] <<< FigOSTransactionsUtilities >>> figPruneOSTransactionArrayWhilePerformingOperation: [Fig Transaction] Pruned transaction weak reference holder: <0xa2b19f4a0>
+2025-12-04 17:19:03.962 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:playback-memory] <<< FigOSTransactionsUtilities >>> FigOSTransactionCreateWithProcessName: [Fig Transaction] Added transaction weak reference holder <0xa2b940ca0>: <private>
+2025-12-04 17:19:03.962 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLLoaderCreate: newLoader: 0xa2a428bd0
+2025-12-04 17:19:03.962 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.customurl.cfurlconnection.0xa2b0fb500 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0xa2a428bf0: handler: 0xa2b0fb500 priority: 100
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.authkeychain.0xa2b0fb900 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0xa2a428bf0: handler: 0xa2b0fb900 priority: 800
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: called (self: 0xa2cffe840, keys: (
+    duration
+), keysForCollectionKeys: (null), handler: non-nil)
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Calling FigAssetLoadValuesAsyncForProperties for properties (
+    Duration
+)
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Batch 0xa29decf40: asset batch ID = 1 (err=0, alreadyLoaded=0)
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2eef7] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification: Received kFigAssetNotification_BatchPropertyLoadComplete (payload: {
+    "assetPayload_BatchID" = 1;
+})
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2eef7] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification_block_invoke: Batch 0xa29decf40: Marking asset batch ID 1 as complete
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2eef7] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader _invokeCompletionHandlerForLoadingBatches:]: Batch 0xa29decf40: dispatching completion handler
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<< URLAsset >>> URLAssetFinalize: Called for asset 0xa2dc7b440
+2025-12-04 17:19:03.963 Df SpokenAnyWhere[32176:2e74e] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_invalidate: 0xa2a428bd0 called
+2025-12-04 17:19:04.015 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:19:05.009 Df SpokenAnyWhere[32176:2e74e] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 17:19:05.080 A  SpokenAnyWhere[32176:2eef1] (CoreSpotlight) end-index-batch
+2025-12-04 17:19:05.081 A  SpokenAnyWhere[32176:2eef1] (CoreSpotlight) index-items
+2025-12-04 17:19:05.302 A  SpokenAnyWhere[32176:2e74e] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:19:08.169 Df SpokenAnyWhere[32176:2e6af] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 17:19:12.273 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:12.517 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:18.983 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:22.338 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:22.688 Df SpokenAnyWhere[32176:2e6af] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2025-12-04 17:19:22.691 Df SpokenAnyWhere[32176:2f39c] [com.apple.UIIntelligenceSupport:xpc] Connection established with agent PID: 1139
+2025-12-04 17:19:22.691 E  SpokenAnyWhere[32176:2e6af] (CoreAudio) AudioHardware-mac-imp.cpp:1512   AudioObjectRemovePropertyListener: no object with given ID 0
+2025-12-04 17:19:22.691 E  SpokenAnyWhere[32176:2e79d] (CoreAudio) AudioHardware-mac-imp.cpp:1512   AudioObjectRemovePropertyListener: no object with given ID 0
+2025-12-04 17:19:25.474 E  SpokenAnyWhere[32176:2f39b] (CoreAudio) throwing -10877
+2025-12-04 17:19:25.475 E  SpokenAnyWhere[32176:2f39b] (CoreAudio) throwing -10877
+2025-12-04 17:19:25.501 Df SpokenAnyWhere[32176:2cc6b] (AVFAudio) Audio files cannot be non-interleaved. Ignoring setting AVLinearPCMIsNonInterleaved YES.
+2025-12-04 17:19:25.579 A  SpokenAnyWhere[32176:2f39b] (CoreSpotlight) end-index-batch
+2025-12-04 17:19:25.579 Df SpokenAnyWhere[32176:2e6af] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager supportedLanguagesForTaskHint:completion:] Fetching languages of supported Assistant assets.
+2025-12-04 17:19:25.579 A  SpokenAnyWhere[32176:2f39b] (CoreSpotlight) index-items
+2025-12-04 17:19:25.585 Df SpokenAnyWhere[32176:2f39c] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 17:19:25.616 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:25.617 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] 预编译 LM 已启用，训练短语数: 5
+2025-12-04 17:19:25.618 Df SpokenAnyWhere[32176:2f39c] [com.apple.speech.localspeechrecognition:SpeechFramework] +[SFSpeechAssetManager fetchAssetWithConfig:clientIdentifier:expiration:progress:completion:] Client (<private>) fetching the Assistant asset for: <private>
+2025-12-04 17:19:25.621 A  SpokenAnyWhere[32176:2f39c] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:19:25.625 E  SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:HotKey] ⚠️ Event tap was disabled by system, re-enabling...
+2025-12-04 17:19:25.722 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:26.674 Df SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:SpeechAnalyzerProvider] 📚 [词典] contextualStrings 已注入 3 个词: Pipeline, hoverd, Gemini
+2025-12-04 17:19:27.162 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:19:36.317 Df SpokenAnyWhere[32176:2e6af] [com.apple.launchservices:db] NotifyToken::RegisterDispatch(user.uid.501.com.apple.LaunchServices.database) fired for session key <private>
+2025-12-04 17:20:06.159 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:20:06.160 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> resuming, timeouts(30.0, 30.0) qos(0x19) voucher(<private>) activity(00000000-0000-0000-0000-000000000000)
+2025-12-04 17:20:06.160 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 0: creating secure tcp or quic connection
+2025-12-04 17:20:06.160 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: enabling TLS
+2025-12-04 17:20:06.160 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: starting, TC(0x0)
+2025-12-04 17:20:06.160 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 157914D1-F4F2-4FF4-85F1-F5DF23957C51 Hostname#3c17972b:443 quic-connection, url hash: 5ba500d9, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{AB40BC14-C1AA-4BFD-9B37-2E42246E800E}{(null)}{Y}{2}{0x0} (private), proc: 61B73621-F036-3A82-8911-0964E4A5B046, delegated upid: 0] start
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 Hostname#3c17972b:443 initial parent-flow ((null))] event: path:start @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 Hostname#3c17972b:443 waiting parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 23AEE150-F87B-4F3C-96C8-77F9E4E9B217
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 Hostname#3c17972b:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_connect @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C4] reporting state preparing
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 Hostname#3c17972b:443 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:start_child @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1 Hostname#3c17972b:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1 Hostname#3c17972b:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 23AEE150-F87B-4F3C-96C8-77F9E4E9B217
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1 Hostname#3c17972b:443 in_progress transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: transform:start @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 waiting path (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: path:satisfied @0.000s, uuid: 9F7EE043-B1B2-441D-B7D0-4E8E17B985BF
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_process @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_process @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:start_resolve @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 in_progress proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: proxy:finish_resolve @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1.1 127.0.0.1:7890 initial path ((null))] event: path:start @0.000s
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1.1 127.0.0.1:7890 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.000s, uuid: 87B50F9F-D483-4C4D-8AD8-7A06E808E318
+2025-12-04 17:20:06.161 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.000s
+2025-12-04 17:20:06.162 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> setting up Connection 4
+2025-12-04 17:20:06.162 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_socket_handle_socket_event [C4.1.1.1:4] Socket received CONNECTED event
+2025-12-04 17:20:06.165 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_flow_connected [C4.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Transport protocol connected (socket)
+2025-12-04 17:20:06.165 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:finish_transport @0.004s
+2025-12-04 17:20:06.165 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_session_apply_protocol_options_for_transport_block_invoke(2280) [C4.1.1.1:2][0xa2dee2860] TLS configured [min_version(0x0303) max_version(0x0304) name(redacted) tickets(false) false_start(false) enforce_ev(false) enforce_ats(false) ats_non_pfs_ciphersuite_allowed(false) ech(false) pqtls(true), pake(false)]
+2025-12-04 17:20:06.165 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2377) [C4.1.1.1:2][0xa2dee2860] Client handshake started
+2025-12-04 17:20:06.165 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS client enter_early_data
+2025-12-04 17:20:06.165 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS client read_server_hello
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_hello_retry_request
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_server_hello
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_encrypted_extensions
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_certificate_request
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_server_certificate
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_server_certificate_verify
+2025-12-04 17:20:06.540 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async(1820) [C4.1.1.1:2][0xa2dee2860] Performing external trust evaluation
+2025-12-04 17:20:06.540 A  SpokenAnyWhere[32176:2e79d] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.540 A  SpokenAnyWhere[32176:2e79d] (Security) SecKeyCopyAttributes
+2025-12-04 17:20:06.540 A  SpokenAnyWhere[32176:2e79d] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.541 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external(1805) [C4.1.1.1:2][0xa2dee2860] Asyncing for external verify block
+2025-12-04 17:20:06.541 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: asked to evaluate TLS Trust
+2025-12-04 17:20:06.541 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> auth completion disp=1 cred=0x0
+2025-12-04 17:20:06.541 Df SpokenAnyWhere[32176:2e79d] [com.apple.securityd:trust] (Trust 0xa299fe580) No pending evals, starting
+2025-12-04 17:20:06.541 A  SpokenAnyWhere[32176:2e79d] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 17:20:06.541 Df SpokenAnyWhere[32176:2e79d] [com.apple.securityd:trust] (Trust 0xa299fe580) Completed async eval kickoff
+2025-12-04 17:20:06.543 Df SpokenAnyWhere[32176:2e79d] [com.apple.securityd:trust] (Trust 0xa299fe580) trustd returned 4
+2025-12-04 17:20:06.544 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] System Trust Evaluation yielded status(0)
+2025-12-04 17:20:06.544 Df SpokenAnyWhere[32176:2e79d] [com.apple.securityd:trust] (Trust 0xa299ff300) No pending evals, starting
+2025-12-04 17:20:06.544 A  SpokenAnyWhere[32176:2e79d] (Security) SecTrustEvaluateIfNecessaryFastAsync
+2025-12-04 17:20:06.544 Df SpokenAnyWhere[32176:2e79d] [com.apple.securityd:trust] (Trust 0xa299ff300) Completed async eval kickoff
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.securityd:trust] (Trust 0xa299ff300) trustd returned 4
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: TLS Trust result 0
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_evaluate_trust_async_external_block_invoke_3(1760) [C4.1.1.1:2][0xa2dee2860] Returning from external verify block with result: true
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_certificate_verify_callback(2001) [C4.1.1.1:2][0xa2dee2860] Certificate verification result: OK
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client read_server_finished
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client send_end_of_early_data
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client send_client_encrypted_extensions
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client send_client_certificate
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client complete_second_flight
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS 1.3 client done
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS client finish_client_handshake
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2394) [C4.1.1.1:2][0xa2dee2860] Client handshake state: TLS client done
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] boringssl_context_info_handler(2383) [C4.1.1.1:2][0xa2dee2860] Client handshake done
+2025-12-04 17:20:06.545 A  SpokenAnyWhere[32176:2e79d] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.545 A  SpokenAnyWhere[32176:2e79d] (Security) SecKeyCopyAttributes
+2025-12-04 17:20:06.545 A  SpokenAnyWhere[32176:2e79d] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:boringssl] nw_protocol_boringssl_signal_connected(895) [C4.1.1.1:2][0xa2dee2860] TLS connected [server(0) version(0x0304) ciphersuite(TLS_AES_256_GCM_SHA384) group(0x11ec) signature_alg(0x0403) alpn(h2) resumed(0) offered_ticket(0) in_early_data(0) early_data_accepted(0) false_started(0) ocsp_received(0) sct_received(0) connect_time(380ms) flight_time(375ms) rtt(375ms) write_stalls(0) read_stalls(2) pake(0x0000)]
+2025-12-04 17:20:06.545 A  SpokenAnyWhere[32176:2e6af] (Security) SecTrustReportNetworkingAnalytics
+2025-12-04 17:20:06.545 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_flow_connected [C4.1.1.1 127.0.0.1:7890 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] Output protocol connected (CFNetworkConnection-2128001678)
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:child_finish_connect @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:child_finish_connect @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1.1 127.0.0.1:7890 ready socket-flow (satisfied (Path is satisfied), viable, interface: lo0)] event: flow:changed_viability @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1.1 Hostname#3c17972b:443 ready proxy (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4.1 Hostname#3c17972b:443 ready transform (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_flow_connected [C4 127.0.0.1:7890 in_progress parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] Output protocol connected (endpoint_flow)
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:finish_connect @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C4] reporting state ready
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4 127.0.0.1:7890 ready parent-flow (satisfied (Path is satisfied), interface: en1[802.11], ipv4, ipv6, dns, uses wifi, proxy, LQM: good)] event: flow:changed_viability @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_connection_send_viability_changed_on_nw_queue [C4] viability_changed_handler(true)
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: connected successfully
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: TLS handshake complete
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: ready C(N) E(N)
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] [C4] event: client:connection_reused @0.385s
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.network:connection] nw_protocol_socket_notify [C4.1.1.1:4] nw_protocol_notification_type_connection_idle is false
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> now using Connection 4
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Connection 4: received viability advisory(Y)
+2025-12-04 17:20:06.546 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> sent request, body S 4447
+2025-12-04 17:20:06.724 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.724 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyAttributes
+2025-12-04 17:20:06.724 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.725 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:06.725 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyAttributes
+2025-12-04 17:20:06.725 A  SpokenAnyWhere[32176:2e6af] (Security) SecKeyCopyPublicBytes
+2025-12-04 17:20:07.485 Df SpokenAnyWhere[32176:2e6af] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> received response, status 200 content K
+2025-12-04 17:20:07.485 Df SpokenAnyWhere[32176:2e6af] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> done using Connection 4
+2025-12-04 17:20:07.485 Df SpokenAnyWhere[32176:2e6af] [com.apple.network:connection] [C4] event: client:connection_idle @1.324s
+2025-12-04 17:20:07.485 Df SpokenAnyWhere[32176:2e6af] [com.apple.network:connection] nw_protocol_socket_notify [C4.1.1.1:4] nw_protocol_notification_type_connection_idle is true
+2025-12-04 17:20:07.485 A  SpokenAnyWhere[32176:2e6af] (Security) SecTrustEvaluateIfNecessary
+2025-12-04 17:20:07.487 Df SpokenAnyWhere[32176:2e6af] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> response ended
+2025-12-04 17:20:07.487 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Summary] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> summary for task success {transaction_duration_ms=1327, response_status=200, connection=4, protocol="h2", domain_lookup_duration_ms=0, connect_duration_ms=385, secure_connection_duration_ms=380, private_relay=false, request_start_ms=386, request_duration_ms=0, response_start_ms=1325, response_duration_ms=2, request_bytes=4679, request_throughput_kbps=287811, response_bytes=1047, response_throughput_kbps=4177, cache_hit=true}
+2025-12-04 17:20:07.487 Df SpokenAnyWhere[32176:2e79d] [com.apple.CFNetwork:Default] Task <3F1775C8-8A66-4806-8678-CDA5700676DD>.<1> finished successfully
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<< URLAsset >>> FigAssetCreateWithURL: Called for asset 0xa2de92000 by client [], url [0xa2ded3ba0] <file // redacted-IEKES+ // ???> createFlags 0x8 optionsDict (null)
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:playback-memory] <<< FigOSTransactionsUtilities >>> figPruneOSTransactionArrayWhilePerformingOperation: [Fig Transaction] Pruned transaction weak reference holder: <0xa2b940ca0>
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:playback-memory] <<< FigOSTransactionsUtilities >>> FigOSTransactionCreateWithProcessName: [Fig Transaction] Added transaction weak reference holder <0xa2def1f20>: <private>
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLLoaderCreate: newLoader: 0xa2a428850
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.customurl.cfurlconnection.0xa2df00f00 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0xa2a428870: handler: 0xa2df00f00 priority: 100
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> FigCustomURLHandlerCreate: newHandler: com.apple.avfoundation.authkeychain.0xa2df01080 options: {
+    "CURLHOption_OKToLogURLs" = 0;
+}
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_installHandler: 0xa2a428870: handler: 0xa2df01080 priority: 800
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: called (self: 0xa2cffd0a0, keys: (
+    duration
+), keysForCollectionKeys: (null), handler: non-nil)
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Calling FigAssetLoadValuesAsyncForProperties for properties (
+    Duration
+)
+2025-12-04 17:20:07.796 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader loadValuesAsynchronouslyForKeys:keysForCollectionKeys:completionHandler:]: Batch 0xa29dee280: asset batch ID = 1 (err=0, alreadyLoaded=0)
+2025-12-04 17:20:07.797 Df SpokenAnyWhere[32176:2fa03] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification: Received kFigAssetNotification_BatchPropertyLoadComplete (payload: {
+    "assetPayload_BatchID" = 1;
+})
+2025-12-04 17:20:07.797 Df SpokenAnyWhere[32176:2fa03] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> handleFigAssetLoadingNotification_block_invoke: Batch 0xa29dee280: Marking asset batch ID 1 as complete
+2025-12-04 17:20:07.797 Df SpokenAnyWhere[32176:2fa03] [com.apple.coremedia:] <<<< AVAssetInspectorLoader >>>> -[AVFigAssetInspectorLoader _invokeCompletionHandlerForLoadingBatches:]: Batch 0xa29dee280: dispatching completion handler
+2025-12-04 17:20:07.797 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<< URLAsset >>> URLAssetFinalize: Called for asset 0xa2de92000
+2025-12-04 17:20:07.797 Df SpokenAnyWhere[32176:2f39d] [com.apple.coremedia:] <<<< FigCustomURLHandling >>>> curll_invalidate: 0xa2a428850 called
+2025-12-04 17:20:08.015 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Pasteboard] NSPasteboard (name: Apple CFPasteboard general): data requested for type public.utf8-plain-text at index 0
+2025-12-04 17:20:08.845 Df SpokenAnyWhere[32176:2f9fc] [com.apple.UIIntelligenceSupport:xpc] agent connection cancelled (details: Session manually canceled)
+2025-12-04 17:20:09.132 A  SpokenAnyWhere[32176:2f254] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:20:09.253 A  SpokenAnyWhere[32176:2f9fc] (CoreSpotlight) end-index-batch
+2025-12-04 17:20:09.254 A  SpokenAnyWhere[32176:2f9fc] (CoreSpotlight) index-items
+2025-12-04 17:20:20.571 E  SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:HotKey] ⚠️ Event tap was disabled by system, re-enabling...
+2025-12-04 17:20:52.988 E  SpokenAnyWhere[32176:2cc6b] [com.spokeanywhere:HotKey] ⚠️ Event tap was disabled by system, re-enabling...
+2025-12-04 17:20:54.414 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:20:54.455 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.480 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.493 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.775 A  SpokenAnyWhere[32176:2cc6b] (CoreFoundation) Loading Preferences From User CFPrefsD
+2025-12-04 17:20:54.834 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.837 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.847 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.848 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Received action(s): NSStatusItemSendEventAction
+2025-12-04 17:20:54.848 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Observer <NSSceneStatusItem: 0xa2a474e00> handled action(s): <private>
+2025-12-04 17:20:54.893 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Sending action(s) in update: NSSceneFenceAction
+2025-12-04 17:20:54.902 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:SceneClient] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Received action(s): NSStatusItemSendEventAction
+2025-12-04 17:20:54.902 Df SpokenAnyWhere[32176:2cc6b] [com.apple.FrontBoard:Common] [com.apple.controlcenter:DDCC337C-8AF6-4C96-AE07-0499F3E163F5] Observer <NSSceneStatusItem: 0xa2a474e00> handled action(s): <private>
+2025-12-04 17:20:54.945 A  SpokenAnyWhere[32176:2fe4a] (RunningBoardServices) didChangeInheritances
+2025-12-04 17:20:54.980 A  SpokenAnyWhere[32176:2fe4a] (CoreSpotlight) end-index-batch
+2025-12-04 17:20:54.982 A  SpokenAnyWhere[32176:2fe4a] (CoreSpotlight) index-items
+2025-12-04 17:20:56.787 A  SpokenAnyWhere[32176:2cc6b] (AppKit) perform action for menu item
+2025-12-04 17:20:56.788 A  SpokenAnyWhere[32176:2cc6b] (AppKit) sendAction:
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] terminate:
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:AutomaticTermination] void _NSDisableAutomaticTerminationAndLog(NSString *) Terminating
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] -[NSApplication _setShouldRestoreStateOnNextLaunch:] shouldRestore=0
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:StateRestoration] -[NSApplication _pushPersistentStateTerminationGeneration] sPersistentStateTerminateStackHeight -> 1
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] Attempting sudden termination (1st attempt)
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] Checking whether app should terminate
+2025-12-04 17:20:56.788 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] Asking app delegate whether applicationShouldTerminate:
+2025-12-04 17:20:56.789 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] replyToApplicationShouldTerminate:YES
+2025-12-04 17:20:56.789 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] App termination approved
+2025-12-04 17:20:56.790 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] Termination commencing
+2025-12-04 17:20:56.790 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] Attempting sudden termination (2nd attempt)
+2025-12-04 17:20:56.793 Df SpokenAnyWhere[32176:2cc6b] [com.apple.AppKit:Application] Termination complete. Exiting without sudden termination.
+2025-12-04 17:20:56.793 Df SpokenAnyWhere[32176:2cc6b] [com.apple.CoreAnalytics:client] Entering exit handler.
+2025-12-04 17:20:56.793 Df SpokenAnyWhere[32176:2cc6b] [com.apple.CoreAnalytics:client] Queueing exit procedure onto XPC queue. Any further messages sent will be discarded. activeSendTransactions=0
+2025-12-04 17:20:56.793 Df SpokenAnyWhere[32176:2fb32] [com.apple.CoreAnalytics:client] Cancelling XPC connection. Any further reply handler invocations will not retry messages
+2025-12-04 17:20:56.793 Df SpokenAnyWhere[32176:2cc6b] [com.apple.CoreAnalytics:client] Exiting exit handler.
+2025-12-04 17:20:56.793 Df SpokenAnyWhere[32176:2fea9] [com.apple.CoreAnalytics:client] XPC connection invalidated (daemon unloaded/disabled)

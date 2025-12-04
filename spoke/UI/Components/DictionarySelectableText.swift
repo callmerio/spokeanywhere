@@ -1,6 +1,88 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Simple Markdown Parser
+
+/// 轻量级 Markdown 解析器，支持 **粗体**、*斜体*、`代码`
+enum SimpleMarkdownParser {
+    
+    /// 将 Markdown 文本转换为 NSAttributedString
+    static func parse(
+        _ text: String,
+        font: NSFont,
+        foregroundColor: NSColor
+    ) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        
+        // 基础属性
+        let baseAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: foregroundColor
+        ]
+        
+        // 粗体字体
+        let boldFont = NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask)
+        // 斜体字体
+        let italicFont = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
+        // 代码字体（monospace）
+        let codeFont = NSFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular)
+        
+        // 正则模式：匹配 **bold**、*italic*、`code`
+        // 顺序很重要：先匹配 ** 再匹配 *
+        let pattern = #"(\*\*|__)(.*?)\1|(\*|_)(.*?)\3|`([^`]+)`"#
+        
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return NSAttributedString(string: text, attributes: baseAttributes)
+        }
+        
+        var lastEnd = text.startIndex
+        let nsText = text as NSString
+        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsText.length))
+        
+        for match in matches {
+            // 添加匹配前的普通文本
+            let matchStart = text.index(text.startIndex, offsetBy: match.range.location)
+            if lastEnd < matchStart {
+                let plainText = String(text[lastEnd..<matchStart])
+                result.append(NSAttributedString(string: plainText, attributes: baseAttributes))
+            }
+            
+            // 判断匹配类型并添加格式化文本
+            if match.range(at: 2).location != NSNotFound {
+                // **粗体** 或 __粗体__
+                let content = nsText.substring(with: match.range(at: 2))
+                var attrs = baseAttributes
+                attrs[.font] = boldFont
+                result.append(NSAttributedString(string: content, attributes: attrs))
+            } else if match.range(at: 4).location != NSNotFound {
+                // *斜体* 或 _斜体_
+                let content = nsText.substring(with: match.range(at: 4))
+                var attrs = baseAttributes
+                attrs[.font] = italicFont
+                result.append(NSAttributedString(string: content, attributes: attrs))
+            } else if match.range(at: 5).location != NSNotFound {
+                // `代码`
+                let content = nsText.substring(with: match.range(at: 5))
+                var attrs = baseAttributes
+                attrs[.font] = codeFont
+                attrs[.backgroundColor] = NSColor.white.withAlphaComponent(0.1)
+                result.append(NSAttributedString(string: content, attributes: attrs))
+            }
+            
+            // 更新 lastEnd
+            lastEnd = text.index(text.startIndex, offsetBy: match.range.location + match.range.length)
+        }
+        
+        // 添加剩余的普通文本
+        if lastEnd < text.endIndex {
+            let plainText = String(text[lastEnd...])
+            result.append(NSAttributedString(string: plainText, attributes: baseAttributes))
+        }
+        
+        return result
+    }
+}
+
 // MARK: - Dictionary Selectable Text
 
 /// 支持文本选择和「添加到词典」右键菜单的文本视图
@@ -37,18 +119,24 @@ struct DictionarySelectableText: NSViewRepresentable {
         // 设置 delegate
         textView.delegate = context.coordinator
         
+        // 设置初始内容（解析 Markdown）
+        let attributedString = SimpleMarkdownParser.parse(text, font: font, foregroundColor: foregroundColor)
+        textView.textStorage?.setAttributedString(attributedString)
+        
         return textView
     }
     
     func updateNSView(_ textView: DictionaryTextView, context: Context) {
-        if textView.string != text {
-            textView.string = text
-        }
-        textView.textColor = foregroundColor
-        textView.font = font
+        // 解析 Markdown 并设置富文本
+        let attributedString = SimpleMarkdownParser.parse(text, font: font, foregroundColor: foregroundColor)
         
-        // 更新后重新计算高度
-        textView.invalidateIntrinsicContentSize()
+        // 检查内容是否变化（比较纯文本）
+        // 只有内容变化时才更新并重新计算高度，避免在布局期间触发递归
+        if textView.string != text {
+            textView.textStorage?.setAttributedString(attributedString)
+            // 内容变化后重新计算高度
+            textView.invalidateIntrinsicContentSize()
+        }
     }
     
     // MARK: - Coordinator
@@ -71,6 +159,13 @@ struct DictionarySelectableText: NSViewRepresentable {
             // 在菜单顶部插入自定义项（位置 0 开始）
             var insertIndex = 0
             
+            // 获取整句话作为训练短语
+            let fullText = textView.string
+            let menuContext: [String: Any] = [
+                "selectedText": selectedText,
+                "fullText": fullText
+            ]
+            
             // 添加「添加到词典」菜单项
             let addToDictionaryItem = NSMenuItem(
                 title: "添加到词典",
@@ -78,7 +173,7 @@ struct DictionarySelectableText: NSViewRepresentable {
                 keyEquivalent: ""
             )
             addToDictionaryItem.target = self
-            addToDictionaryItem.representedObject = selectedText
+            addToDictionaryItem.representedObject = menuContext
             addToDictionaryItem.image = NSImage(systemSymbolName: "book.closed", accessibilityDescription: nil)
             newMenu.insertItem(addToDictionaryItem, at: insertIndex)
             insertIndex += 1
@@ -90,7 +185,7 @@ struct DictionarySelectableText: NSViewRepresentable {
                 keyEquivalent: ""
             )
             correctToItem.target = self
-            correctToItem.representedObject = selectedText
+            correctToItem.representedObject = menuContext
             correctToItem.image = NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: nil)
             newMenu.insertItem(correctToItem, at: insertIndex)
             insertIndex += 1
@@ -102,24 +197,36 @@ struct DictionarySelectableText: NSViewRepresentable {
         }
         
         @objc func addToDictionary(_ sender: NSMenuItem) {
-            guard let text = sender.representedObject as? String else { return }
+            guard let context = sender.representedObject as? [String: Any],
+                  let selectedText = context["selectedText"] as? String else { return }
+            let fullText = context["fullText"] as? String ?? ""
             
             // 发送通知，由 DictionaryService 处理
             NotificationCenter.default.post(
                 name: .requestAddToDictionary,
                 object: nil,
-                userInfo: ["word": text, "mode": "new"]
+                userInfo: [
+                    "word": selectedText,
+                    "mode": "new",
+                    "fullText": fullText  // 用于训练短语
+                ]
             )
         }
         
         @objc func correctTo(_ sender: NSMenuItem) {
-            guard let text = sender.representedObject as? String else { return }
+            guard let context = sender.representedObject as? [String: Any],
+                  let selectedText = context["selectedText"] as? String else { return }
+            let fullText = context["fullText"] as? String ?? ""
             
             // 发送通知，显示纠错弹窗
             NotificationCenter.default.post(
                 name: .requestAddToDictionary,
                 object: nil,
-                userInfo: ["word": text, "mode": "correction"]
+                userInfo: [
+                    "word": selectedText,
+                    "mode": "correction",
+                    "fullText": fullText  // 用于训练短语
+                ]
             )
         }
     }
@@ -293,7 +400,9 @@ final class DictionaryTextView: NSTextView {
     
     override func layout() {
         super.layout()
-        invalidateIntrinsicContentSize()
+        // 注意：不能在 layout() 中调用 invalidateIntrinsicContentSize()
+        // 这会导致布局递归，触发 AppKit WarnOnce 警告
+        // intrinsicContentSize 的更新应该在 didChangeText() 中完成
     }
 }
 
@@ -308,6 +417,7 @@ final class AddToDictionaryHandler: ObservableObject {
     @Published var isShowingAddSheet = false
     @Published var isShowingCorrectionSheet = false
     @Published var pendingWord = ""
+    @Published var pendingFullText = ""  // 完整句子，用于训练短语
     
     private var observer: NSObjectProtocol?
     
@@ -333,6 +443,7 @@ final class AddToDictionaryHandler: ObservableObject {
               let mode = userInfo["mode"] as? String else { return }
         
         pendingWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
+        pendingFullText = (userInfo["fullText"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
         switch mode {
         case "new":
@@ -344,10 +455,15 @@ final class AddToDictionaryHandler: ObservableObject {
         }
     }
     
-    /// 快速添加（不显示弹窗，直接添加）
-    func quickAdd(_ word: String) {
+    /// 快速添加（不显示弹窗，直接添加）+ 记录训练短语
+    func quickAdd(_ word: String, trainingPhrase: String? = nil) {
         Task { @MainActor in
-            _ = DictionaryService.shared.addEntry(word: word)
+            if let entry = DictionaryService.shared.addEntry(word: word) {
+                // 如果有训练短语，记录下来
+                if let phrase = trainingPhrase, !phrase.isEmpty {
+                    DictionaryService.shared.addTrainingPhrase(phrase, to: entry.id)
+                }
+            }
         }
     }
     
@@ -364,14 +480,16 @@ final class AddToDictionaryHandler: ObservableObject {
 struct QuickAddToDictionarySheet: View {
     @Binding var isPresented: Bool
     let initialWord: String
+    let fullText: String  // 完整句子，用于训练短语
     
     @State private var word: String
     @State private var correctionsText = ""
     @ObservedObject private var dictionaryService = DictionaryService.shared
     
-    init(isPresented: Binding<Bool>, initialWord: String) {
+    init(isPresented: Binding<Bool>, initialWord: String, fullText: String = "") {
         self._isPresented = isPresented
         self.initialWord = initialWord
+        self.fullText = fullText
         self._word = State(initialValue: initialWord)
     }
     
@@ -449,12 +567,25 @@ struct QuickAddToDictionarySheet: View {
     }
     
     private func addEntry() {
+        let trimmedWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
         let corrections = correctionsText
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         
-        _ = dictionaryService.addEntry(word: word, corrections: corrections)
+        if let entry = dictionaryService.addEntry(word: trimmedWord, corrections: corrections) {
+            // 记录训练短语（完整句子用于预编译 LM）
+            if !fullText.isEmpty {
+                dictionaryService.addTrainingPhrase(fullText, to: entry.id)
+            }
+            
+            // 添加高亮标记到 Pipeline 卡片（词典学习样式：橙色目标词）
+            Task { @MainActor in
+                MessagePanelState.shared.addHighlightToLatestCard(
+                    .dictionary(word: trimmedWord)
+                )
+            }
+        }
         isPresented = false
     }
 }
@@ -466,6 +597,7 @@ struct QuickAddToDictionarySheet: View {
 struct CorrectToSheet: View {
     @Binding var isPresented: Bool
     let errorText: String
+    let fullText: String  // 完整句子，用于训练短语
     
     @ObservedObject private var dictionaryService = DictionaryService.shared
     @State private var correctWord = ""  // 用户输入的正确词形
@@ -590,12 +722,38 @@ struct CorrectToSheet: View {
         let trimmedWord = correctWord.trimmingCharacters(in: .whitespaces)
         guard !trimmedWord.isEmpty else { return }
         
+        // 训练短语：将原句中的错误文本替换为正确词形
+        // 例如: "cloud is great" + 纠正为 "Claude" → "Claude is great"
+        let correctedPhrase = fullText.isEmpty
+            ? ""
+            : fullText.replacingOccurrences(
+                of: errorText,
+                with: trimmedWord,
+                options: .caseInsensitive
+            )
+        
         if let entryId = selectedEntryId {
             // 添加到已有词条
             dictionaryService.addCorrection(errorText, to: entryId)
+            // 记录纠正后的训练短语
+            if !correctedPhrase.isEmpty {
+                dictionaryService.addTrainingPhrase(correctedPhrase, to: entryId)
+            }
         } else {
             // 创建新词条并添加纠错
-            _ = dictionaryService.addEntry(word: trimmedWord, corrections: [errorText])
+            if let entry = dictionaryService.addEntry(word: trimmedWord, corrections: [errorText]) {
+                // 记录纠正后的训练短语
+                if !correctedPhrase.isEmpty {
+                    dictionaryService.addTrainingPhrase(correctedPhrase, to: entry.id)
+                }
+            }
+        }
+        
+        // 添加高亮标记到 Pipeline 卡片（纠错样式：~~错误词~~ + 正确词）
+        Task { @MainActor in
+            MessagePanelState.shared.addHighlightToLatestCard(
+                .correction(from: errorText, to: trimmedWord)
+            )
         }
         
         isPresented = false

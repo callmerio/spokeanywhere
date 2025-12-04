@@ -368,7 +368,7 @@ struct AnswerPanelView: View {
             onSend: { sendMessage() },
             onPasteImage: { image in handlePasteImage(image) }
         )
-        .frame(minHeight: 24, maxHeight: 120)
+        .frame(minHeight: 12, maxHeight: 60)
     }
     
     private var inputToolbar: some View {
