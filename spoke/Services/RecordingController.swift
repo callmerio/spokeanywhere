@@ -296,14 +296,27 @@ final class RecordingController {
     
     private func processTranscription() {
         Task {
+            let processStartTime = CFAbsoluteTimeGetCurrent()
+            
+            // 🚀 立即复制当前转录到剪贴板（用户可能急需）
+            if !lastTranscription.isEmpty {
+                copyToClipboard(lastTranscription)
+                logger.info("📋 Clipboard (immediate): \(self.lastTranscription.prefix(50))...")
+            }
+            
             // 等待最终结果（最多等待 2 秒，每 100ms 检查一次）
             var waitTime = 0
+            logger.info("⏳ Waiting for final result... isProcessing=\(self.audioService.isProcessing)")
+            
             while waitTime < Self.maxWaitForFinalResult {
                 try? await Task.sleep(for: .milliseconds(Self.checkInterval))
                 waitTime += Self.checkInterval
                 // 如果处理已完成，提前退出
                 if !audioService.isProcessing { break }
             }
+            
+            let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
+            logger.info("⏱️ Wait complete: \(String(format: "%.0f", waitElapsed))ms, isProcessing=\(self.audioService.isProcessing)")
             
             let transcribedText = lastTranscription
             
@@ -313,7 +326,7 @@ final class RecordingController {
                 return
             }
             
-            // 第一次写入剪贴板（原始转写文本）
+            // 如果等待期间文本有更新，再次复制
             copyToClipboard(transcribedText)
             logger.info("📋 Clipboard #1: transcribed text")
             

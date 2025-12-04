@@ -216,9 +216,24 @@ final class AudioRecorderService: NSObject {
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         
-        // 通知 Provider 结束处理
+        // 通知 Provider 结束处理（异步执行，完成后更新状态）
         Task {
-            try? await transcriptionProvider?.finishProcessing()
+            let startTime = CFAbsoluteTimeGetCurrent()
+            logger.info("⏳ Waiting for transcription finalization...")
+            
+            do {
+                try await transcriptionProvider?.finishProcessing()
+            } catch {
+                logger.warning("⚠️ finishProcessing error: \(error.localizedDescription)")
+            }
+            
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            logger.info("✅ Transcription finalized in \(String(format: "%.0f", elapsed))ms")
+            
+            // 🚀 关键修复：确保 finishProcessing 完成后更新状态
+            await MainActor.run {
+                self.isProcessing = false
+            }
         }
         
         // 关闭音频文件
