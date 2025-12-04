@@ -40,3 +40,11 @@ xcuserdata/
 *.tmp
 *.temp
 docs/code2prompt-output/
+.tmp_frames/
+
+# Media files
+*.mp4
+*.mov
+
+# Build output (use swift-bundler to regenerate)
+spoke/SpokenAnyWhere.app/
