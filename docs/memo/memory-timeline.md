@@ -1,10 +1,11 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05 05:40
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05 23:50
 
 ## Learns (Latest at top)
 
-- [T070] 行缓冲区设计：CaptionLineBuffer 固定 2 行+智能分句(句号/问号/感叹号)；超过时滚动丢弃最老行；译文异步更新用 updateLastTranslation
+- [T071] 双层缓冲区模型：frozenLines(已冻结)+currentLineBuffer(当前行 finalized)+volatileTail(尾巴)；volatile 不参与分行只追加显示；冻结条件>=65 字符或(>=40+句号)；displayWindowStart 单向滚动只增不减
+- [T070] [已被 T071 替代] 行缓冲区设计：旧实现，volatile 参与分行导致跳动
 - [T069] UnsafeRawPointer 内存安全：assumingMemoryBound 比 bindMemory 更安全，适用于已知内存布局场景（如 CMSampleBuffer → Float32）
 - [T068] SpeechAnalyzer 增量计算：finalizedText.count 差值 = 新段落；volatileText = 实时预览；自动产生多个 isFinal 无需手动分段
 - [T067] 模型角色分配：transcriptionModelId vs liveCaptionModelId 双角色配置；只有 supportsStreaming=true 才能设为实时字幕模型
@@ -77,12 +78,27 @@
 
 ## Timeline
 
+[2025-12-05 T071] 双层缓冲区模型彻底解决跳动
+
+- PROB: volatile 参与分行导致:1.分行边界随 volatile 变化;2.一行变两行又变回一行;3.minDisplayIndex 锁不住行内容变化
+- PLAN:
+  1. frozenLines(已冻结行)+currentLineBuffer(当前行 finalized)+volatileTail(尾巴)
+  2. volatile 不参与分行只追加显示
+  3. 冻结条件:超 65 字符或(超 40+有句号)
+  4. findBestSplitPoint 优先级:句号>逗号>空格>强制
+  5. displayWindowStart 单向滚动只增不减
+  6. buildDisplayText:frozenLines[windowStart...]+lastLine
+- TIME: 2h | TAGS: #live-caption #buffer #stability
+- LINK: CaptionLineBuffer.swift#双层缓冲区
+- STAT: [√] 编译通过
+- NOTE: 核心原则:分行边界只由 finalized 决定 volatile 不参与;volatile 变化只影响 lastLine 尾巴;frozenLine 一旦冻结内容永不改变
+
 [2025-12-05 T069-T070] 代码审查修复 + 实时字幕优化
 
 - PROB: 1.bindMemory 内存安全隐患 2.实时字幕折叠态体验差
 - PLAN:
   1. bindMemory → assumingMemoryBound 避免类型绑定 UB
-  2. CaptionLineBuffer 行缓冲区：固定 2 行+智能分句
+  2. CaptionLineBuffer 行缓冲区：固定 2 行+智能分句 [已被 T071 替代]
   3. 字体 15→18pt，背景 0.4→0.6
 - TIME: 0.5h | TAGS: #memory-safety #live-caption #ux
 - LINK: SystemAudioCaptureService.swift; CaptionLineBuffer.swift

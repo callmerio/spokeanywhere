@@ -1,9 +1,13 @@
 # 实时字幕翻译功能设计
 
-创建: 2024-12-04 | 状态: `进行中` | 更新: 2025-12-05
+创建: 2024-12-04 | 状态: `基本完成` | 更新: 2025-12-05
 
 > [!NOTE] 技术路线已从 SFSpeechRecognizer 改为 SpeechAnalyzer (macOS 26+)
 > 详细重构方案见 `design-live-caption-refactor.md`
+
+> [!IMPORTANT] 2025-12-05 双层缓冲区模型
+> 彻底解决了字幕跳动问题，详见 `CaptionLineBuffer.swift`
+> 核心原则：**分行边界只由 finalized 决定，volatile 不参与分行计算**
 
 ## 需求概述
 
@@ -129,9 +133,68 @@ var onLiveCaptionToggle: (() -> Void)?
 | 测试调试                  | 2h       |
 | **总计**                  | **~10h** |
 
+## 双层缓冲区模型 (2025-12-05)
+
+解决 volatile 文本不稳定导致的跳动问题。
+
+### 数据模型
+
+```swift
+// 已冻结的行（内容永不改变）
+private var frozenLines: [String] = []
+
+// 当前行的 finalized 部分（还未冻结）
+private var currentLineBuffer: String = ""
+
+// volatile 文本（仅做显示用，不参与分行）
+private var volatileTail: String = ""
+
+// 显示窗口起点（只增不减）
+private var displayWindowStart: Int = 0
+```
+
+### 核心流程
+
+```
+update(finalized, volatile)
+    │
+    ├─ 1. 计算 finalized 增量 (delta)
+    │
+    ├─ 2. currentLineBuffer += delta
+    │
+    ├─ 3. while shouldFreezeLine():
+    │      freezeCurrentLine()  → frozenLines.append()
+    │
+    ├─ 4. volatileTail = volatile  (不参与分行！)
+    │
+    └─ 5. displayText = buildDisplayText()
+           = frozenLines[windowStart...] + (currentLineBuffer + volatileTail)
+```
+
+### 冻结条件
+
+| 条件     | 阈值                               |
+| -------- | ---------------------------------- |
+| 强制冻结 | currentLineBuffer.count >= 65      |
+| 句末冻结 | count >= 40 且包含句号/问号/感叹号 |
+
+### 切分优先级
+
+句号 > 逗号 > 空格 > 强制切分
+
+### 稳定性保证
+
+| 场景            | 行为                              |
+| --------------- | --------------------------------- |
+| volatile 变短   | 只有 volatileTail 变，其他不变 ✅ |
+| volatile 变长   | 只有 volatileTail 变，其他不变 ✅ |
+| frozenLine 增加 | 可能触发 displayWindowStart++ ✅  |
+| 分行边界        | 只由 finalized 决定 ✅            |
+
 ## 后续扩展
 
 - [ ] 单词级高亮/点击查询
 - [ ] 保存到词典
 - [ ] 字幕历史导出
 - [ ] 多语言互译
+- [ ] 翻译功能优化 (debounce + 后台线程)

@@ -1,6 +1,6 @@
 # MM 学习卡片
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05 23:50
 
 ## C001|HUD 动画实现
 
@@ -221,5 +221,20 @@ A: 使用 finalizedText 长度差值:
 2. `volatileText` - 实时预览（覆盖式更新）
 3. 新段落 = `finalizedText[lastLength...]`
 4. 无需手动分段，SpeechAnalyzer 自动产生多个 isFinal
-5. CaptionLineBuffer 固定 2 行+智能分句(. ? ! 。？！)
-   REF: T068,T070 | LiveCaptionManager.swift; CaptionLineBuffer.swift
+   REF: T068 | LiveCaptionManager.swift
+
+## C019|双层缓冲区模型
+
+ID: C019 | Tags: #live-caption #buffer #stability
+
+Q: 如何解决实时字幕 volatile 文本导致的跳动问题？
+A: 双层缓冲区模型，volatile 不参与分行:
+
+1. `frozenLines` - 已冻结行，内容永不改变
+2. `currentLineBuffer` - 当前行的 finalized 部分
+3. `volatileTail` - volatile 文本，仅做显示追加
+4. `displayWindowStart` - 单向滚动锁，只增不减
+5. 冻结条件: count>=65 或 (count>=40 且有句号)
+6. 切分优先级: 句号 > 逗号 > 空格 > 强制
+7. displayText = frozenLines[windowStart...] + (currentLineBuffer + volatileTail)
+   REF: T071 | CaptionLineBuffer.swift#双层缓冲区

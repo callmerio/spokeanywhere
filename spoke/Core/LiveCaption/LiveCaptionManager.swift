@@ -444,18 +444,20 @@ final class LiveCaptionManager: ObservableObject {
     // MARK: - Result Handling
     
     /// 处理 SpeechAnalyzerProvider 的结果 (macOS 26+)
+    /// 新逻辑：volatile 直接上屏（快速响应），finalized 时锁定（可反改）
     private func handleTranscriptionResult(_ result: TranscriptionResult) {
-        // 更新 pendingText（实时预览）
+        // 更新 pendingText（保留兼容，实际已不再使用灰色预览）
         pendingText = result.volatileText
         
-        // 更新行缓冲区的实时输入
-        lineBuffer.updatePending(result.volatileText)
+        // 核心：调用新的 update API，volatile 直接上屏为活跃行
+        lineBuffer.update(
+            finalizedText: result.finalizedText,
+            volatileText: result.volatileText
+        )
         
-        // 计算增量：finalizedText 比上次长的部分就是新段落
+        // 保存 segment（用于展开模式历史和持久化）
         let currentLength = result.finalizedText.count
-        
         if currentLength > lastFinalizedLength {
-            // 提取新增部分
             let startIndex = result.finalizedText.index(result.finalizedText.startIndex, offsetBy: lastFinalizedLength)
             let newText = String(result.finalizedText[startIndex...]).trimmingCharacters(in: .whitespacesAndNewlines)
             

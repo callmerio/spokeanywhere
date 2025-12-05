@@ -6,7 +6,7 @@ import OSLog
 /// 字幕行
 struct CaptionLine: Identifiable, Equatable {
     let id: UUID
-    let original: String
+    var original: String
     var translated: String?
     let timestamp: Date
     
@@ -21,145 +21,228 @@ struct CaptionLine: Identifiable, Equatable {
 // MARK: - Caption Line Buffer
 
 /// 字幕行缓冲区管理
-/// 实现2行滚动窗口逻辑：固定显示最新2行，智能分句
+/// 简化模型（类似 O+R）：直接显示 finalized + volatile，允许回退修改
 @MainActor
 final class CaptionLineBuffer: ObservableObject {
     
-    // MARK: - Constants
+    // MARK: - Configuration
     
-    /// 每行最大字符数（18pt字体，560pt可用宽度）
-    /// 中文约 30 字符，英文约 56 字符
-    /// 取中间值 40 作为换行阈值
-    private static let maxCharsPerLine: Int = 50
-    
+    /// 行字符上限 - UI宽672px-48px=624px，约18pt字7px/字符≈80+字符
+    private let lineCharLimit = 78
     /// 最大显示行数
-    private static let maxLines: Int = 2
+    private let maxDisplayLines = 2
     
-    /// 分句标点符号
-    private static let sentenceBreaks: Set<Character> = [".", "?", "!", "。", "？", "！", "；", "…"]
-    
-    // MARK: - Properties
+    // MARK: - State
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "CaptionLineBuffer")
     
-    /// 当前显示的行（最多2行）
+    /// 当前显示的原文
+    @Published private(set) var displayText: String = ""
+    
+    /// 当前显示的译文
+    @Published private(set) var translatedText: String = ""
+    
+    /// 待翻译的稳定文本（用于触发翻译）
+    @Published private(set) var stableTextForTranslation: String?
+    
+    /// 兼容旧 API：lines 数组
     @Published private(set) var lines: [CaptionLine] = []
     
-    /// 当前未完成的句子片段（实时输入中）
+    /// 兼容旧 API
     @Published private(set) var pendingFragment: String = ""
     
-
+    /// 累积的已翻译文本
+    private var accumulatedTranslation: String = ""
     
     // MARK: - Public API
     
-    /// 追加实时输入文本（volatile）
-    func updatePending(_ text: String) {
-        pendingFragment = text
-    }
-    
-    /// 追加确定的文本（finalized）
-    /// - Parameters:
-    ///   - text: 新增的原文
-    ///   - translation: 对应的译文（可能稍后到达）
-    func append(text: String, translation: String? = nil) {
-        guard !text.isEmpty else { return }
+    /// 处理转录结果（finalized + volatile）
+    /// 简化逻辑：直接拼接显示，允许回退修改（类似 O+R）
+    func update(finalizedText: String, volatileText: String) {
+        // 直接拼接 finalized + volatile
+        let fullText = (finalizedText + volatileText).trimmingCharacters(in: .whitespaces)
         
-        // 清空 pending
-        pendingFragment = ""
+        // 智能分行，取最后 N 行
+        let newDisplayText = formatForDisplay(fullText)
         
-        // 分句处理
-        let sentences = splitSentences(text)
-        
-        for sentence in sentences {
-            commitSentence(sentence, translation: translation)
+        // 更新 UI
+        if newDisplayText != displayText {
+            displayText = newDisplayText
+            updateLegacyLines()
         }
     }
     
-    /// 更新最后一行的译文
-    func updateLastTranslation(_ translation: String) {
-        guard !lines.isEmpty else { return }
-        lines[lines.count - 1].translated = translation
+    // MARK: - 核心逻辑
+    
+    /// 格式化文本用于显示：智能分行，取最后 maxDisplayLines 行
+    private func formatForDisplay(_ text: String) -> String {
+        guard !text.isEmpty else { return "" }
+        
+        // 将文本分成多行（每行最多 lineCharLimit 字符）
+        let lines = splitIntoLines(text)
+        
+        // 取最后 maxDisplayLines 行
+        let visibleLines = lines.suffix(maxDisplayLines)
+        return visibleLines.joined(separator: "\n")
+    }
+    
+    /// 将文本智能分行
+    private func splitIntoLines(_ text: String) -> [String] {
+        var lines: [String] = []
+        var remaining = text
+        
+        while !remaining.isEmpty {
+            if remaining.count <= lineCharLimit {
+                lines.append(remaining)
+                break
+            }
+            
+            // 找最佳切分点
+            let splitPoint = findBestSplitPoint(remaining)
+            let splitIdx = remaining.index(remaining.startIndex, offsetBy: splitPoint)
+            
+            let line = String(remaining[..<splitIdx]).trimmingCharacters(in: .whitespaces)
+            if !line.isEmpty {
+                lines.append(line)
+            }
+            
+            remaining = String(remaining[splitIdx...]).trimmingLeadingWhitespace()
+        }
+        
+        return lines
+    }
+    
+    /// 找最佳切分点
+    /// 优先级: 空格 > 标点 > 强制切分
+    private func findBestSplitPoint(_ text: String) -> Int {
+        let length = text.count
+        guard length > lineCharLimit else { return length }
+        
+        // 搜索范围: [lineCharLimit * 0.7, lineCharLimit]
+        let searchStart = max(Int(Double(lineCharLimit) * 0.7), 40)
+        let searchEnd = lineCharLimit
+        
+        let startIdx = text.index(text.startIndex, offsetBy: searchStart)
+        let endIdx = text.index(text.startIndex, offsetBy: searchEnd)
+        let searchRange = startIdx..<endIdx
+        
+        // 1. 找空格（最高优先级）
+        if let spaceIdx = text[searchRange].lastIndex(of: " ") {
+            return text.distance(from: text.startIndex, to: text.index(after: spaceIdx))
+        }
+        
+        // 2. 找标点
+        let punctuation: Set<Character> = [".", "。", "!", "?", "！", "？", ",", "，", ";", "；"]
+        if let punctIdx = text[searchRange].lastIndex(where: { punctuation.contains($0) }) {
+            return text.distance(from: text.startIndex, to: text.index(after: punctIdx))
+        }
+        
+        // 3. 强制切分
+        return searchEnd
     }
     
     /// 清空所有内容
     func clear() {
+        displayText = ""
+        translatedText = ""
+        accumulatedTranslation = ""
+        stableTextForTranslation = nil
         lines.removeAll()
         pendingFragment = ""
+        logger.info("🧹 CaptionLineBuffer cleared")
     }
     
-    // MARK: - Private
+    // MARK: - 兼容旧 API
     
-    /// 分句：按标点拆分
-    private func splitSentences(_ text: String) -> [String] {
-        var sentences: [String] = []
-        var current = ""
+    /// 更新译文
+    func updateTranslation(_ translation: String) {
+        guard !translation.isEmpty else { return }
         
-        for char in text {
-            current.append(char)
-            
-            // 遇到分句标点
-            if Self.sentenceBreaks.contains(char) {
-                let trimmed = current.trimmingCharacters(in: .whitespaces)
-                if !trimmed.isEmpty {
-                    sentences.append(trimmed)
-                }
-                current = ""
-            }
+        if accumulatedTranslation.isEmpty {
+            accumulatedTranslation = translation
+        } else {
+            accumulatedTranslation += translation
         }
+        translatedText = truncateForDisplay(accumulatedTranslation, maxLength: 150)
         
-        // 剩余部分（未结束的句子）
-        let remaining = current.trimmingCharacters(in: .whitespaces)
-        if !remaining.isEmpty {
-            sentences.append(remaining)
+        if !lines.isEmpty {
+            lines[0].translated = translatedText
         }
-        
-        return sentences
+        stableTextForTranslation = nil
     }
     
-    /// 提交一个句子
-    private func commitSentence(_ sentence: String, translation: String?) {
-        // 如果没有行，直接添加第1行
-        guard let lastLine = lines.last else {
-            lines.append(CaptionLine(original: sentence, translated: translation))
+    /// 追加实时输入文本（volatile）- 兼容旧 API
+    func updatePending(_ text: String) {
+        pendingFragment = text
+        // 简化：直接更新显示
+        let newDisplay = formatForDisplay(text)
+        if newDisplay != displayText {
+            displayText = newDisplay
+            updateLegacyLines()
+        }
+    }
+    
+    /// 追加确定的文本（finalized）- 兼容旧 API
+    func append(text: String, translation: String? = nil) {
+        guard !text.isEmpty else { return }
+        pendingFragment = ""
+        if let trans = translation {
+            translatedText = trans
+            accumulatedTranslation = trans
+        }
+        // 简化：直接更新显示
+        let newDisplay = formatForDisplay(text)
+        if newDisplay != displayText {
+            displayText = newDisplay
+            updateLegacyLines()
+        }
+    }
+    
+    /// 更新最后一行的译文 - 兼容旧 API
+    func updateLastTranslation(_ translation: String) {
+        updateTranslation(translation)
+    }
+    
+    // MARK: - Private Helpers
+    
+    /// 截断文本用于显示（保持最后 N 个字符）
+    private func truncateForDisplay(_ text: String, maxLength: Int = 200) -> String {
+        guard !text.isEmpty else { return "" }
+        guard text.count > maxLength else { return text }
+        
+        let startIndex = text.index(text.endIndex, offsetBy: -maxLength)
+        let searchRange = startIndex..<text.endIndex
+        
+        if let spaceIndex = text[searchRange].firstIndex(of: " ") {
+            return String(text[spaceIndex...]).trimmingCharacters(in: .whitespaces)
+        }
+        return String(text[startIndex...])
+    }
+    
+    /// 更新兼容的 lines 数组
+    private func updateLegacyLines() {
+        if displayText.isEmpty && translatedText.isEmpty {
+            lines.removeAll()
             return
         }
         
-        // 尝试拼接到最后一行
-        let combined = lastLine.original + " " + sentence
-        
-        // 判断是否能拼接到最后一行
-        if combined.count <= Self.maxCharsPerLine {
-            // 拼接到最后一行
-            lines[lines.count - 1] = CaptionLine(
-                original: combined,
-                translated: mergeTranslation(lastLine.translated, translation),
-                timestamp: lastLine.timestamp
-            )
+        if lines.isEmpty {
+            lines = [CaptionLine(original: displayText, translated: translatedText.isEmpty ? nil : translatedText)]
         } else {
-            // 需要换行
-            if lines.count >= Self.maxLines {
-                // 滚动：移除第1行，第2行升级为第1行
-                lines.removeFirst()
-            }
-            
-            // 添加新行
-            lines.append(CaptionLine(original: sentence, translated: translation))
+            lines[0].original = displayText
+            lines[0].translated = translatedText.isEmpty ? nil : translatedText
         }
-        
-        // logger.debug("📝 Lines: \(self.lines.map { $0.original })")
     }
-    
-    /// 合并译文
-    private func mergeTranslation(_ existing: String?, _ new: String?) -> String? {
-        switch (existing, new) {
-        case (nil, nil):
-            return nil
-        case (let e?, nil):
-            return e
-        case (nil, let n?):
-            return n
-        case (let e?, let n?):
-            return e + " " + n
+}
+
+// MARK: - String Extension
+
+private extension String {
+    /// 去除前导空白
+    func trimmingLeadingWhitespace() -> String {
+        guard let firstNonWhitespace = firstIndex(where: { !$0.isWhitespace }) else {
+            return ""
         }
+        return String(self[firstNonWhitespace...])
     }
 }
