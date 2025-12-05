@@ -269,6 +269,44 @@ struct MessageCardView: View {
                 isHovered = hovering
             }
         }
+        .contextMenu {
+            // 设为 Today（仅 ASR/LLM 卡片显示）
+            if card.stage.isTranscriptionResult {
+                Button {
+                    MessagePanelState.shared.setRecordType(card.id, type: .today)
+                } label: {
+                    Label("设为 Today", systemImage: "sun.max")
+                }
+                
+                Button {
+                    MessagePanelState.shared.setRecordType(card.id, type: .note)
+                } label: {
+                    Label("设为 Note", systemImage: "bookmark")
+                }
+                
+                if card.recordType.isPinned {
+                    Button {
+                        MessagePanelState.shared.setRecordType(card.id, type: .normal)
+                    } label: {
+                        Label("取消标记", systemImage: "xmark.circle")
+                    }
+                }
+                
+                Divider()
+            }
+            
+            Button {
+                copyContent()
+            } label: {
+                Label("复制", systemImage: "doc.on.doc")
+            }
+            
+            Button(role: .destructive) {
+                onDelete?()
+            } label: {
+                Label("删除", systemImage: "trash")
+            }
+        }
     }
     
     // MARK: - Header
@@ -284,6 +322,11 @@ struct MessageCardView: View {
                 Text(card.stage.displayName)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(HUDTheme.textSecondary)
+            }
+            
+            // Today/Note 标记
+            if card.recordType.isPinned {
+                recordTypeBadge
             }
             
             Spacer()
@@ -421,6 +464,29 @@ struct MessageCardView: View {
                 showCopied = false
             }
         }
+    }
+    
+    /// Today/Note 标记徽章
+    private var recordTypeBadge: some View {
+        let (icon, color): (String, Color) = {
+            switch card.recordType {
+            case .today: return ("sun.max.fill", .orange)
+            case .note: return ("bookmark.fill", .green)
+            case .normal: return ("", .clear)
+            }
+        }()
+        
+        return HStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(.system(size: 8))
+            Text(card.recordType.displayName)
+                .font(.system(size: 9, weight: .medium))
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(color.opacity(0.15))
+        .clipShape(Capsule())
     }
     
     private var cardBackground: some View {

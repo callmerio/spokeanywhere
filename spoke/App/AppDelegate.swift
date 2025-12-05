@@ -67,6 +67,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("📍 Step 6: Performing history cleanup...")
         performHistoryCleanup()
         
+        print("📍 Step 6.1: Cleaning orphaned audio files...")
+        performOrphanCleanup()
+        
         // 双轨词典注入策略：
         // 1. contextualStrings（轻量级）- 每次录音时实时注入，无需预编译
         // 2. 预编译 LM（重量级）- 启动时后台准备，准备好后提供更强识别效果
@@ -138,6 +141,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if settings.historyMaxCount > 0 {
                 await HistoryManager.shared.performCleanup(policy: .keepCount(settings.historyMaxCount))
             }
+        }
+    }
+    
+    private func performOrphanCleanup() {
+        Task {
+            // 降级过期的 Today 记录
+            await HistoryManager.shared.downgradeExpiredTodayRecords()
+            // 清理孤儿音频文件（磁盘有文件但数据库无记录）
+            await HistoryManager.shared.cleanupOrphanedAudioFiles()
+            // 限制普通记录数量为 50 条（today/note 不受影响）
+            await HistoryManager.shared.enforceNormalRecordLimit(maxCount: 50)
+            // 限制音频总大小为 2GB
+            await HistoryManager.shared.enforceAudioSizeLimit(maxSizeMB: 2048)
         }
     }
     

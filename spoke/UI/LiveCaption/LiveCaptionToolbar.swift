@@ -12,14 +12,8 @@ struct LiveCaptionToolbar: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // 翻译语言选择
+            // 识别语言选择（独立于全局设置）
             languageMenu
-            
-            // 原文开关
-            originalToggle
-            
-            // 字体大小（预留）
-            fontSizeMenu
             
             Spacer()
             
@@ -38,13 +32,15 @@ struct LiveCaptionToolbar: View {
     
     private var languageMenu: some View {
         Menu {
-            ForEach(TranslationService.supportedTargetLanguages, id: \.code) { lang in
+            ForEach(LiveCaptionManager.supportedLanguages, id: \.id) { lang in
                 Button {
-                    TranslationService.shared.targetLanguage = lang.code
+                    Task {
+                        await manager.setLocale(lang.id)
+                    }
                 } label: {
                     HStack {
                         Text(lang.name)
-                        if TranslationService.shared.targetLanguage == lang.code {
+                        if manager.captionLocale == lang.id {
                             Image(systemName: "checkmark")
                         }
                     }
@@ -54,42 +50,7 @@ struct LiveCaptionToolbar: View {
             HStack(spacing: 4) {
                 Image(systemName: "globe")
                     .font(.system(size: 12))
-                Text("翻译为: \(currentLanguageName)")
-                    .font(.system(size: 12))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8))
-            }
-            .foregroundColor(.white.opacity(0.8))
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-    }
-    
-    private var originalToggle: some View {
-        Button {
-            manager.showOriginal.toggle()
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: manager.showOriginal ? "text.badge.checkmark" : "text.badge.xmark")
-                    .font(.system(size: 12))
-                Text(manager.showOriginal ? "关闭原文" : "显示原文")
-                    .font(.system(size: 12))
-            }
-            .foregroundColor(.white.opacity(0.8))
-        }
-        .buttonStyle(.plain)
-    }
-    
-    private var fontSizeMenu: some View {
-        Menu {
-            Button("小号字体") { }
-            Button("中号字体") { }
-            Button("大号字体") { }
-        } label: {
-            HStack(spacing: 4) {
-                Text("Aa")
-                    .font(.system(size: 12, weight: .medium))
-                Text("小号字体")
+                Text(currentLanguageName)
                     .font(.system(size: 12))
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8))
@@ -134,8 +95,8 @@ struct LiveCaptionToolbar: View {
     // MARK: - Helpers
     
     private var currentLanguageName: String {
-        TranslationService.supportedTargetLanguages
-            .first { $0.code == TranslationService.shared.targetLanguage }?
-            .name ?? "中文"
+        LiveCaptionManager.supportedLanguages
+            .first { $0.id == manager.captionLocale }?
+            .name ?? "英语 (English)"
     }
 }

@@ -243,6 +243,170 @@ final class HistoryManager {
         }
     }
     
+    // MARK: - Orphan Cleanup
+    
+    /// 清理孤儿音频文件（磁盘有文件但数据库无记录）
+    /// 应在启动时调用，防止音频文件泄漏
+    func cleanupOrphanedAudioFiles() async {
+        guard let context = modelContext else {
+            logger.error("❌ ModelContext not configured for orphan cleanup")
+            return
+        }
+        
+        // 获取数据库中所有音频路径
+        let descriptor = FetchDescriptor<HistoryItem>()
+        let validPaths: Set<String>
+        do {
+            let items = try context.fetch(descriptor)
+            validPaths = Set(items.compactMap { $0.audioPath })
+        } catch {
+            logger.error("❌ Failed to fetch audio paths: \(error.localizedDescription)")
+            return
+        }
+        
+        // 扫描磁盘文件
+        let fm = FileManager.default
+        guard let files = try? fm.contentsOfDirectory(atPath: audioStorageURL.path) else { return }
+        
+        var deletedCount = 0
+        var freedBytes: Int64 = 0
+        
+        for file in files where file.hasSuffix(".caf") {
+            if !validPaths.contains(file) {
+                let url = audioStorageURL.appendingPathComponent(file)
+                if let attrs = try? fm.attributesOfItem(atPath: url.path),
+                   let size = attrs[.size] as? Int64 {
+                    freedBytes += size
+                }
+                try? fm.removeItem(at: url)
+                deletedCount += 1
+            }
+        }
+        
+        if deletedCount > 0 {
+            let freedMB = Double(freedBytes) / 1024 / 1024
+            logger.info("🧹 Orphan cleanup: \(deletedCount) files, \(String(format: "%.1f", freedMB))MB freed")
+        }
+    }
+    
+    /// 限制音频总大小（超出后删除最旧的普通记录）
+    /// - Parameter maxSizeMB: 最大总大小（MB）
+    /// - Note: today/note 类型记录不会被删除
+    func enforceAudioSizeLimit(maxSizeMB: Int = 2048) async {
+        guard let context = modelContext else { return }
+        
+        // 只删除普通记录，按时间排序最旧在前
+        let descriptor = FetchDescriptor<HistoryItem>(sortBy: [SortDescriptor(\.createdAt, order: .forward)])
+        
+        do {
+            let items = try context.fetch(descriptor)
+            var totalSize: Int64 = 0
+            let maxBytes = Int64(maxSizeMB) * 1024 * 1024
+            
+            // 计算当前总大小
+            for item in items {
+                if let audioPath = item.audioPath {
+                    let url = audioStorageURL.appendingPathComponent(audioPath)
+                    if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                       let size = attrs[.size] as? Int64 {
+                        totalSize += size
+                    }
+                }
+            }
+            
+            // 超出限制时，从最旧的普通记录开始删除
+            var deletedCount = 0
+            for item in items {
+                guard totalSize > maxBytes else { break }
+                
+                // 跳过 today/note 记录
+                if item.recordType.isPinned { continue }
+                
+                if let audioPath = item.audioPath {
+                    let url = audioStorageURL.appendingPathComponent(audioPath)
+                    if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                       let size = attrs[.size] as? Int64 {
+                        totalSize -= size
+                    }
+                }
+                deleteItem(item)
+                deletedCount += 1
+            }
+            
+            if deletedCount > 0 {
+                logger.info("🧹 Size limit enforced: \(deletedCount) old items deleted")
+            }
+        } catch {
+            logger.error("❌ Size limit enforcement failed: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 限制普通记录数量（只保留最新的 N 条普通记录）
+    /// - Parameter maxCount: 最大保留数量
+    /// - Note: today/note 类型记录不计入也不会被删除
+    func enforceNormalRecordLimit(maxCount: Int = 50) async {
+        guard let context = modelContext else { return }
+        
+        // 获取所有普通记录，按时间倒序（最新在前）
+        let descriptor = FetchDescriptor<HistoryItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        
+        do {
+            let allItems = try context.fetch(descriptor)
+            
+            // 过滤出普通记录
+            let normalItems = allItems.filter { !$0.recordType.isPinned }
+            
+            // 超出限制的部分需要删除
+            if normalItems.count > maxCount {
+                let itemsToDelete = Array(normalItems.dropFirst(maxCount))
+                for item in itemsToDelete {
+                    deleteItem(item)
+                }
+                logger.info("🧹 Normal record limit enforced: \(itemsToDelete.count) old items deleted, keeping \(maxCount)")
+            }
+        } catch {
+            logger.error("❌ Normal record limit enforcement failed: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 降级过期的 Today 记录为 Normal
+    /// 应在启动时调用
+    func downgradeExpiredTodayRecords() async {
+        guard let context = modelContext else { return }
+        
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+        
+        let descriptor = FetchDescriptor<HistoryItem>()
+        
+        do {
+            let items = try context.fetch(descriptor)
+            var downgradedCount = 0
+            
+            for item in items where item.recordType == .today {
+                // 如果创建时间不是今天，降级为普通记录
+                if item.createdAt < todayStart {
+                    item.recordType = .normal
+                    downgradedCount += 1
+                }
+            }
+            
+            if downgradedCount > 0 {
+                try context.save()
+                logger.info("🔄 Downgraded \(downgradedCount) expired Today records to Normal")
+            }
+        } catch {
+            logger.error("❌ Today downgrade failed: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 设置记录类型
+    func setRecordType(_ item: HistoryItem, type: HistoryRecordType) {
+        item.recordType = type
+        try? modelContext?.save()
+        logger.info("📌 Record type set to \(type.displayName): \(item.rawText.prefix(30))...")
+    }
+    
     // MARK: - Private
     
     private func getAudioDuration(url: URL) async -> TimeInterval? {

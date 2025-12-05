@@ -13,7 +13,7 @@ struct LiveCaptionView: View {
     // MARK: - Constants
     
     /// 字幕字体大小
-    private let captionFontSize: CGFloat = 18
+    private let captionFontSize: CGFloat = 20
     /// 折叠高度（2行原文 + 2行译文 + padding）
     private let collapsedHeight: CGFloat = 160
     private let expandedHeight: CGFloat = 400
@@ -75,9 +75,8 @@ struct LiveCaptionView: View {
                 // 正在输入的文本（pending）
                 if !manager.lineBuffer.pendingFragment.isEmpty {
                     Text(manager.lineBuffer.pendingFragment)
-                        .font(.system(size: captionFontSize))
-                        .foregroundColor(.white.opacity(0.5))
-                        .lineLimit(1)
+                        .font(.system(size: captionFontSize, weight: .medium))
+                        .foregroundColor(.white)
                 }
                 
                 Spacer(minLength: 0)
@@ -150,21 +149,21 @@ struct CaptionLineView: View {
                 Text(line.original)
                     .font(.system(size: fontSize, weight: .medium))
                     .foregroundColor(.white)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             // 译文
             if let translated = line.translated {
                 Text(translated)
                     .font(.system(size: fontSize, weight: .medium))
-                    .foregroundColor(showOriginal ? .white.opacity(0.85) : .white)
-                    .lineLimit(1)
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
             } else if !showOriginal {
                 // 没有译文且不显示原文时，显示原文
                 Text(line.original)
                     .font(.system(size: fontSize, weight: .medium))
                     .foregroundColor(.white)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -183,7 +182,7 @@ struct CaptionSegmentView: View {
             // 原文
             if showOriginal {
                 Text(segment.originalText)
-                    .font(.system(size: 16))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white)
                     .textSelection(.enabled)
             }
@@ -191,13 +190,13 @@ struct CaptionSegmentView: View {
             // 译文
             if let translated = segment.translatedText {
                 Text(translated)
-                    .font(.system(size: 16))
-                    .foregroundColor(showOriginal ? .white.opacity(0.85) : .white)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white)
                     .textSelection(.enabled)
             } else if !showOriginal {
                 // 没有译文且不显示原文时，显示原文
                 Text(segment.originalText)
-                    .font(.system(size: 16))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white)
                     .textSelection(.enabled)
             }

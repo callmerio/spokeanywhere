@@ -36,15 +36,15 @@
 		{
 			"id": "pointer:pointer",
 			"typeName": "pointer",
-			"x": -218.0286387660517,
-			"y": -1685.880476690397,
-			"lastActivityTimestamp": 0,
+			"x": 385.02076390275465,
+			"y": 471.7017754199568,
+			"lastActivityTimestamp": 1764886854763,
 			"meta": {}
 		},
 		{
-			"x": 218.0286387660517,
-			"y": 1685.880476690397,
-			"z": 0.07244444191967747,
+			"x": 927.9491996875349,
+			"y": 559.7873736380487,
+			"z": 0.31262917558504305,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
@@ -89,12 +89,12 @@
 			"typeName": "shape"
 		},
 		{
-			"editingShapeId": null,
+			"editingShapeId": "shape:lnoPggF-FPrOC-BXO-Ojv",
 			"croppingShapeId": null,
 			"selectedShapeIds": [
-				"shape:Ay5IGS08qXZTegyemliyv"
+				"shape:lnoPggF-FPrOC-BXO-Ojv"
 			],
-			"hoveredShapeId": null,
+			"hoveredShapeId": "shape:lnoPggF-FPrOC-BXO-Ojv",
 			"erasingShapeIds": [],
 			"hintingShapeIds": [],
 			"focusedGroupId": null,
@@ -206,6 +206,45 @@
 			"typeName": "shape"
 		},
 		{
+			"x": 356.38679931071533,
+			"y": 471.7017754199568,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:lnoPggF-FPrOC-BXO-Ojv",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "m",
+				"w": 514.1473999023438,
+				"font": "draw",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"attrs": {
+								"dir": "auto"
+							},
+							"content": [
+								{
+									"type": "text",
+									"text": "左边的 pipeline 添加一个功能就是生成 todo。"
+								}
+							]
+						}
+					]
+				}
+			},
+			"parentId": "page:page",
+			"index": "a8jUvbYl",
+			"typeName": "shape"
+		},
+		{
 			"id": "asset:-1860927486",
 			"type": "image",
 			"typeName": "asset",
@@ -290,8 +329,8 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 300,
-				"h": 226
+				"w": 1082.1759033203125,
+				"h": 523.1481323242188
 			},
 			"insets": [
 				false,
@@ -306,9 +345,9 @@
 			"isChatting": false,
 			"highlightedUserIds": [],
 			"isFocused": true,
-			"devicePixelRatio": 1,
+			"devicePixelRatio": 1.7280000448226929,
 			"isCoarsePointer": false,
-			"isHoveringCanvas": null,
+			"isHoveringCanvas": true,
 			"openMenus": [],
 			"isChangingStyle": false,
 			"isReadonly": false,

@@ -9,7 +9,7 @@ import AVFoundation
 // MARK: - Caption Segment Model
 
 /// 字幕段落
-struct CaptionSegment: Identifiable, Equatable {
+struct CaptionSegment: Identifiable, Equatable, Codable {
     let id: UUID
     let timestamp: Date
     let originalText: String
@@ -65,14 +65,16 @@ final class LiveCaptionManager: ObservableObject {
     /// 是否启用翻译
     @Published var translationEnabled: Bool = true
     
+    /// 实时字幕独立语言设置（独立于全局设置）
+    /// 存储 locale 标识符，如 "en-US", "zh-Hans"
+    @AppStorage("LiveCaptionLocale") var captionLocale: String = "en-US"
+    
     /// 行缓冲区（折叠模式使用）
     let lineBuffer = CaptionLineBuffer()
     
-    /// 源语言（使用 TranscriptionModelManager 的设置）
+    /// 源语言（使用独立的 captionLocale 设置）
     var sourceLanguage: String {
-        TranscriptionModelManager.shared.settings.settings(
-            for: TranscriptionModelManager.shared.settings.liveCaptionModelId
-        ).locale
+        captionLocale
     }
     
     /// 支持的语言列表
@@ -99,8 +101,12 @@ final class LiveCaptionManager: ObservableObject {
     
     private let translator = TranslationService.shared
     
-    /// 最大保留段落数
-    private let maxSegments = 10000
+    /// 内存中最大保留段落数（用于 UI 显示）
+    /// 文字很轻量，可以保留较多用于回看
+    private let maxSegmentsInMemory = 500
+    
+    /// 持久化文件最大保留段落数
+    private let maxSegmentsInFile = 2000
     
     /// 当前翻译任务
     private var translationTask: Task<Void, Never>?
@@ -108,11 +114,32 @@ final class LiveCaptionManager: ObservableObject {
     /// 上次的 finalizedText 长度（用于计算增量）
     private var lastFinalizedLength: Int = 0
     
+    /// 字幕历史存储路径
+    private var storageURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
+        return spokeDir.appendingPathComponent("caption_history.json")
+    }
+    
     // MARK: - Init
     
-    private init() {}
+    private init() {
+        loadSegments()
+    }
     
     // MARK: - Public API
+    
+    /// 切换识别语言（会自动重启引擎）
+    func setLocale(_ locale: String) async {
+        guard locale != captionLocale else { return }
+        captionLocale = locale
+        
+        // 如果正在运行，重启以应用新语言
+        if isActive {
+            await stop()
+            try? await start()
+        }
+    }
     
     /// 开始实时字幕
     func start() async throws {
@@ -145,11 +172,13 @@ final class LiveCaptionManager: ObservableObject {
             throw LiveCaptionError.captureError("未找到实时字幕模型配置")
         }
         
-        logger.info("🎬 Starting LiveCaption with model: \(modelDef.displayName, privacy: .public)")
+        // 使用独立的 captionLocale 而非全局设置
+        let locale = Locale(identifier: captionLocale)
+        logger.info("🎬 Starting LiveCaption with model: \(modelDef.displayName, privacy: .public), locale: \(self.captionLocale, privacy: .public)")
         
         // 创建 SpeechAnalyzerProvider
         let speechProvider = SpeechAnalyzerProvider(
-            locale: Locale(identifier: modelSettings.locale),
+            locale: locale,
             modelType: modelDef.type
         )
         speechProvider.enablePrecompiledLM = modelDef.supportsPrecompiledLM && modelSettings.enablePrecompiledLM
@@ -279,6 +308,9 @@ final class LiveCaptionManager: ObservableObject {
         pendingText = ""
         lastFinalizedLength = 0
         
+        // 停止时保存历史
+        saveSegments()
+        
         logger.info("🛑 Live Caption stopped")
     }
     
@@ -397,12 +429,16 @@ final class LiveCaptionManager: ObservableObject {
         }
     }
     
-    /// 清空历史
+    /// 清空历史（内存 + 文件）
     func clearSegments() {
         segments.removeAll()
         pendingText = ""
         lastFinalizedLength = 0
         lineBuffer.clear()
+        
+        // 清空持久化文件
+        try? FileManager.default.removeItem(at: storageURL)
+        logger.info("🧹 Caption history cleared")
     }
     
     // MARK: - Result Handling
@@ -482,9 +518,64 @@ final class LiveCaptionManager: ObservableObject {
     private func addSegment(_ segment: CaptionSegment) {
         segments.append(segment)
         
-        // 限制数量
-        if segments.count > maxSegments {
-            segments.removeFirst(segments.count - maxSegments)
+        // 内存中限制数量（用于 UI 显示）
+        if segments.count > maxSegmentsInMemory {
+            segments.removeFirst(segments.count - maxSegmentsInMemory)
+        }
+        
+        // 定期持久化（每 10 条保存一次，避免频繁 IO）
+        if segments.count % 10 == 0 {
+            saveSegments()
+        }
+    }
+    
+    // MARK: - Persistence
+    
+    /// 保存字幕历史到文件
+    private func saveSegments() {
+        // 只保存有内容的段落
+        let segmentsToSave = segments.filter { !$0.originalText.isEmpty }
+        
+        // 限制文件中的数量
+        let limitedSegments = segmentsToSave.suffix(maxSegmentsInFile)
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(Array(limitedSegments))
+            
+            // 确保目录存在
+            let dir = storageURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            
+            try data.write(to: storageURL, options: .atomic)
+            logger.debug("💾 Saved \(limitedSegments.count) caption segments")
+        } catch {
+            logger.error("❌ Failed to save caption history: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 从文件加载字幕历史
+    private func loadSegments() {
+        guard FileManager.default.fileExists(atPath: storageURL.path) else {
+            logger.debug("📂 No caption history file found")
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: storageURL)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let loadedSegments = try decoder.decode([CaptionSegment].self, from: data)
+            
+            // 只加载最近 24 小时的记录
+            let cutoff = Date().addingTimeInterval(-24 * 60 * 60)
+            segments = loadedSegments.filter { $0.timestamp > cutoff }
+            
+            logger.info("📥 Loaded \(self.segments.count) caption segments from history")
+        } catch {
+            logger.error("❌ Failed to load caption history: \(error.localizedDescription)")
         }
     }
 }

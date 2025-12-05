@@ -33,6 +33,14 @@ enum MessageStage: Equatable, Codable {
         case .system: return .gray
         }
     }
+    
+    /// 是否是转录结果（ASR 或 LLM）
+    var isTranscriptionResult: Bool {
+        switch self {
+        case .asr, .llm: return true
+        default: return false
+        }
+    }
 }
 
 // MARK: - Text Highlight
@@ -64,6 +72,28 @@ struct TextHighlight: Codable, Equatable {
     }
 }
 
+/// 卡片记录类型
+/// - normal: 普通卡片，受数量限制（默认50条）
+/// - today: 今日卡片，当天结束后降级为 normal
+/// - note: 笔记卡片，永久保留
+enum CardRecordType: String, Codable, CaseIterable {
+    case normal
+    case today
+    case note
+    
+    var displayName: String {
+        switch self {
+        case .normal: return "普通"
+        case .today: return "Today"
+        case .note: return "Note"
+        }
+    }
+    
+    var isPinned: Bool {
+        self != .normal
+    }
+}
+
 /// 消息卡片数据模型
 struct MessageCard: Identifiable, Equatable, Codable {
     let id: UUID
@@ -73,6 +103,8 @@ struct MessageCard: Identifiable, Equatable, Codable {
     var metadata: [String: String]
     /// 文本高亮标记（用于显示纠错/词典学习样式）
     var highlights: [TextHighlight]
+    /// 记录类型：normal/today/note
+    var recordType: CardRecordType
     
     init(
         id: UUID = UUID(),
@@ -80,7 +112,8 @@ struct MessageCard: Identifiable, Equatable, Codable {
         stage: MessageStage,
         content: String,
         metadata: [String: String] = [:],
-        highlights: [TextHighlight] = []
+        highlights: [TextHighlight] = [],
+        recordType: CardRecordType = .normal
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -88,9 +121,10 @@ struct MessageCard: Identifiable, Equatable, Codable {
         self.content = content
         self.metadata = metadata
         self.highlights = highlights
+        self.recordType = recordType
     }
     
-    // 自定义解码：兼容旧数据（没有 highlights 字段）
+    // 自定义解码：兼容旧数据（没有 highlights/recordType 字段）
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -99,6 +133,7 @@ struct MessageCard: Identifiable, Equatable, Codable {
         content = try container.decode(String.self, forKey: .content)
         metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata) ?? [:]
         highlights = try container.decodeIfPresent([TextHighlight].self, forKey: .highlights) ?? []
+        recordType = try container.decodeIfPresent(CardRecordType.self, forKey: .recordType) ?? .normal
     }
     
     var formattedTime: String {
@@ -240,6 +275,54 @@ final class MessagePanelState: ObservableObject {
         saveCards()
     }
     
+    // MARK: - Record Type Management
+    
+    /// 设置卡片的记录类型
+    func setRecordType(_ cardId: UUID, type: CardRecordType) {
+        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        cards[index].recordType = type
+        saveCards()
+        logger.info("📌 Card record type set to \(type.displayName)")
+    }
+    
+    /// 降级过期的 Today 卡片为 Normal
+    /// 应在启动时调用
+    func downgradeExpiredTodayCards() {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+        
+        var needsSave = false
+        for i in cards.indices where cards[i].recordType == .today {
+            if cards[i].timestamp < todayStart {
+                cards[i].recordType = .normal
+                needsSave = true
+            }
+        }
+        
+        if needsSave {
+            saveCards()
+            logger.info("🔄 Downgraded expired Today cards to Normal")
+        }
+    }
+    
+    /// 限制普通卡片数量（保留最新的 N 条）
+    /// today/note 卡片不受影响
+    func enforceNormalCardLimit(maxCount: Int = 50) {
+        // 分离 pinned 和 normal 卡片
+        let pinnedCards = cards.filter { $0.recordType.isPinned }
+        var normalCards = cards.filter { !$0.recordType.isPinned }
+        
+        // 只限制 normal 卡片数量
+        if normalCards.count > maxCount {
+            normalCards = Array(normalCards.prefix(maxCount))
+            cards = pinnedCards + normalCards
+            // 按时间倒序排列（最新在前）
+            cards.sort { $0.timestamp > $1.timestamp }
+            saveCards()
+            logger.info("🧹 Normal card limit enforced, keeping \(maxCount)")
+        }
+    }
+    
     // MARK: - Persistence
     
     /// 保存卡片到本地
@@ -282,11 +365,19 @@ final class MessagePanelState: ObservableObject {
             decoder.dateDecodingStrategy = .iso8601
             let loadedCards = try decoder.decode([MessageCard].self, from: data)
             
-            // 只加载最近 24 小时的记录
+            // 过滤规则：
+            // - today/note 卡片永久保留
+            // - normal 卡片只保留最近 24 小时
             let cutoff = Date().addingTimeInterval(-24 * 60 * 60)
-            cards = loadedCards.filter { $0.timestamp > cutoff }
+            cards = loadedCards.filter { card in
+                card.recordType.isPinned || card.timestamp > cutoff
+            }
             
             logger.info("📥 Loaded \(self.cards.count) pipeline cards from history")
+            
+            // 启动时执行维护
+            downgradeExpiredTodayCards()
+            enforceNormalCardLimit(maxCount: 50)
         } catch {
             logger.error("❌ Failed to load pipeline cards: \(error.localizedDescription)")
         }
