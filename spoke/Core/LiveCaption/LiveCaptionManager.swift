@@ -111,6 +111,9 @@ final class LiveCaptionManager: ObservableObject {
     /// 当前翻译任务
     private var translationTask: Task<Void, Never>?
     
+    /// 流式翻译任务（带防抖）
+    private var volatileTranslationTask: Task<Void, Never>?
+    
     /// 上次的 finalizedText 长度（用于计算增量）
     private var lastFinalizedLength: Int = 0
     
@@ -444,26 +447,35 @@ final class LiveCaptionManager: ObservableObject {
     // MARK: - Result Handling
     
     /// 处理 SpeechAnalyzerProvider 的结果 (macOS 26+)
-    /// 新逻辑：volatile 直接上屏（快速响应），finalized 时锁定（可反改）
+    /// 新逻辑：volatile 实时更新 + 流式翻译，finalized 触发最终翻译
     private func handleTranscriptionResult(_ result: TranscriptionResult) {
-        // 更新 pendingText（保留兼容，实际已不再使用灰色预览）
+        // 1. 更新 pendingText (Volatile)
         pendingText = result.volatileText
+        lineBuffer.updateVolatile(text: result.volatileText)
         
-        // 核心：调用新的 update API，volatile 直接上屏为活跃行
-        lineBuffer.update(
-            finalizedText: result.finalizedText,
-            volatileText: result.volatileText
-        )
+        // 2. 对 volatile 文本进行流式翻译（带防抖）
+        if !result.volatileText.isEmpty {
+            translateVolatileText(result.volatileText)
+        }
         
-        // 保存 segment（用于展开模式历史和持久化）
+        // 3. 处理 Finalized 增量
         let currentLength = result.finalizedText.count
         if currentLength > lastFinalizedLength {
             let startIndex = result.finalizedText.index(result.finalizedText.startIndex, offsetBy: lastFinalizedLength)
             let newText = String(result.finalizedText[startIndex...]).trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !newText.isEmpty {
+                // 清空流式状态
+                lineBuffer.clearPending()
+                volatileTranslationTask?.cancel()
+                
+                // 添加到 Buffer (用于 UI 显示)
+                guard let itemId = lineBuffer.addFinalized(text: newText) else { return }
+                
+                // 触发翻译并更新 Buffer + 历史记录
                 Task {
-                    await saveSegment(text: newText)
+                    let translation = await translateAndUpdateBuffer(itemId: itemId, text: newText)
+                    await saveSegment(text: newText, translation: translation)
                 }
             }
             
@@ -471,50 +483,76 @@ final class LiveCaptionManager: ObservableObject {
         }
     }
     
-    /// 处理旧版 LiveCaptionTranscriber 的结果 (macOS < 26)
-    private func handleLegacyTranscription(_ segment: TranscriptionSegment) async {
-        if segment.isFinal {
-            await saveSegment(text: segment.text)
-        } else {
-            pendingText = segment.text
+    /// 对流式文本进行实时翻译（300ms 防抖）
+    private func translateVolatileText(_ text: String) {
+        guard translationEnabled, translator.isAvailable else { return }
+        
+        // 获取当前版本号
+        let currentVersion = lineBuffer.currentVolatileVersion
+        
+        // 取消之前的任务
+        volatileTranslationTask?.cancel()
+        
+        volatileTranslationTask = Task {
+            // 防抖延迟
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            
+            if let translated = await translator.translate(text) {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    lineBuffer.updatePendingTranslation(translated, version: currentVersion)
+                }
+            }
         }
     }
     
-    /// 保存段落（含翻译）
-    private func saveSegment(text: String) async {
-        pendingText = ""
+    /// 翻译并更新 Buffer 中的 Item
+    /// - Returns: 翻译结果，用于复用到历史记录
+    private func translateAndUpdateBuffer(itemId: UUID, text: String) async -> String? {
+        guard translationEnabled, translator.isAvailable else { return nil }
         
-        var newSegment = CaptionSegment(
+        if let translated = await translator.translate(text) {
+            await MainActor.run {
+                lineBuffer.updateTranslation(id: itemId, translation: translated)
+            }
+            return translated
+        }
+        return nil
+    }
+    
+    /// 处理旧版 LiveCaptionTranscriber 的结果 (macOS < 26)
+    private func handleLegacyTranscription(_ segment: TranscriptionSegment) async {
+        if segment.isFinal {
+            // 清空流式状态
+            lineBuffer.clearPending()
+            volatileTranslationTask?.cancel()
+            
+            // 添加到 Buffer
+            guard let itemId = lineBuffer.addFinalized(text: segment.text) else { return }
+            // 触发翻译
+            let translation = await translateAndUpdateBuffer(itemId: itemId, text: segment.text)
+            // 保存历史
+            await saveSegment(text: segment.text, translation: translation)
+        } else {
+            pendingText = segment.text
+            lineBuffer.updateVolatile(text: segment.text)
+            // 流式翻译
+            translateVolatileText(segment.text)
+        }
+    }
+    
+    /// 保存段落（含翻译）- 用于历史记录
+    /// - Parameters:
+    ///   - text: 原文
+    ///   - translation: 已翻译的结果（复用，避免重复请求）
+    private func saveSegment(text: String, translation: String?) async {
+        let newSegment = CaptionSegment(
             originalText: text,
+            translatedText: translation,
             sourceLanguage: sourceLanguage
         )
-        
-        // 翻译
-        if translationEnabled, translator.isAvailable {
-            translationTask?.cancel()
-            
-            translationTask = Task {
-                if let translated = await translator.translate(text) {
-                    if let index = segments.firstIndex(where: { $0.id == newSegment.id }) {
-                        segments[index].translatedText = translated
-                    } else {
-                        newSegment.translatedText = translated
-                    }
-                    
-                    // 更新行缓冲区的译文
-                    lineBuffer.updateLastTranslation(translated)
-                }
-            }
-            
-            // 先添加到行缓冲区（无译文）
-            lineBuffer.append(text: text, translation: nil)
-            addSegment(newSegment)
-            await translationTask?.value
-        } else {
-            // 无翻译模式
-            lineBuffer.append(text: text, translation: nil)
-            addSegment(newSegment)
-        }
+        addSegment(newSegment)
     }
     
     private func addSegment(_ segment: CaptionSegment) {

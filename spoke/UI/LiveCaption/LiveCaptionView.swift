@@ -1,5 +1,161 @@
 import SwiftUI
 import Translation
+import AppKit
+
+// MARK: - NSScrollView Bridge
+
+/// NSScrollView 桥接，用于精确检测滚动位置
+struct AppKitScrollView<Content: View>: NSViewRepresentable {
+    let content: Content
+    @Binding var isAtBottom: Bool
+    let scrollTrigger: Int  // 当此值变化时滚动到底部
+    
+    /// 底部检测容差
+    private let bottomThreshold: CGFloat = 30
+    
+    init(isAtBottom: Binding<Bool>, scrollTrigger: Int, @ViewBuilder content: () -> Content) {
+        self.content = content()
+        self._isAtBottom = isAtBottom
+        self.scrollTrigger = scrollTrigger
+    }
+    
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.scrollerStyle = .overlay
+        
+        // 让滚动条更透明
+        scrollView.verticalScroller?.alphaValue = 0.3
+        
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let documentView = FlippedView()
+        documentView.translatesAutoresizingMaskIntoConstraints = false
+        documentView.addSubview(hostingView)
+        
+        // hostingView 填满 documentView
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: documentView.topAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
+        ])
+        
+        scrollView.documentView = documentView
+        
+        // 关键：让 documentView 宽度跟随 clipView（内容区），这样文字才会换行
+        NSLayoutConstraint.activate([
+            documentView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
+        ])
+        
+        // 监听滚动
+        context.coordinator.scrollView = scrollView
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.scrollViewDidScroll(_:)),
+            name: NSScrollView.didLiveScrollNotification,
+            object: scrollView
+        )
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.scrollViewDidScroll(_:)),
+            name: NSScrollView.didEndLiveScrollNotification,
+            object: scrollView
+        )
+        
+        // 保存初始 trigger
+        context.coordinator.lastScrollTrigger = scrollTrigger
+        
+        return scrollView
+    }
+    
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        // 更新内容
+        if let documentView = scrollView.documentView,
+           let hostingView = documentView.subviews.first as? NSHostingView<Content> {
+            hostingView.rootView = content
+        }
+        
+        // 更新 coordinator 的引用
+        context.coordinator.isAtBottomBinding = $isAtBottom
+        context.coordinator.bottomThreshold = bottomThreshold
+        
+        // 检查是否需要滚动到底部
+        let shouldScroll = scrollTrigger != context.coordinator.lastScrollTrigger
+        context.coordinator.lastScrollTrigger = scrollTrigger
+        
+        if shouldScroll && isAtBottom {
+            // 延迟执行，让内容先更新
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak scrollView] in
+                guard let scrollView = scrollView else { return }
+                Self.scrollToBottom(scrollView)
+            }
+        }
+    }
+    
+    private static func scrollToBottom(_ scrollView: NSScrollView) {
+        guard let documentView = scrollView.documentView else { return }
+        let contentHeight = documentView.frame.height
+        let clipHeight = scrollView.contentView.bounds.height
+        let maxScrollY = max(0, contentHeight - clipHeight)
+        
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            context.allowsImplicitAnimation = true
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY))
+        }
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+    }
+    
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        NotificationCenter.default.removeObserver(coordinator)
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isAtBottom: $isAtBottom, bottomThreshold: bottomThreshold)
+    }
+    
+    class Coordinator: NSObject {
+        var isAtBottomBinding: Binding<Bool>
+        var bottomThreshold: CGFloat
+        weak var scrollView: NSScrollView?
+        var lastScrollTrigger: Int = 0
+        
+        init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
+            self.isAtBottomBinding = isAtBottom
+            self.bottomThreshold = bottomThreshold
+        }
+        
+        @objc func scrollViewDidScroll(_ notification: Notification) {
+            guard let scrollView = scrollView,
+                  let documentView = scrollView.documentView else { return }
+            
+            let contentHeight = documentView.frame.height
+            let clipHeight = scrollView.contentView.bounds.height
+            let scrollY = scrollView.contentView.bounds.origin.y
+            let maxScrollY = max(0, contentHeight - clipHeight)
+            
+            // 检测是否在底部（含容差）
+            let atBottom = scrollY >= maxScrollY - bottomThreshold
+            
+            DispatchQueue.main.async {
+                if self.isAtBottomBinding.wrappedValue != atBottom {
+                    self.isAtBottomBinding.wrappedValue = atBottom
+                }
+            }
+        }
+    }
+    
+    /// Flipped NSView（使坐标系从上到下）
+    private class FlippedView: NSView {
+        override var isFlipped: Bool { true }
+    }
+}
 
 // MARK: - Design Constants
 
@@ -53,6 +209,8 @@ struct LiveCaptionView: View {
     
     @State private var isExpanded: Bool = false
     @State private var isHovering: Bool = false
+    @State private var isAtBottom: Bool = true
+    @State private var scrollTrigger: Int = 0  // 触发滚动的计数器
     
     var onClose: () -> Void
     
@@ -138,51 +296,95 @@ struct LiveCaptionView: View {
     
     // MARK: - Content Views
     
-    /// 折叠状态 - 简洁卡片
-    /// 显示连续的文本流，限制最多 2 行
+    /// 折叠状态 - 列表模式
+    /// 显示最近的句子流：[已确定句1] -> [已确定句2] -> [正在输入句]
     private var collapsedContent: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            let displayText = manager.lineBuffer.displayText
-            
-            if displayText.isEmpty && manager.pendingText.isEmpty {
+        let isEmpty = manager.lineBuffer.items.isEmpty && manager.lineBuffer.pendingText.isEmpty
+        
+        return Group {
+            if isEmpty {
                 // 空状态
                 Text("等待音频...")
                     .font(.system(size: CaptionDesign.fontSize))
                     .foregroundColor(CaptionDesign.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 32)
             } else {
-                // 原文 - 白色，限制 2 行
-                let originalText = displayText.isEmpty ? manager.pendingText : displayText
-                
-                if !originalText.isEmpty {
-                    Text(originalText)
-                        .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                        .foregroundColor(CaptionDesign.textPrimary)
-                        .lineSpacing(4)
-                        .lineLimit(2)
-                        .truncationMode(.tail)
-                        .shadow(color: .black.opacity(0.5), radius: 1, x: 0.5, y: 0.5)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .animation(.easeInOut(duration: 0.15), value: originalText)
+                AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // 1. 已确定的句子（原文+译文）
+                        ForEach(manager.lineBuffer.items) { item in
+                            VStack(alignment: .leading, spacing: 4) {
+                                // 原文
+                                Text(item.original)
+                                    .font(.system(size: CaptionDesign.fontSize, weight: .regular))
+                                    .foregroundColor(CaptionDesign.textPrimary)
+                                    .lineSpacing(4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                // 译文（如果有）
+                                if let translation = item.translation {
+                                    Text(translation)
+                                        .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                                        .foregroundColor(CaptionDesign.textSecondary)
+                                        .lineSpacing(3)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                        
+                        // 2. 正在输入的流式文本（原文 + 流式翻译）
+                        if !manager.lineBuffer.pendingText.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                // 流式原文
+                                Text(manager.lineBuffer.pendingText)
+                                    .font(.system(size: CaptionDesign.fontSize, weight: .regular))
+                                    .foregroundColor(CaptionDesign.textPrimary.opacity(0.7))
+                                    .lineSpacing(4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                // 流式翻译（如果有）
+                                if !manager.lineBuffer.pendingTranslation.isEmpty {
+                                    Text(manager.lineBuffer.pendingTranslation)
+                                        .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                                        .foregroundColor(CaptionDesign.textSecondary.opacity(0.7))
+                                        .lineSpacing(3)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                        
+                        // 底部占位
+                        Color.clear.frame(height: 4)
+                    }
+                    .padding(CaptionDesign.padding)
+                    .textSelection(.enabled)  // 允许选中文字
                 }
-                
-                // 译文 - 灰色，限制 2 行
-                let translatedText = manager.lineBuffer.translatedText
-                if manager.translationEnabled && !translatedText.isEmpty {
-                    Text(translatedText)
-                        .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                        .foregroundColor(CaptionDesign.textSecondary)
-                        .lineSpacing(3)
-                        .lineLimit(2)
-                        .truncationMode(.tail)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .animation(.easeInOut(duration: 0.15), value: translatedText)
+                .frame(height: CaptionDesign.collapsedContentHeight * 2.5)
+                .mask(LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black, location: 0.1),
+                        .init(color: .black, location: 1.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                ))
+                .onChange(of: manager.lineBuffer.items) { _, _ in
+                    if isAtBottom {
+                        scrollTrigger += 1
+                    }
+                }
+                .onChange(of: manager.lineBuffer.pendingText) { _, _ in
+                    if isAtBottom {
+                        scrollTrigger += 1
+                    }
+                }
+                .onChange(of: scrollTrigger) { _, _ in
+                    // 通过改变 scrollTrigger 触发 NSScrollView 的更新
                 }
             }
         }
-        .padding(CaptionDesign.padding)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     /// 展开状态 - 显示历史
@@ -279,55 +481,6 @@ struct LiveCaptionView: View {
     private var cardBorder: some View {
         RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
             .stroke(CaptionDesign.borderColor, lineWidth: 1)
-    }
-}
-
-// MARK: - Caption Line View
-
-/// 单行字幕视图（用于折叠模式）
-/// 原文白色 + 译文灰色的双行布局
-struct CaptionLineView: View {
-    
-    let line: CaptionLine
-    let showOriginal: Bool
-    let fontSize: CGFloat
-    
-    /// 主文本色 - #f9fafb
-    private var textPrimary: Color {
-        Color(red: 249/255, green: 250/255, blue: 251/255)
-    }
-    /// 次要文本色 - #9ca3af (译文)
-    private var textSecondary: Color {
-        Color(red: 156/255, green: 163/255, blue: 175/255)
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // 原文 - 白色
-            if showOriginal {
-                Text(line.original)
-                    .font(.system(size: fontSize, weight: .regular))
-                    .foregroundColor(textPrimary)
-                    .lineSpacing(6)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            // 译文 - 灰色（占位符：中文译文）
-            if let translated = line.translated {
-                Text(translated)
-                    .font(.system(size: fontSize, weight: .regular))
-                    .foregroundColor(textSecondary)
-                    .lineSpacing(6)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if !showOriginal {
-                // 没有译文且不显示原文时，显示原文
-                Text(line.original)
-                    .font(.system(size: fontSize, weight: .regular))
-                    .foregroundColor(textPrimary)
-                    .lineSpacing(6)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 }
 

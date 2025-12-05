@@ -161,7 +161,7 @@ final class TranslationService: ObservableObject {
             do {
                 let sourceLang = Locale.Language(identifier: source ?? "en")
                 let targetLang = Locale.Language(identifier: targetLanguage)
-                let session = try TranslationSession(installedSource: sourceLang, target: targetLang)
+                let session = TranslationSession(installedSource: sourceLang, target: targetLang)
                 let response = try await session.translate(trimmed)
                 let result = response.targetText
                 
