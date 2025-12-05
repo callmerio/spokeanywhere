@@ -215,10 +215,16 @@ final class RecordingController {
         }
     }
     
-    private func stopRecordingSession() {
+    /// 结束录音会话的公共逻辑
+    private func finishRecordingSession(source: String) {
         recordingTimer?.invalidate()
         recordingTimer = nil
         recordingStartTime = nil
+        
+        // 捕获当前录音数据（新录音可能会覆盖）
+        let capturedTranscription = lastTranscription
+        let capturedAudioURL = audioService.tempAudioFileURL
+        let capturedAppBundleId = contextService.getCurrentTargetApp()?.bundleIdentifier
         
         // 停止音频录制（正常结束，等待最终结果）
         _ = audioService.stopRecording()
@@ -228,43 +234,33 @@ final class RecordingController {
             inputService.flushPendingText()
         }
         
+        // 立即重置热键状态，允许新录音
+        hotKeyService.resetState()
+        
         // 根据是否启用 LLM 选择状态
-        // 如果启用了 LLM，立即显示"思考中"（流光效果），让用户感知到 AI 正在工作
         if llmPipeline.shouldProcess {
             hudManager.startThinking()
-            logger.info("⏹️ Recording stopped, AI thinking...")
         } else {
             hudManager.startProcessing()
-            logger.info("⏹️ Recording stopped, processing...")
         }
         
-        // 处理转写结果
-        processTranscription()
+        logger.info("⏹️ Recording \(source)")
+        
+        // 后台处理转写结果（不阻塞新录音）
+        processTranscription(
+            transcription: capturedTranscription,
+            audioURL: capturedAudioURL,
+            appBundleId: capturedAppBundleId
+        )
+    }
+    
+    private func stopRecordingSession() {
+        finishRecordingSession(source: "stopped")
     }
     
     /// 完成录音（用户点击"完成录音"按钮时调用）
     func completeRecordingSession() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        recordingStartTime = nil
-        
-        // 停止音频录制（正常结束，等待最终结果）
-        _ = audioService.stopRecording()
-        
-        // 重置热键状态
-        hotKeyService.isRecording = false
-        
-        // 根据是否启用 LLM 选择状态
-        if llmPipeline.shouldProcess {
-            hudManager.startThinking()
-        } else {
-            hudManager.startProcessing()
-        }
-        
-        logger.info("⏹️ Recording completed by user button")
-        
-        // 处理转写结果
-        processTranscription()
+        finishRecordingSession(source: "completed by user")
     }
     
     /// 取消录音（用户点击"取消录音"按钮时调用）
@@ -277,8 +273,8 @@ final class RecordingController {
         // 取消音频录制（丢弃结果）
         audioService.cancelRecording()
         
-        // 重置热键状态
-        hotKeyService.isRecording = false
+        // 重置热键状态（完整重置，包括 isToggleSession 和 recordingStartTime）
+        hotKeyService.resetState()
         
         // 隐藏 HUD
         hudManager.hide()
@@ -294,35 +290,45 @@ final class RecordingController {
     
     // MARK: - Processing
     
-    private func processTranscription() {
+    /// 后台处理转写结果（不阻塞新录音）
+    /// - Parameters:
+    ///   - transcription: 捕获的转录文本
+    ///   - audioURL: 捕获的音频文件 URL
+    ///   - appBundleId: 捕获的应用 Bundle ID
+    private func processTranscription(
+        transcription: String,
+        audioURL: URL?,
+        appBundleId: String?
+    ) {
         Task {
             let processStartTime = CFAbsoluteTimeGetCurrent()
             
             // 🚀 立即复制当前转录到剪贴板（用户可能急需）
-            let immediateText = lastTranscription
+            let immediateText = transcription
             if !immediateText.isEmpty {
                 copyToClipboard(immediateText)
                 logger.info("📋 剪贴板(即时): \(immediateText.prefix(50))...")
             }
             
-            // 等待最终结果（最多等待 2 秒，每 100ms 检查一次）
+            // 等待最终结果（最多等待 2 秒，新录音开始则立即中断）
             var waitTime = 0
-            logger.info("⏳ 等待最终结果... isProcessing=\(self.audioService.isProcessing)")
-            
-            while waitTime < Self.maxWaitForFinalResult {
+            while waitTime < Self.maxWaitForFinalResult && !hotKeyService.isRecording {
                 try? await Task.sleep(for: .milliseconds(Self.checkInterval))
                 waitTime += Self.checkInterval
                 if !audioService.isProcessing { break }
             }
             
             let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
-            logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed))ms, isProcessing=\(self.audioService.isProcessing)")
+            logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed))ms")
             
-            let transcribedText = lastTranscription
+            // 使用捕获的文本，避免访问可能被新录音覆盖的 lastTranscription
+            let transcribedText = transcription
             
             if transcribedText.isEmpty {
-                hudManager.fail(with: "未检测到语音")
-                hotKeyService.resetState()
+                // 仅在没有新录音时显示失败
+                if !hotKeyService.isRecording {
+                    hudManager.fail(with: "未检测到语音")
+                }
                 return
             }
             
@@ -338,29 +344,25 @@ final class RecordingController {
                 content: transcribedText
             )
             
-            // 获取临时音频文件 URL
-            let tempAudioURL = audioService.tempAudioFileURL
-            let appBundleId = contextService.getCurrentTargetApp()?.bundleIdentifier
-            
             // 检查是否需要 LLM 处理
             guard llmPipeline.shouldProcess else {
-                // 不需要 LLM，直接完成
-                hudManager.complete(with: transcribedText)
+                // 不需要 LLM，仅在没有新录音时更新 HUD
+                if !hotKeyService.isRecording {
+                    hudManager.complete(with: transcribedText)
+                }
                 
                 // 保存到历史记录
                 await historyManager.saveRecording(
                     rawText: transcribedText,
                     processedText: nil,
-                    tempAudioURL: tempAudioURL,
+                    tempAudioURL: audioURL,
                     appBundleId: appBundleId
                 )
                 
-                hotKeyService.resetState()
                 logger.info("✅ Transcription complete (no LLM): \(transcribedText)")
                 return
             }
             
-            // 已经在 thinking 状态了（stopRecordingSession 时已切换）
             // 调用 LLM 精炼
             let result = await llmPipeline.refine(transcribedText)
             
@@ -368,9 +370,9 @@ final class RecordingController {
             
             switch result {
             case .success(let refinedText):
-                // 第二次写入剪贴板（精炼后文本）
+                // 写入剪贴板（精炼后文本）
                 copyToClipboard(refinedText)
-                logger.info("📋 Clipboard #2: refined text")
+                logger.info("📋 Clipboard: refined text")
                 
                 // 发送 LLM 结果到 Message Panel
                 MessagePanelManager.shared.addLLMResult(
@@ -378,28 +380,29 @@ final class RecordingController {
                     content: refinedText
                 )
                 
-                // 完成
-                hudManager.complete(with: refinedText)
+                // 仅在没有新录音时更新 HUD
+                if !hotKeyService.isRecording {
+                    hudManager.complete(with: refinedText)
+                }
                 processedText = refinedText
                 logger.info("✅ LLM refinement complete: \(refinedText)")
                 
             case .failure(let error):
                 // LLM 失败，保留原始文本
                 logger.error("❌ LLM failed: \(error.localizedDescription)")
-                hudManager.complete(with: transcribedText)
+                if !hotKeyService.isRecording {
+                    hudManager.complete(with: transcribedText)
+                }
                 logger.info("⚠️ Fallback to transcribed text")
             }
             
-            // 保存到历史记录（替代临时文件清理）
+            // 保存到历史记录
             await historyManager.saveRecording(
                 rawText: transcribedText,
                 processedText: processedText,
-                tempAudioURL: tempAudioURL,
+                tempAudioURL: audioURL,
                 appBundleId: appBundleId
             )
-            
-            // 确保热键状态已重置（防止异常情况）
-            hotKeyService.resetState()
         }
     }
     

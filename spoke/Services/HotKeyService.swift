@@ -627,11 +627,16 @@ final class HotKeyService {
     }
     
     
-    /// 强制重置状态（用于异常恢复）
+    /// 强制重置状态（用于异常恢复或取消录音）
     func resetState() {
         isRecording = false
         isToggleSession = false
         recordingStartTime = nil
+        
+        // 取消任何待执行的防抖检查
+        flagsDebounceWorkItem?.cancel()
+        flagsDebounceWorkItem = nil
+        
         logger.info("🔄 HotKey state reset")
     }
 }
