@@ -90,8 +90,8 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         context.coordinator.lastScrollTrigger = scrollTrigger
         
         if shouldScroll && isAtBottom {
-            // 延迟执行，让内容先更新
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak scrollView] in
+            // 下一个 RunLoop 执行，最小延迟
+            DispatchQueue.main.async { [weak scrollView] in
                 guard let scrollView = scrollView else { return }
                 Self.scrollToBottom(scrollView)
             }
@@ -100,6 +100,10 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     
     private static func scrollToBottom(_ scrollView: NSScrollView) {
         guard let documentView = scrollView.documentView else { return }
+        
+        // 强制完成布局，确保获取正确的内容高度
+        documentView.layoutSubtreeIfNeeded()
+        
         let contentHeight = documentView.frame.height
         let clipHeight = scrollView.contentView.bounds.height
         let maxScrollY = max(0, contentHeight - clipHeight)
@@ -355,7 +359,7 @@ struct LiveCaptionView: View {
                         }
                         
                         // 底部占位
-                        Color.clear.frame(height: 4)
+                        Color.clear.frame(height: 20)
                     }
                     .padding(CaptionDesign.padding)
                     .textSelection(.enabled)  // 允许选中文字
@@ -387,38 +391,60 @@ struct LiveCaptionView: View {
         }
     }
     
-    /// 展开状态 - 显示历史
+    /// 展开状态 - 复用折叠模式设计，高度更大
     private var expandedContent: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
-                    // 安全地复制 segments 避免并发修改
-                    let segmentsCopy = Array(manager.segments.prefix(100))
-                    ForEach(segmentsCopy) { segment in
-                        CaptionSegmentView(
-                            segment: segment,
-                            showOriginal: manager.showOriginal
-                        )
-                        .id(segment.id)
-                    }
-                    
-                    // 正在输入的文本
-                    if !manager.pendingText.isEmpty {
-                        Text(manager.pendingText)
-                            .font(.system(size: CaptionDesign.fontSize - 2))
-                            .foregroundColor(CaptionDesign.textSecondary)
-                            .id("pending")
+        AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
+            VStack(alignment: .leading, spacing: 16) {
+                // 已确定的句子（原文+译文）
+                ForEach(manager.lineBuffer.items) { item in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.original)
+                            .font(.system(size: CaptionDesign.fontSize, weight: .regular))
+                            .foregroundColor(CaptionDesign.textPrimary)
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        if let translation = item.translation {
+                            Text(translation)
+                                .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                                .foregroundColor(CaptionDesign.textSecondary)
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
-                .padding(CaptionDesign.padding)
-            }
-            .frame(height: 300)
-            .onChange(of: manager.segments.count) { _, newCount in
-                // 安全滚动到底部
-                if newCount > 0 {
-                    proxy.scrollTo("pending", anchor: .bottom)
+                
+                // 正在输入的流式文本
+                if !manager.lineBuffer.pendingText.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(manager.lineBuffer.pendingText)
+                            .font(.system(size: CaptionDesign.fontSize, weight: .regular))
+                            .foregroundColor(CaptionDesign.textPrimary.opacity(0.7))
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        if !manager.lineBuffer.pendingTranslation.isEmpty {
+                            Text(manager.lineBuffer.pendingTranslation)
+                                .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                                .foregroundColor(CaptionDesign.textSecondary.opacity(0.7))
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
+                
+                // 底部占位
+                Color.clear.frame(height: 8)
             }
+            .padding(CaptionDesign.padding)
+            .textSelection(.enabled)
+        }
+        .frame(height: 400)
+        .onChange(of: manager.lineBuffer.items) { _, _ in
+            if isAtBottom { scrollTrigger += 1 }
+        }
+        .onChange(of: manager.lineBuffer.pendingText) { _, _ in
+            if isAtBottom { scrollTrigger += 1 }
         }
     }
     
@@ -570,13 +596,18 @@ struct TranslationTaskModifier15: ViewModifier {
     }
     
     private func performTranslation(session: TranslationSession) async {
-        guard let textToTranslate = manager.lineBuffer.stableTextForTranslation,
-              !textToTranslate.isEmpty else { return }
+        // 找到最后一个未翻译的 item
+        guard let item = await MainActor.run(body: {
+            manager.lineBuffer.items.last(where: { $0.translation == nil })
+        }) else { return }
+        
+        let textToTranslate = item.original
+        guard !textToTranslate.isEmpty else { return }
         
         do {
             let response = try await session.translate(textToTranslate)
             await MainActor.run {
-                manager.lineBuffer.updateTranslation(response.targetText)
+                manager.lineBuffer.updateTranslation(id: item.id, translation: response.targetText)
             }
         } catch {
             // 翻译失败，静默处理

@@ -1,13 +1,16 @@
 # 实时字幕翻译功能设计
 
-创建: 2024-12-04 | 状态: `基本完成` | 更新: 2025-12-05
+创建: 2024-12-04 | 状态: `基本完成` | 更新: 2025-12-06
 
 > [!NOTE] 技术路线已从 SFSpeechRecognizer 改为 SpeechAnalyzer (macOS 26+)
 > 详细重构方案见 `design-live-caption-refactor.md`
 
-> [!IMPORTANT] 2025-12-05 双层缓冲区模型
-> 彻底解决了字幕跳动问题，详见 `CaptionLineBuffer.swift`
-> 核心原则：**分行边界只由 finalized 决定，volatile 不参与分行计算**
+> [!IMPORTANT] 2025-12-06 滚动稳定性优化
+>
+> - `CaptionLineBuffer.maxItems` 扩容到 200 条支持更长历史
+> - `AppKitScrollView` 桥接 NSScrollView 精确滚动检测（替代不可靠的 SwiftUI）
+> - 滚动用 `main.async` 最小延迟，避免 `asyncAfter` 累积导致错位
+> - `layoutSubtreeIfNeeded()` 确保布局完成再计算滚动位置
 
 ## 需求概述
 

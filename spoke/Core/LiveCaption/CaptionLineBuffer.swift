@@ -37,7 +37,7 @@ final class CaptionLineBuffer: ObservableObject {
     @Published private(set) var pendingTranslation: String = ""
     
     /// 最大保留条数（用于 UI 显示）
-    private let maxItems = 10
+    private let maxItems = 200
     
     /// 当前流式文本的版本号（用于解决翻译竞态）
     private var volatileVersion: Int = 0
