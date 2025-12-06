@@ -11,7 +11,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     let scrollTrigger: Int  // 当此值变化时滚动到底部
     
     /// 底部检测容差（增大以容忍布局计算误差）
-    private let bottomThreshold: CGFloat = 30
+    private let bottomThreshold: CGFloat = CaptionDesign.scrollBottomThreshold
     
     init(isAtBottom: Binding<Bool>, scrollTrigger: Int, @ViewBuilder content: () -> Content) {
         self.content = content()
@@ -90,16 +90,21 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         context.coordinator.lastScrollTrigger = scrollTrigger
         
         if shouldScroll && isAtBottom {
+            let coordinator = context.coordinator
             // 下一个 RunLoop 执行，最小延迟
-            DispatchQueue.main.async { [weak scrollView] in
-                guard let scrollView = scrollView else { return }
-                Self.scrollToBottom(scrollView)
+            DispatchQueue.main.async { [weak scrollView, weak coordinator] in
+                guard let scrollView = scrollView, let coordinator = coordinator else { return }
+                Self.scrollToBottom(scrollView, coordinator: coordinator)
             }
         }
     }
     
-    private static func scrollToBottom(_ scrollView: NSScrollView) {
+    private static func scrollToBottom(_ scrollView: NSScrollView, coordinator: Coordinator) {
         guard let documentView = scrollView.documentView else { return }
+        
+        // 标记程序正在滚动，防止 scrollViewDidScroll 循环
+        coordinator.isScrollingProgrammatically = true
+        defer { coordinator.isScrollingProgrammatically = false }
         
         // 1. 标记需要布局
         documentView.needsLayout = true
@@ -126,14 +131,19 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         scrollView.reflectScrolledClipView(scrollView.contentView)
         
         // 滚动后再次检查布局，如果内容变高了则追加滚动
-        DispatchQueue.main.async { [weak scrollView] in
+        DispatchQueue.main.async { [weak scrollView, weak coordinator] in
             guard let scrollView = scrollView,
+                  let coordinator = coordinator,
                   let documentView = scrollView.documentView else { return }
+            
+            coordinator.isScrollingProgrammatically = true
+            defer { coordinator.isScrollingProgrammatically = false }
+            
             let newContentHeight = documentView.frame.height
             let newMaxScrollY = max(0, newContentHeight - scrollView.contentView.bounds.height)
             let currentY = scrollView.contentView.bounds.origin.y
             // 如果还没到底，追加滚动
-            if currentY < newMaxScrollY - 10 {
+            if currentY < newMaxScrollY - CaptionDesign.scrollCatchUpThreshold {
                 scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY))
                 scrollView.reflectScrolledClipView(scrollView.contentView)
             }
@@ -154,12 +164,17 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         weak var scrollView: NSScrollView?
         var lastScrollTrigger: Int = 0
         
+        /// 防止程序滚动触发 scrollViewDidScroll 导致循环
+        var isScrollingProgrammatically: Bool = false
+        
         init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
             self.isAtBottomBinding = isAtBottom
             self.bottomThreshold = bottomThreshold
         }
         
         @objc func scrollViewDidScroll(_ notification: Notification) {
+            // 程序滚动时不更新 isAtBottom，避免循环
+            guard !isScrollingProgrammatically else { return }
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
             
@@ -224,6 +239,16 @@ private enum CaptionDesign {
     static let dragIndicatorWidth: CGFloat = 32
     /// 拖动指示器高度 - h-1 = 4pt
     static let dragIndicatorHeight: CGFloat = 4
+    
+    // MARK: - Scroll
+    /// 底部检测容差（容忍布局误差）
+    static let scrollBottomThreshold: CGFloat = 30
+    /// 追加滚动检测阈值
+    static let scrollCatchUpThreshold: CGFloat = 10
+    /// 内容底部占位高度
+    static let contentBottomPadding: CGFloat = 20
+    /// 展开模式底部占位
+    static let expandedBottomPadding: CGFloat = 8
 }
 
 // MARK: - Live Caption View
@@ -385,7 +410,7 @@ struct LiveCaptionView: View {
                         }
                         
                         // 底部占位
-                        Color.clear.frame(height: 20)
+                        Color.clear.frame(height: CaptionDesign.contentBottomPadding)
                     }
                     .padding(CaptionDesign.padding)
                     .textSelection(.enabled)  // 允许选中文字
@@ -457,7 +482,7 @@ struct LiveCaptionView: View {
                 }
                 
                 // 底部占位
-                Color.clear.frame(height: 8)
+                Color.clear.frame(height: CaptionDesign.expandedBottomPadding)
             }
             .padding(CaptionDesign.padding)
             .textSelection(.enabled)

@@ -62,6 +62,11 @@ struct VocabularyHighlightText: NSViewRepresentable {
         }
     }
     
+    static func dismantleNSView(_ nsView: VocabularyTextView, coordinator: Coordinator) {
+        // 清理资源（当前无需额外清理，保留以备扩展）
+        nsView.delegate = nil
+    }
+    
     /// 更新文本内容（带高亮）
     private func updateTextContent(_ textView: NSTextView) {
         let font = NSFont.systemFont(ofSize: fontSize)
