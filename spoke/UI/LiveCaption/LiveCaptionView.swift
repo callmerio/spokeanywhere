@@ -123,10 +123,11 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         let clipHeight = scrollView.contentView.bounds.height
         let maxScrollY = max(0, contentHeight - clipHeight)
         
+        // 滚动到最大位置 + 额外偏移 (确保完全露出底部)
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             context.allowsImplicitAnimation = true
-            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY))
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
         }
         scrollView.reflectScrolledClipView(scrollView.contentView)
         
@@ -244,9 +245,11 @@ private enum CaptionDesign {
     /// 底部检测容差（容忍布局误差）
     static let scrollBottomThreshold: CGFloat = 30
     /// 追加滚动检测阈值
-    static let scrollCatchUpThreshold: CGFloat = 10
+    static let scrollCatchUpThreshold: CGFloat = 30
+    /// 滚动额外偏移量（确保底部内容完全露出）
+    static let scrollExtraOffset: CGFloat = 8
     /// 内容底部占位高度
-    static let contentBottomPadding: CGFloat = 20
+    static let contentBottomPadding: CGFloat = 12
     /// 展开模式底部占位
     static let expandedBottomPadding: CGFloat = 8
 }

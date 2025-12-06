@@ -507,17 +507,35 @@ final class LiveCaptionManager: ObservableObject {
         }
     }
     
-    /// 翻译并更新 Buffer 中的 Item
+    /// 翻译并更新 Buffer 中的 Item（带重试）
     /// - Returns: 翻译结果，用于复用到历史记录
     private func translateAndUpdateBuffer(itemId: UUID, text: String) async -> String? {
         guard translationEnabled, translator.isAvailable else { return nil }
         
-        if let translated = await translator.translate(text) {
-            await MainActor.run {
-                lineBuffer.updateTranslation(id: itemId, translation: translated)
+        // 最多重试 3 次
+        for attempt in 1...3 {
+            // 检查任务是否被取消（如用户关闭字幕窗口）
+            guard !Task.isCancelled else { return nil }
+            
+            if let translated = await translator.translate(text) {
+                await MainActor.run {
+                    lineBuffer.updateTranslation(id: itemId, translation: translated)
+                }
+                return translated
             }
-            return translated
+            
+            // 重试前等待一小段时间，同时检查取消状态
+            if attempt < 3 {
+                do {
+                    try await Task.sleep(for: .milliseconds(200 * attempt))
+                } catch {
+                    // Task 被取消
+                    return nil
+                }
+            }
         }
+        
+        logger.warning("⚠️ 翻译失败（已重试3次）: \(text.prefix(30))...")
         return nil
     }
     

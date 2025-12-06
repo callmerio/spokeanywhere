@@ -137,19 +137,37 @@ struct VocabularyHighlightText: NSViewRepresentable {
                 return menu
             }
             
+            let trimmedText = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+            
             // 创建新菜单
             let newMenu = NSMenu()
             
-            // 添加生词菜单项
-            let addVocabularyItem = NSMenuItem(
-                title: "添加生词",
-                action: #selector(addToVocabulary(_:)),
-                keyEquivalent: ""
-            )
-            addVocabularyItem.target = self
-            addVocabularyItem.representedObject = selectedText
-            addVocabularyItem.image = NSImage(systemSymbolName: "star", accessibilityDescription: nil)
-            newMenu.addItem(addVocabularyItem)
+            // 判断是否已是生词，显示对应菜单项
+            let isVocabulary = VocabularyService.shared.contains(trimmedText)
+            
+            if isVocabulary {
+                // 移除生词
+                let removeItem = NSMenuItem(
+                    title: "移除生词",
+                    action: #selector(removeFromVocabulary(_:)),
+                    keyEquivalent: ""
+                )
+                removeItem.target = self
+                removeItem.representedObject = trimmedText
+                removeItem.image = NSImage(systemSymbolName: "star.slash", accessibilityDescription: nil)
+                newMenu.addItem(removeItem)
+            } else {
+                // 添加生词
+                let addItem = NSMenuItem(
+                    title: "添加生词",
+                    action: #selector(addToVocabulary(_:)),
+                    keyEquivalent: ""
+                )
+                addItem.target = self
+                addItem.representedObject = trimmedText
+                addItem.image = NSImage(systemSymbolName: "star", accessibilityDescription: nil)
+                newMenu.addItem(addItem)
+            }
             
             // 分隔符
             newMenu.addItem(NSMenuItem.separator())
@@ -169,6 +187,31 @@ struct VocabularyHighlightText: NSViewRepresentable {
             
             Task { @MainActor in
                 VocabularyService.shared.add(word)
+                // 操作完成后恢复滚动状态
+                self.resetSelectionState()
+            }
+        }
+        
+        @objc func removeFromVocabulary(_ sender: NSMenuItem) {
+            guard let word = sender.representedObject as? String else { return }
+            
+            Task { @MainActor in
+                // 通过词查找对应 ID 再删除
+                if let item = VocabularyService.shared.items.first(where: { 
+                    $0.word.lowercased() == word.lowercased() 
+                }) {
+                    VocabularyService.shared.remove(item.id)
+                }
+                // 操作完成后恢复滚动状态
+                self.resetSelectionState()
+            }
+        }
+        
+        /// 重置选中状态，恢复自动滚动
+        private func resetSelectionState() {
+            if isSelecting {
+                isSelecting = false
+                onSelectionEnded?()
             }
         }
     }

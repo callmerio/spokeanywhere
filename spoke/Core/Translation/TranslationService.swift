@@ -104,7 +104,11 @@ final class TranslationService: ObservableObject {
             logger.debug("✅ Translated: \(trimmed.prefix(30))... → \(result.prefix(30))...")
             return result
         } catch {
+            #if DEBUG
+            logger.error("❌ Translation error: \(String(describing: error), privacy: .public)")
+            #else
             logger.error("❌ Translation error: \(error.localizedDescription)")
+            #endif
             return nil
         }
     }
@@ -140,7 +144,11 @@ final class TranslationService: ObservableObject {
             
             logger.info("✅ Batch translated \(toTranslate.count) texts")
         } catch {
+            #if DEBUG
+            logger.error("❌ Batch translation error: \(String(describing: error), privacy: .public)")
+            #else
             logger.error("❌ Batch translation error: \(error.localizedDescription)")
+            #endif
         }
         
         return results
@@ -169,7 +177,11 @@ final class TranslationService: ObservableObject {
                 logger.debug("✅ Translated: \(trimmed.prefix(30))... → \(result.prefix(30))...")
                 return result
             } catch {
+                #if DEBUG
+                logger.error("❌ Translation error: \(String(describing: error), privacy: .public)")
+                #else
                 logger.error("❌ Translation error: \(error.localizedDescription)")
+                #endif
                 return nil
             }
         }
