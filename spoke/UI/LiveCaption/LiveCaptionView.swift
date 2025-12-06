@@ -215,6 +215,8 @@ struct LiveCaptionView: View {
     @State private var isHovering: Bool = false
     @State private var isAtBottom: Bool = true
     @State private var scrollTrigger: Int = 0  // 触发滚动的计数器
+    @State private var isUserSelecting: Bool = false  // 用户正在选择文本时暂停滚动
+    @State private var vocabularyRefreshTrigger: Int = 0  // 生词列表变化时触发全量刷新
     
     var onClose: () -> Void
     
@@ -274,6 +276,10 @@ struct LiveCaptionView: View {
         //     translator: translator,
         //     onTranslationTriggered: { setupTranslation() }
         // ))
+        .onReceive(NotificationCenter.default.publisher(for: .vocabularyChanged)) { _ in
+            // 生词列表变化时触发全量刷新（包括之前的内容）
+            vocabularyRefreshTrigger += 1
+        }
     }
     
     // MARK: - Translation
@@ -316,15 +322,11 @@ struct LiveCaptionView: View {
             } else {
                 AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
                     VStack(alignment: .leading, spacing: 16) {
-                        // 1. 已确定的句子（原文+译文）
+                        // 1. 已确定的句子（原文+译文）- 支持生词高亮
                         ForEach(manager.lineBuffer.items) { item in
                             VStack(alignment: .leading, spacing: 4) {
-                                // 原文
-                                Text(item.original)
-                                    .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                                    .foregroundColor(CaptionDesign.textPrimary)
-                                    .lineSpacing(4)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                // 原文（带生词高亮 + 右键菜单）
+                                captionText(for: item.original)
                                 
                                 // 译文（如果有）
                                 if let translation = item.translation {
@@ -375,12 +377,13 @@ struct LiveCaptionView: View {
                     endPoint: .bottom
                 ))
                 .onChange(of: manager.lineBuffer.items) { _, _ in
-                    if isAtBottom {
+                    // 用户选中文本时暂停自动滚动
+                    if isAtBottom && !isUserSelecting {
                         scrollTrigger += 1
                     }
                 }
                 .onChange(of: manager.lineBuffer.pendingText) { _, _ in
-                    if isAtBottom {
+                    if isAtBottom && !isUserSelecting {
                         scrollTrigger += 1
                     }
                 }
@@ -395,14 +398,10 @@ struct LiveCaptionView: View {
     private var expandedContent: some View {
         AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
             VStack(alignment: .leading, spacing: 16) {
-                // 已确定的句子（原文+译文）
+                // 已确定的句子（原文+译文）- 支持生词高亮
                 ForEach(manager.lineBuffer.items) { item in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(item.original)
-                            .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                            .foregroundColor(CaptionDesign.textPrimary)
-                            .lineSpacing(4)
-                            .fixedSize(horizontal: false, vertical: true)
+                        captionText(for: item.original)
                         
                         if let translation = item.translation {
                             Text(translation)
@@ -441,14 +440,27 @@ struct LiveCaptionView: View {
         }
         .frame(height: 400)
         .onChange(of: manager.lineBuffer.items) { _, _ in
-            if isAtBottom { scrollTrigger += 1 }
+            if isAtBottom && !isUserSelecting { scrollTrigger += 1 }
         }
         .onChange(of: manager.lineBuffer.pendingText) { _, _ in
-            if isAtBottom { scrollTrigger += 1 }
+            if isAtBottom && !isUserSelecting { scrollTrigger += 1 }
         }
     }
     
     // MARK: - Components
+    
+    /// 字幕文本（带生词高亮 + 右键菜单）
+    @ViewBuilder
+    private func captionText(for original: String) -> some View {
+        VocabularyHighlightText(
+            text: original,
+            fontSize: CaptionDesign.fontSize,
+            onSelectionStarted: { isUserSelecting = true },
+            onSelectionEnded: { isUserSelecting = false },
+            refreshTrigger: vocabularyRefreshTrigger
+        )
+        .fixedSize(horizontal: false, vertical: true)
+    }
     
     /// 底部拖动指示器
     private var dragIndicator: some View {
