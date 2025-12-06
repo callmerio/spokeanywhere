@@ -36,15 +36,15 @@
 		{
 			"id": "pointer:pointer",
 			"typeName": "pointer",
-			"x": 1405.4774536689097,
-			"y": 1668.0726301197005,
-			"lastActivityTimestamp": 1764991302651,
+			"x": 817.143622913726,
+			"y": 692.466084222851,
+			"lastActivityTimestamp": 1765033790962,
 			"meta": {}
 		},
 		{
-			"x": 267.85995727992133,
-			"y": -207.93242402231016,
-			"z": 0.31945166081953363,
+			"x": 97.14806068945268,
+			"y": 157.49848582271443,
+			"z": 0.4339288609348406,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
@@ -89,9 +89,11 @@
 			"typeName": "shape"
 		},
 		{
-			"editingShapeId": null,
+			"editingShapeId": "shape:8-Dwo_AzHHbCK1CBaV7Bf",
 			"croppingShapeId": null,
-			"selectedShapeIds": [],
+			"selectedShapeIds": [
+				"shape:8-Dwo_AzHHbCK1CBaV7Bf"
+			],
 			"hoveredShapeId": null,
 			"erasingShapeIds": [],
 			"hintingShapeIds": [],
@@ -267,6 +269,45 @@
 			"typeName": "shape"
 		},
 		{
+			"x": 367.1452694312173,
+			"y": 584.0663325668255,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:8-Dwo_AzHHbCK1CBaV7Bf",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "m",
+				"w": 1146.80615234375,
+				"font": "draw",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"attrs": {
+								"dir": "auto"
+							},
+							"content": [
+								{
+									"type": "text",
+									"text": "字幕需要支持 自动识别 语音  主要场景是 中英文结合 有比较好的方法么 中文虽然支持英文 但是错误率很高"
+								}
+							]
+						}
+					]
+				}
+			},
+			"parentId": "page:page",
+			"index": "aBFU8RNG",
+			"typeName": "shape"
+		},
+		{
 			"id": "asset:81946780",
 			"type": "image",
 			"typeName": "asset",
@@ -384,7 +425,7 @@
 			"isFocused": true,
 			"devicePixelRatio": 1.7280000448226929,
 			"isCoarsePointer": false,
-			"isHoveringCanvas": false,
+			"isHoveringCanvas": true,
 			"openMenus": [],
 			"isChangingStyle": false,
 			"isReadonly": false,

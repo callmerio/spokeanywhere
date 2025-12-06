@@ -10,7 +10,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     @Binding var isAtBottom: Bool
     let scrollTrigger: Int  // 当此值变化时滚动到底部
     
-    /// 底部检测容差
+    /// 底部检测容差（增大以容忍布局计算误差）
     private let bottomThreshold: CGFloat = 30
     
     init(isAtBottom: Binding<Bool>, scrollTrigger: Int, @ViewBuilder content: () -> Content) {
@@ -101,9 +101,19 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     private static func scrollToBottom(_ scrollView: NSScrollView) {
         guard let documentView = scrollView.documentView else { return }
         
-        // 强制完成布局，确保获取正确的内容高度
+        // 1. 标记需要布局
+        documentView.needsLayout = true
+        
+        // 2. 强制 SwiftUI 的 NSHostingView 更新内在大小
+        if let hostingView = documentView.subviews.first {
+            hostingView.needsLayout = true
+            hostingView.layoutSubtreeIfNeeded()
+        }
+        
+        // 3. 完成 documentView 布局
         documentView.layoutSubtreeIfNeeded()
         
+        // 4. 计算滚动位置
         let contentHeight = documentView.frame.height
         let clipHeight = scrollView.contentView.bounds.height
         let maxScrollY = max(0, contentHeight - clipHeight)
@@ -114,6 +124,20 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY))
         }
         scrollView.reflectScrolledClipView(scrollView.contentView)
+        
+        // 滚动后再次检查布局，如果内容变高了则追加滚动
+        DispatchQueue.main.async { [weak scrollView] in
+            guard let scrollView = scrollView,
+                  let documentView = scrollView.documentView else { return }
+            let newContentHeight = documentView.frame.height
+            let newMaxScrollY = max(0, newContentHeight - scrollView.contentView.bounds.height)
+            let currentY = scrollView.contentView.bounds.origin.y
+            // 如果还没到底，追加滚动
+            if currentY < newMaxScrollY - 10 {
+                scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY))
+                scrollView.reflectScrolledClipView(scrollView.contentView)
+            }
+        }
     }
     
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {

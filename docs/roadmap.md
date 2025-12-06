@@ -2,7 +2,7 @@
 
 > 愿景: Your Voice, Intelligently Refined.
 
-更新: 2024-12-05
+更新: 2025-12-06
 
 ---
 
@@ -10,9 +10,11 @@
 
 > Apple SpeechTranscriber 质量已经非常好，中英文转录效果出色
 
-- [ ] **实时字幕**: 应用 SpeechTranscriber 模型
-- [ ] SpeechTranscriber 下载体验优化 (首次加载检测 + 手动下载按钮)
-- [ ] 单元测试覆盖 (TranscriptionModelManager/Provider)
+- [x] **实时字幕**: 应用 SpeechTranscriber 模型 ✅
+- [x] **实时翻译**: Apple Translation API 集成，无卡顿 ✅
+- [x] **SpeechTranscriber 下载**: 已完成下载 ✅
+- [x] **生词记忆**: 右键添加 + 橙色高亮 ✅
+- [~] 单元测试补全: Manager 层 ✅ / Provider 层待定 (需 mock 音频)
 
 ---
 
