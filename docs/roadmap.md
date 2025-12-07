@@ -2,7 +2,7 @@
 
 > 愿景: Your Voice, Intelligently Refined.
 
-更新: 2025-12-06
+更新: 2025-12-08
 
 ---
 
@@ -29,6 +29,9 @@
 - [x] 多 Provider: Ollama/OpenAI/Anthropic/Gemini/Groq/OpenRouter
 - [x] 上下文感知: 活跃应用检测 + 剪贴板历史
 - [x] OCR 上下文: 屏幕内容识别注入 Prompt
+- [x] Gemini 思考模式: thinkingBudget 控制 ✨
+- [x] Gemini 联网搜索: Google Search grounding ✨
+- [x] CLI2API 代理: v1beta + Bearer token 支持
 
 ## Phase 3: 本地智能 [√]
 
