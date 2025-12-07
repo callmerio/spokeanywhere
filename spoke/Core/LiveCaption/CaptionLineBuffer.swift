@@ -102,6 +102,7 @@ final class CaptionLineBuffer: ObservableObject {
     func updateTranslation(id: UUID, translation: String) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].translation = translation
+        // 方案 A 使用 frameDidChangeNotification 自动触发滚动，无需手动通知
     }
     
     /// 清空所有内容
@@ -152,4 +153,11 @@ final class CaptionLineBuffer: ObservableObject {
         guard addFinalized(text: text) != nil else { return }
         if let t = translation { updateLastTranslation(t) }
     }
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// 译文更新通知（用于触发滚动检查）
+    static let translationUpdated = Notification.Name("translationUpdated")
 }

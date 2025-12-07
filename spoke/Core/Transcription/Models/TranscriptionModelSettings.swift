@@ -72,10 +72,11 @@ struct TranscriptionModelUserSettings: Codable, Equatable {
     var perModelSettings: [String: PerModelSettings]
     
     /// Default settings for new users
+    /// 字幕默认使用 SpeechTranscriber（英语），避免与中文转录冲突
     static let `default` = TranscriptionModelUserSettings(
         selectedModelId: TranscriptionModelDefinition.defaultModelId,
         transcriptionModelId: TranscriptionModelDefinition.defaultModelId,
-        liveCaptionModelId: TranscriptionModelDefinition.defaultModelId,
+        liveCaptionModelId: TranscriptionModelDefinition.appleSpeechTranscriber.id,  // 字幕默认英语模型
         perModelSettings: [:]
     )
     

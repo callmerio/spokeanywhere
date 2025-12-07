@@ -42,6 +42,14 @@ actor OpenAICompatibleProvider: LLMProvider {
         profile?.maxTokens ?? 2048
     }
     
+    private var enableThinking: Bool {
+        profile?.enableThinking ?? true
+    }
+    
+    private var enableSearchGrounding: Bool {
+        profile?.enableSearchGrounding ?? false
+    }
+    
     // MARK: - Init
     
     /// 旧版初始化 (从 ProviderConfig)
@@ -165,6 +173,8 @@ actor OpenAICompatibleProvider: LLMProvider {
         // 使用 providedAPIKey（由 LLMSettings 注入）
         let apiKey = providedAPIKey
         
+        logger.info("🔍 fetchModels: baseURL=\(urlString, privacy: .public), providerType=\(self.providerType.rawValue, privacy: .public), hasAPIKey=\(apiKey != nil)")
+        
         // 根据 provider 类型构建 URL 和请求
         let modelsURL: URL?
         var authHeader: (String, String)?
@@ -222,14 +232,17 @@ actor OpenAICompatibleProvider: LLMProvider {
             return []
         }
         
+        logger.info("🌐 fetchModels: requesting \(url.absoluteString, privacy: .public)")
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 10
+        request.timeoutInterval = timeout
         
         // 添加认证头
         if let (headerName, headerValue) = authHeader {
             request.setValue(headerValue, forHTTPHeaderField: headerName)
+            logger.info("🔑 fetchModels: auth header \(headerName, privacy: .public)=\(headerValue.prefix(20), privacy: .public)...")
         }
         
         // Anthropic 需要额外的版本头
@@ -306,7 +319,9 @@ actor OpenAICompatibleProvider: LLMProvider {
         // 使用 providedAPIKey（由 LLMSettings 注入）
         let apiKey = providedAPIKey
         
-        if providerType == .googleGemini {
+        // 检测是否使用 Gemini 原生格式（baseURL 包含 v1beta 或 providerType 是 googleGemini）
+        let useGeminiNativeFormat = providerType == .googleGemini || urlString.contains("v1beta")
+        if useGeminiNativeFormat {
             return try buildGeminiRequest(urlString: urlString, apiKey: apiKey, prompt: prompt)
         }
         
@@ -362,27 +377,51 @@ actor OpenAICompatibleProvider: LLMProvider {
     }
     
     private func buildGeminiRequest(urlString: String, apiKey: String?, prompt: LLMPrompt) throws -> URLRequest {
-        // Gemini: POST /models/{model}:generateContent?key={apiKey}
-        guard let key = apiKey else { throw LLMError.invalidAPIKey }
+        // Gemini: POST /models/{model}:generateContent
+        // 支持两种认证方式：?key= 或 Authorization header
         
         let model = modelName.isEmpty ? "gemini-pro" : modelName
-        // 处理可能包含 "models/" 前缀的情况
         let cleanModelName = model.replacingOccurrences(of: "models/", with: "")
         
-        guard let url = URL(string: "\(urlString)/models/\(cleanModelName):generateContent?key=\(key)") else {
+        // 检测 URL 是否已包含 v1beta（CLI2API 代理格式）
+        let isProxy = urlString.contains("v1beta")
+        
+        let url: URL?
+        if isProxy {
+            // CLI2API 代理：使用 Authorization header
+            url = URL(string: "\(urlString)/models/\(cleanModelName):generateContent")
+        } else {
+            // 原生 Gemini API：使用 ?key= 参数
+            guard let key = apiKey else { throw LLMError.invalidAPIKey }
+            url = URL(string: "\(urlString)/models/\(cleanModelName):generateContent?key=\(key)")
+        }
+        
+        guard let finalURL = url else {
             throw LLMError.invalidResponse
         }
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: finalURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // 构建 Gemini 请求体
-        // {
-        //   "contents": [{ "role": "user", "parts": [{ "text": "..." }] }],
-        //   "systemInstruction": { "parts": [{ "text": "..." }] },
-        //   "generationConfig": { ... }
-        // }
+        // CLI2API 代理使用 Bearer token
+        if isProxy, let key = apiKey {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // 构建 generationConfig
+        var generationConfig: [String: Any] = [
+            "temperature": temperature,
+            "maxOutputTokens": maxTokens
+        ]
+        
+        // 添加 thinkingConfig（关闭思考以省 token）
+        if !enableThinking {
+            generationConfig["thinkingConfig"] = [
+                "thinkingBudget": 0
+            ]
+            logger.info("🧠 Thinking disabled for this request")
+        }
         
         var body: [String: Any] = [
             "contents": [
@@ -393,10 +432,7 @@ actor OpenAICompatibleProvider: LLMProvider {
                     ]
                 ]
             ],
-            "generationConfig": [
-                "temperature": temperature,
-                "maxOutputTokens": maxTokens
-            ]
+            "generationConfig": generationConfig
         ]
         
         if !prompt.systemPrompt.isEmpty {
@@ -407,12 +443,22 @@ actor OpenAICompatibleProvider: LLMProvider {
             ]
         }
         
+        // 添加 Google Search 工具（联网搜索）
+        if enableSearchGrounding {
+            body["tools"] = [
+                ["google_search": [:]]
+            ]
+            logger.info("🔍 Google Search grounding enabled for this request")
+        }
+        
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return request
     }
     
     private func parseResponse(data: Data) throws -> LLMResponse {
-        if providerType == .googleGemini {
+        // 检测是否使用 Gemini 原生格式
+        let useGeminiFormat = providerType == .googleGemini || baseURL.contains("v1beta")
+        if useGeminiFormat {
             return try parseGeminiResponse(data: data)
         }
         

@@ -42,6 +42,9 @@ final class VocabularyService: ObservableObject {
     /// 预编译的正则表达式（带单词边界）
     private var matchRegex: NSRegularExpression?
     
+    /// 生词数量上限（防止正则性能问题）
+    private let maxVocabularySize = 200
+    
     /// 存储路径
     private var storageURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -65,14 +68,20 @@ final class VocabularyService: ObservableObject {
     func add(_ word: String) -> VocabularyItem? {
         let trimmed = word.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            logger.warning("⚠️ 不能添加空生词")
+            logger.warning("[VOCAB] 不能添加空生词")
             return nil
         }
         
         // 去重检查（忽略大小写）
         let lowercased = trimmed.lowercased()
         guard !wordSet.contains(lowercased) else {
-            logger.info("⚠️ 生词已存在: \(trimmed)")
+            logger.info("[VOCAB] 生词已存在: \(trimmed)")
+            return nil
+        }
+        
+        // 数量上限检查（防止正则性能问题）
+        guard items.count < maxVocabularySize else {
+            logger.warning("[VOCAB] 达到上限 \(self.maxVocabularySize)，无法添加: \(trimmed)")
             return nil
         }
         
@@ -83,7 +92,7 @@ final class VocabularyService: ObservableObject {
         saveItems()
         rebuildRegex()
         
-        logger.info("✅ 添加生词: \(trimmed)")
+        logger.info("[VOCAB] 添加: \(trimmed)")
         
         // 发送通知
         NotificationCenter.default.post(name: .vocabularyChanged, object: nil)
@@ -102,7 +111,7 @@ final class VocabularyService: ObservableObject {
         saveItems()
         rebuildRegex()
         
-        logger.info("🗑️ 删除生词: \(word)")
+        logger.info("[VOCAB] 删除: \(word)")
         NotificationCenter.default.post(name: .vocabularyChanged, object: nil)
     }
     
@@ -136,7 +145,7 @@ final class VocabularyService: ObservableObject {
         matchRegex = nil
         saveItems()
         
-        logger.info("🧹 清空所有生词")
+        logger.info("[VOCAB] 清空所有生词")
         NotificationCenter.default.post(name: .vocabularyChanged, object: nil)
     }
     
@@ -176,9 +185,9 @@ final class VocabularyService: ObservableObject {
         
         do {
             matchRegex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            logger.debug("🔄 正则重建: \(self.wordSet.count) 个词")
+            logger.debug("[VOCAB] 正则重建: \(self.wordSet.count) 个词")
         } catch {
-            logger.error("❌ 正则构建失败: \(error.localizedDescription)")
+            logger.error("[VOCAB] 正则构建失败: \(error.localizedDescription)")
             matchRegex = nil
         }
     }
@@ -197,15 +206,15 @@ final class VocabularyService: ObservableObject {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             
             try data.write(to: storageURL, options: .atomic)
-            logger.debug("💾 保存 \(self.items.count) 个生词")
+            logger.debug("[VOCAB] 保存 \(self.items.count) 个生词")
         } catch {
-            logger.error("❌ 保存生词失败: \(error.localizedDescription)")
+            logger.error("[VOCAB] 保存失败: \(error.localizedDescription)")
         }
     }
     
     private func loadItems() {
         guard FileManager.default.fileExists(atPath: storageURL.path) else {
-            logger.debug("📂 生词文件不存在")
+            logger.debug("[VOCAB] 生词文件不存在")
             return
         }
         
@@ -218,9 +227,9 @@ final class VocabularyService: ObservableObject {
             // 重建 wordSet
             wordSet = Set(items.map { $0.word.lowercased() })
             
-            logger.info("📥 加载 \(self.items.count) 个生词")
+            logger.info("[VOCAB] 加载 \(self.items.count) 个生词")
         } catch {
-            logger.error("❌ 加载生词失败: \(error.localizedDescription)")
+            logger.error("[VOCAB] 加载失败: \(error.localizedDescription)")
         }
     }
 }

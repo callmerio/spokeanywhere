@@ -68,6 +68,15 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             object: scrollView
         )
         
+        // 🔥 方案 A：监听 documentView 的 frame 变化（状态驱动而非时间驱动）
+        documentView.postsFrameChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.documentViewFrameChanged(_:)),
+            name: NSView.frameDidChangeNotification,
+            object: documentView
+        )
+        
         // 保存初始 trigger
         context.coordinator.lastScrollTrigger = scrollTrigger
         
@@ -102,56 +111,29 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     private static func scrollToBottom(_ scrollView: NSScrollView, coordinator: Coordinator) {
         guard let documentView = scrollView.documentView else { return }
         
-        // 标记程序正在滚动，防止 scrollViewDidScroll 循环
+        // 标记程序正在滚动，防止循环
         coordinator.isScrollingProgrammatically = true
         defer { coordinator.isScrollingProgrammatically = false }
         
-        // 1. 标记需要布局
-        documentView.needsLayout = true
-        
-        // 2. 强制 SwiftUI 的 NSHostingView 更新内在大小
+        // 强制布局更新
         if let hostingView = documentView.subviews.first {
-            hostingView.needsLayout = true
+            hostingView.invalidateIntrinsicContentSize()
             hostingView.layoutSubtreeIfNeeded()
         }
-        
-        // 3. 完成 documentView 布局
         documentView.layoutSubtreeIfNeeded()
         
-        // 4. 计算滚动位置
+        // 计算并执行滚动
         let contentHeight = documentView.frame.height
         let clipHeight = scrollView.contentView.bounds.height
         let maxScrollY = max(0, contentHeight - clipHeight)
         
-        // 滚动到最大位置 + 额外偏移 (确保完全露出底部)
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.15
-            context.allowsImplicitAnimation = true
-            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
-        }
+        scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
         scrollView.reflectScrolledClipView(scrollView.contentView)
-        
-        // 滚动后再次检查布局，如果内容变高了则追加滚动
-        DispatchQueue.main.async { [weak scrollView, weak coordinator] in
-            guard let scrollView = scrollView,
-                  let coordinator = coordinator,
-                  let documentView = scrollView.documentView else { return }
-            
-            coordinator.isScrollingProgrammatically = true
-            defer { coordinator.isScrollingProgrammatically = false }
-            
-            let newContentHeight = documentView.frame.height
-            let newMaxScrollY = max(0, newContentHeight - scrollView.contentView.bounds.height)
-            let currentY = scrollView.contentView.bounds.origin.y
-            // 如果还没到底，追加滚动
-            if currentY < newMaxScrollY - CaptionDesign.scrollCatchUpThreshold {
-                scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY))
-                scrollView.reflectScrolledClipView(scrollView.contentView)
-            }
-        }
+        coordinator.isAtBottomBinding.wrappedValue = true
     }
     
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        coordinator.stopPolling()
         NotificationCenter.default.removeObserver(coordinator)
     }
     
@@ -168,9 +150,55 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         /// 防止程序滚动触发 scrollViewDidScroll 导致循环
         var isScrollingProgrammatically: Bool = false
         
+        /// 🔥 方案 C：定时器轮询
+        private var scrollTimer: Timer?
+        
         init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
             self.isAtBottomBinding = isAtBottom
             self.bottomThreshold = bottomThreshold
+            super.init()
+            startPolling()
+        }
+        
+        /// 启动定时器轮询（每 2s 检查一次，作为 frame 观察的兜底保险）
+        func startPolling() {
+            scrollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                self?.checkAndScrollToBottom()
+            }
+        }
+        
+        /// 停止定时器
+        func stopPolling() {
+            scrollTimer?.invalidate()
+            scrollTimer = nil
+        }
+        
+        /// 检查并追加滚动
+        private func checkAndScrollToBottom() {
+            guard !isScrollingProgrammatically else { return }
+            guard isAtBottomBinding.wrappedValue else { return }  // 只在用户处于底部时追加
+            guard let scrollView = scrollView,
+                  let documentView = scrollView.documentView else { return }
+            
+            // 强制布局刷新，确保获取最新高度（译文异步返回后尺寸可能变化）
+            if let hostingView = documentView.subviews.first {
+                hostingView.invalidateIntrinsicContentSize()
+                hostingView.layoutSubtreeIfNeeded()
+            }
+            documentView.layoutSubtreeIfNeeded()
+            
+            let contentHeight = documentView.frame.height
+            let clipHeight = scrollView.contentView.bounds.height
+            let currentY = scrollView.contentView.bounds.origin.y
+            let maxScrollY = max(0, contentHeight - clipHeight)
+            
+            // 如果当前位置离底部超过阈值，追加滚动
+            if currentY < maxScrollY - CaptionDesign.scrollCatchUpThreshold {
+                isScrollingProgrammatically = true
+                scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
+                scrollView.reflectScrolledClipView(scrollView.contentView)
+                isScrollingProgrammatically = false
+            }
         }
         
         @objc func scrollViewDidScroll(_ notification: Notification) {
@@ -192,6 +220,15 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                     self.isAtBottomBinding.wrappedValue = atBottom
                 }
             }
+        }
+        
+        /// 方案 A 的 frame 观察仍保留作为补充
+        @objc func documentViewFrameChanged(_ notification: Notification) {
+            checkAndScrollToBottom()
+        }
+        
+        deinit {
+            stopPolling()
         }
     }
     
@@ -243,13 +280,13 @@ private enum CaptionDesign {
     
     // MARK: - Scroll
     /// 底部检测容差（容忍布局误差）
-    static let scrollBottomThreshold: CGFloat = 30
-    /// 追加滚动检测阈值
-    static let scrollCatchUpThreshold: CGFloat = 30
-    /// 滚动额外偏移量（确保底部内容完全露出）
-    static let scrollExtraOffset: CGFloat = 8
+    static let scrollBottomThreshold: CGFloat = 50
+    /// 追加滚动检测阈值（越小越灵敏）
+    static let scrollCatchUpThreshold: CGFloat = 5
+    /// 滚动额外偏移量（确保底部内容完全露出，需覆盖一整行译文高度）
+    static let scrollExtraOffset: CGFloat = 40
     /// 内容底部占位高度
-    static let contentBottomPadding: CGFloat = 12
+    static let contentBottomPadding: CGFloat = 40
     /// 展开模式底部占位
     static let expandedBottomPadding: CGFloat = 8
 }
@@ -317,21 +354,11 @@ struct LiveCaptionView: View {
                 setupTranslation()
             }
         }
-        // 翻译功能暂时禁用 - 等待后续优化（节流/后台线程）
-        // .onChange(of: manager.lineBuffer.stableTextForTranslation) { _, newText in
-        //     if let text = newText, !text.isEmpty, manager.translationEnabled {
-        //         triggerTranslation()
-        //     }
-        // }
-        // .modifier(TranslationTaskModifier(
-        //     manager: manager,
-        //     translator: translator,
-        //     onTranslationTriggered: { setupTranslation() }
-        // ))
         .onReceive(NotificationCenter.default.publisher(for: .vocabularyChanged)) { _ in
             // 生词列表变化时触发全量刷新（包括之前的内容）
             vocabularyRefreshTrigger += 1
         }
+        // 方案 A：使用 frameDidChangeNotification 自动滚动，无需手动监听 translationUpdated
     }
     
     // MARK: - Translation

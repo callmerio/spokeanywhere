@@ -550,6 +550,16 @@ struct AISettingsContent: View {
                             onDelete: {
                                 profileToDelete = profile.id
                                 showDeleteConfirm = true
+                            },
+                            onDuplicate: {
+                                if let newProfile = llmSettings.duplicateProfile(profile.id) {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        expandedProfileId = newProfile.id
+                                    }
+                                }
+                            },
+                            getAPIKey: {
+                                llmSettings.getAPIKey(for: profile.id)
                             }
                         )
                     }
@@ -776,6 +786,10 @@ struct ServiceCardRow: View {
     let onSetAPIKey: () -> Void
     let onTest: () -> Void
     let onDelete: () -> Void
+    let onDuplicate: () -> Void
+    let getAPIKey: () -> String?
+    
+    @State private var copiedAPIKey = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -856,6 +870,12 @@ struct ServiceCardRow: View {
             Button(action: onSetActive) {
                 Label("设为默认", systemImage: "checkmark.circle")
             }
+            
+            Divider()
+            
+            Button(action: onDuplicate) {
+                Label("复制配置", systemImage: "doc.on.doc")
+            }
         }
     }
     
@@ -878,19 +898,41 @@ struct ServiceCardRow: View {
                 configRow(title: "API Key") {
                     HStack {
                         if hasAPIKey {
-                            HStack(spacing: 4) {
-                                ForEach(0..<30, id: \.self) { _ in
-                                    Circle()
-                                        .fill(Color.white.opacity(0.6))
-                                        .frame(width: 4, height: 4)
+                            // 始终显示掩码格式：前8位 + ... + 后4位
+                            if let key = getAPIKey() {
+                                let masked = key.count > 12 
+                                    ? String(key.prefix(8)) + "..." + String(key.suffix(4))
+                                    : String(repeating: "•", count: key.count)
+                                Text(masked)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .lineLimit(1)
+                            } else {
+                                HStack(spacing: 4) {
+                                    ForEach(0..<30, id: \.self) { _ in
+                                        Circle()
+                                            .fill(Color.white.opacity(0.6))
+                                            .frame(width: 4, height: 4)
+                                    }
                                 }
                             }
                             
-                            Button(action: {}) {
-                                Image(systemName: "eye.slash")
-                                    .foregroundStyle(.gray)
+                            // 复制按钮（复制完整 Key）
+                            Button(action: {
+                                if let key = getAPIKey() {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(key, forType: .string)
+                                    copiedAPIKey = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                        copiedAPIKey = false
+                                    }
+                                }
+                            }) {
+                                Image(systemName: copiedAPIKey ? "checkmark" : "doc.on.doc")
+                                    .foregroundStyle(copiedAPIKey ? .green : .gray)
                             }
                             .buttonStyle(.plain)
+                            .help("复制 API Key")
                         } else {
                             Text("未配置")
                                 .font(.system(size: 13))
@@ -945,6 +987,58 @@ struct ServiceCardRow: View {
                     .padding(.vertical, 8)
                     .background(Color.white.opacity(0.05))
                     .cornerRadius(6)
+            }
+            
+            // 开启思考（仅对支持思考的模型有效，如 Gemini 2.5+）
+            if profile.baseURL.contains("v1beta") || profile.providerType == .googleGemini {
+                configRow(title: "开启思考") {
+                    HStack {
+                        Text(profile.enableThinking ? "已开启" : "已关闭")
+                            .font(.system(size: 12))
+                            .foregroundStyle(profile.enableThinking ? .green : .gray)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $profile.enableThinking)
+                            .toggleStyle(.switch)
+                            .tint(.blue)
+                    }
+                }
+                
+                if profile.enableThinking {
+                    HStack {
+                        Spacer()
+                        Text("开启思考会增加响应时间和 token 消耗，但推理更准确")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.gray)
+                    }
+                    .padding(.top, -8)
+                }
+                
+                // Google Search 联网（Gemini 模型支持）
+                configRow(title: "联网搜索") {
+                    HStack {
+                        Text(profile.enableSearchGrounding ? "已启用" : "已禁用")
+                            .font(.system(size: 12))
+                            .foregroundStyle(profile.enableSearchGrounding ? .green : .gray)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $profile.enableSearchGrounding)
+                            .toggleStyle(.switch)
+                            .tint(.blue)
+                    }
+                }
+                
+                if profile.enableSearchGrounding {
+                    HStack {
+                        Spacer()
+                        Text("启用后模型可调用 Google Search 获取实时信息")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.gray)
+                    }
+                    .padding(.top, -8)
+                }
             }
             
             Divider().background(Color.white.opacity(0.06))

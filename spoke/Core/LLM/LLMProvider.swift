@@ -171,6 +171,7 @@ struct ProviderProfile: Codable, Identifiable, Equatable {
     // 增强功能
     var enableURLContext: Bool          // 启用 URL 上下文
     var enableSearchGrounding: Bool     // 启用搜索增强
+    var enableThinking: Bool            // 启用思考（Gemini 2.5+ 深度推理）
     
     var createdAt: Date
     var updatedAt: Date
@@ -187,7 +188,8 @@ struct ProviderProfile: Codable, Identifiable, Equatable {
         contextWindow: Int = 128_000,
         reasoningEffort: ReasoningEffort = .medium,
         enableURLContext: Bool = false,
-        enableSearchGrounding: Bool = false
+        enableSearchGrounding: Bool = false,
+        enableThinking: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -201,6 +203,7 @@ struct ProviderProfile: Codable, Identifiable, Equatable {
         self.reasoningEffort = reasoningEffort
         self.enableURLContext = enableURLContext
         self.enableSearchGrounding = enableSearchGrounding
+        self.enableThinking = enableThinking
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -214,6 +217,65 @@ struct ProviderProfile: Codable, Identifiable, Equatable {
             modelName: config.modelName,
             apiKeyRef: config.apiKeyRef
         )
+    }
+    
+    // MARK: - Codable（兼容旧字段名）
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, providerType, baseURL, modelName, apiKeyRef
+        case temperature, maxTokens, contextWindow, reasoningEffort
+        case enableURLContext, enableSearchGrounding
+        case enableThinking      // 新字段名
+        case disableThinking     // 旧字段名（兼容）
+        case createdAt, updatedAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        providerType = try container.decode(LLMProviderType.self, forKey: .providerType)
+        baseURL = try container.decode(String.self, forKey: .baseURL)
+        modelName = try container.decode(String.self, forKey: .modelName)
+        apiKeyRef = try container.decodeIfPresent(String.self, forKey: .apiKeyRef)
+        temperature = try container.decode(Double.self, forKey: .temperature)
+        maxTokens = try container.decodeIfPresent(Int.self, forKey: .maxTokens)
+        contextWindow = try container.decode(Int.self, forKey: .contextWindow)
+        reasoningEffort = try container.decode(ReasoningEffort.self, forKey: .reasoningEffort)
+        enableURLContext = try container.decode(Bool.self, forKey: .enableURLContext)
+        enableSearchGrounding = try container.decode(Bool.self, forKey: .enableSearchGrounding)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        
+        // 兼容旧字段名：优先读取 enableThinking，否则从 disableThinking 取反
+        if let enable = try container.decodeIfPresent(Bool.self, forKey: .enableThinking) {
+            enableThinking = enable
+        } else if let disable = try container.decodeIfPresent(Bool.self, forKey: .disableThinking) {
+            enableThinking = !disable  // 取反：disableThinking=true → enableThinking=false
+        } else {
+            enableThinking = true  // 默认启用
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(providerType, forKey: .providerType)
+        try container.encode(baseURL, forKey: .baseURL)
+        try container.encode(modelName, forKey: .modelName)
+        try container.encodeIfPresent(apiKeyRef, forKey: .apiKeyRef)
+        try container.encode(temperature, forKey: .temperature)
+        try container.encodeIfPresent(maxTokens, forKey: .maxTokens)
+        try container.encode(contextWindow, forKey: .contextWindow)
+        try container.encode(reasoningEffort, forKey: .reasoningEffort)
+        try container.encode(enableURLContext, forKey: .enableURLContext)
+        try container.encode(enableSearchGrounding, forKey: .enableSearchGrounding)
+        try container.encode(enableThinking, forKey: .enableThinking)  // 只写新字段名
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
     }
 }
 

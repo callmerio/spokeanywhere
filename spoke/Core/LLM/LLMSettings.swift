@@ -392,7 +392,7 @@ final class LLMSettings {
             return nil
         }
         
-        let newProfile = ProviderProfile(
+        var newProfile = ProviderProfile(
             name: "\(source.name) (副本)",
             providerType: source.providerType,
             baseURL: source.baseURL,
@@ -402,9 +402,18 @@ final class LLMSettings {
             contextWindow: source.contextWindow,
             reasoningEffort: source.reasoningEffort,
             enableURLContext: source.enableURLContext,
-            enableSearchGrounding: source.enableSearchGrounding
+            enableSearchGrounding: source.enableSearchGrounding,
+            enableThinking: source.enableThinking
         )
-        // 注意：不复制 apiKeyRef，需要用户重新设置
+        
+        // 复制 API Key（如果存在）
+        if let sourceAPIKey = getAPIKey(for: source.id) {
+            apiKeysCache[newProfile.id.uuidString] = sourceAPIKey
+            newProfile.apiKeyRef = "unified_storage"
+            saveAllAPIKeys()
+            logger.info("🔑 API Key copied for new profile")
+        }
+        
         profiles.append(newProfile)
         logger.info("📋 Duplicated profile: \(source.name) -> \(newProfile.name)")
         return newProfile
@@ -484,9 +493,10 @@ final class LLMSettings {
         return await provider.fetchModels()
     }
     
-    // MARK: - Legacy API (保留兼容)
+    // MARK: - Legacy API (保留兼容，将在 v2.0 移除)
     
     /// 设置 Provider 的 API Key (旧版)
+    @available(*, deprecated, message: "请使用 setAPIKey(_:for profileId:) 替代")
     func setAPIKey(_ apiKey: String, for type: LLMProviderType) throws {
         let keyRef = "apikey.\(type.rawValue)"
         try KeychainService.save(key: keyRef, value: apiKey)
@@ -502,6 +512,7 @@ final class LLMSettings {
     }
     
     /// 获取 Provider 的 API Key (旧版)
+    @available(*, deprecated, message: "请使用 getAPIKey(for profileId:) 替代")
     func getAPIKey(for type: LLMProviderType) -> String? {
         guard let config = providerConfigs[type],
               let keyRef = config.apiKeyRef else {
@@ -511,6 +522,7 @@ final class LLMSettings {
     }
     
     /// 删除 Provider 的 API Key (旧版)
+    @available(*, deprecated, message: "请使用 deleteProfile(_:) 替代")
     func deleteAPIKey(for type: LLMProviderType) throws {
         guard let config = providerConfigs[type],
               let keyRef = config.apiKeyRef else {
@@ -526,6 +538,7 @@ final class LLMSettings {
     }
     
     /// 使用默认配置初始化 Provider (旧版)
+    @available(*, deprecated, message: "请使用 createProfile(for:) 替代")
     func initializeProvider(_ type: LLMProviderType) {
         if providerConfigs[type] == nil {
             providerConfigs[type] = ProviderConfig(
