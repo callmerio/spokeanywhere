@@ -6,15 +6,20 @@
 
 ---
 
-## 🎯 当前焦点: 实时字幕 + SpeechTranscriber
+## 🎯 当前焦点: 选择工具栏 + 实时字幕
 
-> Apple SpeechTranscriber 质量已经非常好，中英文转录效果出色
+> 全局文本选择浮动工具栏 (类似 PopClip)
+
+- [x] **选择工具栏**: AXObserver + NSPanel 全局监听 ✅
+- [x] **多策略文本获取**: SelectedText → Parameterized → Value+Range ✅
+- [x] **Electron 兼容**: Windsurf/VSCode 已支持 ✅
+- [~] **Terminal 支持**: 待研究 (Accessibility API 限制)
+
+> 实时字幕已稳定
 
 - [x] **实时字幕**: 应用 SpeechTranscriber 模型 ✅
 - [x] **实时翻译**: Apple Translation API 集成，无卡顿 ✅
-- [x] **SpeechTranscriber 下载**: 已完成下载 ✅
 - [x] **生词记忆**: 右键添加 + 橙色高亮 ✅
-- [~] 单元测试补全: Manager 层 ✅ / Provider 层待定 (需 mock 音频)
 
 ---
 
@@ -83,7 +88,7 @@
 ### P1 近期
 
 - [ ] 魔术键: Enter=原文 / Tab=AI 润色
-- [ ] 悬浮指令盘: 润色/翻译/总结/转代码
+- [x] 选择工具栏: 朗读/查询/翻译/总结 ✅
 - [ ] 语音宏: "切换到编程模式"
 
 ### P2 中期 (封存)
@@ -94,5 +99,5 @@
 
 ### P3 低优先级
 
-- [ ] TTS: 选中/剪贴板/截图 → 语音
+- [x] TTS 朗读: 选中文本 → 语音 ✅ (集成到选择工具栏)
 - [ ] 多模态音频: 原始音频 + 转录同时发送 (token 消耗大，功能重复)
