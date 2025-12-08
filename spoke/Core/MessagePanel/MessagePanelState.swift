@@ -1,8 +1,50 @@
 import SwiftUI
 import Combine
 import OSLog
+import AppKit
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "MessagePanelState")
+
+// MARK: - Source App Info
+
+/// 来源应用信息（用于 Pipeline 卡片显示）
+struct SourceAppInfo: Codable, Equatable {
+    let bundleId: String
+    let name: String
+    
+    /// 运行时从 bundleId 获取应用图标（不持久化）
+    var icon: NSImage? {
+        guard let appURL = NSWorkspace.shared.urlForApplication(
+            withBundleIdentifier: bundleId
+        ) else { return nil }
+        return NSWorkspace.shared.icon(forFile: appURL.path)
+    }
+    
+    /// 从 NSRunningApplication 创建
+    static func from(_ app: NSRunningApplication) -> SourceAppInfo {
+        SourceAppInfo(
+            bundleId: app.bundleIdentifier ?? "unknown",
+            name: app.localizedName ?? "Unknown"
+        )
+    }
+    
+    /// 从当前聚焦应用创建
+    static func fromFrontmost() -> SourceAppInfo? {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier != Bundle.main.bundleIdentifier else {
+            return nil
+        }
+        return from(app)
+    }
+    
+    /// 从 TargetAppInfo 创建
+    static func from(_ targetApp: TargetAppInfo) -> SourceAppInfo {
+        SourceAppInfo(
+            bundleId: targetApp.bundleIdentifier,
+            name: targetApp.name
+        )
+    }
+}
 
 // MARK: - Message Card Model
 
@@ -12,15 +54,26 @@ enum MessageStage: Equatable, Codable {
     case keyPress(duration: TimeInterval)  // 按键事件
     case asr(model: String)        // ASR 转录 (Apple Speech / Whisper)
     case llm(model: String)        // LLM 润色 (Gemini / GPT)
+    case clipboard                 // 剪贴板来源
     case system(String)            // 系统消息
     
     var displayName: String {
         switch self {
         case .welcome: return "欢迎"
         case .keyPress: return "按键"
-        case .asr(let model): return "转录 · \(model)"
-        case .llm(let model): return "润色 · \(model)"
+        case .asr(let model): return model  // 只显示模型名
+        case .llm(let model): return model  // 只显示模型名
+        case .clipboard: return ""  // 单节点，不显示类型名
         case .system: return "系统"
+        }
+    }
+    
+    /// 类型名称（用于 hover 提示）
+    var typeName: String {
+        switch self {
+        case .asr: return "转录"
+        case .llm: return "润色"
+        default: return ""
         }
     }
     
@@ -28,16 +81,22 @@ enum MessageStage: Equatable, Codable {
         switch self {
         case .welcome: return .gray
         case .keyPress: return .orange
-        case .asr: return .blue
-        case .llm: return .purple
+        case .asr: return .cyan      // 转录用青色
+        case .llm: return .orange    // 润色用橙色
+        case .clipboard: return .green  // 单节点用绿色区分
         case .system: return .gray
         }
     }
     
-    /// 是否是转录结果（ASR 或 LLM）
+    /// 光晕颜色（更柔和）
+    var glowColor: Color {
+        color.opacity(0.6)
+    }
+    
+    /// 是否是转录结果（ASR / LLM / Clipboard）
     var isTranscriptionResult: Bool {
         switch self {
-        case .asr, .llm: return true
+        case .asr, .llm, .clipboard: return true
         default: return false
         }
     }
@@ -157,6 +216,12 @@ struct MessageCard: Identifiable, Equatable, Codable {
     var highlights: [TextHighlight]
     /// 记录类型：normal/todo/done/note
     var recordType: CardRecordType
+    /// 标签 ID 列表（通过 TagLibrary 获取完整信息）
+    var tagIds: [UUID]
+    /// 附件列表（截图等）
+    var attachments: [CardAttachment]
+    /// 来源应用信息（用于显示图标和光晕）
+    var sourceApp: SourceAppInfo?
     
     init(
         id: UUID = UUID(),
@@ -165,7 +230,10 @@ struct MessageCard: Identifiable, Equatable, Codable {
         content: String,
         metadata: [String: String] = [:],
         highlights: [TextHighlight] = [],
-        recordType: CardRecordType = .normal
+        recordType: CardRecordType = .normal,
+        tagIds: [UUID] = [],
+        attachments: [CardAttachment] = [],
+        sourceApp: SourceAppInfo? = nil
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -174,9 +242,12 @@ struct MessageCard: Identifiable, Equatable, Codable {
         self.metadata = metadata
         self.highlights = highlights
         self.recordType = recordType
+        self.tagIds = tagIds
+        self.attachments = attachments
+        self.sourceApp = sourceApp
     }
     
-    // 自定义解码：兼容旧数据（没有 highlights/recordType 字段）
+    // 自定义解码：兼容旧数据（没有 highlights/recordType/tagIds/attachments/sourceApp 字段）
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -186,12 +257,20 @@ struct MessageCard: Identifiable, Equatable, Codable {
         metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata) ?? [:]
         highlights = try container.decodeIfPresent([TextHighlight].self, forKey: .highlights) ?? []
         recordType = try container.decodeIfPresent(CardRecordType.self, forKey: .recordType) ?? .normal
+        tagIds = try container.decodeIfPresent([UUID].self, forKey: .tagIds) ?? []
+        attachments = try container.decodeIfPresent([CardAttachment].self, forKey: .attachments) ?? []
+        sourceApp = try container.decodeIfPresent(SourceAppInfo.self, forKey: .sourceApp)
     }
     
     var formattedTime: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
         return formatter.string(from: timestamp)
+    }
+    
+    /// 是否有附件
+    var hasAttachments: Bool {
+        !attachments.isEmpty
     }
 }
 
@@ -218,24 +297,49 @@ final class MessagePanelState: ObservableObject {
     /// 当前过滤模式
     @Published var filterMode: CardFilterMode = .all
     
+    /// 当前激活的标签筛选（交集逻辑：必须同时包含所有标签）
+    @Published var activeFilterTagIds: Set<UUID> = []
+    
     // MARK: - Computed Properties
     
-    /// 根据过滤模式返回卡片
+    /// 根据过滤模式和标签筛选返回卡片
+    /// - 标签筛选：包含所有激活标签的卡片置顶
     /// - Todo 模式：先显示 todo，再显示 done
     /// - Note 模式：只显示 note
     /// - All 模式：显示全部
     var filteredCards: [MessageCard] {
+        var result: [MessageCard]
+        
         switch filterMode {
         case .all:
-            return cards
+            result = cards
         case .todo:
             // Todo 类别：todo 优先，done 在后
             let todoCards = cards.filter { $0.recordType == .todo }
             let doneCards = cards.filter { $0.recordType == .done }
-            return todoCards + doneCards
+            result = todoCards + doneCards
         case .note:
-            return cards.filter { $0.recordType == .note }
+            result = cards.filter { $0.recordType == .note }
         }
+        
+        // 如果有标签筛选，按标签匹配排序
+        if !activeFilterTagIds.isEmpty {
+            result = sortByTagMatch(result)
+        }
+        
+        return result
+    }
+    
+    /// 按标签匹配排序（匹配的在前，按时间倒序）
+    private func sortByTagMatch(_ cards: [MessageCard]) -> [MessageCard] {
+        // 分离匹配和不匹配的卡片
+        let matched = cards.filter { card in
+            activeFilterTagIds.isSubset(of: Set(card.tagIds))
+        }
+        let unmatched = cards.filter { card in
+            !activeFilterTagIds.isSubset(of: Set(card.tagIds))
+        }
+        return matched + unmatched
     }
     
     /// 各类型卡片数量（用于显示 badge）
@@ -266,6 +370,7 @@ final class MessagePanelState: ObservableObject {
     
     init() {
         loadCards()
+        setupTagDeletionObserver()
     }
     
     // MARK: - Public API
@@ -291,21 +396,26 @@ final class MessagePanelState: ObservableObject {
     }
     
     /// 添加 ASR 结果
-    func addASRResult(model: String, content: String, duration: TimeInterval? = nil) {
+    func addASRResult(model: String, content: String, duration: TimeInterval? = nil, sourceApp: SourceAppInfo? = nil) {
         var metadata: [String: String] = [:]
         if let duration = duration {
             metadata["duration"] = String(format: "%.2fs", duration)
         }
-        addCard(MessageCard(stage: .asr(model: model), content: content, metadata: metadata))
+        addCard(MessageCard(stage: .asr(model: model), content: content, metadata: metadata, sourceApp: sourceApp))
     }
     
     /// 添加 LLM 结果
-    func addLLMResult(model: String, content: String, processingTime: TimeInterval? = nil) {
+    func addLLMResult(model: String, content: String, processingTime: TimeInterval? = nil, sourceApp: SourceAppInfo? = nil) {
         var metadata: [String: String] = [:]
         if let time = processingTime {
             metadata["processing"] = String(format: "%.2fs", time)
         }
-        addCard(MessageCard(stage: .llm(model: model), content: content, metadata: metadata))
+        addCard(MessageCard(stage: .llm(model: model), content: content, metadata: metadata, sourceApp: sourceApp))
+    }
+    
+    /// 添加剪贴板内容
+    func addClipboardContent(content: String, sourceApp: SourceAppInfo? = nil) {
+        addCard(MessageCard(stage: .clipboard, content: content, sourceApp: sourceApp))
     }
     
     /// 添加系统消息
@@ -396,14 +506,159 @@ final class MessagePanelState: ObservableObject {
         }
     }
     
+    // MARK: - Tag Management
+    
+    /// 添加标签到卡片
+    func addTag(_ tagId: UUID, to cardId: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        guard !cards[index].tagIds.contains(tagId) else { return }
+        
+        cards[index].tagIds.append(tagId)
+        saveCards()
+        
+        // 标记为最近使用
+        TagLibrary.shared.markAsRecentlyUsed(tagId)
+        
+        logger.info("🏷️ 添加标签到卡片")
+    }
+    
+    /// 从卡片移除标签
+    func removeTag(_ tagId: UUID, from cardId: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        
+        cards[index].tagIds.removeAll { $0 == tagId }
+        saveCards()
+        
+        logger.info("🏷️ 从卡片移除标签")
+    }
+    
+    /// 创建并添加标签到卡片（快捷方式）
+    func createAndAddTag(name: String, to cardId: UUID) {
+        let tag = TagLibrary.shared.createTag(name: name)
+        addTag(tag.id, to: cardId)
+    }
+    
+    /// 监听标签删除通知，移除相关引用
+    func setupTagDeletionObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .tagDeleted,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let tagId = notification.userInfo?["tagId"] as? UUID else { return }
+            Task { @MainActor in
+                self?.removeDeletedTagFromAllCards(tagId)
+            }
+        }
+    }
+    
+    private func removeDeletedTagFromAllCards(_ tagId: UUID) {
+        var modified = false
+        for i in cards.indices {
+            if cards[i].tagIds.contains(tagId) {
+                cards[i].tagIds.removeAll { $0 == tagId }
+                modified = true
+            }
+        }
+        if modified {
+            saveCards()
+            logger.info("🏷️ 从所有卡片移除已删除的标签")
+        }
+        
+        // 同时从筛选条件中移除
+        activeFilterTagIds.remove(tagId)
+    }
+    
+    // MARK: - Tag Filtering
+    
+    /// 切换标签筛选状态（点击标签气泡触发）
+    func toggleTagFilter(_ tagId: UUID) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            if activeFilterTagIds.contains(tagId) {
+                activeFilterTagIds.remove(tagId)
+                logger.info("🏷️ 移除标签筛选")
+            } else {
+                activeFilterTagIds.insert(tagId)
+                logger.info("🏷️ 添加标签筛选")
+            }
+        }
+    }
+    
+    /// 清除所有标签筛选
+    func clearTagFilters() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            activeFilterTagIds.removeAll()
+        }
+        logger.info("🏷️ 清除所有标签筛选")
+    }
+    
+    /// 获取当前激活的筛选标签
+    var activeFilterTags: [CardTag] {
+        TagLibrary.shared.tags(for: Array(activeFilterTagIds))
+    }
+    
+    // MARK: - Attachment Management
+    
+    /// 添加附件到卡片（从图片）
+    func addAttachment(_ image: NSImage, to cardId: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        guard let attachment = CardAttachmentStorage.shared.saveImage(image) else { return }
+        
+        cards[index].attachments.append(attachment)
+        saveCards()
+        
+        logger.info("📎 添加附件到卡片")
+    }
+    
+    /// 从卡片移除附件
+    func removeAttachment(_ attachmentId: UUID, from cardId: UUID) {
+        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        guard let attachmentIndex = cards[index].attachments.firstIndex(where: { $0.id == attachmentId }) else { return }
+        
+        let attachment = cards[index].attachments[attachmentIndex]
+        
+        // 删除文件
+        CardAttachmentStorage.shared.deleteAttachment(attachment)
+        // 清除缓存
+        AttachmentImageCache.shared.clearCache(for: attachmentId)
+        
+        cards[index].attachments.remove(at: attachmentIndex)
+        saveCards()
+        
+        logger.info("📎 从卡片移除附件")
+    }
+    
+    /// 从剪贴板粘贴图片到卡片
+    func pasteImageFromClipboard(to cardId: UUID) -> Bool {
+        let pasteboard = NSPasteboard.general
+        
+        // 尝试读取图片
+        if let image = NSImage(pasteboard: pasteboard) {
+            addAttachment(image, to: cardId)
+            return true
+        }
+        
+        // 尝试读取文件 URL
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
+            for url in urls {
+                if let image = NSImage(contentsOf: url) {
+                    addAttachment(image, to: cardId)
+                    return true
+                }
+            }
+        }
+        
+        return false
+    }
+    
     // MARK: - Persistence
     
     /// 保存卡片到本地
     private func saveCards() {
-        // 只保存 ASR 和 LLM 结果（过滤掉 welcome/keyPress/system）
+        // 只保存 ASR/LLM/Clipboard 结果（过滤掉 welcome/keyPress/system）
         let cardsToSave = cards.filter { card in
             switch card.stage {
-            case .asr, .llm: return true
+            case .asr, .llm, .clipboard: return true
             default: return false
             }
         }

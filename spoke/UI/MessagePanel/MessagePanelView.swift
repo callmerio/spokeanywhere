@@ -1,6 +1,109 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Hover State (用于键盘事件)
+
+/// 追踪当前 hover 的卡片（用于 Cmd+V 粘贴图片/文本）
+@MainActor
+final class MessagePanelHoverState: ObservableObject {
+    static let shared = MessagePanelHoverState()
+    
+    @Published var hoveredCardId: UUID?
+    /// 鼠标是否在 Panel 区域内
+    @Published var isMouseInPanel: Bool = false
+    
+    private var localMonitor: Any?
+    private var globalMonitor: Any?
+    
+    private init() {
+        setupKeyboardMonitor()
+    }
+    
+    deinit {
+        if let monitor = localMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = globalMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+    }
+    
+    /// 设置键盘监听器（本地 + 全局）
+    private func setupKeyboardMonitor() {
+        // 本地监听（应用激活时）
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if self?.handleCmdV(event) == true {
+                return nil  // 已处理，拦截事件
+            }
+            return event
+        }
+        
+        // 全局监听（应用未激活但鼠标在 Pipeline 上时）
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            _ = self?.handleCmdV(event)
+        }
+    }
+    
+    /// 处理 Cmd+V 事件
+    private func handleCmdV(_ event: NSEvent) -> Bool {
+        // 检查是否是 Cmd+V
+        guard event.modifierFlags.contains(.command),
+              event.charactersIgnoringModifiers == "v" else {
+            return false
+        }
+        
+        // 如果 hover 在某个卡片上，尝试粘贴图片
+        if let cardId = hoveredCardId {
+            if pasteImageToCard(cardId) {
+                return true
+            }
+        }
+        
+        // 如果鼠标在 Panel 区域但不在卡片上，尝试粘贴文本创建新节点
+        if isMouseInPanel && MessagePanelManager.shared.isVisible {
+            if pasteTextAsNewCard() {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    /// 粘贴图片到指定卡片
+    private func pasteImageToCard(_ cardId: UUID) -> Bool {
+        let pasteboard = NSPasteboard.general
+        
+        // 仅检查图片类型
+        let imageTypes: [NSPasteboard.PasteboardType] = [.tiff, .png]
+        guard pasteboard.availableType(from: imageTypes) != nil else {
+            return false
+        }
+        
+        // 读取图片
+        if let image = NSImage(pasteboard: pasteboard) {
+            MessagePanelState.shared.addAttachment(image, to: cardId)
+            return true
+        }
+        
+        return false
+    }
+    
+    /// 粘贴文本创建新节点
+    private func pasteTextAsNewCard() -> Bool {
+        let pasteboard = NSPasteboard.general
+        
+        // 检查是否有文本
+        guard let text = pasteboard.string(forType: .string),
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+        
+        // 触发 ClipboardPipelineService 创建新节点
+        ClipboardPipelineService.shared.trigger()
+        return true
+    }
+}
+
 // MARK: - Message Panel View
 
 /// 消息面板主视图
@@ -14,6 +117,11 @@ struct MessagePanelView: View {
             // 头部标题栏
             headerView
             
+            // 标签筛选状态栏（有激活标签时显示）
+            if !state.activeFilterTagIds.isEmpty {
+                tagFilterStatusBar
+            }
+            
             // 统一内容区域（Pipeline + 历史记录）
             contentListView
             
@@ -25,6 +133,10 @@ struct MessagePanelView: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .background(panelBackground)
         .offset(x: state.slideOffset)  // 滑动动画
+        // 追踪鼠标是否在 Panel 区域（用于 Cmd+V 粘贴）
+        .onHover { isHovering in
+            MessagePanelHoverState.shared.isMouseInPanel = isHovering
+        }
         // 词典弹窗
         .sheet(isPresented: $dictionaryHandler.isShowingAddSheet) {
             QuickAddToDictionarySheet(
@@ -104,6 +216,50 @@ struct MessagePanelView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Tag Filter Status Bar
+    
+    /// 标签筛选状态栏（显示当前激活的筛选标签）
+    private var tagFilterStatusBar: some View {
+        HStack(spacing: 8) {
+            // 筛选图标
+            Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.5))
+            
+            // 激活的标签气泡
+            FlowLayout(spacing: 6) {
+                ForEach(state.activeFilterTags) { tag in
+                    ActiveFilterTagBubble(tag: tag) {
+                        state.toggleTagFilter(tag.id)
+                    }
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity),
+                        removal: .scale(scale: 0.8).combined(with: .opacity)
+                    ))
+                }
+            }
+            
+            Spacer()
+            
+            // 清除全部按钮
+            Button {
+                state.clearTagFilters()
+            } label: {
+                Text("清除")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: state.activeFilterTagIds)
     }
     
     
@@ -255,17 +411,20 @@ struct MessageCardView: View {
     @State private var showCopied = false
     @State private var isExpanded = false
     @State private var copyScale: CGFloat = 1.0
+    @State private var showTagPopover = false
+    @State private var isDropTargeted = false
     
     /// 折叠时显示的最大行数
     private let collapsedMaxLines = 6
     /// 每行大约的字符数（用于估算是否需要折叠）
     private let charsPerLine = 25
     
-    /// 是否需要折叠（内容超过阈值）
+    /// 是否需要折叠（内容超过阈值或有多个附件）
     private var needsCollapse: Bool {
         // 估算行数：总字符数 / 每行字符数
         let estimatedLines = card.content.count / charsPerLine
-        return estimatedLines > collapsedMaxLines
+        let hasMultipleAttachments = card.attachments.count > 1
+        return estimatedLines > collapsedMaxLines || hasMultipleAttachments
     }
     
     var body: some View {
@@ -278,6 +437,20 @@ struct MessageCardView: View {
                 // 内容区域（支持折叠）
                 contentView
                 
+                // 附件区域（仅 ASR/LLM 卡片显示）
+                if card.stage.isTranscriptionResult && card.hasAttachments {
+                    CardAttachmentView(
+                        attachments: card.attachments,
+                        cardId: card.id,
+                        isExpanded: isExpanded
+                    )
+                }
+                
+                // 标签区域（仅 ASR/LLM 卡片显示）
+                if card.stage.isTranscriptionResult {
+                    tagsView
+                }
+                
                 // 元数据
                 if !card.metadata.isEmpty {
                     metadataView
@@ -286,7 +459,18 @@ struct MessageCardView: View {
             .padding(14)
             .background(cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                // 拖拽提示
+                CardDropOverlay(isTargeted: isDropTargeted)
+            )
             .scaleEffect(copyScale)
+            .popover(isPresented: $showTagPopover, arrowEdge: .bottom) {
+                AddTagPopover(cardId: card.id, isPresented: $showTagPopover)
+            }
+            // 拖拽支持
+            .onDrop(of: [.image, .fileURL], isTargeted: $isDropTargeted) { providers in
+                handleDrop(providers)
+            }
             
             // 复制成功浮动提示
             if showCopied {
@@ -313,6 +497,12 @@ struct MessageCardView: View {
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
+            }
+            // 更新全局 hover 状态（用于键盘事件）
+            if hovering && card.stage.isTranscriptionResult {
+                MessagePanelHoverState.shared.hoveredCardId = card.id
+            } else if MessagePanelHoverState.shared.hoveredCardId == card.id {
+                MessagePanelHoverState.shared.hoveredCardId = nil
             }
         }
         .contextMenu {
@@ -365,6 +555,22 @@ struct MessageCardView: View {
                 }
                 
                 Divider()
+                
+                // 添加标签
+                Button {
+                    showTagPopover = true
+                } label: {
+                    Label("添加标签", systemImage: "tag")
+                }
+                
+                // 粘贴图片
+                Button {
+                    _ = MessagePanelState.shared.pasteImageFromClipboard(to: card.id)
+                } label: {
+                    Label("粘贴图片", systemImage: "photo.on.rectangle")
+                }
+                
+                Divider()
             }
             
             Button {
@@ -381,16 +587,78 @@ struct MessageCardView: View {
         }
     }
     
+    // MARK: - Drop Handler
+    
+    /// 处理拖拽
+    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        guard card.stage.isTranscriptionResult else { return false }
+        
+        var handled = false
+        
+        for provider in providers {
+            // 尝试加载图片
+            if provider.canLoadObject(ofClass: NSImage.self) {
+                _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
+                    if let image = image as? NSImage {
+                        Task { @MainActor in
+                            MessagePanelState.shared.addAttachment(image, to: card.id)
+                        }
+                    }
+                }
+                handled = true
+            }
+            // 尝试加载文件 URL
+            else if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
+                    if let data = data as? Data,
+                       let url = URL(dataRepresentation: data, relativeTo: nil),
+                       let image = NSImage(contentsOf: url) {
+                        Task { @MainActor in
+                            MessagePanelState.shared.addAttachment(image, to: card.id)
+                        }
+                    }
+                }
+                handled = true
+            }
+        }
+        
+        return handled
+    }
+    
+    /// 仅粘贴图片（不处理文本/URL）
+    private func pasteImageOnly() -> Bool {
+        let pasteboard = NSPasteboard.general
+        
+        // 仅检查图片类型
+        let imageTypes: [NSPasteboard.PasteboardType] = [.tiff, .png]
+        guard pasteboard.availableType(from: imageTypes) != nil else {
+            return false
+        }
+        
+        // 读取图片
+        if let image = NSImage(pasteboard: pasteboard) {
+            MessagePanelState.shared.addAttachment(image, to: card.id)
+            return true
+        }
+        
+        return false
+    }
+    
     // MARK: - Header
     
     private var headerView: some View {
-        HStack {
-            // 阶段标签
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(card.stage.color)
-                    .frame(width: 6, height: 6)
-                
+        HStack(spacing: 8) {
+            // 来源应用图标（带光晕，hover 显示类型）
+            if let sourceApp = card.sourceApp {
+                SourceAppIconView(
+                    sourceApp: sourceApp,
+                    glowColor: card.stage.color,
+                    typeName: card.stage.typeName
+                )
+            }
+            
+            // 模型名（displayName 为空时不显示，不再显示圆点）
+            if !card.stage.displayName.isEmpty {
                 Text(card.stage.displayName)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(HUDTheme.textSecondary)
@@ -487,6 +755,38 @@ struct MessageCardView: View {
                             isExpanded = true
                         }
                     }
+            }
+        }
+    }
+    
+    // MARK: - Tags
+    
+    /// 从 TagLibrary 获取卡片标签
+    private var cardTags: [CardTag] {
+        TagLibrary.shared.tags(for: card.tagIds)
+    }
+    
+    private var tagsView: some View {
+        Group {
+            if !cardTags.isEmpty {
+                // 显示已有标签
+                TagListView(tags: cardTags, cardId: card.id) {
+                    showTagPopover = true
+                }
+            } else if isHovered {
+                // 无标签时，hover 显示添加按钮
+                Button {
+                    showTagPopover = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tag")
+                            .font(.system(size: 10))
+                        Text("添加标签")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(Color.white.opacity(0.4))
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -650,6 +950,110 @@ struct FilterChip: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Source App Icon View
+
+/// 来源应用图标视图（带光晕效果 + hover 覆盖标签）
+struct SourceAppIconView: View {
+    let sourceApp: SourceAppInfo
+    let glowColor: Color
+    var typeName: String = ""  // 类型名称（转录/润色）
+    
+    @State private var isHovered = false
+    
+    /// hover 提示文本
+    private var hoverText: String {
+        if !typeName.isEmpty && !sourceApp.name.isEmpty {
+            return "\(sourceApp.name) · \(typeName)"
+        } else if !typeName.isEmpty {
+            return typeName
+        } else {
+            return sourceApp.name
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // 光晕效果
+            Circle()
+                .fill(glowColor.opacity(0.4))
+                .frame(width: 26, height: 26)
+                .blur(radius: 4)
+            
+            // 应用图标
+            Group {
+                if let icon = sourceApp.icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } else {
+                    Image(systemName: "app.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+            .frame(width: 18, height: 18)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .frame(width: 26, height: 26)
+        .contentShape(Rectangle())  // 扩大 hover 响应区域
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        // 覆盖标签（用 overlay 实现悬浮）
+        .overlay(alignment: .leading) {
+            if isHovered && !hoverText.isEmpty {
+                HStack(spacing: 6) {
+                    // 小图标
+                    Group {
+                        if let icon = sourceApp.icon {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        } else {
+                            Image(systemName: "app.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    }
+                    .frame(width: 14, height: 14)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                    
+                    Text(hoverText)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    ZStack {
+                        // 磨砂背景
+                        VisualEffectBlur(material: .hudWindow, cornerRadius: 6)
+                        // 渐变遮罩
+                        LinearGradient(
+                            colors: [
+                                glowColor.opacity(0.3),
+                                glowColor.opacity(0.1)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .leading)))
+                .fixedSize()
+                .allowsHitTesting(false)  // 不响应鼠标，防止闪烁
+            }
+        }
+        .zIndex(100)  // 确保在最上层
     }
 }
 

@@ -24,6 +24,8 @@ final class MessagePanelManager {
     
     private init() {
         self.state = MessagePanelState.shared
+        // 初始化键盘监听（用于 Cmd+V 粘贴图片）
+        _ = MessagePanelHoverState.shared
     }
     
     // MARK: - Public API
@@ -69,13 +71,18 @@ final class MessagePanelManager {
     }
     
     /// 添加 ASR 结果
-    func addASRResult(model: String, content: String, duration: TimeInterval? = nil) {
-        state.addASRResult(model: model, content: content, duration: duration)
+    func addASRResult(model: String, content: String, duration: TimeInterval? = nil, sourceApp: SourceAppInfo? = nil) {
+        state.addASRResult(model: model, content: content, duration: duration, sourceApp: sourceApp)
     }
     
     /// 添加 LLM 结果
-    func addLLMResult(model: String, content: String, processingTime: TimeInterval? = nil) {
-        state.addLLMResult(model: model, content: content, processingTime: processingTime)
+    func addLLMResult(model: String, content: String, processingTime: TimeInterval? = nil, sourceApp: SourceAppInfo? = nil) {
+        state.addLLMResult(model: model, content: content, processingTime: processingTime, sourceApp: sourceApp)
+    }
+    
+    /// 添加剪贴板内容
+    func addClipboardContent(content: String, sourceApp: SourceAppInfo? = nil) {
+        state.addClipboardContent(content: content, sourceApp: sourceApp)
     }
     
     /// 添加系统消息

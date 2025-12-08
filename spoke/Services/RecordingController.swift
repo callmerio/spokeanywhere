@@ -104,6 +104,13 @@ final class RecordingController {
                 LiveCaptionWindowManager.shared.toggle()
             }
         }
+        
+        // Clipboard Pipeline 触发
+        hotKeyService.onClipboardPipelineTrigger = {
+            Task { @MainActor in
+                ClipboardPipelineService.shared.trigger()
+            }
+        }
     }
     
     private func setupAudioCallbacks() {
@@ -225,6 +232,8 @@ final class RecordingController {
         let capturedTranscription = lastTranscription
         let capturedAudioURL = audioService.tempAudioFileURL
         let capturedAppBundleId = contextService.getCurrentTargetApp()?.bundleIdentifier
+        // 捕获来源应用信息（用于 Pipeline 卡片显示）
+        let capturedSourceApp: SourceAppInfo? = contextService.getCurrentTargetApp().map { SourceAppInfo.from($0) }
         
         // 停止音频录制（正常结束，等待最终结果）
         _ = audioService.stopRecording()
@@ -250,7 +259,8 @@ final class RecordingController {
         processTranscription(
             transcription: capturedTranscription,
             audioURL: capturedAudioURL,
-            appBundleId: capturedAppBundleId
+            appBundleId: capturedAppBundleId,
+            sourceApp: capturedSourceApp
         )
     }
     
@@ -295,10 +305,12 @@ final class RecordingController {
     ///   - transcription: 捕获的转录文本
     ///   - audioURL: 捕获的音频文件 URL
     ///   - appBundleId: 捕获的应用 Bundle ID
+    ///   - sourceApp: 来源应用信息（用于 Pipeline 卡片显示）
     private func processTranscription(
         transcription: String,
         audioURL: URL?,
-        appBundleId: String?
+        appBundleId: String?,
+        sourceApp: SourceAppInfo?
     ) {
         Task {
             let processStartTime = CFAbsoluteTimeGetCurrent()
@@ -338,10 +350,11 @@ final class RecordingController {
                 logger.info("📋 剪贴板(最终): 文本已更新")
             }
             
-            // 发送 ASR 结果到 Message Panel
+            // 发送 ASR 结果到 Message Panel（带来源应用）
             MessagePanelManager.shared.addASRResult(
                 model: "Apple Speech",
-                content: transcribedText
+                content: transcribedText,
+                sourceApp: sourceApp
             )
             
             // 检查是否需要 LLM 处理
@@ -374,10 +387,11 @@ final class RecordingController {
                 copyToClipboard(refinedText)
                 logger.info("📋 Clipboard: refined text")
                 
-                // 发送 LLM 结果到 Message Panel
+                // 发送 LLM 结果到 Message Panel（带来源应用，与 ASR 相同）
                 MessagePanelManager.shared.addLLMResult(
                     model: llmPipeline.currentProviderName,
-                    content: refinedText
+                    content: refinedText,
+                    sourceApp: sourceApp
                 )
                 
                 // 仅在没有新录音时更新 HUD

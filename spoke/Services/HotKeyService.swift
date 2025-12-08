@@ -45,6 +45,12 @@ final class HotKeyService {
     /// Live Caption 快捷键修饰符
     private var liveCaptionModifiers: NSEvent.ModifierFlags = .option
     
+    /// Clipboard Pipeline 快捷键 keyCode (⌥V)
+    private var clipboardPipelineKeyCode: UInt32 = UInt32(kVK_ANSI_V)
+    
+    /// Clipboard Pipeline 快捷键修饰符
+    private var clipboardPipelineModifiers: NSEvent.ModifierFlags = .option
+    
     /// 是否正在录音
     var isRecording = false
     
@@ -64,6 +70,12 @@ final class HotKeyService {
     /// flagsChanged 防抖工作项（用于多屏切换时的二次确认）
     private var flagsDebounceWorkItem: DispatchWorkItem?
     
+    /// 延迟停止 Task（用于取消之前的延迟停止）
+    private var delayedStopTask: Task<Void, Never>?
+    
+    /// 当前录音会话 ID（用于确保延迟停止只影响对应会话）
+    private var currentSessionId: UUID?
+    
     /// 回调
     var onRecordingStart: (() -> Void)?
     var onRecordingStop: (() -> Void)?
@@ -77,6 +89,9 @@ final class HotKeyService {
     
     /// Live Caption 回调
     var onLiveCaptionToggle: (() -> Void)?
+    
+    /// Clipboard Pipeline 回调
+    var onClipboardPipelineTrigger: (() -> Void)?
     
     /// 打开设置回调
     var onOpenSettings: (() -> Void)?
@@ -294,6 +309,10 @@ final class HotKeyService {
         let isLiveCaptionModifiersPressed = checkModifiersMatch(flags: flags, target: liveCaptionModifiers)
         let isLiveCaptionKey = keyCode == liveCaptionKeyCode
         
+        // 检查是否是 Clipboard Pipeline 快捷键
+        let isClipboardPipelineModifiersPressed = checkModifiersMatch(flags: flags, target: clipboardPipelineModifiers)
+        let isClipboardPipelineKey = keyCode == clipboardPipelineKeyCode
+        
         // 检查是否是 Cmd+逗号 (打开设置)
         let isCommandPressed = checkModifiersMatch(flags: flags, target: .command)
         let isCommaKey = keyCode == UInt32(kVK_ANSI_Comma)
@@ -325,6 +344,12 @@ final class HotKeyService {
             // Live Caption 快捷键
             if isLiveCaptionKey && isLiveCaptionModifiersPressed {
                 handleLiveCaptionToggle()
+                return nil
+            }
+            
+            // Clipboard Pipeline 快捷键
+            if isClipboardPipelineKey && isClipboardPipelineModifiersPressed {
+                handleClipboardPipelineTrigger()
                 return nil
             }
             
@@ -551,6 +576,15 @@ final class HotKeyService {
         logger.info("🎬 Live Caption toggle triggered")
     }
     
+    // MARK: - Clipboard Pipeline Handler
+    
+    private func handleClipboardPipelineTrigger() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onClipboardPipelineTrigger?()
+        }
+        logger.info("📋 Clipboard Pipeline triggered")
+    }
+    
     // MARK: - Recording Handlers
     
     private func handleKeyDown() {
@@ -559,11 +593,21 @@ final class HotKeyService {
             guard let self = self else { return }
             
             if !self.isRecording {
-                // 开始录音
+                // 开始新录音
+                // 1. 先取消之前的延迟停止（如果有）
+                self.delayedStopTask?.cancel()
+                self.delayedStopTask = nil
+                
+                // 2. 创建新的会话 ID
+                self.currentSessionId = UUID()
+                
+                // 3. 开始录音
                 self.isRecording = true
                 self.recordingStartTime = Date()
                 self.isToggleSession = false
                 self.onRecordingStart?()
+                
+                self.logger.info("🎙️ New recording session started: \(self.currentSessionId?.uuidString.prefix(8) ?? "nil")")
             } else {
                 // 正在录音中
                 if self.isToggleSession {
@@ -571,14 +615,26 @@ final class HotKeyService {
                     self.logger.info("🔄 Toggle mode: Stopping in 0.8s...")
                     self.isToggleSession = false  // 标记为停止中，防止重复触发
                     
+                    // 捕获当前会话 ID
+                    let sessionToStop = self.currentSessionId
+                    
+                    // 取消之前的延迟停止 Task（如果有）
+                    self.delayedStopTask?.cancel()
+                    
                     // 延迟 0.8 秒再停止录音，让语音识别处理尾音
-                    Task {
+                    self.delayedStopTask = Task {
                         try? await Task.sleep(for: .milliseconds(800))
                         await MainActor.run {
-                            guard self.isRecording else { return }
+                            // 确保是同一个会话，且仍在录音中
+                            guard self.isRecording,
+                                  self.currentSessionId == sessionToStop else {
+                                self.logger.debug("🔍 Delayed stop skipped: session changed or not recording")
+                                return
+                            }
                             
                             self.isRecording = false
                             self.recordingStartTime = nil
+                            self.currentSessionId = nil
                             self.onRecordingStop?()
                         }
                     }
@@ -629,15 +685,27 @@ final class HotKeyService {
                 // 长按：松手后延迟停止，以捕获尾音
                 self.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping in 0.8s...")
                 
+                // 捕获当前会话 ID
+                let sessionToStop = self.currentSessionId
+                
+                // 取消之前的延迟停止 Task（如果有）
+                self.delayedStopTask?.cancel()
+                
                 // 延迟 0.8 秒再停止录音，让语音识别处理尾音
-                Task {
+                self.delayedStopTask = Task {
                     try? await Task.sleep(for: .milliseconds(800))
                     await MainActor.run {
-                        // 再次检查状态，防止在延迟期间用户又开始了新录音
-                        guard self.isRecording && !self.isToggleSession else { return }
+                        // 确保是同一个会话，且仍在录音中，且不是 Toggle 模式
+                        guard self.isRecording,
+                              self.currentSessionId == sessionToStop,
+                              !self.isToggleSession else {
+                            self.logger.debug("🔍 Long press delayed stop skipped: session changed or state invalid")
+                            return
+                        }
                         
                         self.isRecording = false
                         self.recordingStartTime = nil
+                        self.currentSessionId = nil
                         self.onRecordingStop?()
                     }
                 }
@@ -651,6 +719,11 @@ final class HotKeyService {
         isRecording = false
         isToggleSession = false
         recordingStartTime = nil
+        currentSessionId = nil
+        
+        // 取消任何待执行的延迟停止
+        delayedStopTask?.cancel()
+        delayedStopTask = nil
         
         // 取消任何待执行的防抖检查
         flagsDebounceWorkItem?.cancel()
