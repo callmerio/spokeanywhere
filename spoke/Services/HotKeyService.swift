@@ -567,11 +567,21 @@ final class HotKeyService {
             } else {
                 // 正在录音中
                 if self.isToggleSession {
-                    // 如果已经是 Toggle 模式（之前短按触发），再次按下则停止
-                    self.isRecording = false
-                    self.isToggleSession = false
-                    self.recordingStartTime = nil
-                    self.onRecordingStop?()
+                    // 如果已经是 Toggle 模式（之前短按触发），再次按下则延迟停止
+                    self.logger.info("🔄 Toggle mode: Stopping in 0.8s...")
+                    self.isToggleSession = false  // 标记为停止中，防止重复触发
+                    
+                    // 延迟 0.8 秒再停止录音，让语音识别处理尾音
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(800))
+                        await MainActor.run {
+                            guard self.isRecording else { return }
+                            
+                            self.isRecording = false
+                            self.recordingStartTime = nil
+                            self.onRecordingStop?()
+                        }
+                    }
                 }
                 // 如果是 Hold 模式（正在按住），忽略重复的 KeyDown
             }
@@ -616,12 +626,21 @@ final class HotKeyService {
                 self.isToggleSession = true
                 self.logger.info("👆 Short press (\(String(format: "%.2f", duration))s) detected. Switched to Toggle mode.")
             } else {
-                // 长按：松手即停止
-                self.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping.")
-                self.isRecording = false
-                self.isToggleSession = false
-                self.recordingStartTime = nil
-                self.onRecordingStop?()
+                // 长按：松手后延迟停止，以捕获尾音
+                self.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping in 0.8s...")
+                
+                // 延迟 0.8 秒再停止录音，让语音识别处理尾音
+                Task {
+                    try? await Task.sleep(for: .milliseconds(800))
+                    await MainActor.run {
+                        // 再次检查状态，防止在延迟期间用户又开始了新录音
+                        guard self.isRecording && !self.isToggleSession else { return }
+                        
+                        self.isRecording = false
+                        self.recordingStartTime = nil
+                        self.onRecordingStop?()
+                    }
+                }
             }
         }
     }

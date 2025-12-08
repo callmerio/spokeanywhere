@@ -652,6 +652,11 @@ struct CorrectToSheet: View {
                     .background(Color.white.opacity(0.05))
                     .cornerRadius(6)
                     .focused($isInputFocused)
+                    .onSubmit {
+                        if !correctWord.trimmingCharacters(in: .whitespaces).isEmpty {
+                            submitCorrection()
+                        }
+                    }
                     .onChange(of: correctWord) { _, newValue in
                         // 自动匹配已有词条
                         if let match = dictionaryService.entries.first(where: { 

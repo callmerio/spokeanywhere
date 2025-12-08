@@ -165,6 +165,30 @@ class AppSettings: ObservableObject {
         self.quickAskModifiers = modifiers
     }
     
+    // MARK: - Selection Toolbar
+    
+    /// 选择工具栏是否启用
+    @AppStorage("SelectionToolbarEnabled") var selectionToolbarEnabled: Bool = true {
+        didSet {
+            Task { @MainActor in
+                if selectionToolbarEnabled {
+                    SelectionToolbarManager.shared.start()
+                } else {
+                    SelectionToolbarManager.shared.stop()
+                }
+            }
+        }
+    }
+    
+    /// 选择工具栏自动隐藏延迟（秒）
+    @AppStorage("SelectionToolbarAutoHideDelay") var selectionToolbarAutoHideDelay: Double = 5.0
+    
+    /// 选择工具栏是否显示按钮文字
+    @AppStorage("SelectionToolbarShowText") var selectionToolbarShowText: Bool = true
+    
+    /// 选择工具栏是否启用 OCR 上下文
+    @AppStorage("SelectionToolbarOCRContext") var selectionToolbarOCRContext: Bool = true
+    
     // MARK: - Message Panel Shortcut
     
     /// Message Panel 快捷键 keyCode (默认: P = 35)

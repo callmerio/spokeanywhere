@@ -37,6 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var hotkeyMenuItem: NSMenuItem?
+    private var selectionToolbarMenuItem: NSMenuItem?
     private var shortcutObserver: NSObjectProtocol?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -110,7 +111,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logStep("Step 8: Starting resource monitor...")
         setupResourceMonitor()
         
-        logStep("Step 9: Application launch complete! ✅")
+        logStep("Step 9: Starting selection toolbar...")
+        setupSelectionToolbar()
+        
+        logStep("Step 10: Application launch complete! ✅")
+    }
+    
+    private func setupSelectionToolbar() {
+        print("📋 [AppDelegate] setupSelectionToolbar() 开始")
+        
+        // 初始化动作服务 (监听通知)
+        _ = SelectionActionService.shared
+        print("📋 [AppDelegate] SelectionActionService 已初始化")
+        
+        // 启动工具栏管理器 (根据设置决定是否自动启动)
+        let enabled = AppSettings.shared.selectionToolbarEnabled
+        print("📋 [AppDelegate] selectionToolbarEnabled = \(enabled)")
+        
+        if enabled {
+            SelectionToolbarManager.shared.start()
+            print("📋 [AppDelegate] ✅ Selection toolbar started")
+        } else {
+            print("📋 [AppDelegate] ⏸️ Selection toolbar disabled in settings")
+        }
     }
     
     private func setupTrackpadGesture() {
@@ -196,6 +219,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         RecordingController.shared.stop()
         TrackpadGestureService.shared.stop()
+        SelectionToolbarManager.shared.stop()
         ResourceMonitor.shared.stop()
     }
     
@@ -243,6 +267,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         captionItem.keyEquivalentModifierMask = .option
         menu.addItem(captionItem)
         
+        // 选择工具栏
+        let toolbarItem = NSMenuItem(title: "选择工具栏", action: #selector(toggleSelectionToolbar), keyEquivalent: "")
+        toolbarItem.state = AppSettings.shared.selectionToolbarEnabled ? .on : .off
+        self.selectionToolbarMenuItem = toolbarItem
+        menu.addItem(toolbarItem)
+        
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
@@ -270,6 +300,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func toggleLiveCaption() {
         LiveCaptionWindowManager.shared.toggle()
+    }
+    
+    @objc func toggleSelectionToolbar() {
+        AppSettings.shared.selectionToolbarEnabled.toggle()
+        selectionToolbarMenuItem?.state = AppSettings.shared.selectionToolbarEnabled ? .on : .off
     }
     
     @objc func openSettings() {

@@ -39,7 +39,7 @@ echo "   搜索日志: grep -E 'error|Error|❌' $LOG_FILE"
 # 先启动 log stream，再启动应用，确保捕获启动日志
 # 只保留应用自定义日志（com.spokeanywhere 和 app.spokenly）
 # 过滤掉所有系统噪音日志
-log stream --level info --predicate '
+log stream --level debug --predicate '
     process == "SpokenAnyWhere" AND (
         subsystem BEGINSWITH "com.spokeanywhere" OR
         subsystem == "app.spokenly" OR
@@ -56,5 +56,5 @@ open .build/bundler/SpokenAnyWhere.app
 echo "📡 日志进程 PID: $LOG_PID (按 Ctrl+C 停止)"
 trap "kill $LOG_PID 2>/dev/null; echo '日志已停止'" EXIT
 
-# 实时显示关键日志（包含词典/LM/字典/OCR相关）
-tail -f "$LOG_FILE" | grep --line-buffered -E 'error|Error|❌|Recognition|Transcription|Audio|词典|预编译|LM|Dictionary|languageModel|customized|OCR|AppContext|ScreenOCR|🔍|📱'
+# 实时显示关键日志（包含词典/LM/字典/OCR/Selection相关）
+tail -f "$LOG_FILE" | grep --line-buffered -E 'error|Error|❌|✅|Recognition|Transcription|Audio|词典|预编译|LM|Dictionary|languageModel|customized|OCR|AppContext|ScreenOCR|🔍|📱|Selection|Toolbar|选中|工具栏|📋|🖱️'
