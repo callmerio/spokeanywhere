@@ -40,65 +40,77 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var shortcutObserver: NSObjectProtocol?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let launchStart = CFAbsoluteTimeGetCurrent()
+        var stepStart = launchStart
+        
+        func logStep(_ name: String) {
+            let now = CFAbsoluteTimeGetCurrent()
+            let stepTime = (now - stepStart) * 1000
+            let totalTime = (now - launchStart) * 1000
+            print("📍 \(name) [+\(String(format: "%.0f", stepTime))ms, total: \(String(format: "%.0f", totalTime))ms]")
+            stepStart = now
+        }
+        
         print("🚀 SpokenAnyWhere started")
         
-        print("📍 Step 0: Installing crash logger...")
+        logStep("Step 0: Installing crash logger...")
         // 安装崩溃日志记录器
         CrashLogger.shared.install()
         
-        print("📍 Step 1: Checking accessibility permission...")
+        logStep("Step 1: Checking accessibility permission...")
         // 检查辅助功能权限
         checkAccessibilityPermission()
         
-        print("📍 Step 2: Setting up status bar...")
+        logStep("Step 2: Setting up status bar...")
         // 创建状态栏图标
         setupMenuBar()
         
-        print("📍 Step 3: Starting clipboard service...")
+        logStep("Step 3: Starting clipboard service...")
         ClipboardHistoryService.shared.start()
         
-        print("📍 Step 4: Starting recording controller...")
+        logStep("Step 4: Starting recording controller...")
         RecordingController.shared.start()
         
-        print("📍 Step 5: Configuring HistoryManager...")
+        logStep("Step 5: Configuring HistoryManager...")
         // 先配置 HistoryManager 的 ModelContext
         HistoryManager.shared.configure(with: Self.sharedModelContainer.mainContext)
         
-        print("📍 Step 6: Performing history cleanup...")
+        logStep("Step 6: Performing history cleanup...")
         performHistoryCleanup()
         
-        print("📍 Step 6.1: Cleaning orphaned audio files...")
+        logStep("Step 6.1: Cleaning orphaned audio files...")
         performOrphanCleanup()
         
         // 双轨词典注入策略：
         // 1. contextualStrings（轻量级）- 每次录音时实时注入，无需预编译
         // 2. 预编译 LM（重量级）- 启动时后台准备，准备好后提供更强识别效果
         // 只有当前选择的模型支持预编译 LM 时才执行
+        logStep("Step 6.5: Checking dictionary precompilation...")
         if #available(macOS 26.0, *) {
             let config = TranscriptionModelManager.shared.getProviderConfiguration()
             if config.enablePrecompiledLM {
-                print("📍 Step 6.5: Starting dictionary precompilation (background)...")
+                print("  → Starting dictionary precompilation (background)...")
                 Task.detached(priority: .background) {
                     await TranscriptionManager.shared.prepareDictionary()
                 }
             } else {
-                print("📍 Step 6.5: Skipping precompilation (model doesn't support it)")
+                print("  → Skipping (model doesn't support it)")
             }
         } else {
             // macOS 25 及以下，使用 SFSpeechRecognizer，支持预编译
-            print("📍 Step 6.5: Starting dictionary precompilation (background)...")
+            print("  → Starting dictionary precompilation (background)...")
             Task.detached(priority: .background) {
                 await TranscriptionManager.shared.prepareDictionary()
             }
         }
         
-        print("📍 Step 7: Setting up trackpad gesture...")
+        logStep("Step 7: Setting up trackpad gesture...")
         setupTrackpadGesture()
         
-        print("📍 Step 8: Starting resource monitor...")
+        logStep("Step 8: Starting resource monitor...")
         setupResourceMonitor()
         
-        print("📍 Step 9: Application launch complete!")
+        logStep("Step 9: Application launch complete! ✅")
     }
     
     private func setupTrackpadGesture() {
@@ -146,11 +158,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func performOrphanCleanup() {
         Task {
-            // 降级过期的 Today 记录
-            await HistoryManager.shared.downgradeExpiredTodayRecords()
+            // 迁移旧版 today 记录为 todo
+            await HistoryManager.shared.migrateLegacyTodayRecords()
             // 清理孤儿音频文件（磁盘有文件但数据库无记录）
             await HistoryManager.shared.cleanupOrphanedAudioFiles()
-            // 限制普通记录数量为 50 条（today/note 不受影响）
+            // 限制普通记录数量为 50 条（todo/done/note 不受影响）
             await HistoryManager.shared.enforceNormalRecordLimit(maxCount: 50)
             // 限制音频总大小为 2GB
             await HistoryManager.shared.enforceAudioSizeLimit(maxSizeMB: 2048)

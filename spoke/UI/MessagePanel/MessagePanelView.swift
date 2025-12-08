@@ -65,6 +65,9 @@ struct MessagePanelView: View {
             
             Spacer()
             
+            // 过滤按钮组
+            filterButtons
+            
             // 清空全部按钮（hover 效果）
             let totalCount = state.cards.count + historyService.records.count
             HoverCloseButton(action: clearAll, size: 24, iconSize: 10)
@@ -74,6 +77,33 @@ struct MessagePanelView: View {
         .padding(.horizontal, 4)  // 和 Chat 行对齐
         .padding(.top, 16)
         .padding(.bottom, 8)
+    }
+    
+    /// 过滤按钮组
+    private var filterButtons: some View {
+        HStack(spacing: 6) {
+            FilterChip(
+                title: "Todo",
+                count: state.todoCount,
+                isActive: state.filterMode == .todo,
+                color: .orange
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    state.filterMode = state.filterMode == .todo ? .all : .todo
+                }
+            }
+            
+            FilterChip(
+                title: "Note",
+                count: state.noteCount,
+                isActive: state.filterMode == .note,
+                color: .blue
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    state.filterMode = state.filterMode == .note ? .all : .note
+                }
+            }
+        }
     }
     
     
@@ -99,8 +129,8 @@ struct MessagePanelView: View {
                     }
                 }
                 
-                // Pipeline 卡片（在最下面）
-                ForEach(state.cards) { card in
+                // Pipeline 卡片（在最下面，根据过滤模式显示）
+                ForEach(state.filteredCards) { card in
                     MessageCardView(card: card) {
                         withAnimation(.easeOut(duration: 0.2)) {
                             state.removeCard(card.id)
@@ -224,6 +254,7 @@ struct MessageCardView: View {
     @State private var isHovered = false
     @State private var showCopied = false
     @State private var isExpanded = false
+    @State private var copyScale: CGFloat = 1.0
     
     /// 折叠时显示的最大行数
     private let collapsedMaxLines = 6
@@ -238,27 +269,42 @@ struct MessageCardView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // 头部：阶段标签 + 时间 + 操作按钮
-            headerView
+        ZStack(alignment: .top) {
+            // 卡片主体
+            VStack(alignment: .leading, spacing: 8) {
+                // 头部：阶段标签 + 时间 + 操作按钮
+                headerView
+                
+                // 内容区域（支持折叠）
+                contentView
+                
+                // 元数据
+                if !card.metadata.isEmpty {
+                    metadataView
+                }
+            }
+            .padding(14)
+            .background(cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .scaleEffect(copyScale)
             
-            // 内容区域（支持折叠）
-            contentView
-            
-            // 元数据
-            if !card.metadata.isEmpty {
-                metadataView
+            // 复制成功浮动提示
+            if showCopied {
+                copyFeedbackBadge
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.8).combined(with: .opacity).combined(with: .offset(y: 8)),
+                        removal: .opacity
+                    ))
             }
         }
-        .padding(14)
-        .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
-            // 点击卡片：展开/折叠 或 复制
-            if needsCollapse {
+            // 点击卡片：
+            // - 折叠状态 → 展开
+            // - 展开状态或无需折叠 → 复制
+            if needsCollapse && !isExpanded {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
+                    isExpanded = true
                 }
             } else {
                 copyContent()
@@ -270,21 +316,47 @@ struct MessageCardView: View {
             }
         }
         .contextMenu {
-            // 设为 Today（仅 ASR/LLM 卡片显示）
+            // 状态切换菜单（仅 ASR/LLM 卡片显示）
             if card.stage.isTranscriptionResult {
-                Button {
-                    MessagePanelState.shared.setRecordType(card.id, type: .today)
-                } label: {
-                    Label("设为 Today", systemImage: "sun.max")
+                // Todo 相关操作
+                if card.recordType != .todo {
+                    Button {
+                        MessagePanelState.shared.setRecordType(card.id, type: .todo)
+                    } label: {
+                        Label("设为 Todo", systemImage: "circle")
+                    }
                 }
                 
-                Button {
-                    MessagePanelState.shared.setRecordType(card.id, type: .note)
-                } label: {
-                    Label("设为 Note", systemImage: "bookmark")
+                // Done 相关操作（仅 Todo 类别显示）
+                if card.recordType == .todo {
+                    Button {
+                        MessagePanelState.shared.setRecordType(card.id, type: .done)
+                    } label: {
+                        Label("标记完成", systemImage: "checkmark.circle.fill")
+                    }
                 }
                 
+                // Done → Todo（重新激活）
+                if card.recordType == .done {
+                    Button {
+                        MessagePanelState.shared.setRecordType(card.id, type: .todo)
+                    } label: {
+                        Label("重新激活", systemImage: "arrow.uturn.backward.circle")
+                    }
+                }
+                
+                // Note 操作
+                if card.recordType != .note {
+                    Button {
+                        MessagePanelState.shared.setRecordType(card.id, type: .note)
+                    } label: {
+                        Label("设为 Note", systemImage: "bookmark")
+                    }
+                }
+                
+                // 取消标记（回到 Normal）
                 if card.recordType.isPinned {
+                    Divider()
                     Button {
                         MessagePanelState.shared.setRecordType(card.id, type: .normal)
                     } label: {
@@ -455,37 +527,64 @@ struct MessageCardView: View {
         NSPasteboard.general.clearContents()
         guard NSPasteboard.general.setString(card.content, forType: .string) else { return }
         
-        withAnimation(.easeOut(duration: 0.15)) {
+        // 触觉反馈（如果支持）
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
+        
+        // 动画：卡片轻微放大 + 显示浮动提示
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
+            copyScale = 1.02
             showCopied = true
         }
+        
+        // 恢复卡片大小
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
-            withAnimation(.easeIn(duration: 0.2)) {
+            try? await Task.sleep(for: .milliseconds(150))
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                copyScale = 1.0
+            }
+            
+            // 1.2秒后隐藏提示
+            try? await Task.sleep(for: .milliseconds(1200))
+            withAnimation(.easeOut(duration: 0.25)) {
                 showCopied = false
             }
         }
     }
     
-    /// Today/Note 标记徽章
+    /// 复制成功浮动提示（紧凑 + 半透明）
+    private var copyFeedbackBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 9, weight: .bold))
+            Text("已复制")
+                .font(.system(size: 10, weight: .medium))
+        }
+        .foregroundColor(.green)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(Color.black.opacity(0.6))
+                .overlay(
+                    Capsule()
+                        .stroke(Color.green.opacity(0.4), lineWidth: 0.5)
+                )
+        )
+        .offset(y: -6)
+    }
+    
+    /// Todo/Done/Note 标记徽章
     private var recordTypeBadge: some View {
-        let (icon, color): (String, Color) = {
-            switch card.recordType {
-            case .today: return ("sun.max.fill", .orange)
-            case .note: return ("bookmark.fill", .green)
-            case .normal: return ("", .clear)
-            }
-        }()
-        
-        return HStack(spacing: 2) {
-            Image(systemName: icon)
+        HStack(spacing: 2) {
+            Image(systemName: card.recordType.icon)
                 .font(.system(size: 8))
             Text(card.recordType.displayName)
                 .font(.system(size: 9, weight: .medium))
         }
-        .foregroundColor(color)
+        .foregroundColor(card.recordType.color)
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
-        .background(color.opacity(0.15))
+        .background(card.recordType.color.opacity(0.15))
         .clipShape(Capsule())
     }
     
@@ -508,6 +607,49 @@ struct MessageCardView: View {
     
     private func reprocess() {
         // TODO: 实现重新处理逻辑
+    }
+}
+
+// MARK: - Filter Chip
+
+/// 过滤标签按钮
+struct FilterChip: View {
+    let title: String
+    let count: Int
+    let isActive: Bool
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .semibold))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(
+                            Capsule()
+                                .fill(isActive ? Color.white.opacity(0.3) : color.opacity(0.3))
+                        )
+                }
+            }
+            .foregroundColor(isActive ? .white : color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(isActive ? color : color.opacity(0.1))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(color.opacity(isActive ? 0 : 0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

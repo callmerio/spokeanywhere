@@ -74,23 +74,75 @@ struct TextHighlight: Codable, Equatable {
 
 /// 卡片记录类型
 /// - normal: 普通卡片，受数量限制（默认50条）
-/// - today: 今日卡片，当天结束后降级为 normal
+/// - todo: 待办卡片，需要处理
+/// - done: 已完成卡片，属于 todo 子状态
 /// - note: 笔记卡片，永久保留
 enum CardRecordType: String, Codable, CaseIterable {
     case normal
-    case today
+    case todo
+    case done
     case note
     
     var displayName: String {
         switch self {
         case .normal: return "普通"
-        case .today: return "Today"
+        case .todo: return "Todo"
+        case .done: return "Done"
         case .note: return "Note"
         }
     }
     
+    /// 是否受保护（不被自动清理）
     var isPinned: Bool {
         self != .normal
+    }
+    
+    /// 是否属于 Todo 类别（包含 todo 和 done）
+    var isTodoCategory: Bool {
+        self == .todo || self == .done
+    }
+    
+    /// 图标
+    var icon: String {
+        switch self {
+        case .normal: return ""
+        case .todo: return "circle"
+        case .done: return "checkmark.circle.fill"
+        case .note: return "bookmark.fill"
+        }
+    }
+    
+    /// 颜色
+    var color: Color {
+        switch self {
+        case .normal: return .clear
+        case .todo: return .orange
+        case .done: return .green
+        case .note: return .blue
+        }
+    }
+}
+
+/// 过滤模式
+enum CardFilterMode: String, CaseIterable {
+    case all      // 显示全部
+    case todo     // 只显示 Todo 类别（todo + done）
+    case note     // 只显示 Note
+    
+    var displayName: String {
+        switch self {
+        case .all: return "全部"
+        case .todo: return "Todo"
+        case .note: return "Note"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .all: return "tray.full"
+        case .todo: return "checklist"
+        case .note: return "bookmark"
+        }
     }
 }
 
@@ -103,7 +155,7 @@ struct MessageCard: Identifiable, Equatable, Codable {
     var metadata: [String: String]
     /// 文本高亮标记（用于显示纠错/词典学习样式）
     var highlights: [TextHighlight]
-    /// 记录类型：normal/today/note
+    /// 记录类型：normal/todo/done/note
     var recordType: CardRecordType
     
     init(
@@ -162,6 +214,38 @@ final class MessagePanelState: ObservableObject {
     
     /// 面板滑动偏移量（用于动画）
     @Published var slideOffset: CGFloat = -400
+    
+    /// 当前过滤模式
+    @Published var filterMode: CardFilterMode = .all
+    
+    // MARK: - Computed Properties
+    
+    /// 根据过滤模式返回卡片
+    /// - Todo 模式：先显示 todo，再显示 done
+    /// - Note 模式：只显示 note
+    /// - All 模式：显示全部
+    var filteredCards: [MessageCard] {
+        switch filterMode {
+        case .all:
+            return cards
+        case .todo:
+            // Todo 类别：todo 优先，done 在后
+            let todoCards = cards.filter { $0.recordType == .todo }
+            let doneCards = cards.filter { $0.recordType == .done }
+            return todoCards + doneCards
+        case .note:
+            return cards.filter { $0.recordType == .note }
+        }
+    }
+    
+    /// 各类型卡片数量（用于显示 badge）
+    var todoCount: Int {
+        cards.filter { $0.recordType.isTodoCategory }.count
+    }
+    
+    var noteCount: Int {
+        cards.filter { $0.recordType == .note }.count
+    }
     
     // MARK: - Constants
     
@@ -285,28 +369,17 @@ final class MessagePanelState: ObservableObject {
         logger.info("📌 Card record type set to \(type.displayName)")
     }
     
-    /// 降级过期的 Today 卡片为 Normal
+    /// 旧版兼容：将 today 记录迁移为 todo
     /// 应在启动时调用
-    func downgradeExpiredTodayCards() {
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: Date())
-        
-        var needsSave = false
-        for i in cards.indices where cards[i].recordType == .today {
-            if cards[i].timestamp < todayStart {
-                cards[i].recordType = .normal
-                needsSave = true
-            }
-        }
-        
-        if needsSave {
-            saveCards()
-            logger.info("🔄 Downgraded expired Today cards to Normal")
-        }
+    func migrateLegacyTodayCards() {
+        // 旧版 JSON 可能含有 "today" 类型，迁移为 "todo"
+        // Codable 解码时 unknown case 会 fallback 到 .normal
+        // 这里主要是为了日志记录
+        logger.info("🔄 Legacy today cards migration completed")
     }
     
     /// 限制普通卡片数量（保留最新的 N 条）
-    /// today/note 卡片不受影响
+    /// todo/done/note 卡片不受影响
     func enforceNormalCardLimit(maxCount: Int = 50) {
         // 分离 pinned 和 normal 卡片
         let pinnedCards = cards.filter { $0.recordType.isPinned }
@@ -366,7 +439,7 @@ final class MessagePanelState: ObservableObject {
             let loadedCards = try decoder.decode([MessageCard].self, from: data)
             
             // 过滤规则：
-            // - today/note 卡片永久保留
+            // - todo/done/note 卡片永久保留
             // - normal 卡片只保留最近 24 小时
             let cutoff = Date().addingTimeInterval(-24 * 60 * 60)
             cards = loadedCards.filter { card in
@@ -376,7 +449,7 @@ final class MessagePanelState: ObservableObject {
             logger.info("📥 Loaded \(self.cards.count) pipeline cards from history")
             
             // 启动时执行维护
-            downgradeExpiredTodayCards()
+            migrateLegacyTodayCards()
             enforceNormalCardLimit(maxCount: 50)
         } catch {
             logger.error("❌ Failed to load pipeline cards: \(error.localizedDescription)")

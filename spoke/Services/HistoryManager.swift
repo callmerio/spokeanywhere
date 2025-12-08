@@ -291,7 +291,7 @@ final class HistoryManager {
     
     /// 限制音频总大小（超出后删除最旧的普通记录）
     /// - Parameter maxSizeMB: 最大总大小（MB）
-    /// - Note: today/note 类型记录不会被删除
+    /// - Note: todo/done/note 类型记录不会被删除
     func enforceAudioSizeLimit(maxSizeMB: Int = 2048) async {
         guard let context = modelContext else { return }
         
@@ -319,7 +319,7 @@ final class HistoryManager {
             for item in items {
                 guard totalSize > maxBytes else { break }
                 
-                // 跳过 today/note 记录
+                // 跳过 todo/done/note 记录
                 if item.recordType.isPinned { continue }
                 
                 if let audioPath = item.audioPath {
@@ -343,7 +343,7 @@ final class HistoryManager {
     
     /// 限制普通记录数量（只保留最新的 N 条普通记录）
     /// - Parameter maxCount: 最大保留数量
-    /// - Note: today/note 类型记录不计入也不会被删除
+    /// - Note: todo/done/note 类型记录不计入也不会被删除
     func enforceNormalRecordLimit(maxCount: Int = 50) async {
         guard let context = modelContext else { return }
         
@@ -369,34 +369,30 @@ final class HistoryManager {
         }
     }
     
-    /// 降级过期的 Today 记录为 Normal
+    /// 旧版兼容：将 today 记录迁移为 todo
     /// 应在启动时调用
-    func downgradeExpiredTodayRecords() async {
+    /// - Note: 旧版数据库可能含有 "today" 类型记录，需迁移为 "todo"
+    func migrateLegacyTodayRecords() async {
         guard let context = modelContext else { return }
-        
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: Date())
         
         let descriptor = FetchDescriptor<HistoryItem>()
         
         do {
             let items = try context.fetch(descriptor)
-            var downgradedCount = 0
+            var migratedCount = 0
             
-            for item in items where item.recordType == .today {
-                // 如果创建时间不是今天，降级为普通记录
-                if item.createdAt < todayStart {
-                    item.recordType = .normal
-                    downgradedCount += 1
-                }
+            // 检查是否有 recordTypeRaw == "today" 的旧记录
+            for item in items where item.recordTypeRaw == "today" {
+                item.recordTypeRaw = HistoryRecordType.todo.rawValue
+                migratedCount += 1
             }
             
-            if downgradedCount > 0 {
+            if migratedCount > 0 {
                 try context.save()
-                logger.info("🔄 Downgraded \(downgradedCount) expired Today records to Normal")
+                logger.info("🔄 Migrated \(migratedCount) legacy 'today' records to 'todo'")
             }
         } catch {
-            logger.error("❌ Today downgrade failed: \(error.localizedDescription)")
+            logger.error("❌ Legacy migration failed: \(error.localizedDescription)")
         }
     }
     

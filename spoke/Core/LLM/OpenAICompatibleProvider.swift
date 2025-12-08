@@ -39,7 +39,9 @@ actor OpenAICompatibleProvider: LLMProvider {
     }
     
     private var maxTokens: Int {
-        profile?.maxTokens ?? 2048
+        // 默认 16384 tokens，覆盖主流模型最大输出
+        // GPT-4o: 16384, Claude: 4096, Gemini 2.0: 8192
+        profile?.maxTokens ?? 16384
     }
     
     private var enableThinking: Bool {

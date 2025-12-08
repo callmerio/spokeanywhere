@@ -5,23 +5,31 @@ import SwiftData
 
 /// 历史记录类型
 /// - normal: 普通记录，受自动清理策略影响
-/// - today: 今日记录，当天结束后降级为 normal
+/// - todo: 待办记录，需要处理
+/// - done: 已完成记录，属于 todo 子状态
 /// - note: 笔记，永久保留不被自动清理
 enum HistoryRecordType: String, Codable, CaseIterable {
     case normal
-    case today
+    case todo
+    case done
     case note
     
     var displayName: String {
         switch self {
         case .normal: return "普通"
-        case .today: return "Today"
+        case .todo: return "Todo"
+        case .done: return "Done"
         case .note: return "Note"
         }
     }
     
     var isPinned: Bool {
         self != .normal
+    }
+    
+    /// 是否属于 Todo 类别（包含 todo 和 done）
+    var isTodoCategory: Bool {
+        self == .todo || self == .done
     }
 }
 
@@ -36,9 +44,10 @@ class HistoryItem {
     var appBundleId: String?
     var tags: [String] // Requires ValueTransformer if complex, but basic arrays of string are supported in recent SwiftData
     
-    /// 记录类型：normal/today/note
+    /// 记录类型：normal/todo/done/note
     /// - normal: 受自动清理策略影响
-    /// - today: 临时保护，当天结束后降级为 normal
+    /// - todo: 待办事项，不自动清理
+    /// - done: 已完成，属于 todo 子状态
     /// - note: 永久保留
     var recordTypeRaw: String = HistoryRecordType.normal.rawValue
     
