@@ -31,8 +31,11 @@ final class LLMSettings {
         static let hasConsolidatedAPIKeys = "llm.hasConsolidatedAPIKeys"
         static let transcriptionProfileId = "llm.transcriptionProfileId"
         static let chatProfileId = "llm.chatProfileId"
+        static let summaryProfileId = "llm.summaryProfileId"
         // AI 生成标题
         static let aiGeneratedTitleEnabled = "llm.aiGeneratedTitleEnabled"
+        // 总结设置
+        static let summaryAutoEnabled = "llm.summaryAutoEnabled"
     }
     
     // MARK: - Default Prompt
@@ -51,6 +54,18 @@ final class LLMSettings {
 
     <剪贴板历史>仅用于消歧义，不要把无关内容塞进输出。
     只输出最终文本。
+    """
+    
+    /// 总结 Prompt
+    static let summaryPrompt = """
+    将以下内容提炼为简洁准确的摘要。
+
+    要求：
+    1. 保留核心信息和关键要点
+    2. 删除冗余表述和填充词
+    3. 使用简洁的书面语
+    4. 长度控制在原文的 1/3 以内，最长不超过 100 字
+    5. 只输出摘要内容，不要加任何前缀或标点
     """
     
     // MARK: - Properties
@@ -135,6 +150,16 @@ final class LLMSettings {
         didSet { save() }
     }
     
+    /// 总结模型 Profile ID
+    var summaryProfileId: UUID? {
+        didSet { save() }
+    }
+    
+    /// 切换到 todo/note 时自动生成总结
+    var summaryAutoEnabled: Bool {
+        didSet { save() }
+    }
+    
     /// 获取转录模型 Profile
     var transcriptionProfile: ProviderProfile? {
         guard let id = transcriptionProfileId else { return nil }
@@ -144,6 +169,12 @@ final class LLMSettings {
     /// 获取对话模型 Profile
     var chatProfile: ProviderProfile? {
         guard let id = chatProfileId else { return nil }
+        return profiles.first { $0.id == id }
+    }
+    
+    /// 获取总结模型 Profile
+    var summaryProfile: ProviderProfile? {
+        guard let id = summaryProfileId else { return nil }
         return profiles.first { $0.id == id }
     }
     
@@ -239,6 +270,15 @@ final class LLMSettings {
         } else {
             self.chatProfileId = nil
         }
+        
+        if let idString = defaults.string(forKey: Keys.summaryProfileId),
+           let uuid = UUID(uuidString: idString) {
+            self.summaryProfileId = uuid
+        } else {
+            self.summaryProfileId = nil
+        }
+        
+        self.summaryAutoEnabled = defaults.object(forKey: Keys.summaryAutoEnabled) as? Bool ?? true
         
         self.systemPrompt = defaults.string(forKey: Keys.systemPrompt) ?? Self.defaultSystemPrompt
         self.includeClipboard = defaults.object(forKey: Keys.includeClipboard) as? Bool ?? false
@@ -577,6 +617,8 @@ final class LLMSettings {
         defaults.set(selectedProfileId?.uuidString, forKey: Keys.selectedProfileId)
         defaults.set(transcriptionProfileId?.uuidString, forKey: Keys.transcriptionProfileId)
         defaults.set(chatProfileId?.uuidString, forKey: Keys.chatProfileId)
+        defaults.set(summaryProfileId?.uuidString, forKey: Keys.summaryProfileId)
+        defaults.set(summaryAutoEnabled, forKey: Keys.summaryAutoEnabled)
         
         defaults.set(systemPrompt, forKey: Keys.systemPrompt)
         defaults.set(includeClipboard, forKey: Keys.includeClipboard)

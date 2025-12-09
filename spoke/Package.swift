@@ -9,11 +9,15 @@ let package = Package(
     products: [
         .executable(name: "SpokenAnyWhere", targets: ["SpokenAnyWhere"])
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/pointfreeco/swift-identified-collections", from: "1.0.0")
+    ],
     targets: [
         .executableTarget(
             name: "SpokenAnyWhere",
-            dependencies: [],
+            dependencies: [
+                .product(name: "IdentifiedCollections", package: "swift-identified-collections")
+            ],
             path: ".",
             exclude: [
                 "Package.swift",

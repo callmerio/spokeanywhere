@@ -293,6 +293,9 @@ final class SelectionMonitorService {
     
     /// 执行选中文本检查
     private func performSelectionCheck() {
+        let stopwatch = StopWatch("SelectionCheck")
+        defer { stopwatch.stop() }
+        
         logger.debug("📋 [SelectionMonitor] performSelectionCheck() 被调用")
         
         // 获取当前聚焦的应用
@@ -311,15 +314,22 @@ final class SelectionMonitorService {
         }
         
         // 获取选中文本和位置
-        guard let (selectedText, bounds) = getSelectedTextAndBounds(for: frontApp) else {
+        stopwatch.checkpoint("before_getSelectedText")
+        guard let (selectedText, bounds) = PerformanceTracer.Selection.traceCheck({
+            getSelectedTextAndBounds(for: frontApp)
+        }) else {
             logger.info("📋 [SelectionMonitor] ❌ 无法获取选中文本")
             return
         }
         
         logger.info("📋 [SelectionMonitor] ✅ 获取到选中文本: \(selectedText.prefix(30))... bounds: \(NSStringFromRect(bounds))")
         
+        stopwatch.checkpoint("after_getSelectedText")
+        
         // 验证文本长度
-        let trimmedText = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedText = PerformanceTracer.Selection.traceFilter {
+            selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         guard trimmedText.count >= minSelectionLength,
               trimmedText.count <= maxSelectionLength else {
             return
@@ -344,7 +354,10 @@ final class SelectionMonitorService {
         logger.info("📋 [SelectionMonitor] 检测到选中文本 | 长度: \(trimmedText.count) | 应用: \(frontApp.localizedName ?? "unknown")")
         
         // 回调
-        onSelectionChanged?(context)
+        stopwatch.checkpoint("before_callback")
+        PerformanceTracer.Selection.traceCallback {
+            onSelectionChanged?(context)
+        }
     }
     
     /// 使用 Accessibility API 获取选中文本和位置

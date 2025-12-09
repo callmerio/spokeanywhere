@@ -112,19 +112,32 @@ struct CardAttachmentView: View {
 
 // MARK: - Attachment Flow Layout
 
-/// 附件流式布局（类似 FlowLayout，但针对固定高度图片优化）
+/// 附件流式布局（类似 FlowLayout，但针对固定高度图片优化）- 使用 cache 避免重复计算
 struct AttachmentFlowLayout: Layout {
     let spacing: CGFloat
     
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
-        return result.size
+    // MARK: - Cache 结构
+    
+    struct CacheData {
+        var size: CGSize = .zero
+        var positions: [CGPoint] = []
+        var proposalWidth: CGFloat = 0
+        var subviewCount: Int = 0
     }
     
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
+    func makeCache(subviews: Subviews) -> CacheData {
+        CacheData()
+    }
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout CacheData) -> CGSize {
+        updateCacheIfNeeded(proposal: proposal, subviews: subviews, cache: &cache)
+        return cache.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout CacheData) {
+        updateCacheIfNeeded(proposal: proposal, subviews: subviews, cache: &cache)
         
-        for (index, position) in result.positions.enumerated() where index < subviews.count {
+        for (index, position) in cache.positions.enumerated() where index < subviews.count {
             subviews[index].place(
                 at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y),
                 proposal: .unspecified
@@ -132,9 +145,23 @@ struct AttachmentFlowLayout: Layout {
         }
     }
     
-    private func arrangeSubviews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
-        let maxWidth = proposal.width ?? .infinity
+    /// 仅在必要时更新缓存
+    private func updateCacheIfNeeded(proposal: ProposedViewSize, subviews: Subviews, cache: inout CacheData) {
+        // 处理 nil 或 infinity 的情况，使用一个较大的有限值
+        let proposalWidth: CGFloat
+        if let width = proposal.width, width.isFinite {
+            proposalWidth = width
+        } else {
+            proposalWidth = 10000
+        }
+        
+        guard cache.proposalWidth != proposalWidth || cache.subviewCount != subviews.count else {
+            return
+        }
+        
         var positions: [CGPoint] = []
+        positions.reserveCapacity(subviews.count)
+        
         var currentX: CGFloat = 0
         var currentY: CGFloat = 0
         var rowHeight: CGFloat = 0
@@ -143,8 +170,7 @@ struct AttachmentFlowLayout: Layout {
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             
-            // 检查是否需要换行
-            if currentX + size.width > maxWidth && currentX > 0 {
+            if currentX + size.width > proposalWidth && currentX > 0 {
                 currentX = 0
                 currentY += rowHeight + spacing
                 rowHeight = 0
@@ -157,7 +183,10 @@ struct AttachmentFlowLayout: Layout {
             totalWidth = max(totalWidth, currentX - spacing)
         }
         
-        return (CGSize(width: totalWidth, height: currentY + rowHeight), positions)
+        cache.size = CGSize(width: totalWidth, height: currentY + rowHeight)
+        cache.positions = positions
+        cache.proposalWidth = proposalWidth
+        cache.subviewCount = subviews.count
     }
 }
 

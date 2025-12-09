@@ -518,6 +518,7 @@ struct AISettingsContent: View {
                             isActive: llmSettings.selectedProfileId == profile.id,
                             isTranscription: llmSettings.transcriptionProfileId == profile.id,
                             isChat: llmSettings.chatProfileId == profile.id,
+                            isSummary: llmSettings.summaryProfileId == profile.id,
                             hasAPIKey: llmSettings.hasAPIKey(for: profile.id),
                             modelRefreshTrigger: modelRefreshTrigger,
                             isTesting: expandedProfileId == profile.id ? $isTesting : .constant(false),
@@ -540,6 +541,9 @@ struct AISettingsContent: View {
                             },
                             onSetChat: {
                                 llmSettings.chatProfileId = profile.id
+                            },
+                            onSetSummary: {
+                                llmSettings.summaryProfileId = profile.id
                             },
                             onSetAPIKey: {
                                 apiKeyInput = ""
@@ -713,6 +717,24 @@ struct AISettingsContent: View {
                 }
                 .toggleStyle(.switch)
                 .tint(.blue)
+                
+                Divider().background(Color.white.opacity(0.06))
+                
+                // 自动总结
+                Toggle(isOn: Binding(
+                    get: { llmSettings.summaryAutoEnabled },
+                    set: { llmSettings.summaryAutoEnabled = $0 }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label("自动生成总结", systemImage: "text.quote")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("切换到 Todo/Note 时自动生成内容摘要")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.gray)
+                    }
+                }
+                .toggleStyle(.switch)
+                .tint(.blue)
             }
             .padding(16)
         }
@@ -775,6 +797,7 @@ struct ServiceCardRow: View {
     let isActive: Bool
     let isTranscription: Bool
     let isChat: Bool
+    let isSummary: Bool
     let hasAPIKey: Bool
     let modelRefreshTrigger: UUID
     @Binding var isTesting: Bool
@@ -783,6 +806,7 @@ struct ServiceCardRow: View {
     let onSetActive: () -> Void
     let onSetTranscription: () -> Void
     let onSetChat: () -> Void
+    let onSetSummary: () -> Void
     let onSetAPIKey: () -> Void
     let onTest: () -> Void
     let onDelete: () -> Void
@@ -830,6 +854,16 @@ struct ServiceCardRow: View {
                             .background(Color.green.opacity(0.8))
                             .cornerRadius(4)
                     }
+                    
+                    if isSummary {
+                        Text("总结")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.8))
+                            .cornerRadius(4)
+                    }
                 }
                 
                 Spacer()
@@ -863,6 +897,10 @@ struct ServiceCardRow: View {
             
             Button(action: onSetChat) {
                 Label("设为对话模型", systemImage: "bubble.left.and.bubble.right")
+            }
+            
+            Button(action: onSetSummary) {
+                Label("设为总结模型", systemImage: "text.quote")
             }
             
             Divider()

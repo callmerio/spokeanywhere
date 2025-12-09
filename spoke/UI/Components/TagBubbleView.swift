@@ -208,19 +208,32 @@ struct TagListView: View {
 
 // MARK: - Flow Layout
 
-/// 水平流式布局（自动换行）
+/// 水平流式布局（自动换行）- 使用 cache 避免重复计算
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
     
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = layout(proposal: proposal, subviews: subviews)
-        return result.size
+    // MARK: - Cache 结构
+    
+    struct CacheData {
+        var size: CGSize = .zero
+        var frames: [CGRect] = []
+        var proposalWidth: CGFloat = 0
+        var subviewCount: Int = 0
     }
     
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = layout(proposal: proposal, subviews: subviews)
+    func makeCache(subviews: Subviews) -> CacheData {
+        CacheData()
+    }
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout CacheData) -> CGSize {
+        updateCacheIfNeeded(proposal: proposal, subviews: subviews, cache: &cache)
+        return cache.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout CacheData) {
+        updateCacheIfNeeded(proposal: proposal, subviews: subviews, cache: &cache)
         
-        for (index, frame) in result.frames.enumerated() {
+        for (index, frame) in cache.frames.enumerated() where index < subviews.count {
             subviews[index].place(
                 at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
                 proposal: ProposedViewSize(frame.size)
@@ -228,9 +241,25 @@ struct FlowLayout: Layout {
         }
     }
     
-    private func layout(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
-        let maxWidth = proposal.width ?? .infinity
+    /// 仅在必要时更新缓存（proposal 或 subview 数量变化）
+    private func updateCacheIfNeeded(proposal: ProposedViewSize, subviews: Subviews, cache: inout CacheData) {
+        // 处理 nil 或 infinity 的情况，使用一个较大的有限值
+        let proposalWidth: CGFloat
+        if let width = proposal.width, width.isFinite {
+            proposalWidth = width
+        } else {
+            proposalWidth = 10000 // 使用有限的大值代替 infinity
+        }
+        
+        // 检查是否需要重新计算
+        guard cache.proposalWidth != proposalWidth || cache.subviewCount != subviews.count else {
+            return
+        }
+        
+        // 计算布局
         var frames: [CGRect] = []
+        frames.reserveCapacity(subviews.count)
+        
         var currentX: CGFloat = 0
         var currentY: CGFloat = 0
         var lineHeight: CGFloat = 0
@@ -240,7 +269,7 @@ struct FlowLayout: Layout {
             let size = subview.sizeThatFits(.unspecified)
             
             // 需要换行
-            if currentX + size.width > maxWidth && currentX > 0 {
+            if currentX + size.width > proposalWidth && currentX > 0 {
                 currentX = 0
                 currentY += lineHeight + spacing
                 lineHeight = 0
@@ -253,7 +282,11 @@ struct FlowLayout: Layout {
             totalHeight = currentY + lineHeight
         }
         
-        return (CGSize(width: maxWidth, height: totalHeight), frames)
+        // 更新缓存
+        cache.size = CGSize(width: proposalWidth, height: totalHeight)
+        cache.frames = frames
+        cache.proposalWidth = proposalWidth
+        cache.subviewCount = subviews.count
     }
 }
 

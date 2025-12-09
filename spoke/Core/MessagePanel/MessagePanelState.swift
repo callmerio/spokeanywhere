@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 import OSLog
 import AppKit
+import IdentifiedCollections
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "MessagePanelState")
 
@@ -182,6 +183,48 @@ enum CardRecordType: String, Codable, CaseIterable {
     }
 }
 
+// MARK: - Summary Status
+
+/// 总结状态
+enum SummaryStatus: String, Codable, Equatable {
+    case none       // 未总结
+    case pending    // 等待中
+    case generating // 生成中
+    case completed  // 已完成
+    case failed     // 失败
+    
+    var isInProgress: Bool {
+        self == .pending || self == .generating
+    }
+}
+
+/// 内容类型（用于总结时的处理策略）
+enum CardContentType: String, Codable, Equatable {
+    case text       // 普通文本
+    case image      // 图片（需要多模态模型）
+    case url        // 网页链接（需要先抓取内容）
+    case mixed      // 混合内容
+    
+    /// 从内容自动检测类型
+    static func detect(from content: String, attachments: [CardAttachment]) -> CardContentType {
+        // 有图片附件
+        if !attachments.isEmpty {
+            return content.isEmpty ? .image : .mixed
+        }
+        // URL 检测
+        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
+            let matches = detector.matches(in: content, range: NSRange(content.startIndex..., in: content))
+            if matches.count == 1, let match = matches.first,
+               let range = Range(match.range, in: content),
+               content[range].count > content.count / 2 {
+                // URL 占据内容主体
+                return .url
+            }
+        }
+        return .text
+    }
+}
+
 /// 过滤模式
 enum CardFilterMode: String, CaseIterable {
     case all      // 显示全部
@@ -205,23 +248,40 @@ enum CardFilterMode: String, CaseIterable {
     }
 }
 
-/// 消息卡片数据模型
-struct MessageCard: Identifiable, Equatable, Codable {
+/// 消息卡片数据模型（class + ObservableObject 避免 ForEach 全量重绘）
+final class MessageCard: ObservableObject, Identifiable, Codable {
     let id: UUID
     let timestamp: Date
     let stage: MessageStage
     let content: String
-    var metadata: [String: String]
+    @Published var metadata: [String: String]
     /// 文本高亮标记（用于显示纠错/词典学习样式）
-    var highlights: [TextHighlight]
+    @Published var highlights: [TextHighlight]
     /// 记录类型：normal/todo/done/note
-    var recordType: CardRecordType
+    @Published var recordType: CardRecordType
     /// 标签 ID 列表（通过 TagLibrary 获取完整信息）
-    var tagIds: [UUID]
+    @Published var tagIds: [UUID]
     /// 附件列表（截图等）
-    var attachments: [CardAttachment]
+    @Published var attachments: [CardAttachment]
     /// 来源应用信息（用于显示图标和光晕）
     var sourceApp: SourceAppInfo?
+    
+    // MARK: - Summary
+    
+    /// 总结内容
+    @Published var summary: String?
+    /// 总结状态
+    @Published var summaryStatus: SummaryStatus
+    /// 内容类型（用于选择总结策略）
+    var contentType: CardContentType
+    
+    // MARK: - Codable Keys
+    
+    enum CodingKeys: String, CodingKey {
+        case id, timestamp, stage, content, metadata, highlights
+        case recordType, tagIds, attachments, sourceApp
+        case summary, summaryStatus, contentType
+    }
     
     init(
         id: UUID = UUID(),
@@ -233,7 +293,10 @@ struct MessageCard: Identifiable, Equatable, Codable {
         recordType: CardRecordType = .normal,
         tagIds: [UUID] = [],
         attachments: [CardAttachment] = [],
-        sourceApp: SourceAppInfo? = nil
+        sourceApp: SourceAppInfo? = nil,
+        summary: String? = nil,
+        summaryStatus: SummaryStatus = .none,
+        contentType: CardContentType? = nil
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -245,32 +308,108 @@ struct MessageCard: Identifiable, Equatable, Codable {
         self.tagIds = tagIds
         self.attachments = attachments
         self.sourceApp = sourceApp
+        self.summary = summary
+        self.summaryStatus = summaryStatus
+        // 自动检测内容类型
+        self.contentType = contentType ?? CardContentType.detect(from: content, attachments: attachments)
     }
     
-    // 自定义解码：兼容旧数据（没有 highlights/recordType/tagIds/attachments/sourceApp 字段）
-    init(from decoder: Decoder) throws {
+    // 自定义解码：兼容旧数据 + @Published 属性
+    required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(UUID.self, forKey: .id)
-        timestamp = try container.decode(Date.self, forKey: .timestamp)
-        stage = try container.decode(MessageStage.self, forKey: .stage)
-        content = try container.decode(String.self, forKey: .content)
-        metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata) ?? [:]
-        highlights = try container.decodeIfPresent([TextHighlight].self, forKey: .highlights) ?? []
-        recordType = try container.decodeIfPresent(CardRecordType.self, forKey: .recordType) ?? .normal
-        tagIds = try container.decodeIfPresent([UUID].self, forKey: .tagIds) ?? []
-        attachments = try container.decodeIfPresent([CardAttachment].self, forKey: .attachments) ?? []
-        sourceApp = try container.decodeIfPresent(SourceAppInfo.self, forKey: .sourceApp)
+        
+        // 先解码所有值到本地变量
+        let decodedId = try container.decode(UUID.self, forKey: .id)
+        let decodedTimestamp = try container.decode(Date.self, forKey: .timestamp)
+        let decodedStage = try container.decode(MessageStage.self, forKey: .stage)
+        let decodedContent = try container.decode(String.self, forKey: .content)
+        let decodedMetadata = try container.decodeIfPresent([String: String].self, forKey: .metadata) ?? [:]
+        let decodedHighlights = try container.decodeIfPresent([TextHighlight].self, forKey: .highlights) ?? []
+        let decodedRecordType = try container.decodeIfPresent(CardRecordType.self, forKey: .recordType) ?? .normal
+        let decodedTagIds = try container.decodeIfPresent([UUID].self, forKey: .tagIds) ?? []
+        let decodedAttachments = try container.decodeIfPresent([CardAttachment].self, forKey: .attachments) ?? []
+        let decodedSourceApp = try container.decodeIfPresent(SourceAppInfo.self, forKey: .sourceApp)
+        let decodedSummary = try container.decodeIfPresent(String.self, forKey: .summary)
+        let decodedSummaryStatus = try container.decodeIfPresent(SummaryStatus.self, forKey: .summaryStatus) ?? .none
+        let decodedContentType = try container.decodeIfPresent(CardContentType.self, forKey: .contentType)
+            ?? CardContentType.detect(from: decodedContent, attachments: decodedAttachments)
+        
+        // 然后赋值给属性
+        self.id = decodedId
+        self.timestamp = decodedTimestamp
+        self.stage = decodedStage
+        self.content = decodedContent
+        self.metadata = decodedMetadata
+        self.highlights = decodedHighlights
+        self.recordType = decodedRecordType
+        self.tagIds = decodedTagIds
+        self.attachments = decodedAttachments
+        self.sourceApp = decodedSourceApp
+        self.summary = decodedSummary
+        self.summaryStatus = decodedSummaryStatus
+        self.contentType = decodedContentType
+    }
+    
+    // 自定义编码：@Published 属性需要手动编码
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(stage, forKey: .stage)
+        try container.encode(content, forKey: .content)
+        try container.encode(metadata, forKey: .metadata)
+        try container.encode(highlights, forKey: .highlights)
+        try container.encode(recordType, forKey: .recordType)
+        try container.encode(tagIds, forKey: .tagIds)
+        try container.encode(attachments, forKey: .attachments)
+        try container.encodeIfPresent(sourceApp, forKey: .sourceApp)
+        try container.encodeIfPresent(summary, forKey: .summary)
+        try container.encode(summaryStatus, forKey: .summaryStatus)
+        try container.encode(contentType, forKey: .contentType)
     }
     
     var formattedTime: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
+        formatter.dateFormat = "M-d HH:mm"
         return formatter.string(from: timestamp)
     }
     
     /// 是否有附件
     var hasAttachments: Bool {
         !attachments.isEmpty
+    }
+    
+    /// 是否有总结
+    var hasSummary: Bool {
+        summary != nil && !summary!.isEmpty
+    }
+    
+    /// 显示文本（优先总结，如果没有则显示原文）
+    var displayText: String {
+        if hasSummary {
+            return summary!
+        }
+        return content
+    }
+    
+    /// 是否需要总结（todo/note 类型且未总结）
+    var needsSummary: Bool {
+        (recordType == .todo || recordType == .note) && summaryStatus == .none
+    }
+}
+
+// MARK: - MessageCard Equatable & Hashable
+
+extension MessageCard: Equatable {
+    static func == (lhs: MessageCard, rhs: MessageCard) -> Bool {
+        // 只比较 ID，因为是引用类型，同一个对象的属性变化由 @Published 处理
+        lhs.id == rhs.id
+    }
+}
+
+extension MessageCard: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -288,8 +427,8 @@ final class MessagePanelState: ObservableObject {
     /// 面板是否可见
     @Published var isVisible: Bool = false
     
-    /// 所有消息卡片
-    @Published var cards: [MessageCard] = []
+    /// 所有消息卡片（使用 IdentifiedArray 优化 ForEach 性能）
+    @Published var cards: IdentifiedArrayOf<MessageCard> = []
     
     /// 面板滑动偏移量（用于动画）
     @Published var slideOffset: CGFloat = -400
@@ -300,45 +439,80 @@ final class MessagePanelState: ObservableObject {
     /// 当前激活的标签筛选（交集逻辑：必须同时包含所有标签）
     @Published var activeFilterTagIds: Set<UUID> = []
     
-    // MARK: - Computed Properties
+    /// 缓存的过滤结果（避免每次布局都重新计算）
+    @Published private(set) var filteredCards: IdentifiedArrayOf<MessageCard> = []
     
-    /// 根据过滤模式和标签筛选返回卡片
-    /// - 标签筛选：包含所有激活标签的卡片置顶
-    /// - Todo 模式：先显示 todo，再显示 done
-    /// - Note 模式：只显示 note
-    /// - All 模式：显示全部
-    var filteredCards: [MessageCard] {
+    /// 分页：当前显示的卡片数量
+    @Published var displayLimit: Int = 20
+    
+    /// 分页：每次加载更多的数量
+    private let pageSize: Int = 15
+    
+    /// Combine 订阅存储
+    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Private
+    
+    /// 重新计算过滤结果（在 cards/filterMode/activeFilterTagIds 变化时调用）
+    /// 注意：结果按最终显示顺序排序（新的在前），visibleCards 直接取前 N 个
+    private func updateFilteredCards() {
         var result: [MessageCard]
         
         switch filterMode {
         case .all:
-            result = cards
+            // All 模式：按时间倒序（新的在前）
+            result = Array(cards).sorted { $0.timestamp > $1.timestamp }
+            // 有标签过滤时：匹配的在前，每组内保持时间倒序
+            if !activeFilterTagIds.isEmpty {
+                result = sortByTagMatchKeepingOrder(result)
+            }
         case .todo:
-            // Todo 类别：todo 优先，done 在后
-            let todoCards = cards.filter { $0.recordType == .todo }
-            let doneCards = cards.filter { $0.recordType == .done }
-            result = todoCards + doneCards
+            // Todo 模式：先 todo 后 done，每组内按时间倒序（新的在前）
+            let todoCards = Array(cards.filter { $0.recordType == .todo })
+                .sorted { $0.timestamp > $1.timestamp }
+            let doneCards = Array(cards.filter { $0.recordType == .done })
+                .sorted { $0.timestamp > $1.timestamp }
+            
+            if activeFilterTagIds.isEmpty {
+                // 无标签过滤：todo 在前，done 在后
+                result = todoCards + doneCards
+            } else {
+                // 有标签过滤：匹配标签的 todo → 匹配标签的 done → 不匹配的 todo → 不匹配的 done
+                let (matchedTodo, unmatchedTodo) = partitionByTagMatch(todoCards)
+                let (matchedDone, unmatchedDone) = partitionByTagMatch(doneCards)
+                result = matchedTodo + matchedDone + unmatchedTodo + unmatchedDone
+            }
         case .note:
-            result = cards.filter { $0.recordType == .note }
+            result = Array(cards.filter { $0.recordType == .note })
+                .sorted { $0.timestamp > $1.timestamp }
+            if !activeFilterTagIds.isEmpty {
+                result = sortByTagMatchKeepingOrder(result)
+            }
         }
         
-        // 如果有标签筛选，按标签匹配排序
-        if !activeFilterTagIds.isEmpty {
-            result = sortByTagMatch(result)
-        }
+        // IdentifiedArray 的 ids 属性可以高效比较
+        let resultIds = result.map(\.id)
+        let currentIds = filteredCards.ids
         
-        return result
+        if resultIds != Array(currentIds) {
+            filteredCards = IdentifiedArrayOf(uniqueElements: result)
+        }
     }
     
-    /// 按标签匹配排序（匹配的在前，按时间倒序）
-    private func sortByTagMatch(_ cards: [MessageCard]) -> [MessageCard] {
-        // 分离匹配和不匹配的卡片
+    /// 按标签匹配分组（匹配的, 不匹配的），保持原有顺序
+    private func partitionByTagMatch(_ cards: [MessageCard]) -> ([MessageCard], [MessageCard]) {
         let matched = cards.filter { card in
             activeFilterTagIds.isSubset(of: Set(card.tagIds))
         }
         let unmatched = cards.filter { card in
             !activeFilterTagIds.isSubset(of: Set(card.tagIds))
         }
+        return (matched, unmatched)
+    }
+    
+    /// 按标签匹配排序，保持每组内原有顺序
+    private func sortByTagMatchKeepingOrder(_ cards: [MessageCard]) -> [MessageCard] {
+        let (matched, unmatched) = partitionByTagMatch(cards)
         return matched + unmatched
     }
     
@@ -349,6 +523,34 @@ final class MessagePanelState: ObservableObject {
     
     var noteCount: Int {
         cards.filter { $0.recordType == .note }.count
+    }
+    
+    // MARK: - Pagination
+    
+    /// 当前可见的卡片（分页，filteredCards 已按显示顺序排序）
+    var visibleCards: [MessageCard] {
+        // filteredCards 已按最终显示顺序排序（新的在前），直接取前 N 个
+        Array(filteredCards.prefix(displayLimit))
+    }
+    
+    /// 是否还有更多卡片可以加载
+    var hasMoreCards: Bool {
+        displayLimit < filteredCards.count
+    }
+    
+    /// 剩余未显示的卡片数量
+    var remainingCount: Int {
+        max(0, filteredCards.count - displayLimit)
+    }
+    
+    /// 加载更多卡片
+    func loadMore() {
+        displayLimit += pageSize
+    }
+    
+    /// 重置分页（切换过滤模式时调用）
+    func resetPagination() {
+        displayLimit = 20
     }
     
     // MARK: - Constants
@@ -371,19 +573,53 @@ final class MessagePanelState: ObservableObject {
     init() {
         loadCards()
         setupTagDeletionObserver()
+        setupFilteredCardsSubscription()
+        // 初始化过滤结果
+        updateFilteredCards()
+    }
+    
+    /// 设置过滤结果自动更新订阅
+    private func setupFilteredCardsSubscription() {
+        // 监听 cards 变化 - 防抖避免连续添加时频繁更新
+        $cards
+            .dropFirst()
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateFilteredCards()
+            }
+            .store(in: &cancellables)
+        
+        // 监听 filterMode 变化 - 防抖避免快速切换
+        $filterMode
+            .dropFirst()
+            .debounce(for: .milliseconds(50), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateFilteredCards()
+            }
+            .store(in: &cancellables)
+        
+        // 监听 activeFilterTagIds 变化 - 防抖避免取消搜索时多次触发
+        $activeFilterTagIds
+            .dropFirst()
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateFilteredCards()
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Public API
     
-    /// 添加新卡片（新的在上面）
+    /// 添加新卡片（append 到末尾，显示时 reversed 避免全量 diff）
     func addCard(_ card: MessageCard) {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            cards.insert(card, at: 0)  // 新卡片在顶部（越新越上）
+        _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            cards.append(card)  // IdentifiedArray append O(1)
         }
         
-        // 限制数量（移除最旧的）
+        // 限制数量（移除最旧的，即数组开头）
         if cards.count > maxCards {
-            cards = Array(cards.prefix(maxCards))
+            let kept = Array(cards.suffix(maxCards))
+            cards = IdentifiedArrayOf(uniqueElements: kept)
         }
         
         // 持久化保存
@@ -425,7 +661,7 @@ final class MessagePanelState: ObservableObject {
     
     /// 删除单个卡片
     func removeCard(_ id: UUID) {
-        cards.removeAll { $0.id == id }
+        cards.remove(id: id)  // IdentifiedArray O(1) 删除
         saveCards()
     }
     
@@ -472,11 +708,27 @@ final class MessagePanelState: ObservableObject {
     // MARK: - Record Type Management
     
     /// 设置卡片的记录类型
-    func setRecordType(_ cardId: UUID, type: CardRecordType) {
+    /// - Parameters:
+    ///   - cardId: 卡片 ID
+    ///   - type: 目标类型
+    ///   - autoSummary: 是否自动生成总结（默认遵循设置）
+    func setRecordType(_ cardId: UUID, type: CardRecordType, autoSummary: Bool? = nil) {
         guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        
+        let previousType = cards[index].recordType
         cards[index].recordType = type
         saveCards()
         logger.info("📌 Card record type set to \(type.displayName)")
+        
+        // 如果切换到 todo/note 且之前不是这两种类型，自动触发总结
+        let shouldAutoSummary = autoSummary ?? LLMSettings.shared.summaryAutoEnabled
+        let isNewPinnedType = (type == .todo || type == .note) && previousType == .normal
+        
+        if shouldAutoSummary && isNewPinnedType && cards[index].summaryStatus == .none {
+            Task {
+                await SummaryService.shared.generateSummary(for: cardId)
+            }
+        }
     }
     
     /// 旧版兼容：将 today 记录迁移为 todo
@@ -492,15 +744,16 @@ final class MessagePanelState: ObservableObject {
     /// todo/done/note 卡片不受影响
     func enforceNormalCardLimit(maxCount: Int = 50) {
         // 分离 pinned 和 normal 卡片
-        let pinnedCards = cards.filter { $0.recordType.isPinned }
-        var normalCards = cards.filter { !$0.recordType.isPinned }
+        let pinnedCards = Array(cards.filter { $0.recordType.isPinned })
+        let normalCards = Array(cards.filter { !$0.recordType.isPinned })
         
         // 只限制 normal 卡片数量
         if normalCards.count > maxCount {
-            normalCards = Array(normalCards.prefix(maxCount))
-            cards = pinnedCards + normalCards
-            // 按时间倒序排列（最新在前）
-            cards.sort { $0.timestamp > $1.timestamp }
+            let keptNormal = Array(normalCards.prefix(maxCount))
+            var combined = pinnedCards + keptNormal
+            // 按时间正序排列（旧的在前，新的在后）
+            combined.sort { $0.timestamp < $1.timestamp }
+            cards = IdentifiedArrayOf(uniqueElements: combined)
             saveCards()
             logger.info("🧹 Normal card limit enforced, keeping \(maxCount)")
         }
@@ -510,10 +763,10 @@ final class MessagePanelState: ObservableObject {
     
     /// 添加标签到卡片
     func addTag(_ tagId: UUID, to cardId: UUID) {
-        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
-        guard !cards[index].tagIds.contains(tagId) else { return }
+        guard cards[id: cardId] != nil else { return }
+        guard !(cards[id: cardId]?.tagIds.contains(tagId) ?? false) else { return }
         
-        cards[index].tagIds.append(tagId)
+        cards[id: cardId]?.tagIds.append(tagId)
         saveCards()
         
         // 标记为最近使用
@@ -524,9 +777,9 @@ final class MessagePanelState: ObservableObject {
     
     /// 从卡片移除标签
     func removeTag(_ tagId: UUID, from cardId: UUID) {
-        guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
+        guard cards[id: cardId] != nil else { return }
         
-        cards[index].tagIds.removeAll { $0 == tagId }
+        cards[id: cardId]?.tagIds.removeAll { $0 == tagId }
         saveCards()
         
         logger.info("🏷️ 从卡片移除标签")
@@ -654,7 +907,7 @@ final class MessagePanelState: ObservableObject {
     // MARK: - Persistence
     
     /// 保存卡片到本地
-    private func saveCards() {
+    func saveCards() {
         // 只保存 ASR/LLM/Clipboard 结果（过滤掉 welcome/keyPress/system）
         let cardsToSave = cards.filter { card in
             switch card.stage {
@@ -697,9 +950,14 @@ final class MessagePanelState: ObservableObject {
             // - todo/done/note 卡片永久保留
             // - normal 卡片只保留最近 24 小时
             let cutoff = Date().addingTimeInterval(-24 * 60 * 60)
-            cards = loadedCards.filter { card in
+            var filtered = loadedCards.filter { card in
                 card.recordType.isPinned || card.timestamp > cutoff
             }
+            
+            // 按时间正序排列（旧的在前，新的在后）
+            // 显示时用 reversed()，这样 append 只影响末尾，ForEach diff O(1)
+            filtered.sort { $0.timestamp < $1.timestamp }
+            cards = IdentifiedArrayOf(uniqueElements: filtered)
             
             logger.info("📥 Loaded \(self.cards.count) pipeline cards from history")
             

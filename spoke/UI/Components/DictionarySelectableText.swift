@@ -6,6 +6,34 @@ import AppKit
 /// 轻量级 Markdown 解析器，支持 **粗体**、*斜体*、`代码`
 enum SimpleMarkdownParser {
     
+    // MARK: - 字体缓存（避免重复调用 NSFontManager.convert）
+    
+    private static var fontCache: [String: NSFont] = [:]
+    
+    private static func cachedBoldFont(for font: NSFont) -> NSFont {
+        let key = "bold-\(font.fontName)-\(font.pointSize)"
+        if let cached = fontCache[key] { return cached }
+        let bold = NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask)
+        fontCache[key] = bold
+        return bold
+    }
+    
+    private static func cachedItalicFont(for font: NSFont) -> NSFont {
+        let key = "italic-\(font.fontName)-\(font.pointSize)"
+        if let cached = fontCache[key] { return cached }
+        let italic = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
+        fontCache[key] = italic
+        return italic
+    }
+    
+    private static func cachedCodeFont(size: CGFloat) -> NSFont {
+        let key = "code-\(size)"
+        if let cached = fontCache[key] { return cached }
+        let code = NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        fontCache[key] = code
+        return code
+    }
+    
     /// 将 Markdown 文本转换为 NSAttributedString
     static func parse(
         _ text: String,
@@ -20,12 +48,10 @@ enum SimpleMarkdownParser {
             .foregroundColor: foregroundColor
         ]
         
-        // 粗体字体
-        let boldFont = NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask)
-        // 斜体字体
-        let italicFont = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
-        // 代码字体（monospace）
-        let codeFont = NSFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular)
+        // 使用缓存的字体
+        let boldFont = cachedBoldFont(for: font)
+        let italicFont = cachedItalicFont(for: font)
+        let codeFont = cachedCodeFont(size: font.pointSize)
         
         // 正则模式：匹配 **bold**、*italic*、`code`
         // 顺序很重要：先匹配 ** 再匹配 *
@@ -127,16 +153,14 @@ struct DictionarySelectableText: NSViewRepresentable {
     }
     
     func updateNSView(_ textView: DictionaryTextView, context: Context) {
+        // ❗️ 先比较文本是否变化，变化了才解析（避免重复解析导致卡死）
+        guard textView.string != text else { return }
+        
         // 解析 Markdown 并设置富文本
         let attributedString = SimpleMarkdownParser.parse(text, font: font, foregroundColor: foregroundColor)
-        
-        // 检查内容是否变化（比较纯文本）
-        // 只有内容变化时才更新并重新计算高度，避免在布局期间触发递归
-        if textView.string != text {
-            textView.textStorage?.setAttributedString(attributedString)
-            // 内容变化后重新计算高度
-            textView.invalidateIntrinsicContentSize()
-        }
+        textView.textStorage?.setAttributedString(attributedString)
+        // 内容变化后重新计算高度
+        textView.invalidateIntrinsicContentSize()
     }
     
     // MARK: - Coordinator

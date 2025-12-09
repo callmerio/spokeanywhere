@@ -238,3 +238,26 @@ A: 双层缓冲区模型，volatile 不参与分行:
 6. 切分优先级: 句号 > 逗号 > 空格 > 强制
 7. displayText = frozenLines[windowStart...] + (currentLineBuffer + volatileTail)
    REF: T071 | CaptionLineBuffer.swift#双层缓冲区
+
+## C020|SwiftUI 主线程卡死调试
+
+ID: C020 | Tags: #performance #debug #swiftui #hang
+
+Q: 如何精确定位 SwiftUI 主线程卡死问题？
+A: 分三步定位+三类常见原因:
+
+**定位工具:**
+1. `sample` 命令捕获调用栈: `/usr/bin/sample AppName 5 -file /tmp/hang.txt`
+2. `log stream` 实时日志: `/usr/bin/log stream --predicate 'subsystem=="com.xxx"' --style compact`
+3. `os_signpost` 精确计时: `PerformanceTracer.trace("Name") { ... }`
+
+**常见原因:**
+1. `NSFontManager.convert()` 昂贵操作 → 用静态字典缓存字体
+2. `updateNSView` 无条件解析 → 先比较 text 是否变化再解析
+3. `computed property` 每次布局都调用 → 改为 `@Published` + Combine 订阅变化时更新
+
+**关键经验:**
+- `ForEach` 遍历 struct 会拷贝整个结构体，大结构体导致性能问题
+- debounce(50ms) 防抖避免频繁更新
+- 只比较 id 数组判断数据是否真正变化
+  REF: T099 | PerformanceTracer.swift; DictionarySelectableText.swift#fontCache; MessagePanelState.swift#filteredCards
