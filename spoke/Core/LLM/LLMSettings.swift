@@ -56,17 +56,21 @@ final class LLMSettings {
     只输出最终文本。
     """
     
-    /// 总结 Prompt
-    static let summaryPrompt = """
-    将以下内容提炼为简洁准确的摘要。
+    /// 总结 Prompt（基础模板，需要动态填充原文长度）
+    static func summaryPrompt(originalLength: Int) -> String {
+        let maxLength = min(originalLength, 100)
+        return """
+        将以下内容提炼为简洁准确的摘要。
 
-    要求：
-    1. 保留核心信息和关键要点
-    2. 删除冗余表述和填充词
-    3. 使用简洁的书面语
-    4. 长度控制在原文的 1/3 以内，最长不超过 100 字
-    5. 只输出摘要内容，不要加任何前缀或标点
-    """
+        要求：
+        1. 保留核心信息和关键要点
+        2. 删除冗余表述和填充词
+        3. 使用简洁的书面语
+        4. 【重要】摘要长度必须 ≤ \(maxLength) 字，绝对不能超过原文长度
+        5. 如果原文很短，直接输出原文或略作精简
+        6. 只输出摘要内容，不要加任何前缀或解释
+        """
+    }
     
     // MARK: - Properties
     

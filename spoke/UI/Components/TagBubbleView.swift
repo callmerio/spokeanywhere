@@ -158,12 +158,13 @@ struct TagBubbleView: View {
 // MARK: - Tag List View
 
 /// 标签列表视图（水平流式布局）
+/// 注意：不要在此观察 MessagePanelState，会导致所有卡片同时重绘造成卡顿
 struct TagListView: View {
     let tags: [CardTag]
     let cardId: UUID
+    let activeFilterTagIds: Set<UUID>  // 从外部传入，避免观察整个 state
     var onAddTag: (() -> Void)?
     
-    @ObservedObject private var panelState = MessagePanelState.shared
     @State private var isHoveringAdd = false
     
     var body: some View {
@@ -172,7 +173,7 @@ struct TagListView: View {
                 TagBubbleView(
                     tag: tag,
                     cardId: cardId,
-                    isFilterActive: panelState.activeFilterTagIds.contains(tag.id),
+                    isFilterActive: activeFilterTagIds.contains(tag.id),
                     onFilterToggle: {
                         MessagePanelState.shared.toggleTagFilter(tag.id)
                     }
@@ -486,7 +487,8 @@ struct ActiveFilterTagBubble: View {
                 CardTag(name: "macOS", color: .blue),
                 CardTag(name: "紧急", color: .red)
             ],
-            cardId: UUID()
+            cardId: UUID(),
+            activeFilterTagIds: []
         )
         .frame(width: 200)
         

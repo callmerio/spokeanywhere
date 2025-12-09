@@ -718,6 +718,10 @@ final class MessagePanelState: ObservableObject {
         let previousType = cards[index].recordType
         cards[index].recordType = type
         saveCards()
+        
+        // 状态切换后重新排序（todo/done 分组显示）
+        updateFilteredCards()
+        
         logger.info("📌 Card record type set to \(type.displayName)")
         
         // 如果切换到 todo/note 且之前不是这两种类型，自动触发总结

@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import AppKit
 
 /// 总结服务
 /// 负责生成卡片内容的智能摘要
@@ -44,14 +45,14 @@ final class SummaryService {
         
         do {
             // 根据内容类型选择处理策略
-            let content = try await prepareContent(for: card)
+            let (content, images) = try await prepareContent(for: card)
             
             // 更新状态为 generating
             state.cards[id: cardId]?.summaryStatus = .generating
             state.objectWillChange.send()
             
-            // 调用 LLM 生成总结
-            let summary = try await callLLM(content: content)
+            // 调用 LLM 生成总结（传入原文长度和图片）
+            let summary = try await callLLM(content: content, images: images, originalLength: card.content.count)
             
             // 更新总结内容
             state.cards[id: cardId]?.summary = summary
@@ -88,24 +89,37 @@ final class SummaryService {
     
     // MARK: - Private Methods
     
-    /// 准备用于总结的内容
-    private func prepareContent(for card: MessageCard) async throws -> String {
+    /// 准备用于总结的内容和图片
+    private func prepareContent(for card: MessageCard) async throws -> (text: String, images: [Data]) {
+        var images: [Data] = []
+        
+        // 加载附件图片
+        for attachment in card.attachments {
+            if let nsImage = CardAttachmentStorage.shared.loadOriginal(for: attachment),
+               let tiffData = nsImage.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmap.representation(using: .png, properties: [:]) {
+                images.append(pngData)
+            }
+        }
+        
         switch card.contentType {
         case .text:
-            return card.content
+            return (card.content, images)
             
         case .image:
-            // TODO: 使用多模态模型处理图片
-            // 暂时返回占位文本
-            return "[图片内容]"
+            // 图片内容：文本可能为空，依赖多模态处理
+            let text = card.content.isEmpty ? "请描述这张图片的内容" : card.content
+            return (text, images)
             
         case .url:
             // 提取 URL 并抓取内容
-            return try await fetchURLContent(from: card.content)
+            let text = try await fetchURLContent(from: card.content)
+            return (text, images)
             
         case .mixed:
-            // 混合内容：文本 + 图片描述
-            return card.content
+            // 混合内容：文本 + 图片
+            return (card.content, images)
         }
     }
     
@@ -187,7 +201,7 @@ final class SummaryService {
     }
     
     /// 调用 LLM 生成总结
-    private func callLLM(content: String) async throws -> String {
+    private func callLLM(content: String, images: [Data], originalLength: Int) async throws -> String {
         let settings = LLMSettings.shared
         
         // 获取总结模型（优先 summaryProfile，其次 selectedProfile）
@@ -196,17 +210,28 @@ final class SummaryService {
             throw SummaryError.noProvider
         }
         
+        // 动态生成 prompt（包含原文长度限制）
+        let systemPrompt = LLMSettings.summaryPrompt(originalLength: originalLength)
+        
         let prompt = LLMPrompt(
-            systemPrompt: LLMSettings.summaryPrompt,
-            userMessage: content
+            systemPrompt: systemPrompt,
+            userMessage: content,
+            images: images,
+            originalTextLength: originalLength
         )
         
         let response = try await provider.complete(prompt: prompt)
         
-        let summary = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        var summary = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
         
         if summary.isEmpty {
             throw SummaryError.emptyResult
+        }
+        
+        // 强制截断：如果 LLM 还是返回了超长内容
+        if summary.count > originalLength && originalLength > 0 {
+            summary = String(summary.prefix(originalLength))
+            logger.warning("⚠️ Summary truncated to \(originalLength) chars")
         }
         
         return summary

@@ -286,7 +286,7 @@ struct MessagePanelView: View {
                 // Pipeline 卡片（分页显示，新卡片在上）
                 let cards = state.visibleCards
                 ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                    MessageCardView(card: card) {
+                    MessageCardView(card: card, activeFilterTagIds: state.activeFilterTagIds) {
                         withAnimation(.easeOut(duration: 0.2)) {
                             state.removeCard(card.id)
                         }
@@ -421,11 +421,13 @@ struct MessagePanelView: View {
 /// 支持折叠/展开、复制、删除
 struct MessageCardView: View {
     let card: MessageCard
+    let activeFilterTagIds: Set<UUID>  // 从外部传入，避免在 TagListView 中观察整个 state
     var onDelete: (() -> Void)?
     
     @State private var isHovered = false
     @State private var showCopied = false
     @State private var isExpanded = false
+    @State private var isShowingOriginal = false  // 点击展开原文（摘要模式）
     @State private var copyScale: CGFloat = 1.0
     @State private var showTagPopover = false
     @State private var isDropTargeted = false
@@ -500,11 +502,16 @@ struct MessageCardView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             // 点击卡片：
-            // - 折叠状态 → 展开
-            // - 展开状态或无需折叠 → 复制
-            if needsCollapse && !isExpanded {
+            // 1. 有摘要时：切换 摘要/原文
+            // 2. 需要折叠时：切换 折叠/展开
+            // 3. 其他：复制
+            if card.summary != nil && card.summaryStatus == .completed {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded = true
+                    isShowingOriginal.toggle()
+                }
+            } else if needsCollapse {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
                 }
             } else {
                 copyContent()
@@ -737,10 +744,10 @@ struct MessageCardView: View {
     // MARK: - Content
     
     /// 是否应显示摘要
-    /// - hover 时显示原文
-    /// - 非 hover 且有摘要时显示摘要
+    /// - 点击展开原文，再次点击收起
+    /// - 有摘要且未展开时显示摘要
     private var shouldShowSummary: Bool {
-        !isHovered && card.summary != nil && card.summaryStatus == .completed
+        !isShowingOriginal && card.summary != nil && card.summaryStatus == .completed
     }
     
     /// 显示的文本内容
@@ -750,19 +757,21 @@ struct MessageCardView: View {
     
     private var contentView: some View {
         ZStack(alignment: .topLeading) {
-            // 摘要生成中的加载状态
-            if card.summaryStatus == .generating {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("正在生成摘要...")
-                        .font(.system(size: 12))
-                        .foregroundColor(HUDTheme.textSecondary)
+            // 文本内容（固定从顶部开始显示）
+            VStack(alignment: .leading, spacing: 4) {
+                // 摘要生成中的提示（不阻塞内容显示）
+                if card.summaryStatus == .generating {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .controlSize(.mini)
+                        Text("正在总结...")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(HUDTheme.textPlaceholder)
+                    .padding(.bottom, 2)
                 }
-                .frame(minHeight: 20, alignment: .topLeading)
-            } else {
-                // 文本内容（固定从顶部开始显示）
-                // 有高亮标记时使用 HighlightedContentText，否则使用 DictionarySelectableText
+                
+                // 有高亮标记时使用 HighlightedContentText，否则使用普通 Text
                 Group {
                     if shouldShowSummary {
                         // 摘要模式：显示摘要（带"摘要"标识）
@@ -801,29 +810,33 @@ struct MessageCardView: View {
                     }
                 }
                 .frame(minHeight: 20, alignment: .topLeading)
-                .frame(maxHeight: isExpanded || !needsCollapse || shouldShowSummary ? nil : CGFloat(collapsedMaxLines * 20), alignment: .topLeading)
-                .clipped()
-                // 🔬 DEBUG: 临时移除 mask + GeometryReader，测试是否是它导致卡死
-                // .mask(
-                //     GeometryReader { geo in
-                //         VStack(spacing: 0) {
-                //             Rectangle()
-                //                 .frame(height: (needsCollapse && !isExpanded && !shouldShowSummary) ? max(0, geo.size.height - 30) : geo.size.height)
-                //             if needsCollapse && !isExpanded && !shouldShowSummary {
-                //                 LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom)
-                //                 .frame(height: 30)
-                //             }
-                //         }
-                //     }
-                // )
+                // 折叠时限制行数 + 高度自适应
+                .lineLimit(needsCollapse && !isExpanded && !shouldShowSummary ? collapsedMaxLines : nil)
+                .fixedSize(horizontal: false, vertical: true)  // 高度随内容自适应
+                .mask {
+                    if needsCollapse && !isExpanded && !shouldShowSummary {
+                        // 用 mask 让底部渐隐，而不是 overlay 遮盖
+                        VStack(spacing: 0) {
+                            Rectangle()  // 上方正常显示
+                            LinearGradient(
+                                colors: [.white, .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 20)  // 底部 20pt 渐隐
+                        }
+                    } else {
+                        Rectangle()  // 展开时不遮挡
+                    }
+                }
                 
-                // 折叠状态下，透明覆盖层拦截点击（NSTextView 会吃掉点击事件）
+                // 折叠状态下，透明覆盖层拦截点击
                 if needsCollapse && !isExpanded && !shouldShowSummary {
                     Color.clear
                         .contentShape(Rectangle())
                         .onTapGesture {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                isExpanded = true
+                                isExpanded.toggle()
                             }
                         }
                 }
@@ -842,7 +855,7 @@ struct MessageCardView: View {
         Group {
             if !cardTags.isEmpty {
                 // 显示已有标签
-                TagListView(tags: cardTags, cardId: card.id) {
+                TagListView(tags: cardTags, cardId: card.id, activeFilterTagIds: activeFilterTagIds) {
                     showTagPopover = true
                 }
             } else if isHovered {

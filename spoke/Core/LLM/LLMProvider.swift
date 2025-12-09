@@ -7,11 +7,23 @@ struct LLMPrompt {
     let systemPrompt: String
     let userMessage: String
     let contextAppName: String?
+    /// 多模态：图片数据（base64 编码）
+    let images: [Data]
+    /// 原文长度（用于限制总结长度）
+    let originalTextLength: Int?
     
-    init(systemPrompt: String, userMessage: String, contextAppName: String? = nil) {
+    init(
+        systemPrompt: String,
+        userMessage: String,
+        contextAppName: String? = nil,
+        images: [Data] = [],
+        originalTextLength: Int? = nil
+    ) {
         self.systemPrompt = systemPrompt
         self.userMessage = userMessage
         self.contextAppName = contextAppName
+        self.images = images
+        self.originalTextLength = originalTextLength
     }
 }
 

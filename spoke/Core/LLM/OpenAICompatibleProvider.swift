@@ -350,7 +350,7 @@ actor OpenAICompatibleProvider: LLMProvider {
         }
         
         // 构建请求体
-        var messages: [[String: String]] = []
+        var messages: [[String: Any]] = []
         
         // System prompt
         if !prompt.systemPrompt.isEmpty {
@@ -360,11 +360,30 @@ actor OpenAICompatibleProvider: LLMProvider {
             ])
         }
         
-        // User message
-        messages.append([
-            "role": "user",
-            "content": prompt.userMessage
-        ])
+        // User message（支持多模态）
+        if prompt.images.isEmpty {
+            // 纯文本
+            messages.append([
+                "role": "user",
+                "content": prompt.userMessage
+            ])
+        } else {
+            // 多模态：文本 + 图片
+            var content: [[String: Any]] = [
+                ["type": "text", "text": prompt.userMessage]
+            ]
+            for imageData in prompt.images {
+                let base64 = imageData.base64EncodedString()
+                content.append([
+                    "type": "image_url",
+                    "image_url": ["url": "data:image/png;base64,\(base64)"]
+                ])
+            }
+            messages.append([
+                "role": "user",
+                "content": content
+            ])
+        }
         
         let body: [String: Any] = [
             "model": modelName,
@@ -425,13 +444,23 @@ actor OpenAICompatibleProvider: LLMProvider {
             logger.info("🧠 Thinking disabled for this request")
         }
         
+        // 构建 parts（支持多模态）
+        var parts: [[String: Any]] = [["text": prompt.userMessage]]
+        for imageData in prompt.images {
+            let base64 = imageData.base64EncodedString()
+            parts.append([
+                "inline_data": [
+                    "mime_type": "image/png",
+                    "data": base64
+                ]
+            ])
+        }
+        
         var body: [String: Any] = [
             "contents": [
                 [
                     "role": "user",
-                    "parts": [
-                        ["text": prompt.userMessage]
-                    ]
+                    "parts": parts
                 ]
             ],
             "generationConfig": generationConfig
