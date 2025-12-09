@@ -661,8 +661,12 @@ final class AnswerPanelManager {
     // MARK: - Public API
     
     /// 创建并显示新的回答面板，返回 panelId
+    /// - Parameters:
+    ///   - question: 用户问题
+    ///   - attachments: 附件列表
+    ///   - anchorPoint: 可选锚点位置（AppKit 坐标系），面板将显示在此位置下方
     @discardableResult
-    func show(question: String, attachments: [QuickAskAttachment]) -> UUID {
+    func show(question: String, attachments: [QuickAskAttachment], anchorPoint: CGPoint? = nil) -> UUID {
         let instance = AnswerPanelInstance()
         let panelId = instance.id
         
@@ -680,11 +684,25 @@ final class AnswerPanelManager {
         // 存储实例
         panels[panelId] = instance
         
+        // 设置窗口位置
+        if let anchor = anchorPoint, let window = instance.window {
+            positionWindow(window, belowAnchor: anchor)
+        }
+        
         // 显示窗口
         instance.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         
         return panelId
+    }
+    
+    /// 在指定锚点下方显示面板（用于 Selection Toolbar 触发）
+    /// - Parameters:
+    ///   - question: 用户问题
+    ///   - anchorPoint: 锚点位置（AppKit 坐标系），面板将显示在此位置下方
+    @discardableResult
+    func showBelowAnchor(question: String, attachments: [QuickAskAttachment] = [], anchorPoint: CGPoint) -> UUID {
+        return show(question: question, attachments: attachments, anchorPoint: anchorPoint)
     }
     
     /// 更新指定面板的回答
@@ -847,6 +865,43 @@ final class AnswerPanelManager {
         if windowOffset > 150 { windowOffset = 0 }  // 重置偏移
         
         instance.window = panel
+    }
+    
+    /// 将窗口定位到锚点下方，处理边界情况
+    private func positionWindow(_ window: NSWindow, belowAnchor anchor: CGPoint) {
+        // 找到锚点所在的屏幕（多屏幕支持）
+        let screen = NSScreen.screens.first { NSPointInRect(anchor, $0.frame) } ?? NSScreen.main
+        guard let screen else { return }
+        
+        let screenFrame = screen.visibleFrame
+        let windowSize = window.frame.size
+        let padding: CGFloat = 10
+        let gap: CGFloat = 8
+        
+        // 计算初始位置：锚点下方，水平居中
+        var origin = CGPoint(
+            x: anchor.x - windowSize.width / 2,
+            y: anchor.y - windowSize.height - gap
+        )
+        
+        // 边界修正：左右
+        if origin.x < screenFrame.minX + padding {
+            origin.x = screenFrame.minX + padding
+        }
+        if origin.x + windowSize.width > screenFrame.maxX - padding {
+            origin.x = screenFrame.maxX - padding - windowSize.width
+        }
+        
+        // 边界修正：下方空间不足时，改为显示在锚点上方
+        if origin.y < screenFrame.minY + padding {
+            origin.y = anchor.y + gap
+            // 如果上方也不够，则贴底显示
+            if origin.y + windowSize.height > screenFrame.maxY - padding {
+                origin.y = screenFrame.minY + padding
+            }
+        }
+        
+        window.setFrameOrigin(origin)
     }
 }
 

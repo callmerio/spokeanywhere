@@ -501,13 +501,17 @@ struct MessageCardView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            // 点击卡片：
-            // 1. 有摘要时：切换 摘要/原文
-            // 2. 需要折叠时：切换 折叠/展开
-            // 3. 其他：复制
+            // 点击卡片交互：
+            // - 有摘要：摘要 ↔ 展开原文（自动展开）
+            // - 无摘要：折叠 ↔ 展开
+            // - 其他：复制
             if card.summary != nil && card.summaryStatus == .completed {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isShowingOriginal.toggle()
+                    // 切换到原文时自动展开，显示完整内容
+                    if isShowingOriginal {
+                        isExpanded = true
+                    }
                 }
             } else if needsCollapse {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -725,11 +729,20 @@ struct MessageCardView: View {
                         cardActionButton(icon: "arrow.clockwise", action: reprocess)
                     }
                     
-                    // 展开/折叠按钮（只在需要折叠时显示）
+                    // 展开/折叠按钮（只在需要折叠时显示，逻辑与点击卡片一致）
                     if needsCollapse {
                         cardActionButton(
-                            icon: isExpanded ? "chevron.up" : "chevron.down",
-                            action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }
+                            icon: (isExpanded || isShowingOriginal) ? "chevron.up" : "chevron.down",
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    if card.summary != nil && card.summaryStatus == .completed {
+                                        isShowingOriginal.toggle()
+                                        if isShowingOriginal { isExpanded = true }
+                                    } else {
+                                        isExpanded.toggle()
+                                    }
+                                }
+                            }
                         )
                     }
                     
@@ -810,36 +823,21 @@ struct MessageCardView: View {
                     }
                 }
                 .frame(minHeight: 20, alignment: .topLeading)
-                // 折叠时限制行数 + 高度自适应
+                // 折叠时限制行数
                 .lineLimit(needsCollapse && !isExpanded && !shouldShowSummary ? collapsedMaxLines : nil)
-                .fixedSize(horizontal: false, vertical: true)  // 高度随内容自适应
-                .mask {
+                // 折叠时底部渐隐效果
+                .overlay(alignment: .bottom) {
                     if needsCollapse && !isExpanded && !shouldShowSummary {
-                        // 用 mask 让底部渐隐，而不是 overlay 遮盖
-                        VStack(spacing: 0) {
-                            Rectangle()  // 上方正常显示
-                            LinearGradient(
-                                colors: [.white, .clear],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .frame(height: 20)  // 底部 20pt 渐隐
-                        }
-                    } else {
-                        Rectangle()  // 展开时不遮挡
+                        LinearGradient(
+                            colors: [.clear, Color(nsColor: .windowBackgroundColor).opacity(0.95)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 24)
+                        .allowsHitTesting(false)
                     }
                 }
-                
-                // 折叠状态下，透明覆盖层拦截点击
-                if needsCollapse && !isExpanded && !shouldShowSummary {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isExpanded.toggle()
-                            }
-                        }
-                }
+                // 注意：点击处理已在外层 onTapGesture 中统一处理，无需额外的 Color.clear 拦截层
             }
         }
     }

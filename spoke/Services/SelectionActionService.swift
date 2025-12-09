@@ -114,33 +114,40 @@ final class SelectionActionService {
         
         let selectedText = context.selectedText
         
-        // 1. 获取 OCR 上下文 (如果启用)
+        // 1. 获取工具栏位置并隐藏工具栏
+        let anchorPoint = SelectionToolbarManager.shared.toolbarBottomCenter
+        SelectionToolbarManager.shared.hide()
+        
+        // 2. 显示 AnswerPanel（复用 Quick Answer 界面）
+        let panelId: UUID
+        if let anchor = anchorPoint {
+            panelId = AnswerPanelManager.shared.showBelowAnchor(
+                question: selectedText,
+                anchorPoint: anchor
+            )
+        } else {
+            panelId = AnswerPanelManager.shared.show(question: selectedText, attachments: [])
+        }
+        
+        // 3. 获取 OCR 上下文 (如果启用)
         var ocrContext: String? = nil
         if state.config.enableOCRContext {
-            state.updateActionPhase(.executing(progress: 0.2))
             ocrContext = await screenOCR.getActiveWindowText(maxLength: state.config.ocrContextMaxLength)
         }
         
-        // 2. 构建查询 Prompt
-        state.updateActionPhase(.executing(progress: 0.4))
+        // 4. 构建查询 Prompt 并调用 LLM
         let prompt = buildLookupPrompt(selectedText: selectedText, ocrContext: ocrContext)
-        
-        // 3. 调用 LLM
-        state.updateActionPhase(.executing(progress: 0.6))
-        
-        // 使用 LLMPipeline 处理
         let chatResult = await llmPipeline.processWithSearch(
             query: selectedText,
             systemPrompt: prompt
         )
         
-        // 4. 显示结果
-        state.updateActionPhase(.executing(progress: 1.0))
-        
+        // 5. 更新 AnswerPanel
         switch chatResult {
         case .success(let result):
-            state.showResult(result)
+            AnswerPanelManager.shared.updateAnswer(result, for: panelId)
         case .failure(let error):
+            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
             throw error
         }
         
@@ -151,7 +158,22 @@ final class SelectionActionService {
     private func executeTranslateAction(text: String) async throws {
         logger.info("📋 [ActionService] 执行翻译 | 文本长度: \(text.count)")
         
-        // 使用 LLM 翻译
+        // 1. 获取工具栏位置并隐藏工具栏
+        let anchorPoint = SelectionToolbarManager.shared.toolbarBottomCenter
+        SelectionToolbarManager.shared.hide()
+        
+        // 2. 显示 AnswerPanel
+        let panelId: UUID
+        if let anchor = anchorPoint {
+            panelId = AnswerPanelManager.shared.showBelowAnchor(
+                question: "翻译: \(text.prefix(50))...",
+                anchorPoint: anchor
+            )
+        } else {
+            panelId = AnswerPanelManager.shared.show(question: "翻译: \(text.prefix(50))...", attachments: [])
+        }
+        
+        // 3. 调用 LLM 翻译
         let prompt = """
         请将以下文本翻译成中文，保持原文的格式和语气：
         
@@ -163,9 +185,10 @@ final class SelectionActionService {
         let chatResult = await llmPipeline.chat(prompt)
         switch chatResult {
         case .success(let result):
-            state.showResult(result)
+            AnswerPanelManager.shared.updateAnswer(result, for: panelId)
             logger.info("📋 [ActionService] 翻译完成")
         case .failure(let error):
+            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
             throw error
         }
     }
@@ -174,6 +197,22 @@ final class SelectionActionService {
     private func executeSummarizeAction(context: SelectionContext) async throws {
         logger.info("📋 [ActionService] 执行总结 | 文本长度: \(context.selectedText.count)")
         
+        // 1. 获取工具栏位置并隐藏工具栏
+        let anchorPoint = SelectionToolbarManager.shared.toolbarBottomCenter
+        SelectionToolbarManager.shared.hide()
+        
+        // 2. 显示 AnswerPanel
+        let panelId: UUID
+        if let anchor = anchorPoint {
+            panelId = AnswerPanelManager.shared.showBelowAnchor(
+                question: "总结: \(context.selectedText.prefix(50))...",
+                anchorPoint: anchor
+            )
+        } else {
+            panelId = AnswerPanelManager.shared.show(question: "总结: \(context.selectedText.prefix(50))...", attachments: [])
+        }
+        
+        // 3. 调用 LLM 总结
         let prompt = """
         请对以下内容进行简洁的总结，提取关键要点：
         
@@ -190,8 +229,9 @@ final class SelectionActionService {
         let chatResult = await llmPipeline.chat(prompt)
         switch chatResult {
         case .success(let result):
-            state.showResult(result)
+            AnswerPanelManager.shared.updateAnswer(result, for: panelId)
         case .failure(let error):
+            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
             throw error
         }
         

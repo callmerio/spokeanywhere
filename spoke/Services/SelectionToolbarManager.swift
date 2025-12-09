@@ -167,6 +167,14 @@ final class SelectionToolbarManager {
         logger.debug("📋 [ToolbarManager] 隐藏工具栏")
     }
     
+    /// 获取工具栏窗口底部中心位置（用于在其下方显示面板）
+    /// 返回 AppKit 坐标系下的位置（左下角原点）
+    var toolbarBottomCenter: CGPoint? {
+        guard let window = toolbarWindow, window.isVisible else { return nil }
+        let frame = window.frame
+        return CGPoint(x: frame.midX, y: frame.minY)
+    }
+    
     /// 检查辅助功能权限
     func checkAccessibilityPermission() -> Bool {
         return selectionMonitor.isAccessibilityEnabled
