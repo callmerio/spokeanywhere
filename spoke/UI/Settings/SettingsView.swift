@@ -6,10 +6,17 @@ import AppKit
 // MARK: - Main Settings View
 
 struct SettingsView: View {
-    @State private var selectedTab: SettingsTab = .general
+    @State private var selectedTab: SettingsTab
     @StateObject private var audioManager = AudioDeviceManager()
     @StateObject private var appSettings = AppSettings()
     @StateObject private var micTester = MicrophoneTester()
+    
+    let focusAddSkill: Bool
+    
+    init(initialTab: SettingsTab? = nil, focusAddSkill: Bool = false) {
+        self._selectedTab = State(initialValue: initialTab ?? .general)
+        self.focusAddSkill = focusAddSkill
+    }
     
     enum SettingsTab: String, CaseIterable {
         case general = "常规"
@@ -45,6 +52,11 @@ struct SettingsView: View {
         }
         .frame(minWidth: 820, minHeight: 580)
         .background(Color(hex: "1a1a1a"))
+        .onReceive(NotificationCenter.default.publisher(for: .settingsSwitchToToolbar)) { notification in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedTab = .toolbar
+            }
+        }
     }
     
     // MARK: - Sidebar
@@ -2608,4 +2620,10 @@ extension Color {
             opacity: Double(a) / 255
         )
     }
+}
+
+// MARK: - Notifications
+
+extension Notification.Name {
+    static let settingsSwitchToToolbar = Notification.Name("settingsSwitchToToolbar")
 }

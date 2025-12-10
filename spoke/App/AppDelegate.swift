@@ -131,6 +131,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         _ = SelectionActionService.shared
         print("📋 [AppDelegate] SelectionActionService 已初始化")
         
+        // 监听打开工具栏设置的通知
+        NotificationCenter.default.addObserver(
+            forName: .openToolbarSettings,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let focusAddSkill = notification.userInfo?["focusAddSkill"] as? Bool ?? false
+            self?.showSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
+        }
+        
         // 启动工具栏管理器 (根据设置决定是否自动启动)
         let enabled = AppSettings.shared.selectionToolbarEnabled
         print("📋 [AppDelegate] selectionToolbarEnabled = \(enabled)")
@@ -315,13 +325,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func openSettings() {
-        print("⚙️ openSettings called")
+        showSettingsWindow(focusToolbar: false, focusAddSkill: false)
+    }
+    
+    private func showSettingsWindow(focusToolbar: Bool, focusAddSkill: Bool) {
+        print("⚙️ openSettings called, focusToolbar=\(focusToolbar), focusAddSkill=\(focusAddSkill)")
         
-        // 如果窗口已存在，直接显示
+        // 如果窗口已存在，直接显示（并发送通知切换 tab）
         if let window = settingsWindow {
             print("⚙️ Reusing existing window")
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            if focusToolbar {
+                NotificationCenter.default.post(name: .settingsSwitchToToolbar, object: nil, userInfo: ["focusAddSkill": focusAddSkill])
+            }
             return
         }
         
@@ -330,7 +347,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("⚙️ Creating new settings window...")
         
         // 创建设置视图
-        let settingsView = SettingsView()
+        let settingsView = SettingsView(initialTab: focusToolbar ? .toolbar : nil, focusAddSkill: focusAddSkill)
             .modelContainer(container)
         
         // 创建窗口 - 深色融合标题栏风格
