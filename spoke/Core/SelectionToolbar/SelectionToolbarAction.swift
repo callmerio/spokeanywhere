@@ -119,9 +119,10 @@ struct SelectionContext: Equatable {
         self.timestamp = Date()
     }
     
-    /// 选中文本是否为空
+    /// 选中文本是否为空或太短（至少2个字符才算有效选中）
     var isEmpty: Bool {
-        selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let trimmed = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty || trimmed.count < 2
     }
     
     /// 选中文本长度

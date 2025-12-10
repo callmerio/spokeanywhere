@@ -16,7 +16,7 @@ final class SelectionToolbarManager {
     // MARK: - Properties
     
     /// 工具栏窗口
-    private var toolbarWindow: NSPanel?
+    private(set) var toolbarWindow: NSPanel?
     
     /// 结果面板窗口
     private var resultWindow: NSPanel?
@@ -216,7 +216,7 @@ final class SelectionToolbarManager {
         panel.level = .popUpMenu
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
+        panel.hasShadow = false  // 禁用系统方框阴影，用 SwiftUI 自定义阴影
         panel.isMovableByWindowBackground = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false

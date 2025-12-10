@@ -18,8 +18,8 @@ private enum ToolbarLayout {
     static let buttonHeight: CGFloat = 32
     static let buttonPaddingH: CGFloat = 3
     static let logoButtonPaddingH: CGFloat = 10
-    static let buttonCornerRadius: CGFloat = 8
-    static let cornerRadius: CGFloat = 12
+    static let buttonCornerRadius: CGFloat = 6
+    static let cornerRadius: CGFloat = 10  // 更小的圆角，更精致
     static let iconSize: CGFloat = 15
     static let fontSize: CGFloat = 13
     static let spacing: CGFloat = 2
@@ -51,24 +51,26 @@ struct SelectionToolbarView: View {
                     }
                 }
             }
-            .padding(.trailing, 8)
         }
-        .padding(.leading, 8)
+        .padding(.horizontal, 8)
         .frame(height: ToolbarLayout.height)
         .background(
             RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
+                .fill(Color.black.opacity(0.3))  // 深色底色增加对比度
         )
         .background(
             RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .fill(Color.black.opacity(0.3))
+                .fill(.ultraThinMaterial)  // 更浓的毛璃璆
+                .environment(\.colorScheme, .dark)
         )
         .overlay(
             RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
         )
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        // Apple 风格多层阴影：柔和扩散 + 底部重点
+        .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 0.5)  // 紧贴边缘的细微阴影
+        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)   // 中层柔和阴影
+        .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 8)  // 远层扩散阴影
     }
     
     private func executeAction(_ action: ToolbarAction) {
@@ -102,14 +104,15 @@ private struct ToolbarLogoMenu: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "wand.and.stars")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color(red: 0.5, green: 0.7, blue: 1.0), Color(red: 0.9, green: 0.5, blue: 1.0)],
+                            colors: [Color(red: 0.6, green: 0.8, blue: 1.0), Color(red: 1.0, green: 0.6, blue: 1.0)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
+                    .shadow(color: Color(red: 0.7, green: 0.5, blue: 1.0).opacity(0.5), radius: 2, x: 0, y: 0)  // 发光效果
                 
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
@@ -136,11 +139,10 @@ private struct ToolbarLogoMenu: View {
         
         // 溢出的动作
         for action in configService.menuActions {
-            let item = NSMenuItem(title: action.name, action: #selector(NSApplication.shared.sendAction(_:to:from:)), keyEquivalent: "")
+            let item = NSMenuItem(title: action.name, action: #selector(ToolbarMenuActionHandler.handleMenuAction(_:)), keyEquivalent: "")
             item.image = NSImage(systemSymbolName: action.icon, accessibilityDescription: nil)
-            item.target = nil
+            item.target = ToolbarMenuActionHandler.shared
             item.representedObject = action
-            item.action = #selector(ToolbarMenuActionHandler.shared.handleMenuAction(_:))
             menu.addItem(item)
         }
         
@@ -168,9 +170,17 @@ private struct ToolbarLogoMenu: View {
         disableItem.target = ToolbarMenuActionHandler.shared
         menu.addItem(disableItem)
         
-        // 显示菜单
-        if let event = NSApp.currentEvent {
-            NSMenu.popUpContextMenu(menu, with: event, for: NSApp.keyWindow?.contentView ?? NSView())
+        // 显示菜单 - 紧贴工具栏下方
+        // 获取工具栏窗口位置，计算菜单显示的屏幕坐标
+        if let window = SelectionToolbarManager.shared.toolbarWindow {
+            let windowFrame = window.frame
+            // 菜单显示在窗口左下角下方 (AppKit 坐标系 y 向上)
+            let screenPoint = NSPoint(
+                x: windowFrame.origin.x + 8,
+                y: windowFrame.origin.y - 4  // 窗口底部再往下 4pt
+            )
+            // 使用 popUp 在屏幕坐标显示，positioning=nil 让菜单从该点向下展开
+            menu.popUp(positioning: nil, at: screenPoint, in: nil)
         }
     }
 }
