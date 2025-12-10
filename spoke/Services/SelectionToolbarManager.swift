@@ -39,10 +39,10 @@ final class SelectionToolbarManager {
     // MARK: - Constants
     
     private enum Layout {
-        static let toolbarHeight: CGFloat = 44
-        static let toolbarMinWidth: CGFloat = 200
-        static let toolbarMaxWidth: CGFloat = 400
-        static let toolbarCornerRadius: CGFloat = 10
+        static let toolbarHeight: CGFloat = 44 // Updated to match new UI
+        static let toolbarMinWidth: CGFloat = 100 // Reduced min width
+        static let toolbarMaxWidth: CGFloat = 800 // Increased max width
+        static let toolbarCornerRadius: CGFloat = 12
         static let toolbarOffsetY: CGFloat = 8
         static let screenEdgePadding: CGFloat = 10
     }
@@ -64,6 +64,10 @@ final class SelectionToolbarManager {
                 self?.handlePhaseChange(phase)
             }
             .store(in: &cancellables)
+            
+        // 监听配置变化，重新计算尺寸
+        // 注意：SelectionToolbarState 可能需要发送通知或 publisher 当配置变化时
+        // 这里暂时依赖 show(at:) 每次调用时的 resize
     }
     
     private func setupSelectionMonitor() {
@@ -102,18 +106,31 @@ final class SelectionToolbarManager {
             createToolbarWindow()
         }
         
-        guard let window = toolbarWindow else {
+        guard let window = toolbarWindow, let contentView = window.contentView else {
             logger.error("❌ [ToolbarManager] 窗口创建失败!")
             return
         }
         
-        let windowSize = window.frame.size
-        logger.info("📋 [ToolbarManager] 窗口尺寸: \(windowSize.width) x \(windowSize.height)")
+        // 强制布局以获取正确尺寸
+        contentView.needsLayout = true
+        contentView.layoutSubtreeIfNeeded()
+        let fittingSize = contentView.fittingSize
+        
+        // 确保尺寸合理
+        let newSize = NSSize(
+            width: max(Layout.toolbarMinWidth, min(fittingSize.width, Layout.toolbarMaxWidth)),
+            height: Layout.toolbarHeight
+        )
+        
+        if window.frame.size != newSize {
+            logger.info("📋 [ToolbarManager] 调整窗口尺寸: \(String(describing: fittingSize)) -> \(String(describing: newSize))")
+            window.setContentSize(newSize)
+        }
         
         // 计算窗口左下角位置 (AppKit 窗口原点在左下角)
         var origin = CGPoint(
-            x: position.x - windowSize.width / 2,  // 水平居中
-            y: position.y - windowSize.height      // 工具栏顶部在目标位置
+            x: position.x - newSize.width / 2,  // 水平居中
+            y: position.y - newSize.height      // 工具栏顶部在目标位置
         )
         
         // 确保不超出屏幕
@@ -125,16 +142,16 @@ final class SelectionToolbarManager {
                 origin.x = screenFrame.minX + Layout.screenEdgePadding
             }
             // 右边界
-            if origin.x + windowSize.width > screenFrame.maxX - Layout.screenEdgePadding {
-                origin.x = screenFrame.maxX - Layout.screenEdgePadding - windowSize.width
+            if origin.x + newSize.width > screenFrame.maxX - Layout.screenEdgePadding {
+                origin.x = screenFrame.maxX - Layout.screenEdgePadding - newSize.width
             }
             // 下边界
             if origin.y < screenFrame.minY + Layout.screenEdgePadding {
                 origin.y = screenFrame.minY + Layout.screenEdgePadding
             }
             // 上边界
-            if origin.y + windowSize.height > screenFrame.maxY - Layout.screenEdgePadding {
-                origin.y = screenFrame.maxY - Layout.screenEdgePadding - windowSize.height
+            if origin.y + newSize.height > screenFrame.maxY - Layout.screenEdgePadding {
+                origin.y = screenFrame.maxY - Layout.screenEdgePadding - newSize.height
             }
         }
         

@@ -105,6 +105,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         
+        // 预热语音引擎（后台）- 消除首次使用时的 ~2s 卡顿
+        // SpeechTranscriber assets 安装是主要耗时点
+        logStep("Step 6.6: Warming up speech engine (background)...")
+        Task.detached(priority: .background) {
+            await Self.warmupSpeechEngine()
+        }
+        
         logStep("Step 7: Setting up trackpad gesture...")
         setupTrackpadGesture()
         
@@ -350,5 +357,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         print("⚙️ Window should be visible now, frame: \(window.frame)")
+    }
+    
+    // MARK: - Speech Engine Warmup
+    
+    /// 预热语音引擎，消除首次使用时的卡顿
+    /// SpeechTranscriber assets 安装是主要耗时点（~1.8s）
+    private static func warmupSpeechEngine() async {
+        let start = CFAbsoluteTimeGetCurrent()
+        print("🔥 [Warmup] Starting speech engine warmup...")
+        
+        do {
+            // 1. 创建 provider（触发引擎选择）- 需要在 MainActor 上执行
+            let provider = await MainActor.run {
+                TranscriptionManager.shared.createBestProvider()
+            }
+            print("🔥 [Warmup] Provider created: \(type(of: provider))")
+            
+            // 2. 调用 prepare() 触发 assets 安装
+            try await provider.prepare()
+            
+            // 3. 立即重置，释放资源（预热完成后不需要保持）
+            provider.reset()
+            
+            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            print("🔥 [Warmup] ✅ Speech engine warmed up in \(String(format: "%.0f", elapsed))ms")
+        } catch {
+            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            print("🔥 [Warmup] ⚠️ Warmup failed after \(String(format: "%.0f", elapsed))ms: \(error.localizedDescription)")
+        }
     }
 }

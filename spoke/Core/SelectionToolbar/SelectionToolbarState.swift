@@ -62,6 +62,9 @@ final class SelectionToolbarState: ObservableObject {
     /// 当前执行的动作阶段
     @Published var actionPhase: SelectionActionPhase = .idle
     
+    /// 当前正在执行的动作 ID
+    @Published var executingActionId: String?
+    
     /// 最近一次执行的结果
     @Published var lastResult: String?
     
@@ -145,7 +148,7 @@ final class SelectionToolbarState: ObservableObject {
         NotificationCenter.default.post(name: .selectionToolbarDidHide, object: nil)
     }
     
-    /// 执行动作
+    /// 执行动作 (旧版，兼容)
     func executeAction(_ action: SelectionToolbarActionType) {
         guard let context = currentContext else {
             logger.warning("📋 [SelectionToolbar] 无选中上下文，无法执行动作")
@@ -157,12 +160,33 @@ final class SelectionToolbarState: ObservableObject {
         
         logger.info("📋 [SelectionToolbar] 执行动作: \(action.displayName)")
         
-        // 发送动作执行通知
         NotificationCenter.default.post(
             name: .selectionToolbarActionRequested,
             object: nil,
             userInfo: [
                 "action": action,
+                "context": context
+            ]
+        )
+    }
+    
+    /// 执行工具栏动作 (新版，支持自定义动作)
+    func executeToolbarAction(_ action: ToolbarAction) {
+        guard let context = currentContext else {
+            logger.warning("📋 [SelectionToolbar] 无选中上下文，无法执行动作")
+            return
+        }
+        
+        executingActionId = action.id
+        actionPhase = .preparing
+        
+        logger.info("📋 [SelectionToolbar] 执行工具栏动作: \(action.name)")
+        
+        NotificationCenter.default.post(
+            name: .selectionToolbarActionRequested,
+            object: nil,
+            userInfo: [
+                "toolbarAction": action,
                 "context": context
             ]
         )

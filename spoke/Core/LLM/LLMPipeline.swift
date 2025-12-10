@@ -93,6 +93,41 @@ final class LLMPipeline {
         }
     }
     
+    /// 使用指定 Profile 对话
+    /// - Parameters:
+    ///   - message: 用户消息
+    ///   - profile: 指定的 LLM Profile
+    /// - Returns: AI 回答
+    func chat(_ message: String, profile: ProviderProfile) async -> Result<String, LLMError> {
+        guard let provider = settings.createProvider(for: profile) else {
+            logger.error("❌ Failed to create LLM provider for profile: \(profile.name)")
+            return .failure(.notConfigured)
+        }
+        
+        isProcessing = true
+        defer { isProcessing = false }
+        
+        let prompt = LLMPrompt(
+            systemPrompt: "",
+            userMessage: message,
+            contextAppName: nil
+        )
+        
+        logger.info("🤖 Chat with profile \(profile.name): \(message.prefix(100))...")
+        
+        do {
+            let response = try await provider.complete(prompt: prompt)
+            logger.info("✅ Chat complete")
+            return .success(response.text)
+        } catch let error as LLMError {
+            logger.error("❌ Chat error: \(error.localizedDescription)")
+            return .failure(error)
+        } catch {
+            logger.error("❌ Unexpected error: \(error.localizedDescription)")
+            return .failure(.networkError(error))
+        }
+    }
+    
     /// 精炼文本
     /// - Parameters:
     ///   - text: 原始转写文本
