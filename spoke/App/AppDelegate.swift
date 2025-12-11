@@ -138,7 +138,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] notification in
             let focusAddSkill = notification.userInfo?["focusAddSkill"] as? Bool ?? false
-            self?.showSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
+            Task { @MainActor in
+                self?.showSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
+            }
         }
         
         // 启动工具栏管理器 (根据设置决定是否自动启动)

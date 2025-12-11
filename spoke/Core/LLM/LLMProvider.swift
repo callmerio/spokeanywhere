@@ -46,10 +46,13 @@ struct TokenUsage: Codable {
 struct LLMResponse {
     let text: String
     let usage: TokenUsage?
+    /// AI 生成的图片数据（Gemini 生图模型返回）
+    let images: [Data]
     
-    init(text: String, usage: TokenUsage? = nil) {
+    init(text: String, usage: TokenUsage? = nil, images: [Data] = []) {
         self.text = text
         self.usage = usage
+        self.images = images
     }
 }
 

@@ -152,9 +152,9 @@ final class QuickAskService {
         let result = await llmPipeline.chat(prompt)
         
         switch result {
-        case .success(let answer):
-            AnswerPanelManager.shared.updateAnswer(answer, for: panelId)
-            logger.info("✅ Quick Ask completed")
+        case .success(let response):
+            AnswerPanelManager.shared.updateAnswer(response, for: panelId)
+            logger.info("✅ Quick Ask completed (\(response.images.count) images)")
             
         case .failure(let error):
             AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
@@ -241,9 +241,9 @@ final class QuickAskService {
         let result = await llmPipeline.chat(finalPrompt)
         
         switch result {
-        case .success(let answer):
-            AnswerPanelManager.shared.updateAnswer(answer, for: panelId)
-            logger.info("✅ Follow-up completed [\(panelId)]")
+        case .success(let response):
+            AnswerPanelManager.shared.updateAnswer(response, for: panelId)
+            logger.info("✅ Follow-up completed [\(panelId)] (\(response.images.count) images)")
             
         case .failure(let error):
             AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)

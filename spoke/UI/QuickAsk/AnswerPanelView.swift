@@ -31,7 +31,16 @@ struct ChatMessage: Identifiable, Equatable {
     let role: MessageRole
     let content: String
     let attachments: [QuickAskAttachment]
+    /// AI 生成的图片（仅 assistant 消息有效）
+    let generatedImages: [Data]
     var timestamp = Date()
+    
+    init(role: MessageRole, content: String, attachments: [QuickAskAttachment], generatedImages: [Data] = []) {
+        self.role = role
+        self.content = content
+        self.attachments = attachments
+        self.generatedImages = generatedImages
+    }
 }
 
 /// 回答面板状态
@@ -526,6 +535,28 @@ struct MessageBubbleView: View {
     @State private var isCopied: Bool = false
     @State private var selectedMode: QuickAskMode = .chat
     
+    /// 保存图片到文件
+    private func saveImage(_ image: NSImage) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png, .jpeg]
+        panel.nameFieldStringValue = "generated_image.png"
+        panel.canCreateDirectories = true
+        
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            
+            guard let tiffData = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiffData) else { return }
+            
+            let isPNG = url.pathExtension.lowercased() == "png"
+            let imageData = isPNG
+                ? bitmap.representation(using: .png, properties: [:])
+                : bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
+            
+            try? imageData?.write(to: url)
+        }
+    }
+    
     var body: some View {
         if message.role == .user {
             VStack(alignment: .trailing, spacing: 8) {
@@ -557,9 +588,33 @@ struct MessageBubbleView: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
         } else {
             VStack(alignment: .leading, spacing: 12) {
+                // AI 生成的图片
+                if !message.generatedImages.isEmpty {
+                    ForEach(Array(message.generatedImages.enumerated()), id: \.offset) { index, imageData in
+                        if let nsImage = NSImage(data: imageData) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 400, maxHeight: 400)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .contextMenu {
+                                    Button("复制图片") {
+                                        NSPasteboard.general.clearContents()
+                                        NSPasteboard.general.writeObjects([nsImage])
+                                    }
+                                    Button("保存图片...") {
+                                        saveImage(nsImage)
+                                    }
+                                }
+                        }
+                    }
+                }
+                
                 // AI 回答内容 (Markdown)
-                MarkdownWebView(text: message.content, dynamicHeight: $answerHeight)
-                    .frame(minHeight: answerHeight)
+                if !message.content.isEmpty {
+                    MarkdownWebView(text: message.content, dynamicHeight: $answerHeight)
+                        .frame(minHeight: answerHeight)
+                }
                 
                 // 操作按钮
                 HStack(spacing: 16) {
@@ -705,19 +760,24 @@ final class AnswerPanelManager {
         return show(question: question, attachments: attachments, anchorPoint: anchorPoint)
     }
     
-    /// 更新指定面板的回答
-    func updateAnswer(_ answer: String, for panelId: UUID) {
+    /// 更新指定面板的回答（支持图片）
+    func updateAnswer(_ response: LLMResponse, for panelId: UUID) {
         guard let instance = panels[panelId] else { return }
         
         if let lastMsg = instance.state.messages.last, lastMsg.role == .assistant {
-            let updatedMsg = ChatMessage(role: .assistant, content: answer, attachments: [])
+            let updatedMsg = ChatMessage(role: .assistant, content: response.text, attachments: [], generatedImages: response.images)
             instance.state.messages[instance.state.messages.count - 1] = updatedMsg
         } else {
-            instance.state.messages.append(ChatMessage(role: .assistant, content: answer, attachments: []))
+            instance.state.messages.append(ChatMessage(role: .assistant, content: response.text, attachments: [], generatedImages: response.images))
         }
         
         instance.state.isLoading = false
         instance.state.suggestedQuestions = []
+    }
+    
+    /// 兼容旧 API（纯文本回答）
+    func updateAnswer(_ answer: String, for panelId: UUID) {
+        updateAnswer(LLMResponse(text: answer), for: panelId)
     }
     
     /// 兼容旧 API（更新最近创建的面板）

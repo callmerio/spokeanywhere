@@ -42,8 +42,8 @@ final class LLMPipeline {
     
     /// 对话（Quick Ask 专用）
     /// - Parameter message: 用户消息
-    /// - Returns: AI 回答
-    func chat(_ message: String) async -> Result<String, LLMError> {
+    /// - Returns: AI 回答（包含文本和可能的图片）
+    func chat(_ message: String) async -> Result<LLMResponse, LLMError> {
         guard shouldProcess else {
             logger.info("⏭️ LLM not configured")
             return .failure(.notConfigured)
@@ -83,7 +83,7 @@ final class LLMPipeline {
         do {
             let response = try await provider.complete(prompt: prompt)
             logger.info("✅ Quick Ask complete")
-            return .success(response.text)
+            return .success(response)
         } catch let error as LLMError {
             logger.error("❌ Quick Ask error: \(error.localizedDescription)")
             return .failure(error)
@@ -97,8 +97,8 @@ final class LLMPipeline {
     /// - Parameters:
     ///   - message: 用户消息
     ///   - profile: 指定的 LLM Profile
-    /// - Returns: AI 回答
-    func chat(_ message: String, profile: ProviderProfile) async -> Result<String, LLMError> {
+    /// - Returns: AI 回答（包含文本和可能的图片）
+    func chat(_ message: String, profile: ProviderProfile) async -> Result<LLMResponse, LLMError> {
         guard let provider = settings.createProvider(for: profile) else {
             logger.error("❌ Failed to create LLM provider for profile: \(profile.name)")
             return .failure(.notConfigured)
@@ -118,7 +118,7 @@ final class LLMPipeline {
         do {
             let response = try await provider.complete(prompt: prompt)
             logger.info("✅ Chat complete")
-            return .success(response.text)
+            return .success(response)
         } catch let error as LLMError {
             logger.error("❌ Chat error: \(error.localizedDescription)")
             return .failure(error)

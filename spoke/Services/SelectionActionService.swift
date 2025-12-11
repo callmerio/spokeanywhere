@@ -173,13 +173,14 @@ final class SelectionActionService {
     }
     
     /// 根据 Action 配置调用 LLM
-    private func callLLM(prompt: String, action: ToolbarAction) async -> Result<String, LLMError> {
+    private func callLLM(prompt: String, action: ToolbarAction) async -> Result<LLMResponse, LLMError> {
         // 如果指定了 profileId，使用指定的 Profile
         if let profileId = action.profileId,
            let profile = LLMSettings.shared.profiles.first(where: { $0.id == profileId }) {
             // 使用指定的 Profile
             if action.enableSearch {
-                return await llmPipeline.processWithSearch(query: prompt, systemPrompt: prompt)
+                let textResult = await llmPipeline.processWithSearch(query: prompt, systemPrompt: prompt)
+                return textResult.map { LLMResponse(text: $0) }
             } else {
                 return await llmPipeline.chat(prompt, profile: profile)
             }
@@ -187,7 +188,8 @@ final class SelectionActionService {
         
         // 否则使用默认模型
         if action.enableSearch {
-            return await llmPipeline.processWithSearch(query: prompt, systemPrompt: prompt)
+            let textResult = await llmPipeline.processWithSearch(query: prompt, systemPrompt: prompt)
+            return textResult.map { LLMResponse(text: $0) }
         } else {
             return await llmPipeline.chat(prompt)
         }
@@ -410,6 +412,7 @@ extension LLMPipeline {
     func processWithSearch(query: String, systemPrompt: String) async -> Result<String, LLMError> {
         // TODO: 集成搜索 API (Firecrawl/Perplexity)
         // 目前先直接调用 LLM
-        return await chat(systemPrompt)
+        let response = await chat(systemPrompt)
+        return response.map { $0.text }
     }
 }

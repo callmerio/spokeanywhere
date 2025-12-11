@@ -436,6 +436,13 @@ actor OpenAICompatibleProvider: LLMProvider {
             "maxOutputTokens": maxTokens
         ]
         
+        // 检测是否为生图模型（模型名包含 "image"）
+        let isImageModel = cleanModelName.lowercased().contains("image")
+        if isImageModel {
+            generationConfig["responseModalities"] = ["IMAGE", "TEXT"]
+            logger.info("🎨 Image generation enabled for model: \(cleanModelName)")
+        }
+        
         // 添加 thinkingConfig（关闭思考以省 token）
         if !enableThinking {
             generationConfig["thinkingConfig"] = [
@@ -538,7 +545,7 @@ actor OpenAICompatibleProvider: LLMProvider {
     }
     
     private func parseGeminiResponse(data: Data) throws -> LLMResponse {
-        // Gemini: { "candidates": [{ "content": { "parts": [{ "text": "..." }] } }] }
+        // Gemini: { "candidates": [{ "content": { "parts": [{ "text": "..." }, { "inline_data": {...} }] } }] }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw LLMError.invalidResponse
         }
@@ -551,16 +558,32 @@ actor OpenAICompatibleProvider: LLMProvider {
         guard let candidates = json["candidates"] as? [[String: Any]],
               let firstCandidate = candidates.first,
               let content = firstCandidate["content"] as? [String: Any],
-              let parts = content["parts"] as? [[String: Any]],
-              let firstPart = parts.first,
-              let text = firstPart["text"] as? String else {
+              let parts = content["parts"] as? [[String: Any]] else {
             logger.error("❌ Failed to parse Gemini response: \(String(data: data, encoding: .utf8) ?? "nil")")
             throw LLMError.invalidResponse
         }
         
-        let trimmedContent = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        logger.info("✅ Gemini response received (\(trimmedContent.count) chars)")
+        // 遍历 parts 提取文本和图片
+        var textParts: [String] = []
+        var images: [Data] = []
         
-        return LLMResponse(text: trimmedContent, usage: nil)
+        for part in parts {
+            // 文本部分
+            if let text = part["text"] as? String {
+                textParts.append(text)
+            }
+            // 图片部分 - 支持 snake_case 和 camelCase
+            let inlineData = part["inline_data"] as? [String: Any] ?? part["inlineData"] as? [String: Any]
+            if let inlineData = inlineData,
+               let base64String = inlineData["data"] as? String,
+               let imageData = Data(base64Encoded: base64String) {
+                images.append(imageData)
+            }
+        }
+        
+        let combinedText = textParts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        logger.info("✅ Gemini response: \(combinedText.count) chars, \(images.count) images")
+        
+        return LLMResponse(text: combinedText, usage: nil, images: images)
     }
 }
