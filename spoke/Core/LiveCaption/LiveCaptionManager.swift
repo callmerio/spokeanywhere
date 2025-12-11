@@ -148,6 +148,9 @@ final class LiveCaptionManager: ObservableObject {
     func start() async throws {
         guard !isActive else { return }
         
+        // 每次启动时清空历史，从干净状态开始
+        clearSegments()
+        
         // 检查系统版本
         guard #available(macOS 12.3, *) else {
             throw LiveCaptionError.systemNotSupported

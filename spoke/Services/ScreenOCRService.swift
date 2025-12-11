@@ -286,6 +286,9 @@ final class ScreenOCRService {
         do {
             try text.write(to: fileURL, atomically: true, encoding: .utf8)
             logger.info("🔍 [OCR] 📝 文本已保存: \(filename, privacy: .public)")
+            
+            // 清理旧文件，只保留最近 20 个
+            cleanupOldFiles(in: tmpDir, prefix: "ocr_", extension: "txt", keepCount: 20)
         } catch {
             logger.warning("🔍 [OCR] ⚠️ 文本保存失败: \(error.localizedDescription, privacy: .public)")
         }
@@ -313,8 +316,47 @@ final class ScreenOCRService {
         CGImageDestinationAddImage(dest, image, nil)
         if CGImageDestinationFinalize(dest) {
             logger.info("🔍 [OCR] 📸 截图已保存: \(filename, privacy: .public) | 尺寸: \(image.width, privacy: .public)x\(image.height, privacy: .public)")
+            
+            // 清理旧截图，只保留最近 20 个
+            cleanupOldFiles(in: tmpDir, prefix: "OCR_", extension: "png", keepCount: 20)
         } else {
             logger.warning("🔍 [OCR] ⚠️ 截图保存失败")
+        }
+    }
+    
+    /// 清理旧文件，只保留最近指定数量的文件
+    /// - Parameters:
+    ///   - directory: 目录 URL
+    ///   - prefix: 文件名前缀
+    ///   - fileExtension: 文件扩展名
+    ///   - keepCount: 保留的文件数量
+    private func cleanupOldFiles(in directory: URL, prefix: String, extension fileExtension: String, keepCount: Int) {
+        let fm = FileManager.default
+        
+        do {
+            let files = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.creationDateKey])
+                .filter { $0.lastPathComponent.hasPrefix(prefix) && $0.pathExtension == fileExtension }
+            
+            guard files.count > keepCount else { return }
+            
+            // 按创建时间排序（最新的在前）
+            let sortedFiles = files.sorted { file1, file2 in
+                let date1 = (try? file1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+                let date2 = (try? file2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+                return date1 > date2
+            }
+            
+            // 删除超出数量的旧文件
+            let filesToDelete = sortedFiles.dropFirst(keepCount)
+            for file in filesToDelete {
+                try fm.removeItem(at: file)
+            }
+            
+            if !filesToDelete.isEmpty {
+                logger.info("🔍 [OCR] 🗑️ 清理旧文件: \(filesToDelete.count, privacy: .public) 个 \(prefix)*.\(fileExtension, privacy: .public)")
+            }
+        } catch {
+            logger.warning("🔍 [OCR] ⚠️ 清理旧文件失败: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

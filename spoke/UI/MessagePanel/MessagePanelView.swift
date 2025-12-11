@@ -825,16 +825,20 @@ struct MessageCardView: View {
                 .frame(minHeight: 20, alignment: .topLeading)
                 // 折叠时限制行数
                 .lineLimit(needsCollapse && !isExpanded && !shouldShowSummary ? collapsedMaxLines : nil)
-                // 折叠时底部渐隐效果
-                .overlay(alignment: .bottom) {
+                // 折叠时底部渐隐效果（用 mask 让文字淡出，而非 overlay 覆盖颜色）
+                .mask {
                     if needsCollapse && !isExpanded && !shouldShowSummary {
-                        LinearGradient(
-                            colors: [.clear, Color(nsColor: .windowBackgroundColor).opacity(0.95)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 24)
-                        .allowsHitTesting(false)
+                        VStack(spacing: 0) {
+                            Color.white
+                            LinearGradient(
+                                colors: [.white, .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 24)
+                        }
+                    } else {
+                        Color.white
                     }
                 }
                 // 注意：点击处理已在外层 onTapGesture 中统一处理，无需额外的 Color.clear 拦截层

@@ -32,6 +32,10 @@ LOG_DIR="../.tmp_frames"
 LOG_FILE="$LOG_DIR/dev-$(date +%Y%m%d-%H%M%S).log"
 mkdir -p "$LOG_DIR"
 
+# 清理旧日志文件，只保留最近 20 个
+echo "🗑️ 清理旧日志..."
+ls -t "$LOG_DIR"/dev-*.log 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true
+
 echo "📜 日志输出到: $LOG_FILE"
 echo "   查看日志: tail -f $LOG_FILE"
 echo "   搜索日志: grep -E 'error|Error|❌' $LOG_FILE"

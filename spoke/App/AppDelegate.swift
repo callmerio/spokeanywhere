@@ -277,10 +277,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         menu.addItem(NSMenuItem.separator())
         
-        menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
-        
-        menu.addItem(NSMenuItem.separator())
-        
         // 实时字幕
         let captionItem = NSMenuItem(title: "实时字幕", action: #selector(toggleLiveCaption), keyEquivalent: "s")
         captionItem.keyEquivalentModifierMask = .option
@@ -293,6 +289,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(toolbarItem)
         
         menu.addItem(NSMenuItem.separator())
+        
+        menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
         statusItem?.menu = menu
@@ -330,8 +328,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         showSettingsWindow(focusToolbar: false, focusAddSkill: false)
     }
     
+    private var settingsWindowObserver: NSObjectProtocol?
+    
     private func showSettingsWindow(focusToolbar: Bool, focusAddSkill: Bool) {
         print("⚙️ openSettings called, focusToolbar=\(focusToolbar), focusAddSkill=\(focusAddSkill)")
+        
+        // 切换到 regular 模式，让窗口出现在 Cmd+Tab
+        NSApp.setActivationPolicy(.regular)
         
         // 如果窗口已存在，直接显示（并发送通知切换 tab）
         if let window = settingsWindow {
@@ -369,6 +372,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
         window.isReleasedWhenClosed = false
+        
+        // 监听窗口关闭，恢复 accessory 模式
+        settingsWindowObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.settingsWindow = nil
+                if let observer = self?.settingsWindowObserver {
+                    NotificationCenter.default.removeObserver(observer)
+                    self?.settingsWindowObserver = nil
+                }
+                // 恢复 accessory 模式（不显示在 Dock/Cmd+Tab）
+                if !AppSettings.shared.showInDock {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+            }
+        }
         
         self.settingsWindow = window
         
