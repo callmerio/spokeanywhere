@@ -20,7 +20,9 @@ final class AudioRecorderService: NSObject {
     
     // MARK: - Properties
     
-    private var audioEngine: AVAudioEngine?
+    /// 复用的音频引擎（避免频繁创建销毁导致 CoreAudio -10877）
+    private lazy var audioEngine: AVAudioEngine = AVAudioEngine()
+    private var isEngineConfigured = false
     private var transcriptionProvider: TranscriptionProvider?
     
     /// 临时音频文件 URL
@@ -58,6 +60,18 @@ final class AudioRecorderService: NSObject {
         
         // 打印调试信息
         transcriptionManager.printDebugInfo()
+        
+        // 🔧 预热 AVAudioEngine，触发 CoreAudio 初始化
+        // 避免首次录音时出现 -10877 错误
+        warmupAudioEngine()
+    }
+    
+    /// 预热音频引擎，在启动时触发 CoreAudio 初始化
+    private func warmupAudioEngine() {
+        // 访问 inputNode 会触发 CoreAudio 设备枚举和初始化
+        // 这个过程可能产生 -10877，但在启动时触发比录音时更好
+        let _ = audioEngine.inputNode.outputFormat(forBus: 0)
+        logger.info("🔥 Audio engine warmed up")
     }
     
     // MARK: - Public API
@@ -70,6 +84,9 @@ final class AudioRecorderService: NSObject {
     /// 开始录音
     func startRecording() throws {
         guard !isRecording else { return }
+        
+        // 🔧 停止并重置引擎状态（复用实例，避免 CoreAudio -10877）
+        resetAudioEngine()
         
         // 重置状态
         isEngineReady = false
@@ -87,12 +104,6 @@ final class AudioRecorderService: NSObject {
         // 确保引擎可用
         guard provider.isAvailable else {
             throw AudioRecorderError.recognizerNotAvailable
-        }
-        
-        // 创建音频引擎
-        audioEngine = AVAudioEngine()
-        guard let audioEngine = audioEngine else {
-            throw AudioRecorderError.engineCreationFailed
         }
         
         // 创建临时文件用于保存音频
@@ -128,6 +139,7 @@ final class AudioRecorderService: NSObject {
                 self.bufferLock.unlock()
             }
         }
+        isEngineConfigured = true
         
         // 启动音频引擎（立即开始录音）
         audioEngine.prepare()
@@ -211,10 +223,14 @@ final class AudioRecorderService: NSObject {
         guard isRecording else { return nil }
         
         isProcessing = true
+        isRecording = false
+        logger.info("⏹️ Recording stopped")
         
-        // 停止音频引擎
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
+        // 🔧 停止引擎但保留实例（复用，避免 CoreAudio -10877）
+        resetAudioEngine()
+        
+        // 关闭音频文件
+        audioFile = nil
         
         // 通知 Provider 结束处理（异步执行，完成后更新状态）
         Task {
@@ -230,18 +246,10 @@ final class AudioRecorderService: NSObject {
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             logger.info("✅ Transcription finalized in \(String(format: "%.0f", elapsed))ms")
             
-            // 🚀 关键修复：确保 finishProcessing 完成后更新状态
             await MainActor.run {
                 self.isProcessing = false
             }
         }
-        
-        // 关闭音频文件
-        audioFile = nil
-        audioEngine = nil
-        
-        isRecording = false
-        logger.info("⏹️ Recording stopped")
         
         return tempAudioFileURL?.path
     }
@@ -251,19 +259,15 @@ final class AudioRecorderService: NSObject {
         // 即使不在录音状态，也要尝试取消可能残留的任务
         guard isRecording || transcriptionProvider != nil else { return }
         
-        // 停止音频引擎
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
+        // 🔧 停止引擎但保留实例（复用，避免 CoreAudio -10877）
+        resetAudioEngine()
         
         // 取消转录
         transcriptionProvider?.cancel()
+        transcriptionProvider = nil
         
         // 关闭音频文件
         audioFile = nil
-        
-        // 清理
-        transcriptionProvider = nil
-        audioEngine = nil
         
         isRecording = false
         isProcessing = false
@@ -282,6 +286,22 @@ final class AudioRecorderService: NSObject {
     }
     
     // MARK: - Private
+    
+    /// 重置音频引擎状态（复用实例，避免频繁创建销毁导致 CoreAudio -10877）
+    private func resetAudioEngine() {
+        // 1. 停止引擎
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        
+        // 2. 移除 Tap（如果已配置）
+        if isEngineConfigured {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            isEngineConfigured = false
+        }
+        
+        // 注意：不调用 reset() 和不置空引用，保持引擎实例复用
+    }
     
     private func createTempAudioFileURL() -> URL {
         let tempDir = FileManager.default.temporaryDirectory
