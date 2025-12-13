@@ -345,7 +345,7 @@ final class QuickAskHUDManager {
     
     // MARK: - Constants
     
-    private static let fixedWindowHeight: CGFloat = 300
+    private static let fixedWindowHeight: CGFloat = 500
     private static let fixedWindowWidth: CGFloat = 340
     
     // MARK: - Singleton

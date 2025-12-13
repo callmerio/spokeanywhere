@@ -9,6 +9,9 @@ struct QuickAskCapsuleView: View {
     
     @Bindable var state: QuickAskState
     
+    /// Workflow 状态
+    @State private var workflowState = WorkflowState.shared
+    
     /// 左下角图标 hover 状态或菜单打开状态
     @State private var isIconHovering = false
     /// 菜单是否打开
@@ -28,17 +31,60 @@ struct QuickAskCapsuleView: View {
     @State private var isDragOver = false
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             Spacer()
             
-            // 实际内容区域（主内容决定尺寸）
+            // 主面板（Picker + 输入框 + 控制栏）
             VStack(spacing: 0) {
-                // 上方：输入区域
+                // Workflow Picker（在输入框上方，共享背景）
+                if workflowState.isPickerVisible {
+                    WorkflowPickerView(
+                        filter: workflowState.filterKeyword,
+                        onSelect: { workflow in
+                            workflowState.select(workflow)
+                            state.userInput = ""
+                        }
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .onAppear {
+                        // 设置键盘确认回调
+                        workflowState.onKeyboardConfirm = { workflow in
+                            // 选中 Workflow 后，清空输入框（移除 /keyword），让用户开始输入内容
+                            state.userInput = ""
+                            // 注意：不立即执行 executeWorkflow，等待用户输入后按 Enter 发送
+                        }
+                    }
+                    .onDisappear {
+                        workflowState.onKeyboardConfirm = nil
+                    }
+                }
+                
+                // 输入区域
                 if state.phase == .recording || state.phase == .sending {
                     QuickAskInputView(
                         state: state,
-                        onSend: onSend,
-                        onCancel: onCancel,
+                        onSend: {
+                            // 检查是否有选中的 Workflow
+                            if let workflow = workflowState.selectedWorkflow {
+                                // 如果用户没有输入任何内容，不执行（刚选中 Workflow，等待输入）
+                                if state.userInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    return
+                                }
+                                executeWorkflow(workflow)
+                            } else {
+                                onSend?()
+                            }
+                        },
+                        onCancel: {
+                            if workflowState.isPickerVisible {
+                                workflowState.hidePicker()
+                            } else if state.userInput.hasPrefix("/") {
+                                state.userInput = ""
+                                workflowState.reset()
+                            } else {
+                                onCancel?()
+                            }
+                        },
                         onDragEntered: { isDragOver = true },
                         onDragExited: { isDragOver = false },
                         onDrop: { providers in
@@ -46,11 +92,14 @@ struct QuickAskCapsuleView: View {
                             AttachmentManager.shared.handleDrop(providers: providers) { attachment in
                                 state.addAttachment(attachment)
                             }
+                        },
+                        onTextChange: { text, hasMarkedText in
+                            _ = workflowState.detectSlashPrefix(text: text, hasMarkedText: hasMarkedText)
                         }
                     )
                 }
                 
-                // 下方：固定控制栏（和转录 HUD 一样）
+                // 下方：固定控制栏
                 controlBar
             }
             .background(
@@ -96,6 +145,7 @@ struct QuickAskCapsuleView: View {
             .onChange(of: state.audioLevel) { _, newLevel in
                 updateWaveform(newLevel)
             }
+            .animation(.easeOut(duration: 0.15), value: workflowState.isPickerVisible)
         }
         .background {
             // 隐藏的快捷键监听：Cmd + , 打开设置
@@ -277,6 +327,57 @@ struct QuickAskCapsuleView: View {
         newLevels.append(level)
         withAnimation(.linear(duration: 0.05)) {
             self.levels = newLevels
+        }
+    }
+    
+    // MARK: - Workflow Execution
+    
+    private func executeWorkflow(_ workflow: WorkflowAction) {
+        let userInput = workflowState.getUserInput(from: state.userInput)
+        let question = "/\(workflow.keyword) \(userInput)".trimmingCharacters(in: .whitespaces)
+        let attachments = state.attachments
+        
+        // 构建上下文
+        let context = WorkflowContext(
+            userInput: userInput,
+            screenContext: nil,
+            selectedText: nil,
+            voiceTranscription: state.voiceTranscription,
+            clipboardContent: NSPasteboard.general.string(forType: .string)
+        )
+        
+        // 重置状态
+        workflowState.reset()
+        state.userInput = ""
+        
+        // 切换到发送状态
+        state.startSending()
+        
+        // 隐藏 HUD
+        QuickAskHUDManager.shared.hide(restorePolicy: false)
+        
+        // 显示 Answer Panel
+        let panelId = AnswerPanelManager.shared.show(
+            question: question,
+            attachments: attachments
+        )
+        
+        // 执行 Workflow
+        Task {
+            let result = await WorkflowExecutor.shared.execute(workflow, context: context)
+            
+            switch result {
+            case .success(let response):
+                // 显示结果到 Answer Panel
+                AnswerPanelManager.shared.updateAnswer(response, for: panelId)
+                
+            case .failure(let error):
+                // 显示错误
+                AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
+            }
+            
+            // 重置 Quick Ask 状态
+            state.reset()
         }
     }
 }

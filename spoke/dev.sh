@@ -21,7 +21,13 @@ pkill -f "SpokenAnyWhere" 2>/dev/null || true
 sleep 0.5
 
 echo "🔨 构建应用..."
-$BUNDLER bundle
+# 检查是否需要重新编译（如果 swift build 已经构建过）
+if [ -d ".build/debug" ] && [ ".build/debug" -nt "Package.swift" ]; then
+    echo "   跳过 swift build（已是最新）"
+    $BUNDLER bundle --skip-build
+else
+    $BUNDLER bundle
+fi
 
 echo "🔏 使用开发者证书签名..."
 # adhoc 签名会阻止 TCC 工作，必须使用开发者证书

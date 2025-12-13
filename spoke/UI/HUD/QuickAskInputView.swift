@@ -1,6 +1,9 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import OSLog
+
+private let logger = Logger(subsystem: "com.spokeanywhere", category: "QuickAskInputView")
 
 /// Quick Ask 输入区域视图
 /// 布局：附件缩略图（上）+ 输入框（下）
@@ -19,6 +22,8 @@ struct QuickAskInputView: View {
     var onDragExited: (() -> Void)?
     /// 拖拽放下回调
     var onDrop: (([NSItemProvider]) -> Void)?
+    /// 文本变化回调（用于 Workflow / 触发检测）
+    var onTextChange: ((String, Bool) -> Void)?
     
     var body: some View {
         // 主内容
@@ -52,25 +57,41 @@ struct QuickAskInputView: View {
     // MARK: - Input Field
     
     private var inputField: some View {
-        // 使用自定义 NSTextView 包装器
-        QuickAskTextEditor(
-            text: $state.userInput,
-            placeholder: "Ask anything...",
-            onSend: {
-                if state.canSend {
-                    onSend?()
+        HStack(alignment: .top, spacing: 8) {
+            // Workflow 标签（选中时显示）
+            if let workflow = WorkflowState.shared.selectedWorkflow {
+                WorkflowTagView(keyword: workflow.keyword) {
+                    // 点击 x 取消 Workflow
+                    WorkflowState.shared.reset()
+                    state.userInput = ""
                 }
-            },
-            onPasteImage: { image in
-                state.addImage(image)
-            },
-            onDragEntered: onDragEntered,
-            onDragExited: onDragExited,
-            onDrop: onDrop
-        )
-        .frame(minHeight: 20, maxHeight: 200) // 动态增高，最大 200
+            }
+            
+            // 使用自定义 NSTextView 包装器
+            QuickAskTextEditor(
+                text: $state.userInput,
+                placeholder: WorkflowState.shared.selectedWorkflow != nil 
+                    ? "输入内容..." 
+                    : "Ask anything...",
+                onSend: {
+                    if state.canSend {
+                        onSend?()
+                    }
+                },
+                onPasteImage: { image in
+                    state.addImage(image)
+                },
+                onDragEntered: onDragEntered,
+                onDragExited: onDragExited,
+                onDrop: onDrop,
+                onTextChange: onTextChange
+            )
+            .frame(minHeight: 20, maxHeight: 200)
+        }
     }
 }
+
+// WorkflowTagView 已移至 UI/Workflow/WorkflowTagView.swift
 
 // MARK: - Quick Ask Text Editor (NSTextView Wrapper)
 
@@ -89,6 +110,8 @@ struct QuickAskTextEditor: NSViewRepresentable {
     var onDragExited: (() -> Void)?
     /// 拖拽放下回调
     var onDrop: (([NSItemProvider]) -> Void)?
+    /// 文本变化回调（用于 Workflow / 触发检测）
+    var onTextChange: ((String, Bool) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -212,6 +235,8 @@ struct QuickAskTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
+            // 通知文本变化（用于 Workflow / 触发检测）
+            parent.onTextChange?(textView.string, textView.hasMarkedText())
         }
     }
 }
@@ -326,8 +351,30 @@ class QuickAskNSTextView: NSTextView {
         }
     }
     
+    // 键盘事件处理（上下箭头用于 Workflow Picker 导航）
+    override func keyDown(with event: NSEvent) {
+        logger.info("🔑 keyDown: keyCode=\(event.keyCode)")
+        // 让 WorkflowState 先处理键盘事件
+        if WorkflowState.shared.handleKeyEvent(event) {
+            logger.info("🔑 keyDown: event consumed by WorkflowState")
+            return
+        }
+        logger.info("🔑 keyDown: calling super")
+        super.keyDown(with: event)
+    }
+    
     // Enter 键发送，Shift+Enter 换行
     override func doCommand(by selector: Selector) {
+        logger.info("🔑 doCommand: selector=\(String(describing: selector))")
+        
+        // insertTab: Tab 键的命令（如果 Picker 可见，已在 keyDown 中处理）
+        if selector == #selector(insertTab(_:)) {
+            // Tab 键已在 keyDown 中被 WorkflowState 处理，这里不应该被调用
+            // 如果到达这里，说明 keyDown 没有消费事件，正常插入 Tab
+            logger.info("🔑 doCommand: insertTab - not consumed by keyDown")
+            super.doCommand(by: selector)
+            return
+        }
         
         // insertNewline: 是 Enter 键的命令
         if selector == #selector(insertNewline(_:)) {
@@ -336,6 +383,10 @@ class QuickAskNSTextView: NSTextView {
             if markedRange.length > 0 {
                 // 有 marked text，让输入法确认（调用默认行为）
                 super.doCommand(by: selector)
+            } else if WorkflowState.shared.isPickerVisible {
+                // Picker 可见时，Enter 确认选择（由 keyDown 处理）
+                // 这里不做任何事，避免重复触发
+                return
             } else {
                 // 没有 marked text，触发发送
                 onSend?()

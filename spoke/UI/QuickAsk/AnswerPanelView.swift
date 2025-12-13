@@ -64,6 +64,9 @@ struct AnswerPanelView: View {
     
     @State private var followUpInput: String = ""
     
+    /// Workflow 状态
+    @State private var workflowState = WorkflowState.shared
+    
     /// 录音状态
     @State private var isRecording: Bool = false
     @State private var audioLevels: [Float] = Array(repeating: 0.05, count: 40)
@@ -143,6 +146,14 @@ struct AnswerPanelView: View {
                 
                 // 底部输入框
                 inputArea
+            }
+            
+            // Workflow Picker（悬浮在对话上方，Z-index 高于对话内容）
+            if workflowState.isPickerVisible {
+                VStack {
+                    Spacer()
+                    workflowPickerOverlay
+                }
             }
             
             // 顶部 Hover 区域 (固定高度，包含 toolbar)
@@ -312,6 +323,39 @@ struct AnswerPanelView: View {
         }
     }
     
+    // MARK: - Workflow Picker Overlay
+    
+    /// 悬浮的 Workflow Picker（覆盖在对话上方，不挡住输入框）
+    private var workflowPickerOverlay: some View {
+        WorkflowPickerView(
+            filter: workflowState.filterKeyword,
+            onSelect: { workflow in
+                selectWorkflowForInput(workflow)
+            }
+        )
+        .frame(maxWidth: .infinity, maxHeight: 200)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .background(
+            ZStack {
+                VisualEffectBackground(material: .popover, blendingMode: .behindWindow)
+                Color.black.opacity(0.3) // 更透明
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.2), radius: 16, y: -4)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 140) // 往上移，避免交错
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .animation(.easeOut(duration: 0.2), value: workflowState.isPickerVisible)
+    }
+    
+    /// 选择 Workflow 后显示标签在输入框中，等待用户继续输入
+    private func selectWorkflowForInput(_ workflow: WorkflowAction) {
+        workflowState.select(workflow)
+        followUpInput = ""
+    }
+    
     // MARK: - Input Area
     
     private var inputArea: some View {
@@ -371,13 +415,25 @@ struct AnswerPanelView: View {
     }
     
     private var textEditorView: some View {
-        AnswerPanelTextEditor(
-            text: $followUpInput,
-            placeholder: "继续追问...",
-            onSend: { sendMessage() },
-            onPasteImage: { image in handlePasteImage(image) }
-        )
-        .frame(minHeight: 12, maxHeight: 60)
+        HStack(alignment: .top, spacing: 8) {
+            // Workflow 标签（选中后显示）
+            if let workflow = workflowState.selectedWorkflow {
+                WorkflowTagView(keyword: workflow.keyword) {
+                    workflowState.reset()
+                }
+            }
+            
+            AnswerPanelTextEditor(
+                text: $followUpInput,
+                placeholder: workflowState.selectedWorkflow != nil ? "输入内容..." : "继续追问...",
+                onSend: { sendMessage() },
+                onPasteImage: { image in handlePasteImage(image) },
+                onTextChange: { text, hasMarkedText in
+                    _ = workflowState.detectSlashPrefix(text: text, hasMarkedText: hasMarkedText)
+                }
+            )
+            .frame(minHeight: 20, maxHeight: 60)
+        }
     }
     
     private var inputToolbar: some View {
@@ -418,9 +474,17 @@ struct AnswerPanelView: View {
     
     private func sendMessage() {
         guard canSend else { return }
-        onFollowUp?(followUpInput, pendingAttachments)
+        
+        // 如果选中了 Workflow，带上 /keyword 前缀
+        var message = followUpInput
+        if let workflow = workflowState.selectedWorkflow {
+            message = "/\(workflow.keyword) \(followUpInput)".trimmingCharacters(in: .whitespaces)
+        }
+        
+        onFollowUp?(message, pendingAttachments)
         followUpInput = ""
         pendingAttachments = []
+        workflowState.reset()
     }
     
     private func removeAttachment(_ id: UUID) {
@@ -557,8 +621,34 @@ struct MessageBubbleView: View {
         }
     }
     
+    /// 解析消息内容，提取 Workflow keyword 和实际内容
+    private var parsedContent: (workflowKeyword: String?, text: String) {
+        let content = message.content
+        guard content.hasPrefix("/") else { return (nil, content) }
+        
+        // 匹配 /keyword 格式
+        let pattern = #"^/([a-zA-Z0-9_-]+)\s*(.*)$"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: content, options: [], range: NSRange(content.startIndex..., in: content)),
+              let keywordRange = Range(match.range(at: 1), in: content) else {
+            return (nil, content)
+        }
+        
+        let keyword = String(content[keywordRange])
+        let remainingText: String
+        if let textRange = Range(match.range(at: 2), in: content) {
+            remainingText = String(content[textRange]).trimmingCharacters(in: .whitespaces)
+        } else {
+            remainingText = ""
+        }
+        
+        return (keyword, remainingText)
+    }
+    
     var body: some View {
         if message.role == .user {
+            let parsed = parsedContent
+            
             VStack(alignment: .trailing, spacing: 8) {
                 // 附件缩略图
                 if !message.attachments.isEmpty {
@@ -575,14 +665,24 @@ struct MessageBubbleView: View {
                     }
                 }
                 
-                // 问题文字
-                if !message.content.isEmpty {
-                    Text(message.content)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.white)
-                        .padding(12)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                // Workflow 标签 + 问题文字
+                if parsed.workflowKeyword != nil || !parsed.text.isEmpty {
+                    HStack(spacing: 8) {
+                        // Workflow 标签（方框样式）
+                        if let keyword = parsed.workflowKeyword {
+                            WorkflowTagBadge(keyword: keyword)
+                        }
+                        
+                        // 问题文字
+                        if !parsed.text.isEmpty {
+                            Text(parsed.text)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -974,6 +1074,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
     let placeholder: String
     var onSend: (() -> Void)?
     var onPasteImage: ((NSImage) -> Void)?
+    var onTextChange: ((String, Bool) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -988,7 +1089,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
-        textView.font = NSFont.systemFont(ofSize: 15)
+        textView.font = NSFont.systemFont(ofSize: 14)
         textView.textColor = .white
         textView.backgroundColor = .clear
         textView.drawsBackground = false
@@ -1044,6 +1145,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
+            parent.onTextChange?(textView.string, textView.hasMarkedText())
         }
     }
 }
@@ -1072,11 +1174,33 @@ class AnswerPanelNSTextView: NSTextView {
         return result
     }
     
-    // Enter 发送，Shift+Enter 换行
+    // 键盘事件处理（上下箭头用于 Workflow Picker 导航）
+    override func keyDown(with event: NSEvent) {
+        // 让 WorkflowState 先处理键盘事件
+        if WorkflowState.shared.handleKeyEvent(event) {
+            return
+        }
+        super.keyDown(with: event)
+    }
+    
+    // Enter 发送，Shift+Enter 换行，Tab 选择 Workflow
     override func doCommand(by selector: Selector) {
+        // Tab 键：如果 Picker 可见，已在 keyDown 中处理
+        if selector == #selector(insertTab(_:)) {
+            if WorkflowState.shared.isPickerVisible {
+                return // 已被 keyDown 处理
+            }
+            super.doCommand(by: selector)
+            return
+        }
+        
+        // Enter 键
         if selector == #selector(insertNewline(_:)) {
             if markedRange().length > 0 {
                 super.doCommand(by: selector)
+            } else if WorkflowState.shared.isPickerVisible {
+                // Picker 可见时，Enter 确认选择（由 keyDown 处理）
+                return
             } else {
                 onSend?()
             }

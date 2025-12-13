@@ -113,7 +113,7 @@ final class LLMPipeline {
             contextAppName: nil
         )
         
-        logger.info("🤖 Chat with profile \(profile.name): \(message.prefix(100))...")
+        logger.info("🤖 Chat with profile \(profile.name, privacy: .public): \(String(message.prefix(200)), privacy: .public)...")
         
         do {
             let response = try await provider.complete(prompt: prompt)
