@@ -18,6 +18,7 @@ final class SelectionActionService {
     private let ttsService = TTSService.shared
     private let screenOCR = ScreenOCRService.shared
     private let llmPipeline = LLMPipeline.shared
+    private let dictionaryAPI = DictionaryAPIService.shared
     
     /// 当前 TTS 播放任务
     private var currentTTSTask: Task<Void, Never>?
@@ -77,6 +78,7 @@ final class SelectionActionService {
     
     /// 执行工具栏动作 (新版，支持自定义动作)
     func executeToolbarAction(_ action: ToolbarAction, context: SelectionContext) async {
+        logger.info("📋 [ActionService] executeToolbarAction 开始 | action.id: \(action.id) | action.kind: \(String(describing: action.kind))")
         state.updateActionPhase(.executing(progress: nil))
         
         do {
@@ -108,10 +110,15 @@ final class SelectionActionService {
     
     /// 执行内置动作
     private func executeBuiltinAction(_ type: SelectionToolbarActionType, action: ToolbarAction, context: SelectionContext) async {
+        logger.info("📋 [ActionService] executeBuiltinAction | type: \(type.rawValue)")
         do {
             switch type {
             case .speak:
+                logger.info("📋 [ActionService] 进入 .speak case")
                 try await executeSpeakAction(text: context.selectedText)
+            case .dictionary:
+                logger.info("📋 [ActionService] 进入 .dictionary case")
+                try await executeDictionaryAction(text: context.selectedText)
             case .lookup:
                 try await executeLookupAction(action: action, context: context)
             case .translate:
@@ -207,6 +214,26 @@ final class SelectionActionService {
         logger.info("📋 [ActionService] 朗读已启动")
         
         // 朗读是异步的，直接返回让用户继续操作
+    }
+    
+    /// 词典查询动作
+    private func executeDictionaryAction(text: String) async throws {
+        let word = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        logger.info("📋 [ActionService] 执行查词 | 单词: \(word)")
+        
+        // 调用词典 API
+        let result = await dictionaryAPI.lookup(word)
+        
+        // 工具栏原地变换显示词典结果
+        switch result {
+        case .success(let data):
+            logger.info("📋 [ActionService] 查词成功: \(data.word), senses: \(data.senses.count)")
+            state.showDictionaryResult(data)
+            
+        case .failure(let error):
+            logger.error("📋 [ActionService] 查词失败: \(error.localizedDescription)")
+            state.showDictionaryError(error, word: word)
+        }
     }
     
     /// 查询动作 (联网搜索 + AI 解释)

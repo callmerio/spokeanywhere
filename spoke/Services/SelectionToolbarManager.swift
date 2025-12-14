@@ -33,6 +33,12 @@ final class SelectionToolbarManager {
     /// 自动隐藏定时器
     private var autoHideTimer: Timer?
     
+    /// 词典结果自动隐藏定时器（2秒无 hover 后隐藏）
+    private var dictionaryAutoHideTimer: Timer?
+    
+    /// hover 检测定时器
+    private var hoverCheckTimer: Timer?
+    
     /// 点击外部监听器
     private var clickOutsideMonitor: Any?
     
@@ -272,6 +278,11 @@ final class SelectionToolbarManager {
         case .showingResult:
             // 显示结果面板
             showResultPanel()
+            
+        case .showingDictionary:
+            // 工具栏原地变换显示词典结果，启动词典自动隐藏定时器
+            stopAutoHideTimer()
+            startDictionaryAutoHideTimer()
         }
     }
     
@@ -332,5 +343,78 @@ final class SelectionToolbarManager {
     /// 重置自动隐藏定时器
     func resetAutoHideTimer() {
         startAutoHideTimer()
+    }
+    
+    // MARK: - Dictionary Auto Hide
+    
+    /// 启动词典自动隐藏定时器（2秒无 hover 后隐藏）
+    private func startDictionaryAutoHideTimer() {
+        stopDictionaryAutoHideTimer()
+        
+        // 启动 hover 检测
+        startHoverCheckTimer()
+        
+        dictionaryAutoHideTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkAndHideDictionary()
+            }
+        }
+    }
+    
+    /// 停止词典自动隐藏定时器
+    private func stopDictionaryAutoHideTimer() {
+        dictionaryAutoHideTimer?.invalidate()
+        dictionaryAutoHideTimer = nil
+        stopHoverCheckTimer()
+    }
+    
+    /// 启动 hover 检测定时器
+    private func startHoverCheckTimer() {
+        stopHoverCheckTimer()
+        
+        hoverCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkHoverState()
+            }
+        }
+    }
+    
+    /// 停止 hover 检测定时器
+    private func stopHoverCheckTimer() {
+        hoverCheckTimer?.invalidate()
+        hoverCheckTimer = nil
+    }
+    
+    /// 检查 hover 状态，如果正在 hover 则重置定时器
+    private func checkHoverState() {
+        guard let window = toolbarWindow, window.isVisible else { return }
+        
+        let mouseLocation = NSEvent.mouseLocation
+        let windowFrame = window.frame
+        
+        // 如果鼠标在窗口内，重置词典自动隐藏定时器
+        if windowFrame.contains(mouseLocation) {
+            dictionaryAutoHideTimer?.invalidate()
+            dictionaryAutoHideTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    self?.checkAndHideDictionary()
+                }
+            }
+        }
+    }
+    
+    /// 检查并隐藏词典结果
+    private func checkAndHideDictionary() {
+        guard let window = toolbarWindow, window.isVisible else { return }
+        
+        let mouseLocation = NSEvent.mouseLocation
+        let windowFrame = window.frame
+        
+        // 如果鼠标不在窗口内，隐藏
+        if !windowFrame.contains(mouseLocation) {
+            stopDictionaryAutoHideTimer()
+            hide()
+            logger.debug("📋 [ToolbarManager] 词典结果自动隐藏（2秒无 hover）")
+        }
     }
 }

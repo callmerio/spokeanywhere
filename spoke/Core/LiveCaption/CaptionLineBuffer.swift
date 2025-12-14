@@ -1,18 +1,32 @@
 import Foundation
 import OSLog
+import SwiftUI
 
 // MARK: - Caption Item
 
 /// 字幕项（对应一句话）
-struct CaptionItem: Identifiable, Equatable {
+/// 使用 class + ObservableObject 实现独立的状态发布
+/// 当 translation 更新时，只有订阅该 item 的视图会收到通知
+/// 而不会触发整个 ForEach 列表的重新布局
+final class CaptionItem: ObservableObject, Identifiable, Equatable {
     let id: UUID
-    var original: String
-    var translation: String?
+    let original: String
+    
+    /// 译文 - 独立发布，更新时不影响数组本身
+    @Published var translation: String?
     
     init(id: UUID = UUID(), original: String, translation: String? = nil) {
         self.id = id
         self.original = original
         self.translation = translation
+    }
+    
+    static func == (lhs: CaptionItem, rhs: CaptionItem) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -32,6 +46,9 @@ final class CaptionLineBuffer: ObservableObject {
     
     /// 当前正在输入的流式文本（不稳定）
     @Published private(set) var pendingText: String = ""
+
+    /// 流式“当前行”是否已开始（用于占位，避免转录回退时整行消失导致布局跳动）
+    @Published private(set) var pendingLineActive: Bool = false
     
     /// 流式文本的实时翻译
     @Published private(set) var pendingTranslation: String = ""
@@ -53,7 +70,9 @@ final class CaptionLineBuffer: ObservableObject {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else { return nil }
         
-        let item = CaptionItem(original: cleaned)
+        // 🔥 继承流式翻译作为初始翻译，避免“翻译空窗期”导致闪烁
+        let inheritedTranslation = pendingTranslation.isEmpty ? nil : pendingTranslation
+        let item = CaptionItem(original: cleaned, translation: inheritedTranslation)
         items.append(item)
         
         // 保持列表长度
@@ -70,7 +89,11 @@ final class CaptionLineBuffer: ObservableObject {
     
     /// 更新正在输入的流式文本
     func updateVolatile(text: String) {
-        pendingText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleaned.isEmpty {
+            pendingLineActive = true
+        }
+        pendingText = cleaned
     }
     
     /// 更新流式文本的翻译
@@ -95,14 +118,26 @@ final class CaptionLineBuffer: ObservableObject {
     func clearPending() {
         pendingText = ""
         pendingTranslation = ""
+        pendingLineActive = false
         // 注意：这里不增加 version，因为 clearPending 通常和 addFinalized 一起调用，后者会处理 version
     }
     
     /// 更新指定 Item 的翻译
+    /// CaptionItem 是 class，直接修改其 @Published 属性
+    /// 只有订阅该 item 的 CaptionItemView 会收到通知，不触发 ForEach 重布局
     func updateTranslation(id: UUID, translation: String) {
-        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
-        items[index].translation = translation
-        // 方案 A 使用 frameDidChangeNotification 自动触发滚动，无需手动通知
+        guard let item = items.first(where: { $0.id == id }) else { return }
+        
+        // 如果新翻译为空且旧翻译非空，拒绝覆盖
+        let currentTranslation = item.translation ?? ""
+        if translation.isEmpty && !currentTranslation.isEmpty {
+            logger.debug("拒绝空值覆盖: \(currentTranslation.prefix(20))...")
+            return
+        }
+        
+        // 直接更新 class 属性，触发其 @Published 通知
+        // 由于 items 数组引用不变，ForEach 不会重新布局
+        item.translation = translation
     }
     
     /// 清空所有内容
@@ -110,6 +145,7 @@ final class CaptionLineBuffer: ObservableObject {
         items.removeAll()
         pendingText = ""
         pendingTranslation = ""
+        pendingLineActive = false
         volatileVersion += 1
         logger.info("🧹 CaptionLineBuffer cleared")
     }

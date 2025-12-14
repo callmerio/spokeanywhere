@@ -16,6 +16,8 @@ enum SelectionToolbarPhase: Equatable {
     case executing(SelectionToolbarActionType)
     /// 显示结果中 (查询/翻译/总结的结果面板)
     case showingResult
+    /// 显示词典结果（工具栏原地变换）
+    case showingDictionary
 }
 
 // MARK: - 工具栏配置
@@ -70,6 +72,15 @@ final class SelectionToolbarState: ObservableObject {
     
     /// 错误信息
     @Published var errorMessage: String?
+    
+    /// 词典查询结果
+    @Published var dictionaryResult: DictionaryData?
+    
+    /// 词典查询错误
+    @Published var dictionaryError: DictionaryAPIError?
+    
+    /// 当前查词的单词是否在生词本中
+    @Published var isWordInVocabulary: Bool = false
     
     // MARK: - Configuration
     
@@ -213,10 +224,58 @@ final class SelectionToolbarState: ObservableObject {
         phase = .showingResult
     }
     
+    /// 显示词典结果（工具栏原地变换）
+    func showDictionaryResult(_ data: DictionaryData) {
+        dictionaryResult = data
+        dictionaryError = nil
+        phase = .showingDictionary
+        actionPhase = .completed
+        executingActionId = nil
+        
+        // 自动添加到生词本
+        VocabularyService.shared.add(data.word)
+        isWordInVocabulary = true
+        
+        logger.info("📋 [SelectionToolbar] 显示词典结果: \(data.word)")
+    }
+    
+    /// 显示词典错误
+    func showDictionaryError(_ error: DictionaryAPIError, word: String) {
+        dictionaryResult = nil
+        dictionaryError = error
+        phase = .showingDictionary
+        actionPhase = .failed(message: error.localizedDescription)
+        executingActionId = nil
+        isWordInVocabulary = false
+        logger.warning("📋 [SelectionToolbar] 词典查询失败: \(word) - \(error.localizedDescription)")
+    }
+    
+    /// 切换生词本收藏状态
+    func toggleVocabulary() {
+        guard let word = dictionaryResult?.word else { return }
+        
+        if isWordInVocabulary {
+            // 从生词本移除
+            if let item = VocabularyService.shared.items.first(where: { $0.word.lowercased() == word.lowercased() }) {
+                VocabularyService.shared.remove(item.id)
+            }
+            isWordInVocabulary = false
+            logger.info("📋 [SelectionToolbar] 从生词本移除: \(word)")
+        } else {
+            // 添加到生词本
+            VocabularyService.shared.add(word)
+            isWordInVocabulary = true
+            logger.info("📋 [SelectionToolbar] 添加到生词本: \(word)")
+        }
+    }
+    
     /// 从结果返回工具栏
     func backToToolbar() {
         phase = .showing
         lastResult = nil
+        dictionaryResult = nil
+        dictionaryError = nil
+        isWordInVocabulary = false
     }
     
     // MARK: - Configuration

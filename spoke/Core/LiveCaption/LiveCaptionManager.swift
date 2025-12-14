@@ -468,12 +468,13 @@ final class LiveCaptionManager: ObservableObject {
             let newText = String(result.finalizedText[startIndex...]).trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !newText.isEmpty {
-                // 清空流式状态
-                lineBuffer.clearPending()
+                // 🔥 先取消翻译任务，防止竞态
                 volatileTranslationTask?.cancel()
                 
-                // 添加到 Buffer (用于 UI 显示)
+                // 🔥 先添加到 Buffer（继承 pendingTranslation），再清空流式状态
+                // 顺序很重要：addFinalized 需要读取 pendingTranslation 来继承翻译
                 guard let itemId = lineBuffer.addFinalized(text: newText) else { return }
+                lineBuffer.clearPending()
                 
                 // 触发翻译并更新 Buffer + 历史记录
                 Task {

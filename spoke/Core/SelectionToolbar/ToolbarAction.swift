@@ -151,6 +151,7 @@ struct ToolbarAction: Identifiable, Codable, Equatable {
     /// 默认动作列表
     static let defaults: [ToolbarAction] = [
         .builtin(.speak),
+        .builtin(.dictionary),
         .builtin(.lookup),
         .builtin(.translate),
         .builtin(.summarize),

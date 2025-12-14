@@ -85,11 +85,41 @@ final class ToolbarConfigService: ObservableObject {
             actions = config.actions
             visibleCount = max(1, min(config.visibleCount, 10))
             isEnabled = config.isEnabled
+            
+            // 自动添加缺失的内置动作（新版本可能添加了新内置动作）
+            addMissingBuiltinActions()
+            
             logger.info("📋 [ToolbarConfig] 加载成功: \(self.actions.count) 个动作")
         } catch {
             logger.error("📋 [ToolbarConfig] 解码失败，备份原数据: \(error.localizedDescription)")
             UserDefaults.standard.set(data, forKey: backupKey)
             actions = ToolbarAction.defaults
+        }
+    }
+    
+    /// 添加缺失的内置动作（版本升级时自动添加新内置动作）
+    private func addMissingBuiltinActions() {
+        let existingBuiltinIds = Set(actions.compactMap { action -> String? in
+            guard action.isBuiltin else { return nil }
+            return action.id
+        })
+        
+        var needsSave = false
+        for defaultAction in ToolbarAction.defaults {
+            if !existingBuiltinIds.contains(defaultAction.id) {
+                // 在朗读后面插入新动作（如果朗读存在），否则插入到开头
+                if let speakIndex = actions.firstIndex(where: { $0.id == "builtin.speak" }) {
+                    actions.insert(defaultAction, at: speakIndex + 1)
+                } else {
+                    actions.insert(defaultAction, at: 0)
+                }
+                logger.info("📋 [ToolbarConfig] 自动添加新内置动作: \(defaultAction.name)")
+                needsSave = true
+            }
+        }
+        
+        if needsSave {
+            saveImmediately()
         }
     }
     

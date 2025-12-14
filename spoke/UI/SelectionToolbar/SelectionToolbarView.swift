@@ -34,16 +34,44 @@ struct SelectionToolbarView: View {
     @ObservedObject private var configService = ToolbarConfigService.shared
     
     var body: some View {
+        Group {
+            if case .showingDictionary = state.phase {
+                dictionaryResultContent
+            } else {
+                toolbarContent
+            }
+        }
+        .padding(.horizontal, 8)
+        .frame(height: ToolbarLayout.height)
+        .background(
+            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
+                .fill(Color.black.opacity(0.3))
+        )
+        .background(
+            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 0.5)
+        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 8)
+        .animation(.easeInOut(duration: 0.2), value: state.phase == .showingDictionary)
+    }
+    
+    // MARK: - 工具栏内容
+    
+    private var toolbarContent: some View {
         HStack(spacing: ToolbarLayout.spacing) {
-            // 1. 左侧 Logo 菜单（点击触发下拉菜单）
             ToolbarLogoMenu {
                 executeAction($0)
             }
             
-            // Logo 分隔线
             ToolbarDivider()
             
-            // 2. 动作按钮列表
             HStack(spacing: 2) {
                 ForEach(Array(configService.visibleActions.enumerated()), id: \.element.id) { index, action in
                     ToolbarActionButton(action: action) {
@@ -52,25 +80,48 @@ struct SelectionToolbarView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .frame(height: ToolbarLayout.height)
-        .background(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .fill(Color.black.opacity(0.3))  // 深色底色增加对比度
-        )
-        .background(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .fill(.ultraThinMaterial)  // 更浓的毛璃璆
-                .environment(\.colorScheme, .dark)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
-        )
-        // Apple 风格多层阴影：柔和扩散 + 底部重点
-        .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 0.5)  // 紧贴边缘的细微阴影
-        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)   // 中层柔和阴影
-        .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 8)  // 远层扩散阴影
+    }
+    
+    // MARK: - 词典结果内容
+    
+    private var dictionaryResultContent: some View {
+        HStack(spacing: 8) {
+            if let data = state.dictionaryResult {
+                // 每个释义带词性拼接（格式：a. 与言语相关的；n. 发音）
+                let combined = data.senses.prefix(3).compactMap { sense -> String? in
+                    guard let chinese = sense.chinese else { return nil }
+                    let pos = sense.posDisplay
+                    return pos.isEmpty ? chinese : "\(pos) \(chinese)"
+                }.joined(separator: "；")
+                
+                Text(combined)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.85))
+                    .lineLimit(1)
+            } else if let error = state.dictionaryError {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.yellow)
+                Text(error.localizedDescription)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            
+            Spacer()
+            
+            // 爱心收藏按钮（仅在成功查词时显示）
+            if state.dictionaryResult != nil {
+                Button {
+                    state.toggleVocabulary()
+                } label: {
+                    Image(systemName: state.isWordInVocabulary ? "heart.fill" : "heart")
+                        .font(.system(size: 14))
+                        .foregroundColor(state.isWordInVocabulary ? .red : .white.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+                .padding(4)
+                .animation(.easeInOut(duration: 0.15), value: state.isWordInVocabulary)
+            }
+        }
     }
     
     private func executeAction(_ action: ToolbarAction) {

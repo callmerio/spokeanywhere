@@ -21,12 +21,31 @@ pkill -f "SpokenAnyWhere" 2>/dev/null || true
 sleep 0.5
 
 echo "🔨 构建应用..."
-# 检查是否需要重新编译（如果 swift build 已经构建过）
-if [ -d ".build/debug" ] && [ ".build/debug" -nt "Package.swift" ]; then
+# 检查是否需要重新编译
+# 比较 .build/debug 目录与所有源文件的时间戳
+NEEDS_BUILD=false
+if [ ! -d ".build/debug" ]; then
+    NEEDS_BUILD=true
+else
+    # 只检查项目源代码目录，避免把 .build 等生成文件当作“源码变更”导致反复重建/抖动
+    SOURCE_DIRS=(App Core Services UI Tests)
+    NEWEST_SOURCE=$(find "${SOURCE_DIRS[@]}" -type f -name "*.swift" -newer ".build/debug" -print -quit 2>/dev/null)
+    if [ -n "$NEWEST_SOURCE" ]; then
+        echo "   检测到源文件变更: $NEWEST_SOURCE"
+        NEEDS_BUILD=true
+    fi
+    # 检查 Package.swift 是否更新
+    if [ "Package.swift" -nt ".build/debug" ]; then
+        echo "   检测到 Package.swift 变更"
+        NEEDS_BUILD=true
+    fi
+fi
+
+if [ "$NEEDS_BUILD" = true ]; then
+    $BUNDLER bundle
+else
     echo "   跳过 swift build（已是最新）"
     $BUNDLER bundle --skip-build
-else
-    $BUNDLER bundle
 fi
 
 echo "🔏 使用开发者证书签名..."

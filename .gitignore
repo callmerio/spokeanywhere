@@ -41,6 +41,13 @@ xcuserdata/
 *.temp
 docs/code2prompt-output/
 .tmp_frames/
+spoke/.tmp_cache/
+
+# Backup files
+*.backup.*
+
+# Misc docs
+*.tldr
 
 # Media files
 *.mp4

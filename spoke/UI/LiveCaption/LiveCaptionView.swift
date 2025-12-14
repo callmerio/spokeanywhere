@@ -162,7 +162,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         
         /// 启动定时器轮询（每 2s 检查一次，作为 frame 观察的兜底保险）
         func startPolling() {
-            scrollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            scrollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
                 self?.checkAndScrollToBottom()
             }
         }
@@ -180,12 +180,8 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
             
-            // 强制布局刷新，确保获取最新高度（译文异步返回后尺寸可能变化）
-            if let hostingView = documentView.subviews.first {
-                hostingView.invalidateIntrinsicContentSize()
-                hostingView.layoutSubtreeIfNeeded()
-            }
-            documentView.layoutSubtreeIfNeeded()
+            // 🔥 移除 invalidateIntrinsicContentSize，防止触发新的 frame 变化导致递归
+            // frame 观察器会自动触发，无需手动刷新
             
             let contentHeight = documentView.frame.height
             let clipHeight = scrollView.contentView.bounds.height
@@ -197,7 +193,10 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                 isScrollingProgrammatically = true
                 scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
                 scrollView.reflectScrolledClipView(scrollView.contentView)
-                isScrollingProgrammatically = false
+                // 🔥 延迟重置，确保 scroll 通知已触发
+                DispatchQueue.main.async {
+                    self.isScrollingProgrammatically = false
+                }
             }
         }
         
@@ -223,7 +222,12 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
         
         /// 方案 A 的 frame 观察仍保留作为补充
+        /// 🔥 添加 50ms 防抖，防止频繁触发
+        private var lastFrameChangeTime: Date = .distantPast
         @objc func documentViewFrameChanged(_ notification: Notification) {
+            let now = Date()
+            guard now.timeIntervalSince(lastFrameChangeTime) > 0.05 else { return }
+            lastFrameChangeTime = now
             checkAndScrollToBottom()
         }
         
@@ -283,10 +287,10 @@ private enum CaptionDesign {
     static let scrollBottomThreshold: CGFloat = 50
     /// 追加滚动检测阈值（越小越灵敏）
     static let scrollCatchUpThreshold: CGFloat = 5
-    /// 滚动额外偏移量（确保底部内容完全露出，需覆盖一整行译文高度）
-    static let scrollExtraOffset: CGFloat = 40
+    /// 滚动额外偏移量（确保底部内容完全露出）
+    static let scrollExtraOffset: CGFloat = 8
     /// 内容底部占位高度
-    static let contentBottomPadding: CGFloat = 40
+    static let contentBottomPadding: CGFloat = 0
     /// 展开模式底部占位
     static let expandedBottomPadding: CGFloat = 8
 }
@@ -306,6 +310,7 @@ struct LiveCaptionView: View {
     @State private var scrollTrigger: Int = 0  // 触发滚动的计数器
     @State private var isUserSelecting: Bool = false  // 用户正在选择文本时暂停滚动
     @State private var vocabularyRefreshTrigger: Int = 0  // 生词列表变化时触发全量刷新
+    @State private var appearedItemIDs: Set<UUID> = []  // 已出现过的 item ID（用于灰→白动画）
     
     var onClose: () -> Void
     
@@ -400,43 +405,49 @@ struct LiveCaptionView: View {
                     .padding(.vertical, 32)
             } else {
                 AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
+                    // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
                     VStack(alignment: .leading, spacing: 16) {
-                        // 1. 已确定的句子（原文+译文）- 支持生词高亮
+                        // 1. 已确定的句子（原文+译文）- 使用 CaptionItemView 独立组件
+                        // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
                         ForEach(manager.lineBuffer.items) { item in
-                            VStack(alignment: .leading, spacing: 4) {
-                                // 原文（带生词高亮 + 右键菜单）
-                                captionText(for: item.original)
-                                
-                                // 译文（如果有）
-                                if let translation = item.translation {
-                                    Text(translation)
-                                        .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                                        .foregroundColor(CaptionDesign.textSecondary)
-                                        .lineSpacing(3)
-                                        .fixedSize(horizontal: false, vertical: true)
+                            let isNew = !appearedItemIDs.contains(item.id)
+                            CaptionItemView(
+                                item: item,
+                                isNew: isNew,
+                                translationFontSize: CaptionDesign.translatedFontSize,
+                                translationColor: CaptionDesign.textSecondary
+                            ) {
+                                captionText(for: item.original, opacity: isNew ? 0.7 : 1.0)
+                            }
+                            .opacity(isNew ? 0.7 : 1.0)
+                            .animation(.easeOut(duration: 0.3), value: isNew)
+                            .onAppear { 
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    appearedItemIDs.insert(item.id)
                                 }
                             }
                         }
                         
                         // 2. 正在输入的流式文本（原文 + 流式翻译）
-                        if !manager.lineBuffer.pendingText.isEmpty {
+                        // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
+                        if manager.lineBuffer.pendingLineActive {
                             VStack(alignment: .leading, spacing: 4) {
-                                // 流式原文
-                                Text(manager.lineBuffer.pendingText)
+                                // 流式原文（空时用 " " 占位）
+                                Text(manager.lineBuffer.pendingText.isEmpty ? " " : manager.lineBuffer.pendingText)
                                     .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                                    .foregroundColor(CaptionDesign.textPrimary.opacity(0.7))
+                                    .foregroundColor(CaptionDesign.textPrimary.opacity(manager.lineBuffer.pendingText.isEmpty ? 0 : 0.7))
                                     .lineSpacing(4)
                                     .fixedSize(horizontal: false, vertical: true)
                                 
-                                // 流式翻译（如果有）
-                                if !manager.lineBuffer.pendingTranslation.isEmpty {
-                                    Text(manager.lineBuffer.pendingTranslation)
-                                        .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                                        .foregroundColor(CaptionDesign.textSecondary.opacity(0.7))
-                                        .lineSpacing(3)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
+                                // 流式翻译（始终占位，防止闪烁）
+                                Text(manager.lineBuffer.pendingTranslation.isEmpty ? " " : manager.lineBuffer.pendingTranslation)
+                                    .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                                    .foregroundColor(CaptionDesign.textSecondary.opacity(manager.lineBuffer.pendingTranslation.isEmpty ? 0 : 0.7))
+                                    .lineSpacing(3)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .animation(.easeOut(duration: 0.2), value: manager.lineBuffer.pendingTranslation)
                             }
+                            .transition(.opacity)  // 🔥 纯 fade in/out
                         }
                         
                         // 底部占位
@@ -455,7 +466,7 @@ struct LiveCaptionView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 ))
-                .onChange(of: manager.lineBuffer.items) { _, _ in
+                .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
                     // 用户选中文本时暂停自动滚动
                     if isAtBottom && !isUserSelecting {
                         scrollTrigger += 1
@@ -476,39 +487,47 @@ struct LiveCaptionView: View {
     /// 展开状态 - 复用折叠模式设计，高度更大
     private var expandedContent: some View {
         AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
+            // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
             VStack(alignment: .leading, spacing: 16) {
-                // 已确定的句子（原文+译文）- 支持生词高亮
+                // 已确定的句子 - 使用 CaptionItemView 独立组件
+                // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
                 ForEach(manager.lineBuffer.items) { item in
-                    VStack(alignment: .leading, spacing: 4) {
-                        captionText(for: item.original)
-                        
-                        if let translation = item.translation {
-                            Text(translation)
-                                .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                                .foregroundColor(CaptionDesign.textSecondary)
-                                .lineSpacing(3)
-                                .fixedSize(horizontal: false, vertical: true)
+                    let isNew = !appearedItemIDs.contains(item.id)
+                    CaptionItemView(
+                        item: item,
+                        isNew: isNew,
+                        translationFontSize: CaptionDesign.translatedFontSize,
+                        translationColor: CaptionDesign.textSecondary
+                    ) {
+                        captionText(for: item.original, opacity: isNew ? 0.7 : 1.0)
+                    }
+                    .opacity(isNew ? 0.7 : 1.0)
+                    .animation(.easeOut(duration: 0.3), value: isNew)
+                    .onAppear { 
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            appearedItemIDs.insert(item.id)
                         }
                     }
                 }
                 
                 // 正在输入的流式文本
-                if !manager.lineBuffer.pendingText.isEmpty {
+                // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
+                if manager.lineBuffer.pendingLineActive {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(manager.lineBuffer.pendingText)
+                        Text(manager.lineBuffer.pendingText.isEmpty ? " " : manager.lineBuffer.pendingText)
                             .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                            .foregroundColor(CaptionDesign.textPrimary.opacity(0.7))
+                            .foregroundColor(CaptionDesign.textPrimary.opacity(manager.lineBuffer.pendingText.isEmpty ? 0 : 0.7))
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        if !manager.lineBuffer.pendingTranslation.isEmpty {
-                            Text(manager.lineBuffer.pendingTranslation)
-                                .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                                .foregroundColor(CaptionDesign.textSecondary.opacity(0.7))
-                                .lineSpacing(3)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        Text(manager.lineBuffer.pendingTranslation.isEmpty ? " " : manager.lineBuffer.pendingTranslation)
+                            .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                            .foregroundColor(CaptionDesign.textSecondary.opacity(manager.lineBuffer.pendingTranslation.isEmpty ? 0 : 0.7))
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .animation(.easeOut(duration: 0.2), value: manager.lineBuffer.pendingTranslation)
                     }
+                    .transition(.opacity)  // 🔥 纯 fade in/out
                 }
                 
                 // 底部占位
@@ -518,7 +537,7 @@ struct LiveCaptionView: View {
             .textSelection(.enabled)
         }
         .frame(height: 400)
-        .onChange(of: manager.lineBuffer.items) { _, _ in
+        .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
             if isAtBottom && !isUserSelecting { scrollTrigger += 1 }
         }
         .onChange(of: manager.lineBuffer.pendingText) { _, _ in
@@ -528,12 +547,13 @@ struct LiveCaptionView: View {
     
     // MARK: - Components
     
-    /// 字幕文本（带生词高亮 + 右键菜单）
+    /// 字幕文本（带生词高亮 + 右键菜单 + 颜色渐变）
     @ViewBuilder
-    private func captionText(for original: String) -> some View {
+    private func captionText(for original: String, opacity: CGFloat = 1.0) -> some View {
         VocabularyHighlightText(
             text: original,
             fontSize: CaptionDesign.fontSize,
+            opacity: opacity,
             onSelectionStarted: { isUserSelecting = true },
             onSelectionEnded: { isUserSelecting = false },
             refreshTrigger: vocabularyRefreshTrigger

@@ -6,6 +6,8 @@ import SwiftUI
 enum SelectionToolbarActionType: String, CaseIterable, Codable, Identifiable {
     /// 朗读 - TTS 朗读选中文本
     case speak
+    /// 查词 - 词典查询（中文释义）
+    case dictionary
     /// 查询 - 联网搜索 + AI 解释
     case lookup
     /// 翻译 - 翻译选中文本
@@ -21,6 +23,7 @@ enum SelectionToolbarActionType: String, CaseIterable, Codable, Identifiable {
     var displayName: String {
         switch self {
         case .speak: return "朗读"
+        case .dictionary: return "查词"
         case .lookup: return "查询"
         case .translate: return "翻译"
         case .summarize: return "总结"
@@ -32,6 +35,7 @@ enum SelectionToolbarActionType: String, CaseIterable, Codable, Identifiable {
     var iconName: String {
         switch self {
         case .speak: return "speaker.wave.2.fill"
+        case .dictionary: return "text.book.closed.fill"
         case .lookup: return "magnifyingglass"
         case .translate: return "character.book.closed.fill"
         case .summarize: return "doc.text.magnifyingglass"
@@ -43,6 +47,7 @@ enum SelectionToolbarActionType: String, CaseIterable, Codable, Identifiable {
     var iconColor: Color {
         switch self {
         case .speak: return .orange
+        case .dictionary: return .cyan
         case .lookup: return .blue
         case .translate: return .purple
         case .summarize: return .green
@@ -53,7 +58,7 @@ enum SelectionToolbarActionType: String, CaseIterable, Codable, Identifiable {
     /// 是否需要联网
     var requiresNetwork: Bool {
         switch self {
-        case .speak, .lookup, .translate, .summarize:
+        case .speak, .dictionary, .lookup, .translate, .summarize:
             return true
         case .copy:
             return false
@@ -74,6 +79,7 @@ enum SelectionToolbarActionType: String, CaseIterable, Codable, Identifiable {
     var shortcutHint: String? {
         switch self {
         case .speak: return "⌥S"
+        case .dictionary: return "⌥D"
         case .lookup: return "⌥L"
         case .translate: return "⌥T"
         case .copy: return "⌘C"

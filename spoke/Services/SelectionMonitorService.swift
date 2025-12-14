@@ -48,6 +48,12 @@ final class SelectionMonitorService {
     /// 键盘事件监听器
     private var keyEventMonitor: Any?
     
+    /// 鼠标按下监听器
+    private var mouseDownMonitor: Any?
+    
+    /// 鼠标是否按下 (用于判断是否在选择过程中)
+    private var isMouseDown = false
+    
     /// AXObserver 实例 (用于监听选择变化通知)
     private var axObserver: AXObserver?
     
@@ -73,18 +79,22 @@ final class SelectionMonitorService {
     /// 开始监听
     func startMonitoring() {
         logger.info("📋 [SelectionMonitor] startMonitoring() 被调用")
+        print("📋 [SelectionMonitor] startMonitoring() 被调用")
         
         guard !isMonitoring else {
             logger.debug("📋 [SelectionMonitor] 已在监听中，跳过")
+            print("📋 [SelectionMonitor] 已在监听中，跳过")
             return
         }
         
         // 检查辅助功能权限
         let hasPermission = isAccessibilityEnabled
         logger.info("📋 [SelectionMonitor] 辅助功能权限: \(hasPermission)")
+        print("📋 [SelectionMonitor] 辅助功能权限: \(hasPermission)")
         
         guard hasPermission else {
-            logger.warning("📋 [SelectionMonitor] 未授权辅助功能权限，请求授权...")
+            logger.warning("📋 [SelectionMonitor] ❌ 未授权辅助功能权限，请求授权...")
+            print("📋 [SelectionMonitor] ❌ 未授权辅助功能权限! 请在 系统设置 → 隐私与安全性 → 辅助功能 中授权")
             requestAccessibilityPermission()
             return
         }
@@ -102,6 +112,7 @@ final class SelectionMonitorService {
         updateAXObserverForFrontmostApp()
         
         logger.info("📋 [SelectionMonitor] ✅ 开始监听文本选择 (AXObserver + 鼠标/键盘)")
+        print("📋 [SelectionMonitor] ✅ 开始监听文本选择成功!")
     }
     
     /// 停止监听
@@ -111,10 +122,15 @@ final class SelectionMonitorService {
         isMonitoring = false
         
         // 移除鼠标监听
+        if let monitor = mouseDownMonitor {
+            NSEvent.removeMonitor(monitor)
+            mouseDownMonitor = nil
+        }
         if let monitor = mouseEventMonitor {
             NSEvent.removeMonitor(monitor)
             mouseEventMonitor = nil
         }
+        isMouseDown = false
         
         // 移除键盘监听
         if let monitor = keyEventMonitor {
@@ -256,6 +272,12 @@ final class SelectionMonitorService {
     
     /// AXObserver 回调处理 (需要被回调函数访问，不能是 private)
     func handleAXNotification() {
+        // 如果鼠标正在按下 (用户正在拖动选择)，忽略此通知
+        // 等待鼠标抬起时再统一处理，避免选择过程中工具栏闪烁
+        guard !isMouseDown else {
+            logger.debug("📋 [SelectionMonitor] 鼠标按下中，忽略 AXSelectedTextChanged 通知")
+            return
+        }
         logger.info("📋 [SelectionMonitor] 收到 AXSelectedTextChanged 通知")
         checkSelection()
     }
@@ -264,14 +286,22 @@ final class SelectionMonitorService {
     
     /// 设置鼠标事件监听
     private func setupMouseMonitor() {
+        // 监听鼠标按下事件 (选择开始)
+        mouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.isMouseDown = true
+            }
+        }
+        
         // 监听鼠标抬起事件 (选择完成)
         mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
             Task { @MainActor [weak self] in
+                self?.isMouseDown = false
                 // 延迟检查，等待系统更新选中状态
                 self?.checkSelection()
             }
         }
-        logger.debug("🖱️ [SelectionMonitor] 鼠标监听器已设置")
+        logger.debug("🖱️ [SelectionMonitor] 鼠标监听器已设置 (按下+抬起)")
     }
     
     /// 设置键盘事件监听
@@ -409,9 +439,10 @@ final class SelectionMonitorService {
         var selectedTextValue: CFTypeRef?
         let textResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue)
         
-        logger.debug("📋 [SelectionMonitor] 策略1 (SelectedText): result=\(textResult.rawValue)")
+        let textValueStr = selectedTextValue as? String
+        logger.debug("📋 [SelectionMonitor] 策略1 (SelectedText): result=\(textResult.rawValue), hasValue=\(textValueStr != nil), length=\(textValueStr?.count ?? -1)")
         
-        if textResult == .success, let textValue = selectedTextValue as? String, !textValue.isEmpty {
+        if textResult == .success, let textValue = textValueStr, !textValue.isEmpty {
             selectedText = textValue
             logger.info("📋 [SelectionMonitor] ✅ AX API (SelectedText) 获取成功: \(textValue.prefix(30))...")
         }
@@ -421,7 +452,17 @@ final class SelectionMonitorService {
             var rangeValue: CFTypeRef?
             let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
             
-            logger.debug("📋 [SelectionMonitor] 策略2 (Parameterized): rangeResult=\(rangeResult.rawValue), hasRange=\(rangeValue != nil)")
+            // 解析 range 详情
+            var rangeInfo = "N/A"
+            if let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
+                let axValue = rangeRef as! AXValue
+                if AXValueGetType(axValue) == .cfRange {
+                    var range = CFRange()
+                    AXValueGetValue(axValue, .cfRange, &range)
+                    rangeInfo = "loc=\(range.location),len=\(range.length)"
+                }
+            }
+            logger.debug("📋 [SelectionMonitor] 策略2 (Parameterized): rangeResult=\(rangeResult.rawValue), hasRange=\(rangeValue != nil), \(rangeInfo)")
             
             if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
                 let axValue = rangeRef as! AXValue
@@ -466,13 +507,18 @@ final class SelectionMonitorService {
                          AXValueGetValue(axValue, .cfRange, &range)
                          
                          let utf16Count = fullText.utf16.count
+                         logger.debug("📋 [SelectionMonitor] 策略3: range.location=\(range.location), range.length=\(range.length), utf16Count=\(utf16Count)")
                          if range.length > 0 && range.location + range.length <= utf16Count {
                              let start = String.Index(utf16Offset: range.location, in: fullText)
                              let end = String.Index(utf16Offset: range.location + range.length, in: fullText)
                              selectedText = String(fullText[start..<end])
                              logger.info("📋 [SelectionMonitor] ✅ AX API (Value+Range) 获取成功: \(selectedText!.prefix(30))...")
+                         } else {
+                             logger.debug("📋 [SelectionMonitor] 策略3: 条件不满足 - length=\(range.length), 越界=\(range.location + range.length > utf16Count)")
                          }
                      }
+                 } else {
+                     logger.debug("📋 [SelectionMonitor] 策略3: 无法获取 selectedTextRange, rangeResult=\(rangeResult.rawValue)")
                  }
              }
         }

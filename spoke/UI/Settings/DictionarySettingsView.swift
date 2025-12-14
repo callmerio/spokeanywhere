@@ -14,10 +14,15 @@ struct DictionarySettingsContent: View {
     @State private var editingEntry: DictionaryEntry?
     @State private var selectedEntries: Set<UUID> = []
     
+    @State private var showVocabularyList = false
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // 标题和描述
             headerSection
+            
+            // 生词列表入口
+            vocabularyListEntry
             
             // 筛选标签和搜索
             filterAndSearchSection
@@ -29,6 +34,9 @@ struct DictionarySettingsContent: View {
             if !dictionaryService.recommendedHotwords.isEmpty && selectedFilter != .manual {
                 hotwordRecommendationSection
             }
+        }
+        .sheet(isPresented: $showVocabularyList) {
+            VocabularyListSheet(isPresented: $showVocabularyList)
         }
         .sheet(isPresented: $showAddSheet) {
             AddDictionaryEntrySheet(isPresented: $showAddSheet)
@@ -1314,5 +1322,197 @@ struct TrainingPhraseCard: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - 生词列表入口
+
+extension DictionarySettingsContent {
+    var vocabularyListEntry: some View {
+        Button {
+            showVocabularyList = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "heart.text.square.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.red)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("生词本")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white)
+                    
+                    Text("查词时自动收藏的生词，同步到实时字幕高亮")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+                }
+                
+                Spacer()
+                
+                Text("\(VocabularyService.shared.items.count) 个")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.gray)
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.gray.opacity(0.5))
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.05))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - 生词列表 Sheet
+
+struct VocabularyListSheet: View {
+    @Binding var isPresented: Bool
+    @ObservedObject private var vocabularyService = VocabularyService.shared
+    @State private var searchText = ""
+    
+    private var filteredItems: [VocabularyItem] {
+        if searchText.isEmpty {
+            return vocabularyService.items
+        }
+        return vocabularyService.items.filter {
+            $0.word.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // 标题栏
+            HStack {
+                Text("生词本")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                
+                Spacer()
+                
+                Button {
+                    isPresented = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.gray)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+            .background(Color(hex: "1a1a1a"))
+            
+            Divider()
+            
+            // 搜索框
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.gray)
+                
+                TextField("搜索生词...", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
+            }
+            .padding(10)
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(8)
+            .padding()
+            
+            // 列表
+            if filteredItems.isEmpty {
+                Spacer()
+                VStack(spacing: 8) {
+                    Image(systemName: "heart.slash")
+                        .font(.system(size: 32))
+                        .foregroundStyle(.gray.opacity(0.5))
+                    Text(searchText.isEmpty ? "暂无生词" : "未找到匹配的生词")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.gray)
+                }
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 1) {
+                        ForEach(filteredItems) { item in
+                            VocabularyItemRow(item: item) {
+                                vocabularyService.remove(item.id)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            
+            Divider()
+            
+            // 底部操作栏
+            HStack {
+                Text("\(vocabularyService.items.count) 个生词")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.gray)
+                
+                Spacer()
+                
+                if !vocabularyService.items.isEmpty {
+                    Button {
+                        vocabularyService.clearAll()
+                    } label: {
+                        Text("清空全部")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.red.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding()
+            .background(Color(hex: "1a1a1a"))
+        }
+        .frame(width: 400, height: 500)
+        .background(Color(hex: "232323"))
+    }
+}
+
+// MARK: - 生词条目行
+
+private struct VocabularyItemRow: View {
+    let item: VocabularyItem
+    let onRemove: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(item.word)
+                .font(.system(size: 14))
+                .foregroundStyle(.white)
+            
+            Spacer()
+            
+            Text(item.createdAt.formatted(date: .abbreviated, time: .omitted))
+                .font(.system(size: 11))
+                .foregroundStyle(.gray.opacity(0.6))
+            
+            if isHovered {
+                Button {
+                    onRemove()
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.red.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovered ? Color.white.opacity(0.05) : Color.clear)
+        )
+        .onHover { isHovered = $0 }
     }
 }
