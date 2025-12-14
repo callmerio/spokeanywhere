@@ -368,8 +368,11 @@ final class HotKeyService {
                 return nil
             }
             
-            // 录音 keyUp - 同样需要检查修饰键
-            if isRecordingKey && isRecordingModifiersPressed && isRecording {
+            // 录音 keyUp - 只检查 R 键和录音状态，不要求修饰键仍按下
+            // ⚠️ 用户习惯：可能先松开 Option 再松开 R，此时修饰键已不再按下
+            // 如果还要求 isRecordingModifiersPressed，keyUp 会被忽略，导致 Toggle 模式无法正确触发
+            if isRecordingKey && isRecording {
+                logger.info("⬆️ [keyUp] R键松开，触发 handleKeyUp")
                 handleKeyUp()
                 return nil
             }
@@ -380,8 +383,17 @@ final class HotKeyService {
             // 监听修饰键松开（仅针对录音模式）
             // 多显示器/Space切换时 macOS 会发送虚假的 flagsChanged 事件
             // 使用延迟二次确认机制：等待 100ms 后再次检查修饰键状态
-            if !isRecordingModifiersPressed && isRecording && !isQuickAskActive {
-                scheduleModifierReleaseCheck()
+            // 注意：CGEvent 回调不在主线程，需要在主线程检查状态
+            let modifiersReleased = !isRecordingModifiersPressed
+            if modifiersReleased {
+                logger.info("🚩 [flagsChanged] 修饰键松开检测 | modifiersReleased=true")
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if modifiersReleased && self.isRecording && !self.isQuickAskActive {
+                    self.logger.info("🚩 [flagsChanged] 调度 scheduleModifierReleaseCheck")
+                    self.scheduleModifierReleaseCheck()
+                }
             }
             return Unmanaged.passRetained(event)
             
@@ -481,7 +493,7 @@ final class HotKeyService {
             // 如果修饰键确实已松开，才停止录音
             if actualFlags != targetFlags {
                 self.logger.info("🔍 Modifier release confirmed after delay check")
-                self.handleRelease()
+                self.handleRelease(fromKeyUp: false)
             } else {
                 self.logger.info("🔍 Modifier still held, ignoring false flagsChanged event (multi-display fix)")
             }
@@ -592,6 +604,10 @@ final class HotKeyService {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
+            // 诊断日志：记录当前状态
+            let taskStatus = self.delayedStopTask != nil ? "SET" : "nil"
+            self.logger.info("⬇️ [keyDown] isRecording=\(self.isRecording), isToggleSession=\(self.isToggleSession), delayedStopTask=\(taskStatus, privacy: .public)")
+            
             if !self.isRecording {
                 // 开始新录音
                 // 1. 先取消之前的延迟停止（如果有）
@@ -607,12 +623,14 @@ final class HotKeyService {
                 self.isToggleSession = false
                 self.onRecordingStart?()
                 
-                self.logger.info("🎙️ New recording session started: \(self.currentSessionId?.uuidString.prefix(8) ?? "nil")")
+                self.logger.info("🎙️ New recording session started: \(self.currentSessionId?.uuidString.prefix(8) ?? "nil") | startTime=\(self.recordingStartTime?.timeIntervalSince1970 ?? 0)")
             } else {
                 // 正在录音中
+                self.logger.debug("⬇️ [keyDown] 已在录音中, isToggleSession=\(self.isToggleSession), delayedStopTask=\(self.delayedStopTask != nil ? "SET" : "nil")")
+                
                 if self.isToggleSession {
                     // 如果已经是 Toggle 模式（之前短按触发），再次按下则延迟停止
-                    self.logger.info("🔄 Toggle mode: Stopping in 0.8s...")
+                    self.logger.info("🔄 Toggle mode: 第二次按下，Stopping in 0.8s...")
                     self.isToggleSession = false  // 标记为停止中，防止重复触发
                     
                     // 捕获当前会话 ID
@@ -625,6 +643,9 @@ final class HotKeyService {
                     self.delayedStopTask = Task {
                         try? await Task.sleep(for: .milliseconds(800))
                         await MainActor.run {
+                            // Task 完成后清空引用
+                            self.delayedStopTask = nil
+                            
                             // 确保是同一个会话，且仍在录音中
                             guard self.isRecording,
                                   self.currentSessionId == sessionToStop else {
@@ -638,6 +659,28 @@ final class HotKeyService {
                             self.onRecordingStop?()
                         }
                     }
+                } else if self.delayedStopTask != nil {
+                    // ⚠️ 在延迟停止期间再次按下：用户想开始新录音
+                    // 取消延迟停止，停止当前录音，然后开始新录音
+                    self.logger.info("🔄 [keyDown] 延迟停止期间按下，取消延迟并开始新录音")
+                    self.delayedStopTask?.cancel()
+                    self.delayedStopTask = nil
+                    
+                    // 先停止当前录音
+                    self.isRecording = false
+                    self.recordingStartTime = nil
+                    let oldSessionId = self.currentSessionId
+                    self.currentSessionId = nil
+                    self.onRecordingStop?()
+                    
+                    // 立即开始新录音
+                    self.currentSessionId = UUID()
+                    self.isRecording = true
+                    self.recordingStartTime = Date()
+                    self.isToggleSession = false
+                    self.onRecordingStart?()
+                    
+                    self.logger.info("🎙️ New recording session started (interrupted delayed stop): old=\(oldSessionId?.uuidString.prefix(8) ?? "nil") → new=\(self.currentSessionId?.uuidString.prefix(8) ?? "nil")")
                 }
                 // 如果是 Hold 模式（正在按住），忽略重复的 KeyDown
             }
@@ -645,19 +688,29 @@ final class HotKeyService {
     }
     
     private func handleKeyUp() {
-        // keyUp 是明确的结束信号，取消任何待执行的防抖检查
-        flagsDebounceWorkItem?.cancel()
-        flagsDebounceWorkItem = nil
-        handleRelease()
+        // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // keyUp 是明确的结束信号，取消任何待执行的防抖检查
+            // 必须在主线程执行 cancel，否则与 scheduleModifierReleaseCheck 的 workItem 存在竞态条件
+            self.flagsDebounceWorkItem?.cancel()
+            self.flagsDebounceWorkItem = nil
+            
+            self.logger.debug("⬆️ [keyUp] 已取消 flagsDebounceWorkItem，调用 handleRelease")
+            self.handleRelease(fromKeyUp: true)
+        }
     }
     
-    private func handleRelease() {
+    /// 处理按键释放
+    /// - Parameter fromKeyUp: true 表示来自 keyUp 事件，false 表示来自 flagsChanged 事件
+    private func handleRelease(fromKeyUp: Bool) {
         // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
             // 调试日志：当前状态
-            self.logger.debug("🔍 handleRelease: isRecording=\(self.isRecording), isToggleSession=\(self.isToggleSession)")
+            self.logger.debug("🔍 handleRelease: isRecording=\(self.isRecording), isToggleSession=\(self.isToggleSession), fromKeyUp=\(fromKeyUp)")
             
             guard self.isRecording else {
                 self.logger.debug("🔍 handleRelease: not recording, skip")
@@ -665,7 +718,7 @@ final class HotKeyService {
             }
             
             if self.isToggleSession {
-                // Toggle 模式下，松开键不停止录音
+                // Toggle 模式下，松开键不停止录音（等待第二次按下）
                 self.logger.debug("🔍 handleRelease: Toggle mode, skip")
                 return
             }
@@ -676,25 +729,41 @@ final class HotKeyService {
                 return
             }
             let duration = Date().timeIntervalSince(startTime)
+            self.logger.info("🔍 handleRelease: duration=\(String(format: "%.3f", duration))s, threshold=\(self.holdThreshold)s, fromKeyUp=\(fromKeyUp)")
             
-            if duration < self.holdThreshold {
+            if duration < self.holdThreshold && fromKeyUp {
                 // 短按：切换到 Toggle 模式，继续录音
+                // ⚠️ 只有 keyUp 事件才能触发 Toggle 模式，避免 flagsChanged 误判
                 self.isToggleSession = true
                 self.logger.info("👆 Short press (\(String(format: "%.2f", duration))s) detected. Switched to Toggle mode.")
+            } else if duration < self.holdThreshold && !fromKeyUp {
+                // flagsChanged 触发但 duration < holdThreshold，跳过（等待 keyUp 来决定是否进入 Toggle 模式）
+                self.logger.debug("🔍 handleRelease: flagsChanged with short duration, waiting for keyUp")
+                return
             } else {
                 // 长按：松手后延迟停止，以捕获尾音
+                // 检查是否已经设置了延迟停止任务，避免重复触发
+                if self.delayedStopTask != nil {
+                    self.logger.debug("🔍 handleRelease: delayedStopTask already set, skip")
+                    return
+                }
+                
                 self.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping in 0.8s...")
+                
+                // 取消任何待执行的修饰键检查，防止 flagsChanged 的 async 块后执行导致重复触发
+                self.flagsDebounceWorkItem?.cancel()
+                self.flagsDebounceWorkItem = nil
                 
                 // 捕获当前会话 ID
                 let sessionToStop = self.currentSessionId
-                
-                // 取消之前的延迟停止 Task（如果有）
-                self.delayedStopTask?.cancel()
                 
                 // 延迟 0.8 秒再停止录音，让语音识别处理尾音
                 self.delayedStopTask = Task {
                     try? await Task.sleep(for: .milliseconds(800))
                     await MainActor.run {
+                        // Task 完成后清空引用
+                        self.delayedStopTask = nil
+                        
                         // 确保是同一个会话，且仍在录音中，且不是 Toggle 模式
                         guard self.isRecording,
                               self.currentSessionId == sessionToStop,

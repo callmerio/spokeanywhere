@@ -2,55 +2,38 @@ import SwiftUI
 import AppKit
 
 /// HUD 全局主题
-/// 集中管理所有 HUD 组件的颜色和样式
+/// ⚠️ 已迁移到 DesignTokens，此文件保留向后兼容
+/// 新代码请直接使用 DesignTokens.Colors / DesignTokens.CornerRadius 等
+@available(*, deprecated, message: "Use DesignTokens instead")
 enum HUDTheme {
     
-    // MARK: - 文字颜色
+    // MARK: - 文字颜色 (委托到 DesignTokens)
     
-    /// 主文字颜色（转录文字、输入文字等）
-    static let textPrimary = Color.white.opacity(0.9)
-    
-    /// 次要文字颜色（标签、提示等）
-    static let textSecondary = Color.white.opacity(0.7)
-    
-    /// 占位符颜色
-    static let textPlaceholder = Color.white.opacity(0.4)
+    static let textPrimary = DesignTokens.Colors.textPrimary
+    static let textSecondary = DesignTokens.Colors.textSecondary
+    static let textPlaceholder = DesignTokens.Colors.textPlaceholder
     
     // MARK: - 背景颜色
     
-    /// 卡片/缩略图背景
-    static let cardBackground = Color.white.opacity(0.1)
-    
-    /// 深色叠加层
-    static let overlayDark = Color.black.opacity(0.3)
+    static let cardBackground = DesignTokens.Colors.cardBackground
+    static let overlayDark = DesignTokens.Colors.overlayDark
     
     // MARK: - 边框颜色
     
-    /// 主边框
-    static let borderPrimary = Color.white.opacity(0.1)
-    
-    /// 次要边框（缩略图等）
-    static let borderSecondary = Color.white.opacity(0.2)
+    static let borderPrimary = DesignTokens.Colors.borderPrimary
+    static let borderSecondary = DesignTokens.Colors.borderSecondary
     
     // MARK: - 高光/特效
     
-    /// 顶部渐变高光起始
-    static let glowTop = Color.white.opacity(0.08)
-    
-    /// 强调色（跑马灯等）
-    static let accentBright = Color.white.opacity(0.9)
-    static let accentDim = Color.white.opacity(0.05)
+    static let glowTop = DesignTokens.Colors.glowTop
+    static let accentBright = DesignTokens.Colors.accentBright
+    static let accentDim = DesignTokens.Colors.accentDim
     
     // MARK: - NSColor 版本（用于 AppKit）
     
     enum NS {
-        /// 主文字颜色
-        static let textPrimary = NSColor.white.withAlphaComponent(0.9)
-        
-        /// 次要文字颜色
-        static let textSecondary = NSColor.white.withAlphaComponent(0.7)
-        
-        /// 占位符颜色
-        static let textPlaceholder = NSColor.white.withAlphaComponent(0.4)
+        static let textPrimary = DesignTokens.Colors.NS.textPrimary
+        static let textSecondary = DesignTokens.Colors.NS.textSecondary
+        static let textPlaceholder = DesignTokens.Colors.NS.textPlaceholder
     }
 }

@@ -41,11 +41,16 @@ final class FloatingHUDManager {
     
     /// 显示胶囊（开始录音时调用）
     func show(targetApp: TargetAppInfo?) {
+        // ⚠️ 取消之前的隐藏定时器（修复：上次 fail() 设置的 hideTimer 不应影响新录音）
+        hideTimer?.invalidate()
+        hideTimer = nil
+        
         createPanelIfNeeded()
         
         state.startRecording(targetApp: targetApp)
         
         panel?.orderFront(nil)
+        panel?.alphaValue = 1  // 确保可见（可能被之前的 hide 动画设为 0）
         panel?.positionAtBottomCenter()
     }
     

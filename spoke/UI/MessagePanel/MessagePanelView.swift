@@ -371,14 +371,14 @@ struct MessagePanelView: View {
                 
                 Text("提问 AI...")
                     .font(.system(size: 13))
-                    .foregroundColor(HUDTheme.textSecondary)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
                 
                 Spacer()
                 
                 // 快捷键提示
                 Text("⌥T")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(HUDTheme.textPlaceholder)
+                    .foregroundColor(DesignTokens.Colors.textPlaceholder)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.white.opacity(0.1))
@@ -703,7 +703,7 @@ struct MessageCardView: View {
             if !card.stage.displayName.isEmpty {
                 Text(card.stage.displayName)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(HUDTheme.textSecondary)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: 100)
@@ -719,7 +719,7 @@ struct MessageCardView: View {
             // 时间戳
             Text(card.formattedTime)
                 .font(.system(size: 10))
-                .foregroundColor(HUDTheme.textPlaceholder)
+                .foregroundColor(DesignTokens.Colors.textPlaceholder)
             
             // 操作按钮组（悬浮显示）
             if isHovered {
@@ -780,7 +780,7 @@ struct MessageCardView: View {
                         Text("正在总结...")
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(HUDTheme.textPlaceholder)
+                    .foregroundColor(DesignTokens.Colors.textPlaceholder)
                     .padding(.bottom, 2)
                 }
                 
@@ -795,11 +795,11 @@ struct MessageCardView: View {
                                 Text("摘要")
                                     .font(.system(size: 9, weight: .medium))
                             }
-                            .foregroundColor(HUDTheme.textPlaceholder)
+                            .foregroundColor(DesignTokens.Colors.textPlaceholder)
                             
                             Text(displayText)
                                 .font(.system(size: 13))
-                                .foregroundColor(HUDTheme.textPrimary)
+                                .foregroundColor(DesignTokens.Colors.textPrimary)
                                 .lineLimit(6)  // 允许更长的摘要（约 100 字）
                         }
                     } else if !card.highlights.isEmpty {
@@ -813,7 +813,7 @@ struct MessageCardView: View {
                         // 🔬 DEBUG: 临时用 Text 替代 DictionarySelectableText 测试性能
                         Text(displayText)
                             .font(.system(size: 13))
-                            .foregroundColor(HUDTheme.textPrimary)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
                             .textSelection(.enabled)
                         // DictionarySelectableText(
                         //     text: displayText,
@@ -886,7 +886,7 @@ struct MessageCardView: View {
                 if let value = card.metadata[key] {
                     Text("\(key): \(value)")
                         .font(.system(size: 9))
-                        .foregroundColor(HUDTheme.textPlaceholder)
+                        .foregroundColor(DesignTokens.Colors.textPlaceholder)
                 }
             }
         }
@@ -899,7 +899,7 @@ struct MessageCardView: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(HUDTheme.textSecondary)
+                .foregroundColor(DesignTokens.Colors.textSecondary)
                 .frame(width: 20, height: 20)
                 .background(Color.white.opacity(0.08))
                 .clipShape(Circle())
@@ -1150,7 +1150,7 @@ struct SourceAppIconView: View {
 struct SelectableText: NSViewRepresentable {
     let text: String
     var font: NSFont = .systemFont(ofSize: 13)
-    var foregroundColor: NSColor = HUDTheme.NS.textPrimary
+    var foregroundColor: NSColor = DesignTokens.Colors.NS.textPrimary
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()

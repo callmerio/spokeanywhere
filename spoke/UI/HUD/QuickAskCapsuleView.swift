@@ -305,7 +305,7 @@ struct QuickAskCapsuleView: View {
         } else {
             Image(systemName: "app.fill")
                 .font(.system(size: 14))
-                .foregroundStyle(HUDTheme.textPrimary)
+                .foregroundStyle(DesignTokens.Colors.textPrimary)
         }
     }
     
@@ -316,7 +316,7 @@ struct QuickAskCapsuleView: View {
             Text("SpokenAnyWhere")
                 .font(.system(size: 11, weight: .medium))
         }
-        .foregroundStyle(HUDTheme.textSecondary)
+        .foregroundStyle(DesignTokens.Colors.textSecondary)
     }
     
     // MARK: - Helpers

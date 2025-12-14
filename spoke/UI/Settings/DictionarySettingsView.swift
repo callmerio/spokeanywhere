@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - Dictionary Settings Content
 
 /// 词典设置页面
@@ -94,7 +96,7 @@ struct DictionarySettingsContent: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .cornerRadius(10)
+                .cornerRadius(DS.CornerRadius.md)
             }
             .buttonStyle(.plain)
             }
@@ -195,8 +197,8 @@ struct DictionarySettingsContent: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.white.opacity(0.03))
-        .cornerRadius(8)
+        .background(DS.Colors.settingsCardBorder.opacity(0.5))
+        .cornerRadius(DS.CornerRadius.md)
         .animation(.easeInOut(duration: 0.2), value: TranscriptionManager.shared.isDictionaryInjectionEnabled)
     }
     
@@ -252,8 +254,8 @@ struct DictionarySettingsContent: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(8)
+            .background(DS.Colors.settingsCardBackground)
+            .cornerRadius(DS.CornerRadius.md)
             .frame(width: 200)
         }
     }
@@ -349,7 +351,7 @@ struct DictionarySettingsContent: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(Color.orange.opacity(0.1))
-                .cornerRadius(8)
+                .cornerRadius(DS.CornerRadius.md)
             }
             .buttonStyle(.plain)
             .padding(.top, 8)
@@ -387,8 +389,8 @@ struct DictionarySettingsContent: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color.white.opacity(0.03))
-        .cornerRadius(8)
+        .background(DS.Colors.settingsCardBorder.opacity(0.5))
+        .cornerRadius(DS.CornerRadius.md)
     }
     
     // MARK: - Hotword Recommendation Section
@@ -556,7 +558,7 @@ struct DictionaryEntryRow: View {
                     .foregroundStyle(.gray.opacity(0.7))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.05))
+                    .background(DS.Colors.settingsCardBackground)
                     .cornerRadius(4)
             }
             
@@ -722,8 +724,8 @@ struct AddDictionaryEntrySheet: View {
                 TextField("如: Anthropic, Claude, GPT-4", text: $word)
                     .textFieldStyle(.plain)
                     .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
+                    .background(DS.Colors.settingsCardBackground)
+                    .cornerRadius(DS.CornerRadius.md)
             }
             
             // 纠错映射输入
@@ -742,8 +744,8 @@ struct AddDictionaryEntrySheet: View {
                     .font(.system(size: 13))
                     .scrollContentBackground(.hidden)
                     .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
+                    .background(DS.Colors.settingsCardBackground)
+                    .cornerRadius(DS.CornerRadius.md)
                     .frame(height: 80)
                 
                 Text("转录引擎可能识别成的错误形式，后处理时会自动替换为正确词形")
@@ -834,16 +836,16 @@ struct BatchImportSheet: View {
             .font(.system(size: 11, design: .monospaced))
             .foregroundStyle(.gray.opacity(0.8))
             .padding(12)
-            .background(Color.white.opacity(0.03))
-            .cornerRadius(8)
+            .background(DS.Colors.settingsCardBorder.opacity(0.5))
+            .cornerRadius(DS.CornerRadius.md)
             
             // 输入框
             TextEditor(text: $importText)
                 .font(.system(size: 13, design: .monospaced))
                 .scrollContentBackground(.hidden)
                 .padding(12)
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(8)
+                .background(DS.Colors.settingsCardBackground)
+                .cornerRadius(DS.CornerRadius.md)
                 .frame(height: 200)
             
             // 导入结果
@@ -968,8 +970,8 @@ struct EditDictionaryEntrySheet: View {
                 TextField("词条名", text: $word)
                     .textFieldStyle(.plain)
                     .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
+                    .background(DS.Colors.settingsCardBackground)
+                    .cornerRadius(DS.CornerRadius.md)
             }
             
             // 纠错映射输入
@@ -982,8 +984,8 @@ struct EditDictionaryEntrySheet: View {
                     .font(.system(size: 13))
                     .scrollContentBackground(.hidden)
                     .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
+                    .background(DS.Colors.settingsCardBackground)
+                    .cornerRadius(DS.CornerRadius.md)
                     .frame(height: 80)
             }
             
@@ -1418,8 +1420,8 @@ struct VocabularyListSheet: View {
                     .font(.system(size: 13))
             }
             .padding(10)
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(8)
+            .background(DS.Colors.settingsCardBackground)
+            .cornerRadius(DS.CornerRadius.md)
             .padding()
             
             // 列表

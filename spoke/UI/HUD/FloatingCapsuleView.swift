@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
 
+private typealias DS = DesignTokens
+
 /// 悬浮面板视图 - Spokenly 风格
 /// 纵向布局：上方文字区域（向上扩展）+ 下方控制栏
 struct FloatingCapsuleView: View {
@@ -57,7 +59,7 @@ struct FloatingCapsuleView: View {
                 VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
                 
                 // 深色叠加
-                Color.black.opacity(0.3)
+                DS.Colors.overlayDark
                 
                 // 底部红色晕染 (仅在非 Hover 时显示)
                 if state.phase == .recording && !isHovering {
@@ -80,7 +82,7 @@ struct FloatingCapsuleView: View {
                 VStack {
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.08),
+                            DS.Colors.glowTop,
                             Color.clear
                         ],
                         startPoint: .top,
@@ -91,7 +93,7 @@ struct FloatingCapsuleView: View {
                 }
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl))
         // 跟踪内容高度
         .background(
             GeometryReader { geo in
@@ -109,7 +111,7 @@ struct FloatingCapsuleView: View {
                     RunningLightBorder()
                 } else {
                     RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                        .strokeBorder(DS.Colors.borderPrimary, lineWidth: 0.5)
                 }
             }
         )
@@ -162,7 +164,7 @@ struct FloatingCapsuleView: View {
             if !state.partialText.isEmpty {
                 Text(state.partialText)
                     .font(.system(size: 14))
-                    .foregroundStyle(HUDTheme.textPrimary)
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .lineSpacing(4)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true) // 高度自适应
@@ -172,7 +174,7 @@ struct FloatingCapsuleView: View {
                         .controlSize(.small)
                     Text("处理中...")
                         .font(.system(size: 14))
-                        .foregroundStyle(HUDTheme.textSecondary)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
             } else if state.phase == .thinking || state.phase == .success {
                 // 思考中状态：文字模糊效果 + 提示
@@ -181,7 +183,7 @@ struct FloatingCapsuleView: View {
                     if !state.partialText.isEmpty {
                         Text(state.partialText)
                             .font(.system(size: 14))
-                            .foregroundStyle(state.phase == .success ? HUDTheme.textPrimary : Color.white.opacity(0.5)) // 成功后变亮
+                            .foregroundStyle(state.phase == .success ? DS.Colors.textPrimary : DS.Colors.textSecondary) // 成功后变亮
                             .lineSpacing(4)
                             .blur(radius: state.phase == .thinking ? 2 : 0) // 思考时模糊，成功后清晰
                             .animation(.easeInOut(duration: 0.3), value: state.phase)
@@ -192,7 +194,7 @@ struct FloatingCapsuleView: View {
                             ThinkingIndicator()
                             Text("AI 思考中...")
                                 .font(.system(size: 13))
-                                .foregroundStyle(HUDTheme.textPrimary)
+                                .foregroundStyle(DS.Colors.textPrimary)
                         }
                         .transition(.opacity)
                     }
@@ -200,7 +202,7 @@ struct FloatingCapsuleView: View {
             } else {
                 Text("正在聆听...")
                     .font(.system(size: 14))
-                    .foregroundStyle(Color.white.opacity(0.5))
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
         }
         .padding(.horizontal, 16)
@@ -256,7 +258,7 @@ struct FloatingCapsuleView: View {
                         
                         Text("完成录音")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(HUDTheme.textPrimary)
+                            .foregroundStyle(DS.Colors.textPrimary)
                             .shadow(radius: 1)
                     }
                 }
@@ -271,7 +273,7 @@ struct FloatingCapsuleView: View {
             
             // 分割线 (纯色)
             Divider()
-                .overlay(Color.white.opacity(0.1))
+                .overlay(DS.Colors.borderPrimary)
             
             // 下半部分：取消录音
             Button(action: { onCancel?() }) {
@@ -287,7 +289,7 @@ struct FloatingCapsuleView: View {
                         
                         Text("取消录音")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(HUDTheme.textPrimary)
+                            .foregroundStyle(DS.Colors.textPrimary)
                             .shadow(radius: 1)
                     }
                 }
@@ -300,7 +302,7 @@ struct FloatingCapsuleView: View {
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl))
         .background(Color.black.opacity(0.4)) // 稍微加深底色，使文字更清晰
     }
     
@@ -312,7 +314,7 @@ struct FloatingCapsuleView: View {
                     .aspectRatio(contentMode: .fit)
             } else {
                 Image(systemName: "app.fill")
-                    .foregroundStyle(HUDTheme.textPrimary)
+                    .foregroundStyle(DS.Colors.textPrimary)
             }
         }
         .frame(width: 24, height: 24)
@@ -326,7 +328,7 @@ struct FloatingCapsuleView: View {
             Text("SpokenAnyWhere")
                 .font(.system(size: 11, weight: .medium))
         }
-        .foregroundStyle(HUDTheme.textSecondary)
+        .foregroundStyle(DS.Colors.textSecondary)
     }
     
     // MARK: - Helpers
@@ -567,9 +569,9 @@ struct RunningLightBorder: View {
                     AngularGradient(
                         colors: [
                             Color.white.opacity(0.8),
-                            Color.white.opacity(0.1),
-                            Color.white.opacity(0.1),
-                            Color.white.opacity(0.1),
+                            DS.Colors.borderPrimary,
+                            DS.Colors.borderPrimary,
+                            DS.Colors.borderPrimary,
                             Color.white.opacity(0.8)
                         ],
                         center: .center,

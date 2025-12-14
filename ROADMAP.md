@@ -54,7 +54,16 @@ macOS 语音助手应用开发路线图，按功能模块划分。
 
 ---
 
-## � 进行中
+## 🔄 进行中
+
+### 🎨 设计系统重构
+
+- [x] 创建 `DesignTokens.swift` 统一设计入口 (2024-12-14)
+- [x] 迁移 `HUDTheme` 到 DesignTokens (向后兼容)
+- [x] 生成 `docs/style/` 设计体系文档
+- [x] 迁移 Settings 模块硬编码 (SettingsView, DictionarySettingsView)
+- [x] 迁移 HUD 模块硬编码 (FloatingCapsuleView)
+- [ ] 迁移其他模块硬编码 (MessagePanel, LiveCaption 等)
 
 ### 实时字幕优化
 

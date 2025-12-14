@@ -3,6 +3,8 @@ import AVFoundation
 import SwiftData
 import AppKit
 
+private typealias DS = DesignTokens
+
 // MARK: - Main Settings View
 
 struct SettingsView: View {
@@ -51,7 +53,7 @@ struct SettingsView: View {
             contentArea
         }
         .frame(minWidth: 820, minHeight: 580)
-        .background(Color(hex: "1a1a1a"))
+        .background(DS.Colors.settingsBackground)
         .onReceive(NotificationCenter.default.publisher(for: .settingsSwitchToToolbar)) { notification in
             withAnimation(.easeInOut(duration: 0.15)) {
                 selectedTab = .toolbar
@@ -94,7 +96,7 @@ struct SettingsView: View {
             Spacer()
         }
         .frame(width: 180)
-        .background(Color(hex: "141414"))
+        .background(DS.Colors.settingsSidebarBackground)
     }
     
     // MARK: - Content Area
@@ -131,7 +133,7 @@ struct SettingsView: View {
             .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: "1a1a1a"))
+        .background(DS.Colors.settingsBackground)
     }
 }
 
@@ -155,9 +157,9 @@ struct SidebarButton: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.white.opacity(0.1) : Color.clear)
+            .background(isSelected ? DS.Colors.buttonHover : Color.clear)
             .foregroundStyle(isSelected ? .white : .gray)
-            .cornerRadius(8)
+            .cornerRadius(DS.CornerRadius.md)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 8)
@@ -178,11 +180,11 @@ struct SettingsCard<Content: View>: View {
             content
         }
         .padding(16)
-        .background(Color(hex: "252525"))
-        .cornerRadius(12)
+        .background(DS.Colors.settingsCardBackground)
+        .cornerRadius(DS.CornerRadius.lg)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                .strokeBorder(DS.Colors.settingsCardBorder, lineWidth: 1)
         )
     }
 }
@@ -252,7 +254,7 @@ struct GeneralSettingsContent: View {
                         .tint(.blue)
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 SettingsRow(icon: "dock.rectangle", title: "在程序坞中显示") {
                     Toggle("", isOn: $appSettings.showInDock)
@@ -260,7 +262,7 @@ struct GeneralSettingsContent: View {
                         .tint(.blue)
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 SettingsRow(icon: "menubar.rectangle", title: "在菜单栏中显示图标") {
                     Toggle("", isOn: $appSettings.showInMenuBar)
@@ -268,7 +270,7 @@ struct GeneralSettingsContent: View {
                         .tint(.blue)
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 SettingsRow(icon: "escape", title: "按 ESC 键取消录音") {
                     Toggle("", isOn: $appSettings.pressEscToCancel)
@@ -276,7 +278,7 @@ struct GeneralSettingsContent: View {
                         .tint(.blue)
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 SettingsRow(icon: "speaker.wave.2", title: "播放提示音效", description: "开始/结束录音时播放声音") {
                     Toggle("", isOn: $appSettings.playSoundEffect)
@@ -304,7 +306,7 @@ struct GeneralSettingsContent: View {
                     .tint(.white)
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 // 真实麦克风测试
                 VStack(alignment: .leading, spacing: 8) {
@@ -393,7 +395,7 @@ struct ModelsSettingsContentLegacy: View {
                     selectedModel = "apple_ondevice"
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 ModelOptionRow(
                     icon: "waveform.badge.magnifyingglass",
@@ -404,7 +406,7 @@ struct ModelsSettingsContentLegacy: View {
                     comingSoon: true
                 ) { }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 ModelOptionRow(
                     icon: "cloud",
@@ -585,10 +587,10 @@ struct AISettingsContent: View {
                     }
                 }
                 .background(Color(hex: "1e1e1e"))
-                .cornerRadius(12)
+                .cornerRadius(DS.CornerRadius.lg)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                        .strokeBorder(DS.Colors.settingsCardBorder, lineWidth: 1)
                 )
                 
                 // 添加服务区域
@@ -665,7 +667,7 @@ struct AISettingsContent: View {
                         .foregroundStyle(.white)
                         .scrollContentBackground(.hidden)
                         .background(Color.white.opacity(0.05))
-                        .cornerRadius(8)
+                        .cornerRadius(DS.CornerRadius.md)
                         .frame(height: 80)
                         
                         HStack {
@@ -691,7 +693,7 @@ struct AISettingsContent: View {
                 }
                 .tint(.gray)
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 // 上下文选项
                 HStack(spacing: 24) {
@@ -716,7 +718,7 @@ struct AISettingsContent: View {
                     .tint(.blue)
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 // AI 生成标题
                 Toggle(isOn: Binding(
@@ -734,7 +736,7 @@ struct AISettingsContent: View {
                 .toggleStyle(.switch)
                 .tint(.blue)
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 // 自动总结
                 Toggle(isOn: Binding(
@@ -901,7 +903,7 @@ struct ServiceCardRow: View {
             
             // 展开的配置区域
             if isExpanded {
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 expandedContent
             }
@@ -1095,7 +1097,7 @@ struct ServiceCardRow: View {
                 }
             }
             
-            Divider().background(Color.white.opacity(0.06))
+            Divider().background(DS.Colors.settingsCardBorder)
             
             // 底部操作栏
             HStack {
@@ -1369,7 +1371,7 @@ struct ModelPickerView: View {
                     }
                 }
                 .frame(maxHeight: 200)
-                .background(Color(hex: "252525"))
+                .background(DS.Colors.settingsCardBackground)
                 .cornerRadius(6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
@@ -1448,7 +1450,7 @@ struct AddServiceButton: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(Color.white.opacity(0.05))
-            .cornerRadius(8)
+            .cornerRadius(DS.CornerRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
@@ -1531,7 +1533,7 @@ struct ShortcutsSettingsContent: View {
                     )
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 SettingsRow(icon: "bubble.left.and.bubble.right", title: "Quick Ask", description: "快速向 AI 提问") {
                     ShortcutRecorderButton(
@@ -1543,7 +1545,7 @@ struct ShortcutsSettingsContent: View {
                     )
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 14) {
@@ -1740,8 +1742,8 @@ struct HistorySettingsContent: View {
                     .foregroundStyle(.white)
             }
             .padding(10)
-            .background(Color(hex: "252525"))
-            .cornerRadius(8)
+            .background(DS.Colors.settingsCardBackground)
+            .cornerRadius(DS.CornerRadius.md)
             .padding(.bottom, 20)
             
             // 列表
@@ -1854,7 +1856,7 @@ struct ReprocessSheet: View {
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
+                    .cornerRadius(DS.CornerRadius.md)
             }
             
             // 自定义 Prompt 输入
@@ -1869,7 +1871,7 @@ struct ReprocessSheet: View {
                     .padding(12)
                     .frame(height: 80)
                     .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
+                    .cornerRadius(DS.CornerRadius.md)
                 Text("留空则使用当前系统 Prompt")
                     .font(.system(size: 11))
                     .foregroundStyle(.gray.opacity(0.6))
@@ -1887,7 +1889,7 @@ struct ReprocessSheet: View {
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.green.opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(DS.CornerRadius.md)
                         .textSelection(.enabled)
                 }
             }
@@ -1910,7 +1912,7 @@ struct ReprocessSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
                 .background(Color.white.opacity(0.1))
-                .cornerRadius(8)
+                .cornerRadius(DS.CornerRadius.md)
                 
                 Button(action: reprocess) {
                     HStack(spacing: 6) {
@@ -1929,14 +1931,14 @@ struct ReprocessSheet: View {
                 .padding(.vertical, 10)
                 .background(Color(hex: "a78bfa"))
                 .foregroundStyle(.white)
-                .cornerRadius(8)
+                .cornerRadius(DS.CornerRadius.md)
                 .disabled(isProcessing)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(20)
         .frame(width: 400, height: 420)
-        .background(Color(hex: "252525"))
+        .background(DS.Colors.settingsCardBackground)
     }
     
     private func reprocess() {
@@ -2073,7 +2075,7 @@ struct HistoryItemRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(Color(hex: "2a2a2a"))
-        .cornerRadius(12)
+        .cornerRadius(DS.CornerRadius.lg)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
@@ -2164,13 +2166,13 @@ struct HistoryItemRow: View {
         )
     }
     .padding()
-    .background(Color(hex: "1a1a1a"))
+    .background(DS.Colors.settingsBackground)
 }
 
 #Preview("History Settings") {
     HistorySettingsContent()
         .frame(width: 500, height: 400)
-        .background(Color(hex: "1a1a1a"))
+        .background(DS.Colors.settingsBackground)
         .modelContainer(for: HistoryItem.self, inMemory: true)
 }
 
@@ -2483,7 +2485,7 @@ struct TTSSettingsContent: View {
                         .padding(10)
                         .frame(height: 80)
                         .background(Color.white.opacity(0.05))
-                        .cornerRadius(8)
+                        .cornerRadius(DS.CornerRadius.md)
                     
                     // 进度显示
                     if isTesting && ttsService.totalChunks > 1 {
@@ -2514,7 +2516,7 @@ struct TTSSettingsContent: View {
                             .padding(.vertical, 10)
                             .background(isTesting ? Color.orange : Color.blue)
                             .foregroundStyle(.white)
-                            .cornerRadius(8)
+                            .cornerRadius(DS.CornerRadius.md)
                         }
                         .buttonStyle(.plain)
                         
@@ -2523,7 +2525,7 @@ struct TTSSettingsContent: View {
                             Image(systemName: "arrow.counterclockwise")
                                 .padding(10)
                                 .background(Color.white.opacity(0.05))
-                                .cornerRadius(8)
+                                .cornerRadius(DS.CornerRadius.md)
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(.gray)
@@ -2590,7 +2592,7 @@ private struct TTSProviderRow: View {
             }
             .padding(12)
             .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
-            .cornerRadius(8)
+            .cornerRadius(DS.CornerRadius.md)
         }
         .buttonStyle(.plain)
     }

@@ -127,7 +127,7 @@ struct QuickAskTextEditor: NSViewRepresentable {
         textView.isRichText = false
         textView.allowsUndo = true
         textView.font = NSFont.systemFont(ofSize: 14)
-        textView.textColor = HUDTheme.NS.textPrimary
+        textView.textColor = DesignTokens.Colors.NS.textPrimary
         textView.backgroundColor = .clear
         textView.drawsBackground = false
         textView.isVerticallyResizable = true
@@ -478,7 +478,7 @@ class QuickAskNSTextView: NSTextView {
         if string.isEmpty && !placeholderString.isEmpty {
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: 14),
-                .foregroundColor: HUDTheme.NS.textPlaceholder
+                .foregroundColor: DesignTokens.Colors.NS.textPlaceholder
             ]
             let placeholderRect = NSRect(x: textContainerInset.width, y: textContainerInset.height, width: bounds.width, height: bounds.height)
             placeholderString.draw(in: placeholderRect, withAttributes: attributes)
