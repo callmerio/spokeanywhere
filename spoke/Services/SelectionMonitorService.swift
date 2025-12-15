@@ -42,14 +42,26 @@ final class SelectionMonitorService {
     /// 上次选中的文本 (用于去重)
     private var lastSelectedText: String?
     
+    /// AX 通知防抖时间戳 (用于去重连续通知)
+    private var lastAXNotificationTime: CFAbsoluteTime = 0
+    
+    /// AX 通知防抖阈值 (秒) - 同一时间窗口内的重复通知会被忽略
+    private let axNotificationDebounceThreshold: CFAbsoluteTime = 0.05
+    
     /// 全局鼠标事件监听器
     private var mouseEventMonitor: Any?
     
     /// 键盘事件监听器
     private var keyEventMonitor: Any?
     
-    /// 鼠标按下监听器
+    /// 鼠标按下监听器 (Global)
     private var mouseDownMonitor: Any?
+    
+    /// 鼠标按下监听器 (Local - 自身 App)
+    private var localMouseDownMonitor: Any?
+    
+    /// 鼠标抬起监听器 (Local - 自身 App)
+    private var localMouseUpMonitor: Any?
     
     /// 鼠标是否按下 (用于判断是否在选择过程中)
     private var isMouseDown = false
@@ -65,7 +77,6 @@ final class SelectionMonitorService {
     
     /// 忽略的应用 Bundle ID (不在这些应用中显示工具栏)
     private let ignoredBundleIds: Set<String> = [
-        "app.spokenly",  // 自己
         "com.apple.loginwindow",
         "com.apple.screencaptureui",
     ]
@@ -121,7 +132,7 @@ final class SelectionMonitorService {
         
         isMonitoring = false
         
-        // 移除鼠标监听
+        // 移除鼠标监听 (Global)
         if let monitor = mouseDownMonitor {
             NSEvent.removeMonitor(monitor)
             mouseDownMonitor = nil
@@ -130,6 +141,17 @@ final class SelectionMonitorService {
             NSEvent.removeMonitor(monitor)
             mouseEventMonitor = nil
         }
+        
+        // 移除鼠标监听 (Local)
+        if let monitor = localMouseDownMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMouseDownMonitor = nil
+        }
+        if let monitor = localMouseUpMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMouseUpMonitor = nil
+        }
+        
         isMouseDown = false
         
         // 移除键盘监听
@@ -272,13 +294,19 @@ final class SelectionMonitorService {
     
     /// AXObserver 回调处理 (需要被回调函数访问，不能是 private)
     func handleAXNotification() {
-        // 如果鼠标正在按下 (用户正在拖动选择)，忽略此通知
-        // 等待鼠标抬起时再统一处理，避免选择过程中工具栏闪烁
-        guard !isMouseDown else {
-            logger.debug("📋 [SelectionMonitor] 鼠标按下中，忽略 AXSelectedTextChanged 通知")
+        // 防抖：忽略短时间内的重复通知
+        let now = CFAbsoluteTimeGetCurrent()
+        guard now - lastAXNotificationTime > axNotificationDebounceThreshold else {
             return
         }
-        logger.info("📋 [SelectionMonitor] 收到 AXSelectedTextChanged 通知")
+        lastAXNotificationTime = now
+        
+        // 如果鼠标正在按下 (用户正在拖动选择)，忽略此通知
+        guard !isMouseDown else {
+            return
+        }
+        
+        // 直接调用检查，不打日志（避免打字时刷屏）
         checkSelection()
     }
     
@@ -286,22 +314,37 @@ final class SelectionMonitorService {
     
     /// 设置鼠标事件监听
     private func setupMouseMonitor() {
-        // 监听鼠标按下事件 (选择开始)
+        // === Global Monitor (监听其他 App) ===
         mouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.isMouseDown = true
             }
         }
         
-        // 监听鼠标抬起事件 (选择完成)
-        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
+        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.isMouseDown = false
-                // 延迟检查，等待系统更新选中状态
                 self?.checkSelection()
             }
         }
-        logger.debug("🖱️ [SelectionMonitor] 鼠标监听器已设置 (按下+抬起)")
+        
+        // === Local Monitor (监听自身 App) ===
+        localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
+            Task { @MainActor [weak self] in
+                self?.isMouseDown = true
+            }
+            return event
+        }
+        
+        localMouseUpMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
+            Task { @MainActor [weak self] in
+                self?.isMouseDown = false
+                self?.checkSelection()
+            }
+            return event
+        }
+        
+        logger.debug("🖱️ [SelectionMonitor] 鼠标监听器已设置 (Global + Local)")
     }
     
     /// 设置键盘事件监听
@@ -323,43 +366,25 @@ final class SelectionMonitorService {
     
     /// 执行选中文本检查
     private func performSelectionCheck() {
-        let stopwatch = StopWatch("SelectionCheck")
-        defer { stopwatch.stop() }
-        
-        logger.debug("📋 [SelectionMonitor] performSelectionCheck() 被调用")
-        
         // 获取当前聚焦的应用
         guard let frontApp = NSWorkspace.shared.frontmostApplication else {
-            logger.debug("📋 [SelectionMonitor] 无前台应用")
             return
         }
         
         let bundleId = frontApp.bundleIdentifier ?? ""
-        logger.debug("📋 [SelectionMonitor] 当前应用: \(frontApp.localizedName ?? "unknown") (\(bundleId))")
         
         // 忽略特定应用
         if ignoredBundleIds.contains(bundleId) {
-            logger.debug("📋 [SelectionMonitor] 忽略应用: \(bundleId)")
             return
         }
         
-        // 获取选中文本和位置
-        stopwatch.checkpoint("before_getSelectedText")
-        guard let (selectedText, bounds) = PerformanceTracer.Selection.traceCheck({
-            getSelectedTextAndBounds(for: frontApp)
-        }) else {
-            logger.info("📋 [SelectionMonitor] ❌ 无法获取选中文本")
+        // 一次性获取选中文本和位置（内部已包含快速检查逻辑）
+        guard let (selectedText, bounds) = getSelectedTextAndBounds(for: frontApp) else {
             return
         }
-        
-        logger.info("📋 [SelectionMonitor] ✅ 获取到选中文本: \(selectedText.prefix(30))... bounds: \(NSStringFromRect(bounds))")
-        
-        stopwatch.checkpoint("after_getSelectedText")
         
         // 验证文本长度
-        let trimmedText = PerformanceTracer.Selection.traceFilter {
-            selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
+        let trimmedText = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmedText.count >= minSelectionLength,
               trimmedText.count <= maxSelectionLength else {
             return
@@ -384,10 +409,7 @@ final class SelectionMonitorService {
         logger.info("📋 [SelectionMonitor] 检测到选中文本 | 长度: \(trimmedText.count) | 应用: \(frontApp.localizedName ?? "unknown")")
         
         // 回调
-        stopwatch.checkpoint("before_callback")
-        PerformanceTracer.Selection.traceCallback {
-            onSelectionChanged?(context)
-        }
+        onSelectionChanged?(context)
     }
     
     /// 使用 Accessibility API 获取选中文本和位置
@@ -425,44 +447,21 @@ final class SelectionMonitorService {
         }
         
         guard let axElement = focusedElement else {
-            logger.debug("📋 [SelectionMonitor] 无法获取聚焦元素")
             return nil
         }
-        
-        // 获取元素角色用于调试
-        var roleRef: CFTypeRef?
-        AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &roleRef)
-        let role = (roleRef as? String) ?? "unknown"
-        logger.debug("📋 [SelectionMonitor] 焦点元素角色: \(role)")
         
         // 策略1: 尝试通过标准 AXSelectedText API 获取
         var selectedTextValue: CFTypeRef?
         let textResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue)
         
-        let textValueStr = selectedTextValue as? String
-        logger.debug("📋 [SelectionMonitor] 策略1 (SelectedText): result=\(textResult.rawValue), hasValue=\(textValueStr != nil), length=\(textValueStr?.count ?? -1)")
-        
-        if textResult == .success, let textValue = textValueStr, !textValue.isEmpty {
+        if textResult == .success, let textValue = selectedTextValue as? String, !textValue.isEmpty {
             selectedText = textValue
-            logger.info("📋 [SelectionMonitor] ✅ AX API (SelectedText) 获取成功: \(textValue.prefix(30))...")
         }
         
         // 策略2: 参数化属性 (Parameterized Attribute) - 通过范围获取文本
         if selectedText == nil || selectedText?.isEmpty == true {
             var rangeValue: CFTypeRef?
             let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
-            
-            // 解析 range 详情
-            var rangeInfo = "N/A"
-            if let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
-                let axValue = rangeRef as! AXValue
-                if AXValueGetType(axValue) == .cfRange {
-                    var range = CFRange()
-                    AXValueGetValue(axValue, .cfRange, &range)
-                    rangeInfo = "loc=\(range.location),len=\(range.length)"
-                }
-            }
-            logger.debug("📋 [SelectionMonitor] 策略2 (Parameterized): rangeResult=\(rangeResult.rawValue), hasRange=\(rangeValue != nil), \(rangeInfo)")
             
             if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
                 let axValue = rangeRef as! AXValue
@@ -481,7 +480,6 @@ final class SelectionMonitorService {
                         
                         if stringResult == .success, let text = stringForRangeValue as? String, !text.isEmpty {
                             selectedText = text
-                            logger.info("📋 [SelectionMonitor] ✅ AX API (Parameterized) 获取成功: \(text.prefix(30))...")
                         }
                     }
                 }
@@ -493,10 +491,7 @@ final class SelectionMonitorService {
              var valueRef: CFTypeRef?
              let valueResult = AXUIElementCopyAttributeValue(axElement, kAXValueAttribute as CFString, &valueRef)
              
-             logger.debug("📋 [SelectionMonitor] 策略3 (Value+Range): valueResult=\(valueResult.rawValue), hasValue=\(valueRef != nil)")
-             
              if valueResult == .success, let fullText = valueRef as? String, !fullText.isEmpty {
-                 logger.debug("📋 [SelectionMonitor] 策略3: fullText长度=\(fullText.count)")
                  var rangeValue: CFTypeRef?
                  let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
                  
@@ -507,18 +502,12 @@ final class SelectionMonitorService {
                          AXValueGetValue(axValue, .cfRange, &range)
                          
                          let utf16Count = fullText.utf16.count
-                         logger.debug("📋 [SelectionMonitor] 策略3: range.location=\(range.location), range.length=\(range.length), utf16Count=\(utf16Count)")
                          if range.length > 0 && range.location + range.length <= utf16Count {
                              let start = String.Index(utf16Offset: range.location, in: fullText)
                              let end = String.Index(utf16Offset: range.location + range.length, in: fullText)
                              selectedText = String(fullText[start..<end])
-                             logger.info("📋 [SelectionMonitor] ✅ AX API (Value+Range) 获取成功: \(selectedText!.prefix(30))...")
-                         } else {
-                             logger.debug("📋 [SelectionMonitor] 策略3: 条件不满足 - length=\(range.length), 越界=\(range.location + range.length > utf16Count)")
                          }
                      }
-                 } else {
-                     logger.debug("📋 [SelectionMonitor] 策略3: 无法获取 selectedTextRange, rangeResult=\(rangeResult.rawValue)")
                  }
              }
         }
@@ -532,7 +521,6 @@ final class SelectionMonitorService {
                 if AXUIElementCopyAttributeValue(parentElement as! AXUIElement, kAXSelectedTextAttribute as CFString, &parentSelectedText) == .success,
                    let parentText = parentSelectedText as? String, !parentText.isEmpty {
                     selectedText = parentText
-                    logger.info("📋 [SelectionMonitor] ✅ 从父元素获取成功: \(parentText.prefix(30))...")
                 }
             }
         }
@@ -540,9 +528,6 @@ final class SelectionMonitorService {
         // 策略5: 如果还是失败，尝试遍历子元素
         if selectedText == nil || selectedText?.isEmpty == true {
             selectedText = findSelectedTextInChildren(axElement, depth: 0)
-            if selectedText != nil {
-                logger.info("📋 [SelectionMonitor] ✅ 从子元素获取成功: \(selectedText!.prefix(30))...")
-            }
         }
         
         if let text = selectedText, !text.isEmpty {
@@ -605,16 +590,10 @@ final class SelectionMonitorService {
         }
         
         for child in childArray {
-            // 获取子元素角色
-            var roleRef: CFTypeRef?
-            AXUIElementCopyAttributeValue(child, kAXRoleAttribute as CFString, &roleRef)
-            let role = (roleRef as? String) ?? "unknown"
-            
             // 方法1: 尝试从当前子元素获取选中文本
             var selectedTextValue: CFTypeRef?
             if AXUIElementCopyAttributeValue(child, kAXSelectedTextAttribute as CFString, &selectedTextValue) == .success,
                let text = selectedTextValue as? String, !text.isEmpty {
-                logger.debug("📋 [SelectionMonitor] 子元素[\(depth)] role=\(role) 找到 SelectedText")
                 return text
             }
             
@@ -637,9 +616,7 @@ final class SelectionMonitorService {
                             if range.location + range.length <= utf16Count {
                                 let start = String.Index(utf16Offset: range.location, in: fullText)
                                 let end = String.Index(utf16Offset: range.location + range.length, in: fullText)
-                                let text = String(fullText[start..<end])
-                                logger.debug("📋 [SelectionMonitor] 子元素[\(depth)] role=\(role) 通过 Value+Range 获取成功")
-                                return text
+                                return String(fullText[start..<end])
                             }
                         }
                         
@@ -651,7 +628,6 @@ final class SelectionMonitorService {
                             rangeRef,
                             &stringForRangeValue
                         ) == .success, let text = stringForRangeValue as? String, !text.isEmpty {
-                            logger.debug("📋 [SelectionMonitor] 子元素[\(depth)] role=\(role) 通过 StringForRange 获取成功")
                             return text
                         }
                     }

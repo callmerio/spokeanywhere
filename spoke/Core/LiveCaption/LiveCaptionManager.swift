@@ -214,7 +214,12 @@ final class LiveCaptionManager: ObservableObject {
         }
         
         capture.onError = { [weak self] error in
-            self?.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+            guard let self = self else { return }
+            self.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+            // 捕获错误时停止并更新状态
+            Task { @MainActor in
+                await self.stop()
+            }
         }
         
         // 启动音频捕获
@@ -261,7 +266,12 @@ final class LiveCaptionManager: ObservableObject {
         }
         
         capture.onError = { [weak self] error in
-            self?.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+            guard let self = self else { return }
+            self.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+            // 捕获错误时停止并更新状态
+            Task { @MainActor in
+                await self.stop()
+            }
         }
         
         do {
@@ -524,6 +534,8 @@ final class LiveCaptionManager: ObservableObject {
             if let translated = await translator.translate(text) {
                 await MainActor.run {
                     lineBuffer.updateTranslation(id: itemId, translation: translated)
+                    // 🔥 翻译完成后发送通知，触发强制滚动
+                    NotificationCenter.default.post(name: .translationUpdated, object: nil)
                 }
                 return translated
             }

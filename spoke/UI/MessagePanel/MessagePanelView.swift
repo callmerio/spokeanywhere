@@ -807,7 +807,7 @@ struct MessageCardView: View {
                             text: displayText,
                             highlights: card.highlights,
                             font: .systemFont(ofSize: 13),
-                            foregroundColor: HUDTheme.NS.textPrimary
+                            foregroundColor: DesignTokens.Colors.NS.textPrimary
                         )
                     } else {
                         // 🔬 DEBUG: 临时用 Text 替代 DictionarySelectableText 测试性能

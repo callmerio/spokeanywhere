@@ -1,6 +1,9 @@
 import SwiftUI
 import Translation
 import AppKit
+import os
+
+private let scrollLogger = Logger(subsystem: "app.spokenly", category: "LiveCaptionScroll")
 
 // MARK: - NSScrollView Bridge
 
@@ -180,8 +183,11 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
             
-            // 🔥 移除 invalidateIntrinsicContentSize，防止触发新的 frame 变化导致递归
-            // frame 观察器会自动触发，无需手动刷新
+            // 🔥 强制布局更新，确保 contentHeight 准确
+            if let hostingView = documentView.subviews.first {
+                hostingView.layoutSubtreeIfNeeded()
+            }
+            documentView.layoutSubtreeIfNeeded()
             
             let contentHeight = documentView.frame.height
             let clipHeight = scrollView.contentView.bounds.height
@@ -189,7 +195,16 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let maxScrollY = max(0, contentHeight - clipHeight)
             
             // 如果当前位置离底部超过阈值，追加滚动
-            if currentY < maxScrollY - CaptionDesign.scrollCatchUpThreshold {
+            let gap = maxScrollY - currentY
+            
+            // 🔥 gap 上限检查：如果 gap 异常大（>500），说明布局未完成，跳过本次
+            if gap > 500 {
+                scrollLogger.warning("⚠️ gap 异常: \(gap, format: .fixed(precision: 1)) 跳过滚动")
+                return
+            }
+            
+            if gap > CaptionDesign.scrollCatchUpThreshold {
+                scrollLogger.warning("📜 追加滚动: gap=\(gap, format: .fixed(precision: 1)) threshold=\(CaptionDesign.scrollCatchUpThreshold)")
                 isScrollingProgrammatically = true
                 scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
                 scrollView.reflectScrolledClipView(scrollView.contentView)
@@ -215,7 +230,9 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let atBottom = scrollY >= maxScrollY - bottomThreshold
             
             DispatchQueue.main.async {
-                if self.isAtBottomBinding.wrappedValue != atBottom {
+                let oldValue = self.isAtBottomBinding.wrappedValue
+                if oldValue != atBottom {
+                    scrollLogger.warning("📍 isAtBottom 变化: \(oldValue) → \(atBottom) | scrollY=\(scrollY, format: .fixed(precision: 1)) maxY=\(maxScrollY, format: .fixed(precision: 1)) threshold=\(self.bottomThreshold)")
                     self.isAtBottomBinding.wrappedValue = atBottom
                 }
             }
@@ -312,6 +329,12 @@ struct LiveCaptionView: View {
     @State private var vocabularyRefreshTrigger: Int = 0  // 生词列表变化时触发全量刷新
     @State private var appearedItemIDs: Set<UUID> = []  // 已出现过的 item ID（用于灰→白动画）
     
+    // Hover 工具栏状态
+    @State private var isCopyHovered: Bool = false
+    @State private var isExpandHovered: Bool = false
+    @State private var isCloseHovered: Bool = false
+    @State private var isCopied: Bool = false  // 复制成功状态（显示 checkmark）
+    
     var onClose: () -> Void
     
     var body: some View {
@@ -363,7 +386,13 @@ struct LiveCaptionView: View {
             // 生词列表变化时触发全量刷新（包括之前的内容）
             vocabularyRefreshTrigger += 1
         }
-        // 方案 A：使用 frameDidChangeNotification 自动滚动，无需手动监听 translationUpdated
+        .onReceive(NotificationCenter.default.publisher(for: .translationUpdated)) { _ in
+            // 翻译完成后强制触发滚动（解决放久了错位问题）
+            scrollLogger.debug("📜 翻译完成通知: isAtBottom=\(isAtBottom) isUserSelecting=\(isUserSelecting)")
+            if isAtBottom && !isUserSelecting {
+                scrollTrigger += 1
+            }
+        }
     }
     
     // MARK: - Translation
@@ -570,8 +599,39 @@ struct LiveCaptionView: View {
     }
     
     /// Hover 工具栏
+    /// 样式参考 HoverCloseButton：hover 时圆形 → 圆角方形 + 背景变亮
     private var hoverToolbar: some View {
-        HStack(spacing: 8) {
+        let buttonSize: CGFloat = 24
+        let cornerRadius: CGFloat = buttonSize * 0.27  // hover 时的圆角
+        
+        return HStack(spacing: 8) {
+            // 复制全部内容（复制后变 checkmark）
+            Button {
+                copyAllContent()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCopied = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isCopied = false
+                    }
+                }
+            } label: {
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(isCopyHovered || isCopied ? 0.9 : 0.5))
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(Color.white.opacity(isCopyHovered || isCopied ? 0.15 : 0))
+                    .clipShape(RoundedRectangle(cornerRadius: isCopyHovered || isCopied ? cornerRadius : buttonSize / 2))
+                    .animation(.easeInOut(duration: 0.2), value: isCopyHovered)
+                    .animation(.easeInOut(duration: 0.2), value: isCopied)
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                isCopyHovered = hovering
+            }
+            .help("复制全部内容")
+            
             // 展开/收起
             Button {
                 withAnimation(.spring(response: 0.3)) {
@@ -580,12 +640,16 @@ struct LiveCaptionView: View {
             } label: {
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
-                    .frame(width: 24, height: 24)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                    .foregroundStyle(.white.opacity(isExpandHovered ? 0.9 : 0.5))
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(Color.white.opacity(isExpandHovered ? 0.15 : 0))
+                    .clipShape(RoundedRectangle(cornerRadius: isExpandHovered ? cornerRadius : buttonSize / 2))
+                    .animation(.easeInOut(duration: 0.2), value: isExpandHovered)
             }
             .buttonStyle(.plain)
+            .onHover { hovering in
+                isExpandHovered = hovering
+            }
             
             // 关闭
             Button {
@@ -593,13 +657,56 @@ struct LiveCaptionView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
-                    .frame(width: 24, height: 24)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                    .foregroundStyle(.white.opacity(isCloseHovered ? 0.9 : 0.5))
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(Color.white.opacity(isCloseHovered ? 0.15 : 0))
+                    .clipShape(RoundedRectangle(cornerRadius: isCloseHovered ? cornerRadius : buttonSize / 2))
+                    .animation(.easeInOut(duration: 0.2), value: isCloseHovered)
             }
             .buttonStyle(.plain)
+            .onHover { hovering in
+                isCloseHovered = hovering
+            }
         }
+    }
+    
+    /// 复制全部内容到剪贴板
+    /// 格式：一行英语（生词用 <word> 标记）+ 一行翻译
+    private func copyAllContent() {
+        // 🔥 快照当前数据状态，确保复制的一致性
+        // 虽然在 MainActor 运行不会崩溃，但避免复制过程中数组发生变化
+        let itemsSnapshot = manager.lineBuffer.items
+        let pendingTextSnapshot = manager.lineBuffer.pendingText
+        let pendingTranslationSnapshot = manager.lineBuffer.pendingTranslation
+        
+        var lines: [String] = []
+        
+        for item in itemsSnapshot {
+            // 原文：标记生词（直接复用 Service 层的高性能正则）
+            let markedOriginal = VocabularyService.shared.markVocabulary(in: item.original)
+            lines.append(markedOriginal)
+            
+            // 译文
+            if let translation = item.translation, !translation.isEmpty {
+                lines.append(translation)
+            }
+            
+            // 空行分隔
+            lines.append("")
+        }
+        
+        // 当前正在输入的内容
+        if !pendingTextSnapshot.isEmpty {
+            let markedPending = VocabularyService.shared.markVocabulary(in: pendingTextSnapshot)
+            lines.append(markedPending)
+            if !pendingTranslationSnapshot.isEmpty {
+                lines.append(pendingTranslationSnapshot)
+            }
+        }
+        
+        let content = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(content, forType: .string)
     }
     
     // MARK: - Background & Border

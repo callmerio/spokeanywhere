@@ -138,6 +138,18 @@ final class VocabularyService: ObservableObject {
         return matches.map { $0.range }
     }
     
+    /// 标记文本中的生词
+    /// 复用预编译的正则，性能极佳，且已处理长词优先逻辑
+    /// - Parameters:
+    ///   - text: 原始文本
+    ///   - template: 替换模板，默认使用 <word>$0</word>
+    /// - Returns: 标记后的文本
+    func markVocabulary(in text: String, template: String = "<word>$0</word>") -> String {
+        guard let regex = matchRegex else { return text }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: template)
+    }
+    
     /// 清空所有生词
     func clearAll() {
         items.removeAll()
@@ -171,6 +183,12 @@ final class VocabularyService: ObservableObject {
                 englishWords.append(escaped)
             }
         }
+        
+        // 🔥 关键优化：按长度降序排序
+        // 确保正则引擎优先匹配长词（例如 "AI Agent" 优先于 "AI"），避免子串错误匹配
+        // 同时解决 "上千个词" 场景下的潜在歧义问题
+        englishWords.sort { $0.count > $1.count }
+        chineseWords.sort { $0.count > $1.count }
         
         // 构建正则：英文用 \b 边界，中文直接匹配
         var patterns: [String] = []

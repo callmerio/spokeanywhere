@@ -1,9 +1,10 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-05 23:50
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-15 15:01
 
 ## Learns (Latest at top)
 
+- [T072] VocabularyService 正则优化：按词长降序排列避免子串错误匹配（如 "AI Agent" 优先于 "AI"）；暴露 markVocabulary API 复用预编译正则
 - [T071] 双层缓冲区模型：frozenLines(已冻结)+currentLineBuffer(当前行 finalized)+volatileTail(尾巴)；volatile 不参与分行只追加显示；冻结条件>=65 字符或(>=40+句号)；displayWindowStart 单向滚动只增不减
 - [T070] [已被 T071 替代] 行缓冲区设计：旧实现，volatile 参与分行导致跳动
 - [T069] UnsafeRawPointer 内存安全：assumingMemoryBound 比 bindMemory 更安全，适用于已知内存布局场景（如 CMSampleBuffer → Float32）
@@ -77,6 +78,20 @@
 - [T001] 纯代码窗口：NSWindowController + NSHostingView (SwiftUI)
 
 ## Timeline
+
+[2025-12-15 T072] LiveCaption 复制功能 + 生词正则优化
+
+- PROB: 1.用户无法复制字幕内容 2.生词标记子串嵌套 Bug（如 "AI" 被 "AI Agent" 包含时标签错误）
+- PLAN:
+  1. 添加 copyAllContent() 复制全部字幕到剪贴板
+  2. VocabularyService.rebuildRegex 按词长降序排列，确保长词优先匹配
+  3. 暴露 markVocabulary(in:template:) API 复用预编译正则
+  4. 复制时创建数据快照，确保一致性
+  5. 工具栏按钮增加 Hover 动画效果
+- TIME: 0.5h | TAGS: #live-caption #vocabulary #performance #ux
+- LINK: VocabularyService.swift; LiveCaptionView.swift
+- STAT: [√] 编译通过
+- NOTE: 正则排列顺序至关重要；View 层不应重复构建正则
 
 [2025-12-05 T071] 双层缓冲区模型彻底解决跳动
 
