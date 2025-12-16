@@ -177,20 +177,14 @@ struct MessagePanelView: View {
             
             Spacer()
             
-            // 过滤按钮组
+            // 过滤按钮组（包含关闭按钮）
             filterButtons
-            
-            // 清空全部按钮（hover 效果）
-            let totalCount = state.cards.count + historyService.records.count
-            HoverCloseButton(action: clearAll, size: 24, iconSize: 10)
-                .opacity(totalCount > 0 ? 1 : 0.5)
-                .disabled(totalCount == 0)
         }
         .padding(.horizontal, 4)  // 和 Chat 行对齐
         .padding(.top, 16)
         .padding(.bottom, 8)
     }
-    
+
     /// 过滤按钮组
     private var filterButtons: some View {
         HStack(spacing: 6) {
@@ -213,6 +207,11 @@ struct MessagePanelView: View {
                 state.filterMode = state.filterMode == .note ? .all : .note
                 state.resetPagination()
             }
+            
+            // 关闭按钮（隐藏面板）
+            HoverCloseButton(action: {
+                MessagePanelManager.shared.hide()
+            }, size: 24, iconSize: 10)
         }
     }
     
@@ -432,8 +431,8 @@ struct MessageCardView: View {
     @State private var showTagPopover = false
     @State private var isDropTargeted = false
     
-    /// 折叠时显示的最大行数
-    private let collapsedMaxLines = 6
+    /// 折叠时显示的最大行数（类似 macOS 通知：1 行标题 + 3 行内容）
+    private let collapsedMaxLines = 3
     /// 每行大约的字符数（用于估算是否需要折叠）
     private let charsPerLine = 25
     
@@ -688,38 +687,57 @@ struct MessageCardView: View {
     
     // MARK: - Header
     
+    /// 卡片标题（优先使用摘要标题，其次模型名）
+    private var cardTitle: String {
+        // 如果有摘要，显示 "总结: xxx"
+        if let summary = card.summary, card.summaryStatus == .completed {
+            // 取摘要的第一句或前 20 字作为标题
+            let firstLine = summary.components(separatedBy: CharacterSet.newlines)
+                .first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? summary
+            let maxLen = 25
+            if firstLine.count > maxLen {
+                return "总结: " + String(firstLine.prefix(maxLen)) + "..."
+            }
+            return "总结: " + firstLine
+        }
+        // 否则显示模型名
+        return card.stage.displayName.isEmpty ? "Pipeline" : card.stage.displayName
+    }
+    
     private var headerView: some View {
         HStack(spacing: 8) {
-            // 来源应用图标（带光晕，hover 显示类型）
+            // 图标：应用图标或阶段指示器
             if let sourceApp = card.sourceApp {
                 SourceAppIconView(
                     sourceApp: sourceApp,
-                    glowColor: card.stage.color,
+                    glowColor: card.stage.glowColor,
                     typeName: card.stage.typeName
                 )
+            } else {
+                // 无来源应用时显示阶段圆点
+                Circle()
+                    .fill(card.stage.color)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: card.stage.glowColor.opacity(0.5), radius: 4, x: 0, y: 0)
             }
             
-            // 模型名（displayName 为空时不显示，限制最大宽度防止挤坏布局）
-            if !card.stage.displayName.isEmpty {
-                Text(card.stage.displayName)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(DesignTokens.Colors.textSecondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: 100)
-            }
+            // 标题（类似通知的 App 名称位置）
+            Text(cardTitle)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
             
             // Today/Note 标记
             if card.recordType.isPinned {
                 recordTypeBadge
             }
             
-            Spacer()
+            Spacer(minLength: 8)
             
             // 时间戳
             Text(card.formattedTime)
-                .font(.system(size: 10))
-                .foregroundColor(DesignTokens.Colors.textPlaceholder)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.4))
             
             // 操作按钮组（悬浮显示）
             if isHovered {
@@ -729,20 +747,11 @@ struct MessageCardView: View {
                         cardActionButton(icon: "arrow.clockwise", action: reprocess)
                     }
                     
-                    // 展开/折叠按钮（只在需要折叠时显示，逻辑与点击卡片一致）
+                    // 展开/折叠按钮（只在需要折叠时显示）
                     if needsCollapse {
                         cardActionButton(
                             icon: (isExpanded || isShowingOriginal) ? "chevron.up" : "chevron.down",
-                            action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    if card.summary != nil && card.summaryStatus == .completed {
-                                        isShowingOriginal.toggle()
-                                        if isShowingOriginal { isExpanded = true }
-                                    } else {
-                                        isExpanded.toggle()
-                                    }
-                                }
-                            }
+                            action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }
                         )
                     }
                     
@@ -750,6 +759,7 @@ struct MessageCardView: View {
                     cardActionButton(icon: "xmark", action: { onDelete?() })
                 }
                 .transition(.opacity)
+                .animation(.easeInOut(duration: 0.12), value: isHovered)
             }
         }
     }
@@ -786,23 +796,7 @@ struct MessageCardView: View {
                 
                 // 有高亮标记时使用 HighlightedContentText，否则使用普通 Text
                 Group {
-                    if shouldShowSummary {
-                        // 摘要模式：显示摘要（带"摘要"标识）
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "text.quote")
-                                    .font(.system(size: 9))
-                                Text("摘要")
-                                    .font(.system(size: 9, weight: .medium))
-                            }
-                            .foregroundColor(DesignTokens.Colors.textPlaceholder)
-                            
-                            Text(displayText)
-                                .font(.system(size: 13))
-                                .foregroundColor(DesignTokens.Colors.textPrimary)
-                                .lineLimit(6)  // 允许更长的摘要（约 100 字）
-                        }
-                    } else if !card.highlights.isEmpty {
+                    if !card.highlights.isEmpty && !shouldShowSummary {
                         HighlightedContentText(
                             text: displayText,
                             highlights: card.highlights,
@@ -810,38 +804,46 @@ struct MessageCardView: View {
                             foregroundColor: DesignTokens.Colors.NS.textPrimary
                         )
                     } else {
-                        // 🔬 DEBUG: 临时用 Text 替代 DictionarySelectableText 测试性能
+                        // 普通文本或摘要（摘要标题已在 header 显示，这里直接显示内容）
                         Text(displayText)
                             .font(.system(size: 13))
-                            .foregroundColor(DesignTokens.Colors.textPrimary)
+                            .foregroundColor(Color.white.opacity(0.6))
                             .textSelection(.enabled)
-                        // DictionarySelectableText(
-                        //     text: displayText,
-                        //     font: .systemFont(ofSize: 13),
-                        //     foregroundColor: HUDTheme.NS.textPrimary
-                        // )
                     }
                 }
                 .frame(minHeight: 20, alignment: .topLeading)
-                // 折叠时限制行数
-                .lineLimit(needsCollapse && !isExpanded && !shouldShowSummary ? collapsedMaxLines : nil)
-                // 折叠时底部渐隐效果（用 mask 让文字淡出，而非 overlay 覆盖颜色）
+                // 恢复旧版高度计算：折叠时使用固定高度 (3行 * 18pt = 54pt)，避免 .fixedSize 导致的过度压缩
+                .frame(maxHeight: needsCollapse && !isExpanded && !shouldShowSummary ? CGFloat(collapsedMaxLines * 18) : nil, alignment: .topLeading)
+                .clipped()
+                // 折叠时底部渐隐效果
                 .mask {
                     if needsCollapse && !isExpanded && !shouldShowSummary {
                         VStack(spacing: 0) {
-                            Color.white
+                            // 上方完全显示区域
+                            Rectangle()
+                            // 底部渐隐
                             LinearGradient(
                                 colors: [.white, .clear],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
-                            .frame(height: 24)
+                            .frame(height: 20)
                         }
                     } else {
-                        Color.white
+                        Rectangle()
                     }
                 }
-                // 注意：点击处理已在外层 onTapGesture 中统一处理，无需额外的 Color.clear 拦截层
+                
+                // 折叠状态下，透明覆盖层拦截点击（NSTextView 会吃掉点击事件）
+                if needsCollapse && !isExpanded && !shouldShowSummary {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isExpanded.toggle()
+                            }
+                        }
+                }
             }
         }
     }

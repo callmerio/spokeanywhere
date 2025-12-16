@@ -144,6 +144,19 @@ final class LiveCaptionManager: ObservableObject {
         }
     }
     
+    /// 切换到下一个支持的语言（循环切换）
+    func switchToNextLanguage() {
+        let current = sourceLanguage
+        let languages = Self.supportedLanguages.map { $0.id }
+        if let index = languages.firstIndex(of: current) {
+            let nextIndex = (index + 1) % languages.count
+            let nextLocale = languages[nextIndex]
+            Task {
+                await setLocale(nextLocale)
+            }
+        }
+    }
+    
     /// 开始实时字幕
     func start() async throws {
         guard !isActive else { return }

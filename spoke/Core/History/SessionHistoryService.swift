@@ -89,7 +89,7 @@ struct SessionRecord: Identifiable, Codable {
     /// 详细时间
     var detailedTime: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
+        formatter.dateFormat = "MM-dd HH:mm"
         return formatter.string(from: createdAt)
     }
 }

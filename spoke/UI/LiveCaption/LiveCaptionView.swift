@@ -31,8 +31,8 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         scrollView.drawsBackground = false
         scrollView.scrollerStyle = .overlay
         
-        // 让滚动条更透明
-        scrollView.verticalScroller?.alphaValue = 0.3
+        // 允许弹性滚动，以便触发 Overscroll
+        scrollView.verticalScrollElasticity = .allowed
         
         let hostingView = NSHostingView(rootView: content)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
@@ -58,20 +58,16 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         
         // 监听滚动
         context.coordinator.scrollView = scrollView
+        // 使用 boundsDidChangeNotification 监听滚动，比 didLiveScroll 更灵敏（包含弹性动画）
+        scrollView.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(
             context.coordinator,
             selector: #selector(Coordinator.scrollViewDidScroll(_:)),
-            name: NSScrollView.didLiveScrollNotification,
-            object: scrollView
-        )
-        NotificationCenter.default.addObserver(
-            context.coordinator,
-            selector: #selector(Coordinator.scrollViewDidScroll(_:)),
-            name: NSScrollView.didEndLiveScrollNotification,
-            object: scrollView
+            name: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView
         )
         
-        // 🔥 方案 A：监听 documentView 的 frame 变化（状态驱动而非时间驱动）
+        // 方案 A：监听 documentView 的 frame 变化
         documentView.postsFrameChangedNotifications = true
         NotificationCenter.default.addObserver(
             context.coordinator,
@@ -103,7 +99,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         
         if shouldScroll && isAtBottom {
             let coordinator = context.coordinator
-            // 下一个 RunLoop 执行，最小延迟
+            // 下一个 RunLoop 执行
             DispatchQueue.main.async { [weak scrollView, weak coordinator] in
                 guard let scrollView = scrollView, let coordinator = coordinator else { return }
                 Self.scrollToBottom(scrollView, coordinator: coordinator)
@@ -114,7 +110,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     private static func scrollToBottom(_ scrollView: NSScrollView, coordinator: Coordinator) {
         guard let documentView = scrollView.documentView else { return }
         
-        // 标记程序正在滚动，防止循环
+        // 标记程序正在滚动
         coordinator.isScrollingProgrammatically = true
         defer { coordinator.isScrollingProgrammatically = false }
         
@@ -150,11 +146,14 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         weak var scrollView: NSScrollView?
         var lastScrollTrigger: Int = 0
         
-        /// 防止程序滚动触发 scrollViewDidScroll 导致循环
+        /// 防止程序滚动触发循环
         var isScrollingProgrammatically: Bool = false
         
-        /// 🔥 方案 C：定时器轮询
+        /// 定时器轮询
         private var scrollTimer: Timer?
+        
+        /// 上次触发防抖时间
+        private var lastOverscrollTime: Date = .distantPast
         
         init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
             self.isAtBottomBinding = isAtBottom
@@ -163,27 +162,23 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             startPolling()
         }
         
-        /// 启动定时器轮询（每 2s 检查一次，作为 frame 观察的兜底保险）
         func startPolling() {
             scrollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
                 self?.checkAndScrollToBottom()
             }
         }
         
-        /// 停止定时器
         func stopPolling() {
             scrollTimer?.invalidate()
             scrollTimer = nil
         }
         
-        /// 检查并追加滚动
         private func checkAndScrollToBottom() {
             guard !isScrollingProgrammatically else { return }
-            guard isAtBottomBinding.wrappedValue else { return }  // 只在用户处于底部时追加
+            guard isAtBottomBinding.wrappedValue else { return }
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
             
-            // 🔥 强制布局更新，确保 contentHeight 准确
             if let hostingView = documentView.subviews.first {
                 hostingView.layoutSubtreeIfNeeded()
             }
@@ -194,21 +189,13 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let currentY = scrollView.contentView.bounds.origin.y
             let maxScrollY = max(0, contentHeight - clipHeight)
             
-            // 如果当前位置离底部超过阈值，追加滚动
             let gap = maxScrollY - currentY
-            
-            // 🔥 gap 上限检查：如果 gap 异常大（>500），说明布局未完成，跳过本次
-            if gap > 500 {
-                scrollLogger.warning("⚠️ gap 异常: \(gap, format: .fixed(precision: 1)) 跳过滚动")
-                return
-            }
+            if gap > 500 { return }
             
             if gap > CaptionDesign.scrollCatchUpThreshold {
-                scrollLogger.warning("📜 追加滚动: gap=\(gap, format: .fixed(precision: 1)) threshold=\(CaptionDesign.scrollCatchUpThreshold)")
                 isScrollingProgrammatically = true
                 scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
                 scrollView.reflectScrolledClipView(scrollView.contentView)
-                // 🔥 延迟重置，确保 scroll 通知已触发
                 DispatchQueue.main.async {
                     self.isScrollingProgrammatically = false
                 }
@@ -216,7 +203,6 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
         
         @objc func scrollViewDidScroll(_ notification: Notification) {
-            // 程序滚动时不更新 isAtBottom，避免循环
             guard !isScrollingProgrammatically else { return }
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
@@ -226,14 +212,30 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let scrollY = scrollView.contentView.bounds.origin.y
             let maxScrollY = max(0, contentHeight - clipHeight)
             
-            // 检测是否在底部（含容差）
             let atBottom = scrollY >= maxScrollY - bottomThreshold
             
             DispatchQueue.main.async {
                 let oldValue = self.isAtBottomBinding.wrappedValue
                 if oldValue != atBottom {
-                    scrollLogger.warning("📍 isAtBottom 变化: \(oldValue) → \(atBottom) | scrollY=\(scrollY, format: .fixed(precision: 1)) maxY=\(maxScrollY, format: .fixed(precision: 1)) threshold=\(self.bottomThreshold)")
                     self.isAtBottomBinding.wrappedValue = atBottom
+                }
+            }
+            
+            // 🎯 Overscroll (Pull-up) 检测
+            // 阈值调低至 15pt，增加灵敏度
+            if scrollY > maxScrollY + 15 {
+                let now = Date()
+                if now.timeIntervalSince(lastOverscrollTime) > 1.0 { // 1秒冷却
+                    lastOverscrollTime = now
+                    scrollLogger.info("🚀 Detected bottom overscroll (Correction Triggered)")
+                    
+                    // 📳 触觉反馈
+                    NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                    
+                    // 强制触发一次布局重算和滚动
+                    DispatchQueue.main.async { [weak self] in
+                        self?.checkAndScrollToBottom()
+                    }
                 }
             }
         }
@@ -351,16 +353,61 @@ struct LiveCaptionView: View {
                 dragIndicator
             }
             
-            // Hover 时显示工具栏
+            // Hover 时显示悬浮控制层（左岛+右岛）
             if isHovering {
                 VStack {
-                    HStack {
+                    HStack(alignment: .top) {
+                        // 👈 左岛：语言切换器（仅展开时显示，或根据需求常驻）
+                        if isExpanded {
+                            Menu {
+                                ForEach(LiveCaptionManager.supportedLanguages, id: \.id) { lang in
+                                    Button {
+                                        Task {
+                                            await manager.setLocale(lang.id)
+                                        }
+                                    } label: {
+                                        if manager.sourceLanguage == lang.id {
+                                            Label(lang.name, systemImage: "checkmark")
+                                        } else {
+                                            Text(lang.name)
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "globe")
+                                        .font(.system(size: 12))
+                                    Text(LiveCaptionManager.supportedLanguages.first(where: { $0.id == manager.sourceLanguage })?.name ?? "Language")
+                                        .font(.system(size: 12, weight: .medium))
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 10))
+                                        .opacity(0.6)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .contentShape(Rectangle())
+                            }
+                            .menuStyle(.borderlessButton)
+                            .fixedSize()
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                        }
+                        
                         Spacer()
+                        
+                        // 👉 右岛：功能按钮
                         hoverToolbar
+                            .padding(4)
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
                     .padding(12)
-                    Spacer()
+                    
+                    Spacer() // 推到顶部
                 }
+                .transition(.opacity.animation(.easeInOut(duration: 0.15)))
             }
         }
         .frame(width: CaptionDesign.maxWidth)
@@ -519,6 +566,7 @@ struct LiveCaptionView: View {
             // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
             VStack(alignment: .leading, spacing: 16) {
                 // 已确定的句子 - 使用 CaptionItemView 独立组件
+
                 // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
                 ForEach(manager.lineBuffer.items) { item in
                     let isNew = !appearedItemIDs.contains(item.id)

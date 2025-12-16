@@ -192,13 +192,12 @@ struct HistoryRecordCard: View {
                 .animation(.easeInOut(duration: 0.12), value: isHovered)
             }
             
-            // 预览文本（独立一行）
-            if !record.preview.isEmpty {
-                Text(record.preview)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color.white.opacity(0.6))
-                    .lineLimit(3)
-            }
+            // 预览文本（独立一行，固定占位3行高度）
+            Text(record.preview)
+                .font(.system(size: 13))
+                .foregroundColor(Color.white.opacity(0.6))
+                .lineLimit(3)
+                .frame(height: 54, alignment: .topLeading) // 3行 * 18pt/行 = 54pt
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

@@ -1,0 +1,35 @@
+- LiveCaption
+  - 转录
+  - 翻译
+  - 多语言支持
+    - 英文 -> 中文翻译（当前）
+    - 中文 -> 不翻译（保持原文）?
+    - 日语 -> 中文翻译 ?
+  - 生词高亮
+  - 复制功能 [√]
+    - 生词标记 <word>
+    - 长词优先正则
+- QuickAsk
+  - 录音输入
+  - OCR 输入
+  - 上下文来源
+    - 屏幕 OCR（现有）
+    - 剪贴板（现有）
+    - 实时字幕上下文 ?
+      - 开关：是否获取
+      - 数量：最近 10-20 句
+      - 条件：用户已开启 LiveCaption
+      - 用途：提升搜索/问答的领域准确性
+- Pipeline
+  - 卡片样式
+    - 通知风格（1 行标题 + 3 行内容）[√]
+    - 无图标 [√]
+  - Todo/Note 标记
+  - 标签系统
+- SelectionToolbar
+- Dictionary
+  - 生词本
+  - 训练短语
+- Transcription
+  - Whisper
+  - SpeechRecognition
