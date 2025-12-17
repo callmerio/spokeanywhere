@@ -1,35 +1,194 @@
-- LiveCaption
-  - 转录
-  - 翻译
-  - 多语言支持
-    - 英文 -> 中文翻译（当前）
-    - 中文 -> 不翻译（保持原文）?
-    - 日语 -> 中文翻译 ?
-  - 生词高亮
-  - 复制功能 [√]
-    - 生词标记 <word>
-    - 长词优先正则
-- QuickAsk
-  - 录音输入
-  - OCR 输入
-  - 上下文来源
-    - 屏幕 OCR（现有）
-    - 剪贴板（现有）
-    - 实时字幕上下文 ?
-      - 开关：是否获取
-      - 数量：最近 10-20 句
-      - 条件：用户已开启 LiveCaption
-      - 用途：提升搜索/问答的领域准确性
-- Pipeline
-  - 卡片样式
-    - 通知风格（1 行标题 + 3 行内容）[√]
-    - 无图标 [√]
-  - Todo/Note 标记
-  - 标签系统
-- SelectionToolbar
-- Dictionary
-  - 生词本
-  - 训练短语
-- Transcription
-  - Whisper
-  - SpeechRecognition
+- SpokenAnyWhere
+  - 核心流程
+    - 语音 -> 转录 -> AI处理 -> 剪贴板 [√]
+    - 全局快捷键 ⌥+R [√]
+  - 转录系统 -> Core/Transcription/
+    - 多引擎架构 [√]
+      - SpeechTranscriber (macOS 26+) -> 高精度/~2GB [√]
+      - DictationTranscriber -> 轻量级 [√]
+      - SFSpeech (Legacy) -> macOS 25以下 [√]
+    - 模型管理 [√]
+      - 模型选择UI -> 卡片式设计 [√]
+      - 能力评级 (Accuracy/Speed) [√]
+      - 下载状态机 [√]
+      - 角色分配 (转录/实时字幕) [√]
+    - 词典注入双轨 [√]
+      - contextualStrings -> 实时生效/单词 [√]
+      - 预编译LM -> 后台准备/短语 [√]
+      - 热词自动学习 [√]
+      - 训练短语收集 -> 右键纠正时自动 [√]
+    - 纠错可视化 [√]
+      - 删除线原词 + 橙色正确词 [√]
+  - 实时字幕 -> Core/LiveCaption/
+    - 系统音频捕获 -> ScreenCaptureKit [√]
+    - 转录引擎 -> 复用TranscriptionProvider [√]
+    - 翻译 -> Apple Translation (macOS 15+) [√]
+      - 重试机制 -> 3次指数退避 [√]
+      - 错误处理 [√]
+    - 双层缓冲区 [√]
+      - frozenLines -> 已冻结行 [√]
+      - volatileTail -> 尾巴/可反改 [√]
+      - O+R机制 -> 类似主转录 [√]
+    - 生词系统 [√]
+      - 橙色高亮 -> VocabularyService [√]
+      - 右键添加/移除 [√]
+      - 全量刷新 [√]
+    - UI
+      - 卡片式毛玻璃 [√]
+      - 折叠态 2行窗口 [√]
+      - 展开态 滚动历史 [√]
+      - 拖动指示器 [√]
+    - 多语言支持
+      - 英文 -> 中文 [√]
+      - 中文 -> 不翻译 [√]
+      - 日语 -> 中文 ?
+    - 启动清空历史 [√]
+  - Quick Ask -> Core/QuickAsk/
+    - 唤起方式
+      - 双击 ⌥ [√]
+    - 输入
+      - 语音录入 [√]
+      - 文本输入 [√]
+      - 多模态附件 -> 图片/PDF/截图 [√]
+    - Workflow 系统 [√]
+      - /keyword 触发 [√]
+      - 预设模板 [√]
+      - 变量替换白名单 [√]
+      - 键盘导航 ↑↓Enter [√]
+    - 上下文来源
+      - 屏幕 OCR [√]
+      - 剪贴板历史 [√]
+      - 实时字幕上下文 ?
+    - 输出
+      - 流式 Markdown 渲染 [√]
+      - 连续对话 [√]
+  - Pipeline 面板 -> Core/MessagePanel/
+    - 卡片系统 [√]
+      - 持久化 24h [√]
+      - 通知风格 (1行标题+3行内容) [√]
+      - 折叠自适应行数 -> lineLimit [√]
+      - 渐变淡出 -> overlay+LinearGradient [√]
+      - 点击展开/复制 [√]
+      - 复制触觉反馈 -> NSHapticFeedback [√]
+      - 复制成功提示 -> 绿色胶囊动画 [√]
+      - 来源应用图标 [√]
+    - 状态管理 [√]
+      - Todo/Done/Note 三态 [√]
+      - 右键切换 [√]
+      - 过滤按钮 [√]
+    - 标签系统 [√]
+      - 9色调色板 [√]
+      - 气泡样式 [√]
+      - 筛选排序 -> 点击置顶 [√]
+      - 多标签交集 [√]
+    - 附件系统 [√]
+      - 截图拖拽/粘贴 [√]
+      - Cmd+V 快捷粘贴 [√]
+      - 缩略图流式布局 [√]
+      - 右键查看/复制/保存/删除 [√]
+    - 智能总结 -> SummaryService [√]
+      - 点击展开 (原hover) [√]
+    - 触控板手势 [√]
+      - 左边缘右滑打开 [√]
+      - 任意位置左滑关闭 [√]
+    - 分页懒加载 [√]
+  - 划词工具栏 -> Core/SelectionToolbar/
+    - 监听机制 [√]
+      - AXObserver 全局监听 [√]
+      - NSEvent 辅助 [√]
+      - AXIsProcessTrusted 权限检查 [√]
+    - UI [√]
+      - 毛玻璃样式 [√]
+      - 非激活窗口 -> NSPanel.nonactivatingPanel [√]
+      - hover 效果 [√]
+    - 可配置技能 [√]
+      - AI 动作提示词/模型 [√]
+      - 自定义技能 [√]
+    - 动作执行 -> SelectionActionService [√]
+      - TTS 朗读 [√]
+      - LLM 查询 [√]
+      - OCR [√]
+  - 词典系统 -> Core/Dictionary/
+    - 词条管理 [√]
+      - word + corrections 映射 [√]
+      - CRUD [√]
+    - 训练短语 [√]
+      - 自动收集 -> 右键纠正时 [√]
+      - 编辑/删除 [√]
+      - 去重 [√]
+      - 高亮目标词 -> 金黄色 [√]
+    - 注入机制 [√]
+      - DictionaryInjector 协议 [√]
+      - Apple/Whisper/PostProcessing 实现 [√]
+    - 设置界面 [√]
+      - 手动/批量输入 [√]
+      - 热词推荐 [√]
+      - 词典注入开关 [√]
+    - 划词查词 [ ]
+    - 生词本 [ ]
+    - 词形还原 [ ]
+  - LLM 集成 -> Core/LLM/
+    - 多 Provider [√]
+      - Gemini [√]
+      - OpenAI Compatible [√]
+    - 上下文增强 [√]
+      - 剪贴板历史 [√]
+      - 联网搜索 -> Grounding [√]
+    - 安全 [√]
+      - Keychain 密钥管理 [√]
+      - API Key 掩码显示 [√]
+    - 配置 [√]
+      - maxTokens 8192 [√]
+      - Profile 系统 [√]
+  - TTS 语音合成 -> Services/
+    - EdgeTTS [√]
+    - 播放器 -> AudioPlayerService [√]
+    - 设置 -> TTSSettings [√]
+  - 快捷键系统 -> Services/HotKeyService
+    - ⌥+R 长按录音 [√]
+    - ⌥⌥ 双击 Quick Ask [√]
+    - ⌥+P Pipeline 面板 [√]
+    - ⌥+S 实时字幕 [√]
+    - 录音会话ID -> 防延迟停止打断 [√]
+    - CGEvent tap 超时恢复 [√]
+  - UI 系统
+    - 悬浮胶囊 HUD [√]
+      - 彩色点状态指示 -> Apple Intelligence 风格 [√]
+      - 流光边框 [√]
+    - 设计系统 [√]
+      - DesignTokens.swift [√]
+      - HUDTheme 迁移 [√]
+    - Dock 图标隐藏 -> LSUIElement [√]
+    - 深色/浅色主题 [ ]
+    - 菜单栏图标 [ ]
+  - 基础设施
+    - 历史记录 -> SwiftData [√]
+      - 孤儿文件清理 [√]
+      - 音频大小限制 2GB [√]
+    - 崩溃日志 -> ~/Library/Application Support/Spoke/crashes/ [√]
+    - Timer 泄漏修复 -> dismantleNSView [√]
+    - Legacy API 废弃标注 -> @available(deprecated) [√]
+  - 技术栈
+    - 语言 -> Swift 6
+    - UI -> SwiftUI + AppKit 桥接
+    - 转录 -> SpeechAnalyzer (macOS 26) / SFSpeech (Legacy)
+    - 翻译 -> Apple Translation
+    - 存储 -> SwiftData + JSON
+    - 音频 -> AVFoundation + ScreenCaptureKit
+  - 未来规划
+    - P0 核心
+      - 翻译行截断修复 [~]
+      - 高频翻译优化 [~]
+    - P1 交互
+      - 自定义快捷键 [ ]
+      - 深色/浅色主题 [ ]
+    - P2 数据
+      - Whisper 本地模型 [ ]
+      - 中英混合优化 [ ]
+    - P3 低优
+      - 菜单栏图标 [ ]
+      - 多模态音频输入 [ ]
+    - 远期
+      - 多语言 (日语/韩语) [ ]
+      - iOS/iPadOS [ ]
+      - iCloud 同步 [ ]

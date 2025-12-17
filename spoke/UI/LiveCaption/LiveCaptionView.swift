@@ -155,6 +155,9 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         /// 上次触发防抖时间
         private var lastOverscrollTime: Date = .distantPast
         
+        /// 上次滚动位置（用于区分用户滚动 vs 内容增加）
+        private var lastScrollY: CGFloat = 0
+        
         init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
             self.isAtBottomBinding = isAtBottom
             self.bottomThreshold = bottomThreshold
@@ -213,10 +216,28 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let maxScrollY = max(0, contentHeight - clipHeight)
             
             let atBottom = scrollY >= maxScrollY - bottomThreshold
+            let previouslyAtBottom = isAtBottomBinding.wrappedValue
+            
+            // 🔥 关键修复：区分「用户向上滚动」vs「内容增加导致脱离底部」
+            if previouslyAtBottom && !atBottom {
+                // 之前在底部，现在不在了
+                // 检查是用户向上滚动（scrollY 减小）还是内容增加（scrollY 不变但 maxScrollY 增大）
+                let userScrolledUp = scrollY < lastScrollY - 10  // 10pt 容差
+                if !userScrolledUp {
+                    // 内容增加导致脱离底部 → 触发追赶滚动，不改变 isAtBottom 状态
+                    scrollLogger.debug("📐 Content grew, triggering catch-up scroll (scrollY=\(scrollY), lastScrollY=\(self.lastScrollY))")
+                    lastScrollY = scrollY
+                    DispatchQueue.main.async { [weak self] in
+                        self?.forceScrollToBottom()
+                    }
+                    return
+                }
+            }
+            
+            lastScrollY = scrollY
             
             DispatchQueue.main.async {
-                let oldValue = self.isAtBottomBinding.wrappedValue
-                if oldValue != atBottom {
+                if self.isAtBottomBinding.wrappedValue != atBottom {
                     self.isAtBottomBinding.wrappedValue = atBottom
                 }
             }
@@ -238,6 +259,35 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                     }
                 }
             }
+        }
+        
+        /// 强制滚动到底部（不检查 isAtBottom 状态）
+        /// 用于内容增加导致脱离底部时的追赶滚动
+        func forceScrollToBottom() {
+            guard !isScrollingProgrammatically else { return }
+            guard let scrollView = scrollView,
+                  let documentView = scrollView.documentView else { return }
+            
+            isScrollingProgrammatically = true
+            defer { 
+                DispatchQueue.main.async {
+                    self.isScrollingProgrammatically = false
+                }
+            }
+            
+            // 强制布局
+            if let hostingView = documentView.subviews.first {
+                hostingView.layoutSubtreeIfNeeded()
+            }
+            documentView.layoutSubtreeIfNeeded()
+            
+            let contentHeight = documentView.frame.height
+            let clipHeight = scrollView.contentView.bounds.height
+            let maxScrollY = max(0, contentHeight - clipHeight)
+            
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+            lastScrollY = maxScrollY + CaptionDesign.scrollExtraOffset
         }
         
         /// 方案 A 的 frame 观察仍保留作为补充
@@ -624,7 +674,7 @@ struct LiveCaptionView: View {
     
     // MARK: - Components
     
-    /// 字幕文本（带生词高亮 + 右键菜单 + 颜色渐变）
+    /// 字幕文本（带生词高亮 + 右键菜单 + 颜色渐变 + 选中工具栏）
     @ViewBuilder
     private func captionText(for original: String, opacity: CGFloat = 1.0) -> some View {
         VocabularyHighlightText(
@@ -633,9 +683,29 @@ struct LiveCaptionView: View {
             opacity: opacity,
             onSelectionStarted: { isUserSelecting = true },
             onSelectionEnded: { isUserSelecting = false },
+            onTextSelected: { selectedText, screenPoint in
+                handleTextSelected(selectedText, at: screenPoint)
+            },
             refreshTrigger: vocabularyRefreshTrigger
         )
         .fixedSize(horizontal: false, vertical: true)
+    }
+    
+    /// 处理文本选中，显示 SelectionToolbar
+    private func handleTextSelected(_ text: String, at screenPoint: CGPoint) {
+        print("🔥 [LiveCaption] handleTextSelected 被调用! text=\(text.prefix(20)), point=\(screenPoint)")
+        
+        // 创建选择上下文
+        let context = SelectionContext(
+            selectedText: text,
+            selectionBounds: CGRect(x: screenPoint.x - 50, y: screenPoint.y, width: 100, height: 20),
+            sourceAppBundleId: Bundle.main.bundleIdentifier ?? "",
+            sourceAppName: "SpokenAnyWhere"
+        )
+        
+        // 显示工具栏
+        SelectionToolbarState.shared.show(with: context)
+        SelectionToolbarManager.shared.show(at: screenPoint)
     }
     
     /// 底部拖动指示器

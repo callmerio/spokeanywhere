@@ -717,12 +717,12 @@ struct MessageBubbleView: View {
                 }
                 
                 // 操作按钮
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     // 朗读按钮
                     Button(action: { ttsService.toggleSpeak(message.content) }) {
                         Image(systemName: ttsService.isPlaying ? "stop.circle.fill" : "speaker.wave.2.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(.white.opacity(0.8))
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(0.6))
                     }
                     .buttonStyle(.plain)
                     
@@ -736,8 +736,8 @@ struct MessageBubbleView: View {
                         }
                     }) {
                         Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(isCopied ? Color.green : .white.opacity(0.6))
+                            .font(.system(size: 13))
+                            .foregroundStyle(isCopied ? Color.green : .white.opacity(0.5))
                     }
                     .buttonStyle(.plain)
                     

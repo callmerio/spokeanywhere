@@ -431,8 +431,12 @@ struct MessageCardView: View {
     @State private var showTagPopover = false
     @State private var isDropTargeted = false
     
-    /// 折叠时显示的最大行数（类似 macOS 通知：1 行标题 + 3 行内容）
+    /// 超过此行数才触发折叠
     private let collapsedMaxLines = 3
+    /// 折叠后实际显示的行数（高度）
+    private let collapsedDisplayLines = 3
+    /// 每行高度（13pt 字体 + SwiftUI 默认行间距 ≈ 16pt）
+    private let lineHeight: CGFloat = 16
     /// 每行大约的字符数（用于估算是否需要折叠）
     private let charsPerLine = 25
     
@@ -781,7 +785,7 @@ struct MessageCardView: View {
     private var contentView: some View {
         ZStack(alignment: .topLeading) {
             // 文本内容（固定从顶部开始显示）
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 // 摘要生成中的提示（不阻塞内容显示）
                 if card.summaryStatus == .generating {
                     HStack(spacing: 6) {
@@ -809,25 +813,28 @@ struct MessageCardView: View {
                             .font(.system(size: 13))
                             .foregroundColor(Color.white.opacity(0.6))
                             .textSelection(.enabled)
+                            .lineLimit(nil)  // 禁用省略号，让 mask 处理渐变
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .frame(minHeight: 20, alignment: .topLeading)
-                // 恢复旧版高度计算：折叠时使用固定高度 (3行 * 18pt = 54pt)，避免 .fixedSize 导致的过度压缩
-                .frame(maxHeight: needsCollapse && !isExpanded && !shouldShowSummary ? CGFloat(collapsedMaxLines * 18) : nil, alignment: .topLeading)
+                // 折叠时固定高度，用 height 而非 maxHeight 确保 mask 对齐
+                .frame(height: needsCollapse && !isExpanded && !shouldShowSummary ? CGFloat(collapsedDisplayLines) * lineHeight : nil, alignment: .topLeading)
                 .clipped()
-                // 折叠时底部渐隐效果
+                // 折叠时底部渐隐效果：前2.5行完整显示，第3行后半渐变消失
                 .mask {
                     if needsCollapse && !isExpanded && !shouldShowSummary {
                         VStack(spacing: 0) {
-                            // 上方完全显示区域
+                            // 前2行 + 第3行的1/2完整显示
                             Rectangle()
-                            // 底部渐隐
+                                .frame(height: CGFloat(collapsedDisplayLines) * lineHeight - lineHeight * 0.5)
+                            // 第3行后1/2渐变消失
                             LinearGradient(
                                 colors: [.white, .clear],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
-                            .frame(height: 20)
+                            .frame(height: lineHeight * 0.5)
                         }
                     } else {
                         Rectangle()

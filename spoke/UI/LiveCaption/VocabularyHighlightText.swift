@@ -60,6 +60,11 @@ struct VocabularyHighlightText: NSViewRepresentable {
     }
     
     func updateNSView(_ textView: VocabularyTextView, context: Context) {
+        // 🔥 关键：每次更新时同步回调到 Coordinator（SwiftUI 视图重建时回调可能变化）
+        context.coordinator.onSelectionStarted = onSelectionStarted
+        context.coordinator.onSelectionEnded = onSelectionEnded
+        context.coordinator.onTextSelected = onTextSelected
+        
         // 内容变化或生词列表变化时更新
         let needsUpdate = textView.string != text || textView.lastRefreshTrigger != refreshTrigger
         
@@ -113,6 +118,10 @@ struct VocabularyHighlightText: NSViewRepresentable {
         var onTextSelected: ((String, CGPoint) -> Void)?
         private var isSelecting = false
         
+        /// 🔥 选中防抖：选中变化停止 300ms 后触发工具栏
+        private var selectionDebounceTimer: Timer?
+        private weak var lastTextView: NSTextView?
+        
         /// 翻译缓存（word -> translation）
         private static var translationCache: [String: String] = [:]
         /// 正在加载的单词
@@ -131,13 +140,22 @@ struct VocabularyHighlightText: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             
             let hasSelection = textView.selectedRange().length > 0
-            
             if hasSelection && !isSelecting {
                 isSelecting = true
                 onSelectionStarted?()
             } else if !hasSelection && isSelecting {
                 isSelecting = false
                 onSelectionEnded?()
+            }
+            
+            // 🔥 选中防抖：有选中时启动定时器，300ms 后触发工具栏
+            selectionDebounceTimer?.invalidate()
+            if hasSelection {
+                lastTextView = textView
+                selectionDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+                    guard let self = self, let textView = self.lastTextView else { return }
+                    self.handleSelectionCompleted(in: textView)
+                }
             }
         }
         

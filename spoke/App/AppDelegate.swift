@@ -125,11 +125,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupSelectionToolbar() {
-        print("📋 [AppDelegate] setupSelectionToolbar() 开始")
+        logger.info("📋 [AppDelegate] setupSelectionToolbar() 开始")
         
         // 初始化动作服务 (监听通知)
         _ = SelectionActionService.shared
-        print("📋 [AppDelegate] SelectionActionService 已初始化")
+        logger.info("📋 [AppDelegate] SelectionActionService 已初始化")
         
         // 监听打开工具栏设置的通知
         NotificationCenter.default.addObserver(
@@ -145,13 +145,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 启动工具栏管理器 (根据设置决定是否自动启动)
         let enabled = AppSettings.shared.selectionToolbarEnabled
-        print("📋 [AppDelegate] selectionToolbarEnabled = \(enabled)")
+        logger.info("📋 [AppDelegate] selectionToolbarEnabled = \(enabled)")
         
         if enabled {
             SelectionToolbarManager.shared.start()
-            print("📋 [AppDelegate] ✅ Selection toolbar started")
+            logger.info("📋 [AppDelegate] ✅ Selection toolbar started")
         } else {
-            print("📋 [AppDelegate] ⏸️ Selection toolbar disabled in settings")
+            logger.info("📋 [AppDelegate] ⏸️ Selection toolbar disabled in settings")
         }
     }
     

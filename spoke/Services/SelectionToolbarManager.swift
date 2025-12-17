@@ -42,6 +42,13 @@ final class SelectionToolbarManager {
     /// 点击外部监听器
     private var clickOutsideMonitor: Any?
     
+    /// 🔥 显示保护期：show() 后短暂禁止 hide()，防止 localMouseUpMonitor 立即隐藏
+    private var showProtectionEndTime: Date = .distantPast
+    private let showProtectionDuration: TimeInterval = 0.3  // 300ms 保护期
+    
+    /// 🔥 动作执行中标志：执行查词等动作时阻止隐藏
+    private(set) var isExecutingAction: Bool = false
+    
     // MARK: - Constants
     
     private enum Layout {
@@ -89,9 +96,57 @@ final class SelectionToolbarManager {
     /// 启动服务
     func start() {
         print("📋 [ToolbarManager] start() 被调用")
+        
+        // 检查辅助功能权限
+        if !selectionMonitor.isAccessibilityEnabled {
+            print("📋 [ToolbarManager] ❌ 未授权辅助功能权限，显示提示")
+            showAccessibilityPermissionAlert()
+            return
+        }
+        
         selectionMonitor.startMonitoring()
         print("📋 [ToolbarManager] ✅ 服务已启动")
         logger.info("📋 [ToolbarManager] 服务已启动")
+    }
+    
+    /// 显示辅助功能权限提示
+    private func showAccessibilityPermissionAlert() {
+        let alert = NSAlert()
+        alert.messageText = "需要辅助功能权限"
+        alert.informativeText = "选择工具栏需要辅助功能权限才能检测文本选择。\n\n请在「系统设置 → 隐私与安全性 → 辅助功能」中授权 SpokenAnyWhere。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "打开系统设置")
+        alert.addButton(withTitle: "稍后")
+        
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            // 打开系统设置的辅助功能页面
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+            
+            // 开始轮询检查权限状态
+            startPermissionPolling()
+        }
+    }
+    
+    /// 开始轮询检查权限状态
+    private func startPermissionPolling() {
+        // 每秒检查一次权限，授权后自动启动
+        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            Task { @MainActor in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                
+                if self.selectionMonitor.isAccessibilityEnabled {
+                    timer.invalidate()
+                    print("📋 [ToolbarManager] ✅ 权限已授予，自动启动服务")
+                    self.selectionMonitor.startMonitoring()
+                }
+            }
+        }
     }
     
     /// 停止服务
@@ -139,8 +194,12 @@ final class SelectionToolbarManager {
             y: position.y - newSize.height      // 工具栏顶部在目标位置
         )
         
-        // 确保不超出屏幕
-        if let screen = NSScreen.main {
+        // 🔥 找到包含目标位置的屏幕（而非 NSScreen.main，支持多屏幕）
+        let targetScreen = NSScreen.screens.first { screen in
+            screen.frame.contains(position)
+        } ?? NSScreen.main
+        
+        if let screen = targetScreen {
             let screenFrame = screen.visibleFrame
             
             // 左边界
@@ -169,6 +228,9 @@ final class SelectionToolbarManager {
         
         logger.info("✅ [ToolbarManager] 窗口已显示 | frame: \(String(describing: window.frame))")
         
+        // 🔥 设置显示保护期，防止 localMouseUpMonitor 立即触发 hide()
+        showProtectionEndTime = Date().addingTimeInterval(showProtectionDuration)
+        
         // 设置点击外部关闭
         setupClickOutsideMonitor()
         
@@ -177,7 +239,26 @@ final class SelectionToolbarManager {
     }
     
     /// 隐藏工具栏
-    func hide() {
+    /// - Parameter force: 是否强制隐藏（忽略保护期和动作执行状态）
+    func hide(force: Bool = false) {
+        // 🔥 检查保护期：如果还在保护期内且非强制隐藏，跳过
+        if !force && Date() < showProtectionEndTime {
+            logger.debug("📋 [ToolbarManager] 跳过隐藏（保护期内）")
+            return
+        }
+        
+        // 🔥 检查动作执行状态：如果正在执行动作且非强制隐藏，跳过
+        if !force && isExecutingAction {
+            logger.debug("📋 [ToolbarManager] 跳过隐藏（动作执行中）")
+            return
+        }
+        
+        // 🔥 检查词典结果显示状态：如果正在显示词典结果且非强制隐藏，跳过
+        if !force && state.phase == .showingDictionary {
+            logger.debug("📋 [ToolbarManager] 跳过隐藏（词典结果显示中）")
+            return
+        }
+        
         toolbarWindow?.orderOut(nil)
         resultWindow?.orderOut(nil)
         
@@ -185,9 +266,23 @@ final class SelectionToolbarManager {
         stopAutoHideTimer()
         
         state.hide()
-        selectionMonitor.clearLastSelection()
+        // 注意：不清空 lastSelectedText，避免相同文本再次触发工具栏
+        // selectionMonitor.clearLastSelection() 只在切换应用或文本真正变化时调用
         
         logger.debug("📋 [ToolbarManager] 隐藏工具栏")
+    }
+    
+    /// 开始执行动作（阻止隐藏）
+    func beginAction() {
+        isExecutingAction = true
+        stopAutoHideTimer()  // 执行动作期间停止自动隐藏
+        logger.debug("📋 [ToolbarManager] 开始执行动作")
+    }
+    
+    /// 结束执行动作
+    func endAction() {
+        isExecutingAction = false
+        logger.debug("📋 [ToolbarManager] 结束执行动作")
     }
     
     /// 获取工具栏窗口底部中心位置（用于在其下方显示面板）
@@ -240,22 +335,44 @@ final class SelectionToolbarManager {
     
     /// 处理选中文本变化
     private func handleSelectionChanged(_ context: SelectionContext) {
-        logger.info("📋 [ToolbarManager] handleSelectionChanged 开始 | bounds: \(String(describing: context.selectionBounds))")
+        logger.info("📋 [ToolbarManager] handleSelectionChanged | bounds: \(String(describing: context.selectionBounds))")
         
         // 显示工具栏
         state.show(with: context)
         
-        // 使用鼠标位置显示工具栏 (最可靠的方式)
-        // NSEvent.mouseLocation 返回 AppKit 坐标系 (左下角原点，y 向上)
-        let mouseLocation = NSEvent.mouseLocation
+        let position: CGPoint
+        let bounds = context.selectionBounds
         
-        // 工具栏显示在鼠标下方
-        let position = CGPoint(
-            x: mouseLocation.x,
-            y: mouseLocation.y - Layout.toolbarOffsetY
-        )
+        // 优先使用选中文本位置（而非鼠标位置）
+        // selectionBounds 是 Quartz 坐标系 (左上角原点, Y 向下)
+        // NSPanel.show(at:) 期望 AppKit 坐标系 (左下角原点, Y 向上)
+        // 注意：show(at:) 中 origin.y = position.y - height，所以 position 是工具栏顶部位置
+        // 我们需要工具栏底部在选中文本上方，所以 position = selectionTop + toolbarHeight + offset
+        if bounds != .zero && bounds.width > 0 && bounds.height > 0 {
+            if let screen = NSScreen.main {
+                // Quartz → AppKit 坐标转换
+                // Quartz bounds.minY = 选中区域顶部 (距屏幕顶部的距离)
+                // AppKit Y = screen.height - bounds.minY = 选中区域顶部在 AppKit 中的位置
+                let selectionTopInAppKit = screen.frame.height - bounds.minY
+                // 工具栏顶部位置 = 选中文本顶部 + 工具栏高度 + 间距
+                // 这样工具栏底部就在选中文本上方 offset 像素处
+                position = CGPoint(
+                    x: bounds.midX,
+                    y: selectionTopInAppKit + Layout.toolbarHeight + Layout.toolbarOffsetY
+                )
+                logger.info("📋 [ToolbarManager] 使用 selectionBounds | Quartz(\(bounds.midX), \(bounds.minY)) → AppKit(\(position.x), \(position.y))")
+            } else {
+                let mouseLocation = NSEvent.mouseLocation
+                position = CGPoint(x: mouseLocation.x, y: mouseLocation.y + Layout.toolbarHeight + Layout.toolbarOffsetY)
+                logger.info("📋 [ToolbarManager] 无屏幕，fallback 鼠标: (\(position.x), \(position.y))")
+            }
+        } else {
+            // Fallback: selectionBounds 无效时使用鼠标位置
+            let mouseLocation = NSEvent.mouseLocation
+            position = CGPoint(x: mouseLocation.x, y: mouseLocation.y + Layout.toolbarHeight + Layout.toolbarOffsetY)
+            logger.info("📋 [ToolbarManager] bounds 无效，fallback 鼠标: (\(position.x), \(position.y))")
+        }
         
-        logger.info("📋 [ToolbarManager] 鼠标位置: (\(mouseLocation.x), \(mouseLocation.y)) → 工具栏: (\(position.x), \(position.y))")
         show(at: position)
     }
     
@@ -309,7 +426,7 @@ final class SelectionToolbarManager {
             
             if !windowFrame.contains(screenLocation) {
                 Task { @MainActor in
-                    self.hide()
+                    self.hide(force: true)  // 🔥 点击外部强制隐藏（包括词典结果）
                 }
             }
         }

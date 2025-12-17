@@ -252,20 +252,31 @@ final class SelectionToolbarState: ObservableObject {
     
     /// 切换生词本收藏状态
     func toggleVocabulary() {
-        guard let word = dictionaryResult?.word else { return }
+        guard let word = dictionaryResult?.word else {
+            logger.warning("📋 [SelectionToolbar] toggleVocabulary: dictionaryResult 为空")
+            return
+        }
+        
+        logger.info("📋 [SelectionToolbar] toggleVocabulary: word=\(word), isWordInVocabulary=\(self.isWordInVocabulary)")
         
         if isWordInVocabulary {
             // 从生词本移除
             if let item = VocabularyService.shared.items.first(where: { $0.word.lowercased() == word.lowercased() }) {
                 VocabularyService.shared.remove(item.id)
+                logger.info("📋 [SelectionToolbar] 从生词本移除: \(word)")
+            } else {
+                logger.warning("📋 [SelectionToolbar] 生词本中找不到: \(word)")
             }
             isWordInVocabulary = false
-            logger.info("📋 [SelectionToolbar] 从生词本移除: \(word)")
         } else {
             // 添加到生词本
-            VocabularyService.shared.add(word)
+            let result = VocabularyService.shared.add(word)
+            if result != nil {
+                logger.info("📋 [SelectionToolbar] 添加到生词本成功: \(word)")
+            } else {
+                logger.warning("📋 [SelectionToolbar] 添加到生词本失败: \(word)")
+            }
             isWordInVocabulary = true
-            logger.info("📋 [SelectionToolbar] 添加到生词本: \(word)")
         }
     }
     

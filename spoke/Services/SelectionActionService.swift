@@ -221,6 +221,10 @@ final class SelectionActionService {
         let word = text.trimmingCharacters(in: .whitespacesAndNewlines)
         logger.info("📋 [ActionService] 执行查词 | 单词: \(word)")
         
+        // 🔥 开始执行动作，阻止工具栏被隐藏
+        SelectionToolbarManager.shared.beginAction()
+        defer { SelectionToolbarManager.shared.endAction() }
+        
         // 调用词典 API
         let result = await dictionaryAPI.lookup(word)
         

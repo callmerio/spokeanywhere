@@ -66,6 +66,12 @@ final class SelectionMonitorService {
     /// 鼠标是否按下 (用于判断是否在选择过程中)
     private var isMouseDown = false
     
+    /// 鼠标按下位置 (用于区分拖动选择和单击)
+    private var mouseDownLocation: CGPoint = .zero
+    
+    /// 判定为拖动的最小距离 (像素)
+    private let dragThreshold: CGFloat = 5
+    
     /// AXObserver 实例 (用于监听选择变化通知)
     private var axObserver: AXObserver?
     
@@ -185,7 +191,10 @@ final class SelectionMonitorService {
     
     /// 手动触发检查选中文本
     func checkSelection() {
-        guard isMonitoring else { return }
+        guard isMonitoring else {
+            logger.debug("📋 [SelectionMonitor] checkSelection 跳过: isMonitoring=false")
+            return
+        }
         
         debounceTimer?.invalidate()
         debounceTimer = Timer.scheduledTimer(withTimeInterval: debounceDelay, repeats: false) { [weak self] _ in
@@ -315,16 +324,29 @@ final class SelectionMonitorService {
     /// 设置鼠标事件监听
     private func setupMouseMonitor() {
         // === Global Monitor (监听其他 App) ===
-        mouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
+        mouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
             Task { @MainActor [weak self] in
                 self?.isMouseDown = true
+                self?.mouseDownLocation = NSEvent.mouseLocation
             }
         }
         
-        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] _ in
+        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
             Task { @MainActor [weak self] in
-                self?.isMouseDown = false
-                self?.checkSelection()
+                guard let self = self else { return }
+                self.isMouseDown = false
+                
+                let mouseUpLocation = NSEvent.mouseLocation
+                let distance = hypot(mouseUpLocation.x - self.mouseDownLocation.x,
+                                   mouseUpLocation.y - self.mouseDownLocation.y)
+                
+                // 如果是单击（移动距离小于阈值），隐藏工具栏
+                if distance < self.dragThreshold {
+                    SelectionToolbarManager.shared.hide()
+                } else {
+                    // 拖动选择，检查是否有选中文本
+                    self.checkSelection()
+                }
             }
         }
         
@@ -332,14 +354,36 @@ final class SelectionMonitorService {
         localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
             Task { @MainActor [weak self] in
                 self?.isMouseDown = true
+                self?.mouseDownLocation = NSEvent.mouseLocation
             }
             return event
         }
         
         localMouseUpMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
             Task { @MainActor [weak self] in
-                self?.isMouseDown = false
-                self?.checkSelection()
+                guard let self = self else { return }
+                self.isMouseDown = false
+                
+                let mouseUpLocation = NSEvent.mouseLocation
+                let distance = hypot(mouseUpLocation.x - self.mouseDownLocation.x,
+                                   mouseUpLocation.y - self.mouseDownLocation.y)
+                
+                // 🔥 检查点击是否在工具栏窗口内，如果是则不隐藏（让按钮事件处理）
+                if let toolbarWindow = SelectionToolbarManager.shared.toolbarWindow,
+                   toolbarWindow.isVisible,
+                   toolbarWindow.frame.contains(mouseUpLocation) {
+                    // 点击在工具栏内，不处理（让按钮 action 处理）
+                    return
+                }
+                
+                // 如果是单击（移动距离小于阈值），隐藏工具栏
+                if distance < self.dragThreshold {
+                    // 🔥 点击工具栏外部（本应用内），强制隐藏（包括词典结果）
+                    SelectionToolbarManager.shared.hide(force: true)
+                } else {
+                    // 拖动选择，检查是否有选中文本
+                    self.checkSelection()
+                }
             }
             return event
         }
@@ -390,13 +434,8 @@ final class SelectionMonitorService {
             return
         }
         
-        // 去重检查
-        if trimmedText == lastSelectedText {
-            logger.debug("📋 [SelectionMonitor] 相同文本，忽略")
-            return
-        }
-        
-        lastSelectedText = trimmedText
+        // 不再做去重检查，用户可能想对相同文本再次操作
+        // 去重逻辑已移除，每次选择都触发工具栏
         
         // 创建上下文
         let context = SelectionContext(
@@ -418,7 +457,14 @@ final class SelectionMonitorService {
         var selectedText: String?
         var focusedElement: AXUIElement?
         
-        // 方法1: 使用 SystemWide 元素获取 (对 Electron 应用更有效)
+        let pid = app.processIdentifier
+        let appElement = AXUIElementCreateApplication(pid)
+        
+        // 关键：为 Electron/Chrome 等应用启用 Accessibility
+        // 这些应用默认不暴露 AX tree，需要设置特殊属性
+        enableAccessibilityForApp(appElement)
+        
+        // 方法1: 使用 SystemWide 元素获取
         let systemWideElement = AXUIElementCreateSystemWide()
         
         var focusedApp: CFTypeRef?
@@ -433,11 +479,8 @@ final class SelectionMonitorService {
             }
         }
         
-        // 方法2: 如果 SystemWide 失败，使用传统的 Application 方式
+        // 方法2: 如果 SystemWide 失败，使用 Application 方式
         if focusedElement == nil {
-            let pid = app.processIdentifier
-            let appElement = AXUIElementCreateApplication(pid)
-            
             var element: CFTypeRef?
             let focusResult = AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &element)
             
@@ -646,6 +689,28 @@ final class SelectionMonitorService {
     /// 清除上次选中的文本记录
     func clearLastSelection() {
         lastSelectedText = nil
+    }
+    
+    // MARK: - Electron/Chrome Accessibility 支持
+    
+    /// 为 Electron/Chrome 等应用启用 Accessibility
+    /// 这些应用默认不暴露 AX tree，需要设置特殊属性才能访问
+    private func enableAccessibilityForApp(_ appElement: AXUIElement) {
+        // AXEnhancedUserInterface: 告诉应用有辅助技术在使用
+        // 这会让 Electron/Chrome 应用暴露其 accessibility tree
+        let enhancedUI: CFBoolean = kCFBooleanTrue
+        AXUIElementSetAttributeValue(
+            appElement,
+            "AXEnhancedUserInterface" as CFString,
+            enhancedUI
+        )
+        
+        // AXManualAccessibility: 另一个可能需要的属性
+        AXUIElementSetAttributeValue(
+            appElement,
+            "AXManualAccessibility" as CFString,
+            enhancedUI
+        )
     }
 }
 

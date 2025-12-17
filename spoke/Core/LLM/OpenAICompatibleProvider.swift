@@ -444,11 +444,17 @@ actor OpenAICompatibleProvider: LLMProvider {
         }
         
         // 添加 thinkingConfig（关闭思考以省 token）
-        if !enableThinking {
+        // 🔍 调试：打印 enableThinking 值
+        let thinkingEnabled = self.enableThinking
+        let profileThinking = self.profile?.enableThinking ?? true
+        logger.info("🧠 enableThinking = \(thinkingEnabled), profile?.enableThinking = \(profileThinking)")
+        if !thinkingEnabled {
             generationConfig["thinkingConfig"] = [
                 "thinkingBudget": 0
             ]
-            logger.info("🧠 Thinking disabled for this request")
+            logger.info("🧠 Thinking DISABLED - added thinkingBudget: 0")
+        } else {
+            logger.info("🧠 Thinking ENABLED - no thinkingConfig added")
         }
         
         // 构建 parts（支持多模态）
