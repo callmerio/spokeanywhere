@@ -33,13 +33,23 @@ struct ChatMessage: Identifiable, Equatable {
     let attachments: [QuickAskAttachment]
     /// AI 生成的图片（仅 assistant 消息有效）
     let generatedImages: [Data]
+    /// 上下文来源（仅 user 消息有效）
+    let contextSources: [ContextSource]
+    /// 应用截图（仅 user 消息有效，用于显示缩略图）
+    let screenshotImage: CGImage?
     var timestamp = Date()
     
-    init(role: MessageRole, content: String, attachments: [QuickAskAttachment], generatedImages: [Data] = []) {
+    init(role: MessageRole, content: String, attachments: [QuickAskAttachment], generatedImages: [Data] = [], contextSources: [ContextSource] = [], screenshotImage: CGImage? = nil) {
         self.role = role
         self.content = content
         self.attachments = attachments
         self.generatedImages = generatedImages
+        self.contextSources = contextSources
+        self.screenshotImage = screenshotImage
+    }
+    
+    static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
+        lhs.id == rhs.id
     }
 }
 
@@ -650,6 +660,29 @@ struct MessageBubbleView: View {
             let parsed = parsedContent
             
             VStack(alignment: .trailing, spacing: 8) {
+                // 上下文来源标签（参考 Gemini 样式）
+                if !message.contextSources.isEmpty || message.screenshotImage != nil {
+                    HStack(spacing: 8) {
+                        ForEach(message.contextSources, id: \.rawValue) { source in
+                            ContextSourceBadge(source: source)
+                        }
+                        
+                        // 截图缩略图
+                        if let cgImage = message.screenshotImage {
+                            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 60, height: 40)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                        }
+                    }
+                }
+                
                 // 附件缩略图
                 if !message.attachments.isEmpty {
                     HStack(spacing: 8) {
@@ -761,6 +794,31 @@ struct MessageBubbleView: View {
     }
 }
 
+// MARK: - Context Source Badge
+
+/// 上下文来源标签（参考 Gemini 样式）
+struct ContextSourceBadge: View {
+    let source: ContextSource
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: source.icon)
+                .font(.system(size: 10))
+            Text(source.rawValue)
+                .font(.system(size: 11))
+        }
+        .foregroundStyle(.white.opacity(0.8))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.white.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        )
+    }
+}
+
 // MARK: - Notifications
 
 extension Notification.Name {
@@ -819,15 +877,17 @@ final class AnswerPanelManager {
     /// - Parameters:
     ///   - question: 用户问题
     ///   - attachments: 附件列表
+    ///   - contextSources: 上下文来源列表
+    ///   - screenshotImage: 应用截图
     ///   - anchorPoint: 可选锚点位置（AppKit 坐标系），面板将显示在此位置下方
     @discardableResult
-    func show(question: String, attachments: [QuickAskAttachment], anchorPoint: CGPoint? = nil) -> UUID {
+    func show(question: String, attachments: [QuickAskAttachment], contextSources: [ContextSource] = [], screenshotImage: CGImage? = nil, anchorPoint: CGPoint? = nil) -> UUID {
         let instance = AnswerPanelInstance()
         let panelId = instance.id
         
         // 初始化状态
         instance.state.messages = [
-            ChatMessage(role: .user, content: question, attachments: attachments)
+            ChatMessage(role: .user, content: question, attachments: attachments, contextSources: contextSources, screenshotImage: screenshotImage)
         ]
         instance.state.isLoading = true
         instance.state.error = nil

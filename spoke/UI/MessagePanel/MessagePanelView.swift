@@ -691,20 +691,8 @@ struct MessageCardView: View {
     
     // MARK: - Header
     
-    /// 卡片标题（优先使用摘要标题，其次模型名）
+    /// 卡片标题（显示模型名/阶段名，summary 在正文显示）
     private var cardTitle: String {
-        // 如果有摘要，显示 "总结: xxx"
-        if let summary = card.summary, card.summaryStatus == .completed {
-            // 取摘要的第一句或前 20 字作为标题
-            let firstLine = summary.components(separatedBy: CharacterSet.newlines)
-                .first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? summary
-            let maxLen = 25
-            if firstLine.count > maxLen {
-                return "总结: " + String(firstLine.prefix(maxLen)) + "..."
-            }
-            return "总结: " + firstLine
-        }
-        // 否则显示模型名
         return card.stage.displayName.isEmpty ? "Pipeline" : card.stage.displayName
     }
     

@@ -81,9 +81,9 @@ final class HistoryManager {
                 
                 audioPath = fileName
                 audioDuration = await getAudioDuration(url: permanentURL)
-                logger.info("📁 Audio saved: \(fileName)")
+                logger.info("📁 Audio saved: \(fileName, privacy: .public)")
             } catch {
-                logger.error("❌ Failed to save audio: \(error.localizedDescription)")
+                logger.error("❌ Failed to save audio: \(error.localizedDescription, privacy: .public)")
             }
         }
         
@@ -97,7 +97,7 @@ final class HistoryManager {
         item.audioDuration = audioDuration
         
         context.insert(item)
-        logger.info("✅ History item saved: \(rawText.prefix(30))...")
+        logger.info("✅ History item saved: \(rawText.prefix(30), privacy: .public)...")
     }
     
     /// 使用新 Prompt 重新处理历史记录
@@ -114,9 +114,9 @@ final class HistoryManager {
         switch result {
         case .success(let text):
             item.processedText = text
-            logger.info("✅ Reprocessed: \(text.prefix(30))...")
+            logger.info("✅ Reprocessed: \(text.prefix(30), privacy: .public)...")
         case .failure(let error):
-            logger.error("❌ Reprocess failed: \(error.localizedDescription)")
+            logger.error("❌ Reprocess failed: \(error.localizedDescription, privacy: .public)")
         }
         
         return result
@@ -134,7 +134,7 @@ final class HistoryManager {
         if let audioPath = item.audioPath {
             let audioURL = audioStorageURL.appendingPathComponent(audioPath)
             try? FileManager.default.removeItem(at: audioURL)
-            logger.info("🗑️ Audio deleted: \(audioPath)")
+            logger.info("🗑️ Audio deleted: \(audioPath, privacy: .public)")
         }
         
         // 删除数据库记录
@@ -209,11 +209,11 @@ final class HistoryManager {
             }
             
             if !itemsToDelete.isEmpty {
-                logger.info("🧹 Cleanup completed: \(itemsToDelete.count) items deleted")
+                logger.info("🧹 Cleanup completed: \(itemsToDelete.count, privacy: .public) items deleted")
             }
             
         } catch {
-            logger.error("❌ Cleanup failed: \(error.localizedDescription)")
+            logger.error("❌ Cleanup failed: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -260,7 +260,7 @@ final class HistoryManager {
             let items = try context.fetch(descriptor)
             validPaths = Set(items.compactMap { $0.audioPath })
         } catch {
-            logger.error("❌ Failed to fetch audio paths: \(error.localizedDescription)")
+            logger.error("❌ Failed to fetch audio paths: \(error.localizedDescription, privacy: .public)")
             return
         }
         
@@ -285,7 +285,7 @@ final class HistoryManager {
         
         if deletedCount > 0 {
             let freedMB = Double(freedBytes) / 1024 / 1024
-            logger.info("🧹 Orphan cleanup: \(deletedCount) files, \(String(format: "%.1f", freedMB))MB freed")
+            logger.info("🧹 Orphan cleanup: \(deletedCount, privacy: .public) files, \(String(format: "%.1f", freedMB), privacy: .public)MB freed")
         }
     }
     
@@ -334,10 +334,10 @@ final class HistoryManager {
             }
             
             if deletedCount > 0 {
-                logger.info("🧹 Size limit enforced: \(deletedCount) old items deleted")
+                logger.info("🧹 Size limit enforced: \(deletedCount, privacy: .public) old items deleted")
             }
         } catch {
-            logger.error("❌ Size limit enforcement failed: \(error.localizedDescription)")
+            logger.error("❌ Size limit enforcement failed: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -362,10 +362,10 @@ final class HistoryManager {
                 for item in itemsToDelete {
                     deleteItem(item)
                 }
-                logger.info("🧹 Normal record limit enforced: \(itemsToDelete.count) old items deleted, keeping \(maxCount)")
+                logger.info("🧹 Normal record limit enforced: \(itemsToDelete.count, privacy: .public) old items deleted, keeping \(maxCount, privacy: .public)")
             }
         } catch {
-            logger.error("❌ Normal record limit enforcement failed: \(error.localizedDescription)")
+            logger.error("❌ Normal record limit enforcement failed: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -389,10 +389,10 @@ final class HistoryManager {
             
             if migratedCount > 0 {
                 try context.save()
-                logger.info("🔄 Migrated \(migratedCount) legacy 'today' records to 'todo'")
+                logger.info("🔄 Migrated \(migratedCount, privacy: .public) legacy 'today' records to 'todo'")
             }
         } catch {
-            logger.error("❌ Legacy migration failed: \(error.localizedDescription)")
+            logger.error("❌ Legacy migration failed: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -400,7 +400,7 @@ final class HistoryManager {
     func setRecordType(_ item: HistoryItem, type: HistoryRecordType) {
         item.recordType = type
         try? modelContext?.save()
-        logger.info("📌 Record type set to \(type.displayName): \(item.rawText.prefix(30))...")
+        logger.info("📌 Record type set to \(type.displayName, privacy: .public): \(item.rawText.prefix(30), privacy: .public)...")
     }
     
     // MARK: - Private

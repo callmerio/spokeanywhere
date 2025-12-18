@@ -158,10 +158,10 @@ final class ScreenOCRService {
         prefetchTask = nil
     }
     
-    // MARK: - Private
+    // MARK: - Capture
     
     /// 捕获当前聚焦窗口（使用 ScreenCaptureKit）
-    private func captureActiveWindow() async -> CGImage? {
+    func captureActiveWindow() async -> CGImage? {
         guard let frontApp = NSWorkspace.shared.frontmostApplication else {
             return nil
         }

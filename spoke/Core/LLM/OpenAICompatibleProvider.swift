@@ -115,7 +115,7 @@ actor OpenAICompatibleProvider: LLMProvider {
         
         let request = try buildRequest(prompt: prompt)
         
-        logger.info("🤖 LLM request to \(self.providerType.displayName)")
+        logger.info("🤖 LLM request to \(self.providerType.displayName, privacy: .public)")
         
         do {
             let (data, response) = try await session.data(for: request)
@@ -159,10 +159,10 @@ actor OpenAICompatibleProvider: LLMProvider {
             let response = try await complete(prompt: testPrompt)
             return !response.text.isEmpty
         } catch let error as LLMError {
-            logger.error("❌ Connection test failed (LLMError): \(error.localizedDescription)")
+            logger.error("❌ Connection test failed (LLMError): \(error.localizedDescription, privacy: .public)")
             throw error // 抛出具体错误供 UI 显示
         } catch {
-            logger.error("❌ Connection test failed: \(error.localizedDescription)")
+            logger.error("❌ Connection test failed: \(error.localizedDescription, privacy: .public)")
             throw error
         }
     }
@@ -258,14 +258,14 @@ actor OpenAICompatibleProvider: LLMProvider {
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode) else {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-                logger.warning("⚠️ Models endpoint returned status \(statusCode)")
+                logger.warning("⚠️ Models endpoint returned status \(statusCode, privacy: .public)")
                 return []
             }
             
             return parseModelsResponse(data: data)
             
         } catch {
-            logger.warning("⚠️ Failed to fetch models: \(error.localizedDescription)")
+            logger.warning("⚠️ Failed to fetch models: \(error.localizedDescription, privacy: .public)")
             return []
         }
     }
@@ -307,7 +307,7 @@ actor OpenAICompatibleProvider: LLMProvider {
         if models.isEmpty {
             logger.warning("⚠️ No models found in response")
         } else {
-            logger.info("✅ Fetched \(models.count) models from \(self.providerType.displayName)")
+            logger.info("✅ Fetched \(models.count, privacy: .public) models from \(self.providerType.displayName, privacy: .public)")
         }
         
         return models.sorted()

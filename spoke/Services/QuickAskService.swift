@@ -3,6 +3,23 @@ import AppKit
 import SwiftUI
 import os
 
+/// Quick Ask 上下文来源
+enum ContextSource: String, CaseIterable {
+    case ocr = "OCR"
+    case screenshot = "截图"
+    case clipboard = "剪贴板"
+    case liveCaption = "实时字幕"
+    
+    var icon: String {
+        switch self {
+        case .ocr: return "text.viewfinder"
+        case .screenshot: return "photo"
+        case .clipboard: return "doc.on.clipboard"
+        case .liveCaption: return "captions.bubble"
+        }
+    }
+}
+
 /// Quick Ask 服务
 /// 管理 Quick Ask 功能的整体流程
 @MainActor
@@ -129,23 +146,48 @@ final class QuickAskService {
         // 切换到发送状态
         state.startSending()
         
-        // 组装 prompt
-        let prompt = buildPrompt()
+        let settings = LLMSettings.shared
+        var contextSources: [ContextSource] = []
+        
+        // 异步获取 OCR 上下文
+        var ocrContext: String?
+        if settings.quickAskIncludeOCR {
+            ocrContext = await ScreenOCRService.shared.getActiveWindowText(maxLength: 2000)
+            if ocrContext != nil && !ocrContext!.isEmpty {
+                contextSources.append(.ocr)
+            }
+        }
+        
+        // 获取截图（如果开启）
+        var screenshotImage: CGImage?
+        if settings.quickAskIncludeScreenshot {
+            screenshotImage = await ScreenOCRService.shared.captureActiveWindow()
+            if screenshotImage != nil {
+                contextSources.append(.screenshot)
+            }
+        }
+        
+        // 组装 prompt（包含上下文来源追踪）
+        let (prompt, usedClipboard, usedCaption) = buildPromptWithSources(ocrContext: ocrContext)
+        if usedClipboard { contextSources.append(.clipboard) }
+        if usedCaption { contextSources.append(.liveCaption) }
         
         guard !prompt.isEmpty else {
             hudManager.fail(with: "请输入问题")
             return
         }
         
-        logger.info("📤 Sending question: \(prompt.prefix(100))...")
+        logger.info("📤 Sending question: \(prompt.prefix(100), privacy: .public)... sources: \(contextSources.map { $0.rawValue }, privacy: .public)")
         
         // 隐藏输入 HUD (不恢复 Policy，因为 AnswerPanel 需要 Key Window)
         hudManager.hide(restorePolicy: false)
         
-        // 显示回答窗口（每次创建新窗口）
+        // 显示回答窗口（传递上下文来源）
         let panelId = AnswerPanelManager.shared.show(
             question: state.userInput.isEmpty ? state.voiceTranscription : state.userInput,
-            attachments: state.attachments
+            attachments: state.attachments,
+            contextSources: contextSources,
+            screenshotImage: screenshotImage
         )
         
         // 调用 LLM
@@ -154,11 +196,11 @@ final class QuickAskService {
         switch result {
         case .success(let response):
             AnswerPanelManager.shared.updateAnswer(response, for: panelId)
-            logger.info("✅ Quick Ask completed (\(response.images.count) images)")
+            logger.info("✅ Quick Ask completed (\(response.images.count, privacy: .public) images)")
             
         case .failure(let error):
             AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
-            logger.error("❌ Quick Ask failed: \(error)")
+            logger.error("❌ Quick Ask failed: \(error, privacy: .public)")
         }
         
         // 重置状态
@@ -285,9 +327,14 @@ final class QuickAskService {
         state.updateDuration(duration)
     }
     
-    /// 构建发送给 LLM 的 prompt
-    private func buildPrompt() -> String {
+    /// 构建发送给 LLM 的 prompt（带上下文来源追踪）
+    /// - Parameter ocrContext: 异步获取的 OCR 上下文（可选）
+    /// - Returns: (prompt, usedClipboard, usedCaption)
+    private func buildPromptWithSources(ocrContext: String? = nil) -> (String, Bool, Bool) {
+        let settings = LLMSettings.shared
         var parts: [String] = []
+        var usedClipboard = false
+        var usedCaption = false
         
         // 用户输入
         let userInput = state.userInput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -303,6 +350,32 @@ final class QuickAskService {
             // 如果同时有用户输入和语音，添加提示
             if !userInput.isEmpty {
                 parts.append("> 注意：语音转写可能存在偏差（如专业术语、人名等），请结合用户输入理解真实意图。")
+            }
+        }
+        
+        // 应用 OCR（异步获取的）
+        if let ocrText = ocrContext, !ocrText.isEmpty {
+            parts.append("## 当前屏幕内容（OCR）\n\(ocrText)")
+        }
+        
+        // 剪贴板历史
+        if settings.quickAskIncludeClipboard {
+            let clipboardHistory = ClipboardHistoryService.shared.getHistoryForContext(limit: 5)
+            if !clipboardHistory.isEmpty {
+                let historyText = clipboardHistory.map { "- \(String($0.prefix(200)))" }.joined(separator: "\n")
+                parts.append("## 剪贴板历史\n\(historyText)")
+                usedClipboard = true
+            }
+        }
+        
+        // 实时字幕上下文
+        if settings.quickAskIncludeLiveCaption {
+            let limit = settings.quickAskLiveCaptionLimit
+            let captionText = LiveCaptionManager.shared.getOriginalTextHistory(limit: limit)
+            if !captionText.isEmpty {
+                let limitDesc = limit == 0 ? "全量" : "最近\(limit)条"
+                parts.append("## 实时字幕历史（\(limitDesc)）\n\(captionText)")
+                usedCaption = true
             }
         }
         
@@ -333,7 +406,7 @@ final class QuickAskService {
             }
         }
         
-        return parts.joined(separator: "\n\n")
+        return (parts.joined(separator: "\n\n"), usedClipboard, usedCaption)
     }
 }
 

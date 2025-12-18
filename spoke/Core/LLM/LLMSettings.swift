@@ -36,6 +36,12 @@ final class LLMSettings {
         static let aiGeneratedTitleEnabled = "llm.aiGeneratedTitleEnabled"
         // 总结设置
         static let summaryAutoEnabled = "llm.summaryAutoEnabled"
+        // Quick Ask 专属设置
+        static let quickAskIncludeOCR = "llm.quickAskIncludeOCR"
+        static let quickAskIncludeScreenshot = "llm.quickAskIncludeScreenshot"
+        static let quickAskIncludeClipboard = "llm.quickAskIncludeClipboard"
+        static let quickAskIncludeLiveCaption = "llm.quickAskIncludeLiveCaption"
+        static let quickAskLiveCaptionLimit = "llm.quickAskLiveCaptionLimit"  // 0=全量, 50=最近50条
     }
     
     // MARK: - Default Prompt
@@ -164,6 +170,33 @@ final class LLMSettings {
         didSet { save() }
     }
     
+    // MARK: - Quick Ask Settings
+    
+    /// Quick Ask 是否包含应用 OCR
+    var quickAskIncludeOCR: Bool {
+        didSet { save() }
+    }
+    
+    /// Quick Ask 是否包含应用截图（多模态）
+    var quickAskIncludeScreenshot: Bool {
+        didSet { save() }
+    }
+    
+    /// Quick Ask 是否包含剪贴板
+    var quickAskIncludeClipboard: Bool {
+        didSet { save() }
+    }
+    
+    /// Quick Ask 是否包含实时字幕上下文
+    var quickAskIncludeLiveCaption: Bool {
+        didSet { save() }
+    }
+    
+    /// Quick Ask 实时字幕上下文限制（0=全量, 50=最近50条）
+    var quickAskLiveCaptionLimit: Int {
+        didSet { save() }
+    }
+    
     /// 获取转录模型 Profile
     var transcriptionProfile: ProviderProfile? {
         guard let id = transcriptionProfileId else { return nil }
@@ -284,6 +317,13 @@ final class LLMSettings {
         
         self.summaryAutoEnabled = defaults.object(forKey: Keys.summaryAutoEnabled) as? Bool ?? true
         
+        // Quick Ask 专属设置
+        self.quickAskIncludeOCR = defaults.object(forKey: Keys.quickAskIncludeOCR) as? Bool ?? true
+        self.quickAskIncludeScreenshot = defaults.object(forKey: Keys.quickAskIncludeScreenshot) as? Bool ?? false
+        self.quickAskIncludeClipboard = defaults.object(forKey: Keys.quickAskIncludeClipboard) as? Bool ?? true
+        self.quickAskIncludeLiveCaption = defaults.object(forKey: Keys.quickAskIncludeLiveCaption) as? Bool ?? false
+        self.quickAskLiveCaptionLimit = defaults.object(forKey: Keys.quickAskLiveCaptionLimit) as? Int ?? 50
+        
         self.systemPrompt = defaults.string(forKey: Keys.systemPrompt) ?? Self.defaultSystemPrompt
         self.includeClipboard = defaults.object(forKey: Keys.includeClipboard) as? Bool ?? false
         self.includeActiveApp = defaults.object(forKey: Keys.includeActiveApp) as? Bool ?? true
@@ -312,7 +352,7 @@ final class LLMSettings {
         // 加载并合并 API Keys
         consolidateLegacyAPIKeys()
         
-        logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled), profiles: \(self.profiles.count)")
+        logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled, privacy: .public), profiles: \(self.profiles.count, privacy: .public)")
     }
     
     /// 从旧版配置迁移到 Profile 系统
@@ -329,7 +369,7 @@ final class LLMSettings {
             }
         }
         
-        logger.info("✅ Migrated \(self.profiles.count) profiles")
+        logger.info("✅ Migrated \(self.profiles.count, privacy: .public) profiles")
     }
     
     /// 合并遗留的 API Key 到统一存储
@@ -356,7 +396,7 @@ final class LLMSettings {
                let keyRef = profile.apiKeyRef,
                keyRef != "unified_storage" {
                 
-                logger.info("📥 Consolidating legacy key for profile: \(profile.name)")
+                logger.info("📥 Consolidating legacy key for profile: \(profile.name, privacy: .public)")
                 
                 // 尝试从旧 Keychain Item 读取
                 if let legacyKey = KeychainService.load(key: keyRef) {
@@ -391,7 +431,7 @@ final class LLMSettings {
         let profileName = name ?? "\(type.displayName)"
         let profile = ProviderProfile(name: profileName, providerType: type)
         profiles.append(profile)
-        logger.info("➕ Created profile: \(profileName)")
+        logger.info("➕ Created profile: \(profileName, privacy: .public)")
         return profile
     }
     
@@ -404,7 +444,8 @@ final class LLMSettings {
         var updated = profile
         updated.updatedAt = Date()
         profiles[index] = updated
-        logger.info("📝 Updated profile: \(profile.name)")
+        save()  // 🔧 数组元素赋值不触发 didSet，需显式保存
+        logger.info("📝 Updated profile: \(profile.name, privacy: .public), enableThinking=\(updated.enableThinking, privacy: .public)")
     }
     
     /// 删除 Profile
@@ -426,7 +467,7 @@ final class LLMSettings {
             selectedProfileId = profiles.first?.id
         }
         
-        logger.info("🗑️ Deleted profile: \(profile.name)")
+        logger.info("🗑️ Deleted profile: \(profile.name, privacy: .public)")
     }
     
     /// 复制 Profile
@@ -459,7 +500,7 @@ final class LLMSettings {
         }
         
         profiles.append(newProfile)
-        logger.info("📋 Duplicated profile: \(source.name) -> \(newProfile.name)")
+        logger.info("📋 Duplicated profile: \(source.name, privacy: .public) -> \(newProfile.name, privacy: .public)")
         return newProfile
     }
     
@@ -477,7 +518,7 @@ final class LLMSettings {
         profiles[index].apiKeyRef = "unified_storage" 
         profiles[index].updatedAt = Date()
         
-        logger.info("🔑 API Key saved for profile: \(self.profiles[index].name)")
+        logger.info("🔑 API Key saved for profile: \(self.profiles[index].name, privacy: .public)")
     }
     
     /// 获取 Profile 的 API Key
@@ -501,7 +542,7 @@ final class LLMSettings {
            let data = jsonString.data(using: .utf8),
            let keys = try? JSONDecoder().decode([String: String].self, from: data) {
             self.apiKeysCache = keys
-            logger.info("🔓 Loaded \(keys.count) API keys from unified storage")
+            logger.info("🔓 Loaded \(keys.count, privacy: .public) API keys from unified storage")
         }
     }
     
@@ -552,7 +593,7 @@ final class LLMSettings {
         config.apiKeyRef = keyRef
         providerConfigs[type] = config
         
-        logger.info("🔑 API Key saved for \(type.displayName)")
+        logger.info("🔑 API Key saved for \(type.displayName, privacy: .public)")
     }
     
     /// 获取 Provider 的 API Key (旧版)
@@ -578,7 +619,7 @@ final class LLMSettings {
         updatedConfig.apiKeyRef = nil
         providerConfigs[type] = updatedConfig
         
-        logger.info("🗑️ API Key deleted for \(type.displayName)")
+        logger.info("🗑️ API Key deleted for \(type.displayName, privacy: .public)")
     }
     
     /// 使用默认配置初始化 Provider (旧版)
@@ -630,6 +671,13 @@ final class LLMSettings {
         defaults.set(temperature, forKey: Keys.temperature)
         defaults.set(timeout, forKey: Keys.timeout)
         defaults.set(aiGeneratedTitleEnabled, forKey: Keys.aiGeneratedTitleEnabled)
+        
+        // Quick Ask 专属设置
+        defaults.set(quickAskIncludeOCR, forKey: Keys.quickAskIncludeOCR)
+        defaults.set(quickAskIncludeScreenshot, forKey: Keys.quickAskIncludeScreenshot)
+        defaults.set(quickAskIncludeClipboard, forKey: Keys.quickAskIncludeClipboard)
+        defaults.set(quickAskIncludeLiveCaption, forKey: Keys.quickAskIncludeLiveCaption)
+        defaults.set(quickAskLiveCaptionLimit, forKey: Keys.quickAskLiveCaptionLimit)
     }
     
     // MARK: - AI Title Generation

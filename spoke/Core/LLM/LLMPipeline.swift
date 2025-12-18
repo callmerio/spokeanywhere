@@ -78,17 +78,17 @@ final class LLMPipeline {
             contextAppName: contextService.getCurrentTargetApp()?.name
         )
         
-        logger.info("🤖 Quick Ask: \(message.prefix(100))...")
+        logger.info("🤖 Quick Ask: \(message.prefix(100), privacy: .public)...")
         
         do {
             let response = try await provider.complete(prompt: prompt)
             logger.info("✅ Quick Ask complete")
             return .success(response)
         } catch let error as LLMError {
-            logger.error("❌ Quick Ask error: \(error.localizedDescription)")
+            logger.error("❌ Quick Ask error: \(error.localizedDescription, privacy: .public)")
             return .failure(error)
         } catch {
-            logger.error("❌ Unexpected error: \(error.localizedDescription)")
+            logger.error("❌ Unexpected error: \(error.localizedDescription, privacy: .public)")
             return .failure(.networkError(error))
         }
     }
@@ -100,7 +100,7 @@ final class LLMPipeline {
     /// - Returns: AI 回答（包含文本和可能的图片）
     func chat(_ message: String, profile: ProviderProfile) async -> Result<LLMResponse, LLMError> {
         guard let provider = settings.createProvider(for: profile) else {
-            logger.error("❌ Failed to create LLM provider for profile: \(profile.name)")
+            logger.error("❌ Failed to create LLM provider for profile: \(profile.name, privacy: .public)")
             return .failure(.notConfigured)
         }
         
@@ -120,10 +120,10 @@ final class LLMPipeline {
             logger.info("✅ Chat complete")
             return .success(response)
         } catch let error as LLMError {
-            logger.error("❌ Chat error: \(error.localizedDescription)")
+            logger.error("❌ Chat error: \(error.localizedDescription, privacy: .public)")
             return .failure(error)
         } catch {
-            logger.error("❌ Unexpected error: \(error.localizedDescription)")
+            logger.error("❌ Unexpected error: \(error.localizedDescription, privacy: .public)")
             return .failure(.networkError(error))
         }
     }
@@ -174,10 +174,10 @@ final class LLMPipeline {
             logger.info("✅ LLM refinement complete")
             return .success(response.text)
         } catch let error as LLMError {
-            logger.error("❌ LLM error: \(error.localizedDescription)")
+            logger.error("❌ LLM error: \(error.localizedDescription, privacy: .public)")
             return .failure(error)
         } catch {
-            logger.error("❌ Unexpected error: \(error.localizedDescription)")
+            logger.error("❌ Unexpected error: \(error.localizedDescription, privacy: .public)")
             return .failure(.networkError(error))
         }
     }

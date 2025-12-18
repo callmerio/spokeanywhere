@@ -470,6 +470,28 @@ final class LiveCaptionManager: ObservableObject {
         logger.info("🧹 Caption history cleared")
     }
     
+    // MARK: - Context Export (for Quick Ask)
+    
+    /// 获取原文历史（不带翻译，用于 Quick Ask 上下文）
+    /// - Parameter limit: 限制条数，0 表示全量
+    /// - Returns: 原文拼接字符串
+    func getOriginalTextHistory(limit: Int = 0) -> String {
+        let allItems = lineBuffer.items
+        let targetItems = limit > 0 ? Array(allItems.suffix(limit)) : allItems
+        
+        // 只拼接原文，不带翻译
+        let texts = targetItems.map { $0.original }
+        let result = texts.joined(separator: " ")
+        
+        logger.info("📋 Exported \(targetItems.count) caption items (limit: \(limit == 0 ? "all" : String(limit)))")
+        return result
+    }
+    
+    /// 获取原文历史条数
+    var originalTextCount: Int {
+        lineBuffer.items.count
+    }
+    
     // MARK: - Result Handling
     
     /// 处理 SpeechAnalyzerProvider 的结果 (macOS 26+)

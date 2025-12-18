@@ -148,7 +148,7 @@ final class RecordingController {
         }
         
         audioService.onError = { [weak self] error in
-            self?.logger.error("❌ Audio error: \(error.localizedDescription)")
+            self?.logger.error("❌ Audio error: \(error.localizedDescription, privacy: .public)")
         }
     }
     
@@ -215,9 +215,9 @@ final class RecordingController {
         // 启动音频录制（立即开始，引擎后台准备）
         do {
             try audioService.startRecording()
-            logger.info("🔴 Recording started for: \(targetApp?.name ?? "Unknown")")
+            logger.info("🔴 Recording started for: \(targetApp?.name ?? "Unknown", privacy: .public)")
         } catch {
-            logger.error("❌ Failed to start recording: \(error)")
+            logger.error("❌ Failed to start recording: \(error, privacy: .public)")
             hudManager.fail(with: "录音启动失败")
         }
     }
@@ -253,7 +253,7 @@ final class RecordingController {
             hudManager.startProcessing()
         }
         
-        logger.info("⏹️ Recording \(source)")
+        logger.info("⏹️ Recording \(source, privacy: .public)")
         
         // 后台处理转写结果（不阻塞新录音）
         processTranscription(
@@ -319,7 +319,7 @@ final class RecordingController {
             let immediateText = transcription
             if !immediateText.isEmpty {
                 copyToClipboard(immediateText)
-                logger.info("📋 剪贴板(即时): \(immediateText.prefix(50))...")
+                logger.info("📋 剪贴板(即时): \(immediateText.prefix(50), privacy: .public)...")
             }
             
             // 等待最终结果（最多等待 2 秒，新录音开始则立即中断）
@@ -331,7 +331,7 @@ final class RecordingController {
             }
             
             let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
-            logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed))ms")
+            logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed), privacy: .public)ms")
             
             // 使用捕获的文本，避免访问可能被新录音覆盖的 lastTranscription
             let transcribedText = transcription
@@ -372,7 +372,7 @@ final class RecordingController {
                     appBundleId: appBundleId
                 )
                 
-                logger.info("✅ Transcription complete (no LLM): \(transcribedText)")
+                logger.info("✅ Transcription complete (no LLM): \(transcribedText, privacy: .public)")
                 return
             }
             
@@ -399,11 +399,11 @@ final class RecordingController {
                     hudManager.complete(with: refinedText)
                 }
                 processedText = refinedText
-                logger.info("✅ LLM refinement complete: \(refinedText)")
+                logger.info("✅ LLM refinement complete: \(refinedText, privacy: .public)")
                 
             case .failure(let error):
                 // LLM 失败，保留原始文本
-                logger.error("❌ LLM failed: \(error.localizedDescription)")
+                logger.error("❌ LLM failed: \(error.localizedDescription, privacy: .public)")
                 if !hotKeyService.isRecording {
                     hudManager.complete(with: transcribedText)
                 }
