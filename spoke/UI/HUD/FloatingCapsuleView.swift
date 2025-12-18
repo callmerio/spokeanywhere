@@ -46,7 +46,7 @@ struct FloatingCapsuleView: View {
                 controlBar
             }
             .opacity((isHovering && state.phase == .recording) ? 0 : 1)
-            // Hover 操作层：用 overlay 自动继承正常内容的尺寸
+            // Hover 操作层：自动填充当前可见内容区域，上下各占一半
             .overlay {
                 if isHovering && state.phase == .recording {
                     hoverOverlay

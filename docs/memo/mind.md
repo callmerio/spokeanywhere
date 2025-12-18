@@ -154,6 +154,11 @@
     - ⌥+S 实时字幕 [√]
     - 录音会话ID -> 防延迟停止打断 [√]
     - CGEvent tap 超时恢复 [√]
+    - 长按 ESC 取消 [ ] ⭐
+      - 短按 ESC -> 显示提示 (类似 Chrome Cmd+Q)
+      - 长按 ESC (≥0.5s) -> 取消录音/润色
+      - 适用场景: 录音中/Toggle录音/润色中
+      - -> FloatingCapsuleView overlay 提示
   - UI 系统
     - 悬浮胶囊 HUD [√]
       - 彩色点状态指示 -> Apple Intelligence 风格 [√]
