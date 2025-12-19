@@ -82,6 +82,9 @@ final class SelectionToolbarState: ObservableObject {
     /// 当前查词的单词是否在生词本中
     @Published var isWordInVocabulary: Bool = false
     
+    /// 当前操作的生词本单词（优先使用选中文本）
+    @Published var targetVocabularyWord: String?
+    
     // MARK: - Configuration
     
     /// 工具栏配置
@@ -225,18 +228,27 @@ final class SelectionToolbarState: ObservableObject {
     }
     
     /// 显示词典结果（工具栏原地变换）
-    func showDictionaryResult(_ data: DictionaryData) {
+    func showDictionaryResult(_ data: DictionaryData, forText: String? = nil) {
         dictionaryResult = data
         dictionaryError = nil
         phase = .showingDictionary
         actionPhase = .completed
         executingActionId = nil
         
+        // 确定要添加的词：优先使用明确传递的文本，否则尝试上下文，最后回退到字典词头
+        let wordToAdd = forText?.trimmingCharacters(in: .whitespacesAndNewlines) 
+            ?? currentContext?.selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? data.word
+            
+        // 只有非空才使用选中词，否则用字典词
+        let finalWord = wordToAdd.isEmpty ? data.word : wordToAdd
+        self.targetVocabularyWord = finalWord
+        
         // 自动添加到生词本
-        VocabularyService.shared.add(data.word)
+        VocabularyService.shared.add(finalWord)
         isWordInVocabulary = true
         
-        logger.info("📋 [SelectionToolbar] 显示词典结果: \(data.word)")
+        logger.info("📋 [SelectionToolbar] 显示词典结果: \(data.word), 添加生词: \(finalWord)")
     }
     
     /// 显示词典错误
@@ -252,8 +264,8 @@ final class SelectionToolbarState: ObservableObject {
     
     /// 切换生词本收藏状态
     func toggleVocabulary() {
-        guard let word = dictionaryResult?.word else {
-            logger.warning("📋 [SelectionToolbar] toggleVocabulary: dictionaryResult 为空")
+        guard let word = targetVocabularyWord ?? dictionaryResult?.word else {
+            logger.warning("📋 [SelectionToolbar] toggleVocabulary: 无有效单词")
             return
         }
         
@@ -265,13 +277,19 @@ final class SelectionToolbarState: ObservableObject {
                 VocabularyService.shared.remove(item.id)
                 logger.info("📋 [SelectionToolbar] 从生词本移除: \(word)")
             } else {
-                logger.warning("📋 [SelectionToolbar] 生词本中找不到: \(word)")
+                // Lemma fallback
+                if let lemma = dictionaryResult?.word, 
+                   let item = VocabularyService.shared.items.first(where: { $0.word.lowercased() == lemma.lowercased() }) {
+                    VocabularyService.shared.remove(item.id)
+                    logger.info("📋 [SelectionToolbar] 从生词本移除(Lemma): \(lemma)")
+                } else {
+                    logger.warning("📋 [SelectionToolbar] 生词本中找不到: \(word)")
+                }
             }
             isWordInVocabulary = false
         } else {
             // 添加到生词本
-            let result = VocabularyService.shared.add(word)
-            if result != nil {
+            if VocabularyService.shared.add(word) != nil {
                 logger.info("📋 [SelectionToolbar] 添加到生词本成功: \(word)")
             } else {
                 logger.warning("📋 [SelectionToolbar] 添加到生词本失败: \(word)")

@@ -129,6 +129,7 @@ final class ScreenshotWindow: NSPanel {
         
         // 大小调整（上下滑动）- 保持宽高比
         // 上滑(deltaY > 0) = 放大, 下滑(deltaY < 0) = 缩小
+        // 锚点根据 hover 位置动态选择：左1/4→左锚点，中间1/2→中心锚点，右1/4→右锚点
         if abs(deltaY) > abs(deltaX) && abs(deltaY) > 2 {
             let scaleFactor = 1.0 + (deltaY * 0.003)
             
@@ -153,15 +154,25 @@ final class ScreenshotWindow: NSPanel {
             if newWidth > maxDim { newWidth = maxDim; newHeight = newWidth / aspectRatio }
             if newHeight > maxDim { newHeight = maxDim; newWidth = newHeight * aspectRatio }
             
-            // 以中心点缩放
-            let centerX = frame.midX
-            let centerY = frame.midY
-            let newFrame = CGRect(
-                x: centerX - newWidth / 2,
-                y: centerY - newHeight / 2,
-                width: newWidth,
-                height: newHeight
-            )
+            // 根据 hover 位置选择缩放锚点
+            let mouseLocationInWindow = event.locationInWindow
+            let relativeX = mouseLocationInWindow.x / frame.width
+            
+            let newX: CGFloat
+            let newY = frame.midY - newHeight / 2  // Y 轴始终中心缩放
+            
+            if relativeX < 0.25 {
+                // 左 1/4：左边锚点（左边位置不变）
+                newX = frame.minX
+            } else if relativeX > 0.75 {
+                // 右 1/4：右边锚点（右边位置不变）
+                newX = frame.maxX - newWidth
+            } else {
+                // 中间 1/2：中心锚点
+                newX = frame.midX - newWidth / 2
+            }
+            
+            let newFrame = CGRect(x: newX, y: newY, width: newWidth, height: newHeight)
             
             setFrame(newFrame, display: true, animate: false)
             item.frame = newFrame

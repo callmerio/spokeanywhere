@@ -232,7 +232,7 @@ final class SelectionActionService {
         switch result {
         case .success(let data):
             logger.info("📋 [ActionService] 查词成功: \(data.word), senses: \(data.senses.count)")
-            state.showDictionaryResult(data)
+            state.showDictionaryResult(data, forText: word)
             
         case .failure(let error):
             logger.error("📋 [ActionService] 查词失败: \(error.localizedDescription)")

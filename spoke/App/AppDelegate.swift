@@ -456,7 +456,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             try await provider.prepare()
             
             // 3. 立即重置，释放资源（预热完成后不需要保持）
-            provider.reset()
+            // ⚠️ reset() 必须在 MainActor 上执行，因为 TranscriptionProvider 是 @MainActor 隔离的
+            await MainActor.run {
+                provider.reset()
+            }
             
             let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
             print("🔥 [Warmup] ✅ Speech engine warmed up in \(String(format: "%.0f", elapsed))ms")
