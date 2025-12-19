@@ -51,6 +51,12 @@ final class HotKeyService {
     /// Clipboard Pipeline 快捷键修饰符
     private var clipboardPipelineModifiers: NSEvent.ModifierFlags = .option
     
+    /// Screenshot 快捷键 keyCode (⌥A)
+    private var screenshotKeyCode: UInt32 = UInt32(kVK_ANSI_A)
+    
+    /// Screenshot 快捷键修饰符
+    private var screenshotModifiers: NSEvent.ModifierFlags = .option
+    
     /// 是否正在录音
     var isRecording = false
     
@@ -93,6 +99,9 @@ final class HotKeyService {
     /// Clipboard Pipeline 回调
     var onClipboardPipelineTrigger: (() -> Void)?
     
+    /// Screenshot 回调
+    var onScreenshotTrigger: (() -> Void)?
+    
     /// 打开设置回调
     var onOpenSettings: (() -> Void)?
     
@@ -113,6 +122,8 @@ final class HotKeyService {
         messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
         liveCaptionKeyCode = UInt32(settings.liveCaptionKeyCode)
         liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
+        screenshotKeyCode = UInt32(settings.screenshotKeyCode)
+        screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.screenshotModifiers))
     }
     
     private func setupShortcutObserver() {
@@ -158,6 +169,24 @@ final class HotKeyService {
                 self?.reloadLiveCaptionShortcut()
             }
         }
+        
+        // Screenshot 快捷键变更观察
+        NotificationCenter.default.addObserver(
+            forName: AppSettings.screenshotShortcutDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reloadScreenshotShortcut()
+            }
+        }
+    }
+    
+    private func reloadScreenshotShortcut() {
+        let settings = AppSettings.shared
+        screenshotKeyCode = UInt32(settings.screenshotKeyCode)
+        screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.screenshotModifiers))
+        logger.info("🔄 Screenshot shortcut reloaded: \(settings.screenshotShortcutDisplayString)")
     }
     
     private func reloadLiveCaptionShortcut() {
@@ -313,6 +342,10 @@ final class HotKeyService {
         let isClipboardPipelineModifiersPressed = checkModifiersMatch(flags: flags, target: clipboardPipelineModifiers)
         let isClipboardPipelineKey = keyCode == clipboardPipelineKeyCode
         
+        // 检查是否是 Screenshot 快捷键
+        let isScreenshotModifiersPressed = checkModifiersMatch(flags: flags, target: screenshotModifiers)
+        let isScreenshotKey = keyCode == screenshotKeyCode
+        
         // 检查是否是 Cmd+逗号 (打开设置)
         let isCommandPressed = checkModifiersMatch(flags: flags, target: .command)
         let isCommaKey = keyCode == UInt32(kVK_ANSI_Comma)
@@ -350,6 +383,12 @@ final class HotKeyService {
             // Clipboard Pipeline 快捷键
             if isClipboardPipelineKey && isClipboardPipelineModifiersPressed {
                 handleClipboardPipelineTrigger()
+                return nil
+            }
+            
+            // Screenshot 快捷键
+            if isScreenshotKey && isScreenshotModifiersPressed {
+                handleScreenshotTrigger()
                 return nil
             }
             
@@ -595,6 +634,14 @@ final class HotKeyService {
             self?.onClipboardPipelineTrigger?()
         }
         logger.info("📋 Clipboard Pipeline triggered")
+    }
+    
+    // MARK: - Screenshot Handler
+    
+    private func handleScreenshotTrigger() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onScreenshotTrigger?()
+        }
     }
     
     // MARK: - Recording Handlers

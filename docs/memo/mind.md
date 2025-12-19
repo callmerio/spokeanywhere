@@ -2,6 +2,13 @@
   - 核心流程
     - 语音 -> 转录 -> AI处理 -> 剪贴板 [√]
     - 全局快捷键 ⌥+R [√]
+    - 音频文件拖入合并转录 [ ] ⭐
+      - 触发: ⌥+R 录音中拖入音频文件
+      - 流程: 并行转录(麦克风+文件) -> 拼接 -> LLM润色
+      - -> FloatingCapsuleView.onDrop
+      - -> AudioFileTranscriptionService (新建)
+      - -> RecordingController 拼接逻辑
+      - 碰撞火花: 会议纪要增强/播客精翻
   - 转录系统 -> Core/Transcription/
     - 多引擎架构 [√]
       - SpeechTranscriber (macOS 26+) -> 高精度/~2GB [√]
@@ -111,6 +118,33 @@
       - TTS 朗读 [√]
       - LLM 查询 [√]
       - OCR [√]
+  - 截图钉图 -> Core/Screenshot/ [√]
+    - 触发方式
+      - 快捷键 ⌥+A (可配置) [√]
+      - 菜单栏 -> 区域截图 [√]
+    - 区域截图 -> screencapture -i [√]
+    - ScreenshotWindow [√]
+      - Unpinned/Pinned 状态 [√]
+      - Unlocked/Locked 状态 [√]
+      - hover 显示 ActionBar [√]
+      - 整体拖动 (performDrag) [√]
+    - Pin to Space [√]
+      - window.collectionBehavior = [] [√]
+      - 切换 Space 不跟随 [√]
+    - Action Bar [√]
+      - Pin/Unpin + 动画 [√]
+      - Lock/Unlock [√]
+      - Copy Image [√]
+      - OCR -> 复用 ScreenOCRService [√]
+      - Quick Ask -> 截图作为附件 [√]
+      - Close [√]
+    - 持久化 [√]
+      - 跨重启恢复 [√]
+    - 手势 [√]
+      - 双指左右滑 -> 透明度 (0.3~1.0) [√]
+      - 双指上下滑 -> 缩放 (40~2000px) [√]
+    - 纯 AppKit 实现 -> 解决 NSHostingView 约束循环 [√]
+    - PRD -> docs/memo/plan/2025-12-19-screenshot-pin-to-space.md
   - 词典系统 -> Core/Dictionary/
     - 词条管理 [√]
       - word + corrections 映射 [√]

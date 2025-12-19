@@ -1644,6 +1644,7 @@ struct ShortcutsSettingsContent: View {
     @ObservedObject var appSettings: AppSettings
     @State private var isRecordingShortcut = false
     @State private var isRecordingQuickAskShortcut = false
+    @State private var isRecordingScreenshotShortcut = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -1671,6 +1672,18 @@ struct ShortcutsSettingsContent: View {
                         currentShortcut: appSettings.quickAskShortcutDisplayString,
                         onShortcutCaptured: { keyCode, modifiers in
                             appSettings.updateQuickAskShortcut(keyCode: keyCode, modifiers: modifiers)
+                        }
+                    )
+                }
+                
+                Divider().background(DS.Colors.settingsCardBorder)
+                
+                SettingsRow(icon: "camera.viewfinder", title: "区域截图", description: "截取屏幕区域并钉住") {
+                    ShortcutRecorderButton(
+                        isRecording: $isRecordingScreenshotShortcut,
+                        currentShortcut: appSettings.screenshotShortcutDisplayString,
+                        onShortcutCaptured: { keyCode, modifiers in
+                            appSettings.updateScreenshotShortcut(keyCode: keyCode, modifiers: modifiers)
                         }
                     )
                 }

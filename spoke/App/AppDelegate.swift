@@ -121,7 +121,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logStep("Step 9: Starting selection toolbar...")
         setupSelectionToolbar()
         
-        logStep("Step 10: Application launch complete! ✅")
+        logStep("Step 10: Setting up screenshot service...")
+        setupScreenshotService()
+        
+        logStep("Step 11: Application launch complete! ✅")
+    }
+    
+    private func setupScreenshotService() {
+        logger.info("📸 [AppDelegate] setupScreenshotService() 开始")
+        
+        // 设置 HotKeyService 的截图回调
+        HotKeyService.shared.onScreenshotTrigger = { [weak self] in
+            self?.triggerScreenshot()
+        }
+        
+        // 设置 ScreenshotManager 的窗口工厂
+        ScreenshotManager.shared.windowFactory = { item in
+            let window = ScreenshotWindow(item: item)
+            window.onFrameChanged = { newFrame in
+                ScreenshotManager.shared.updateFrame(newFrame, for: item)
+            }
+            return window
+        }
+        
+        // 恢复之前 Pinned 的截图
+        ScreenshotManager.shared.restoreAll()
+        
+        logger.info("📸 [AppDelegate] ✅ Screenshot service setup complete")
     }
     
     private func setupSelectionToolbar() {
@@ -288,6 +314,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.selectionToolbarMenuItem = toolbarItem
         menu.addItem(toolbarItem)
         
+        // 区域截图
+        let screenshotItem = NSMenuItem(title: "区域截图", action: #selector(triggerScreenshot), keyEquivalent: "a")
+        screenshotItem.keyEquivalentModifierMask = .option
+        menu.addItem(screenshotItem)
+        
         menu.addItem(NSMenuItem.separator())
         
         menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
@@ -322,6 +353,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleSelectionToolbar() {
         AppSettings.shared.selectionToolbarEnabled.toggle()
         selectionToolbarMenuItem?.state = AppSettings.shared.selectionToolbarEnabled ? .on : .off
+    }
+    
+    @objc func triggerScreenshot() {
+        Task { @MainActor in
+            await ScreenshotManager.shared.captureRegion()
+        }
     }
     
     @objc func openSettings() {

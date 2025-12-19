@@ -249,6 +249,36 @@ class AppSettings: ObservableObject {
         self.liveCaptionModifiers = modifiers
     }
     
+    // MARK: - Screenshot Shortcut
+    
+    /// Screenshot 快捷键 keyCode (默认: A = 0)
+    @AppStorage("ScreenshotKeyCode") var screenshotKeyCode: Int = kVK_ANSI_A {
+        didSet { notifyScreenshotShortcutChange() }
+    }
+    
+    /// Screenshot 快捷键修饰符 (默认: Option = 524288)
+    @AppStorage("ScreenshotModifiers") var screenshotModifiers: Int = Int(NSEvent.ModifierFlags.option.rawValue) {
+        didSet { notifyScreenshotShortcutChange() }
+    }
+    
+    /// Screenshot 快捷键变更通知
+    static let screenshotShortcutDidChangeNotification = Notification.Name("ScreenshotShortcutDidChange")
+    
+    private func notifyScreenshotShortcutChange() {
+        NotificationCenter.default.post(name: Self.screenshotShortcutDidChangeNotification, object: nil)
+    }
+    
+    /// 获取 Screenshot 快捷键显示字符串
+    var screenshotShortcutDisplayString: String {
+        KeyComboFormatter.format(keyCode: screenshotKeyCode, modifiers: screenshotModifiers)
+    }
+    
+    /// 更新 Screenshot 快捷键
+    func updateScreenshotShortcut(keyCode: Int, modifiers: Int) {
+        self.screenshotKeyCode = keyCode
+        self.screenshotModifiers = modifiers
+    }
+    
     // MARK: - Live Caption Settings
     
     /// 实时字幕翻译目标语言

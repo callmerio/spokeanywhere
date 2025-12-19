@@ -75,6 +75,69 @@ final class ScreenCaptureService {
         return images
     }
     
+    // MARK: - Region Capture
+    
+    /// 区域截图（调用系统 screencapture 工具）
+    /// 用户可交互选择截图区域，按 ESC 取消
+    /// - Returns: 截取的图片，用户取消或失败时返回 nil
+    func captureRegion() async -> NSImage? {
+        let tempFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".png")
+        
+        logger.info("📸 Starting region capture")
+        
+        return await withCheckedContinuation { [weak self] continuation in
+            guard let self = self else {
+                continuation.resume(returning: nil)
+                return
+            }
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            process.arguments = ["-i", tempFile.path]
+            
+            // 捕获 stderr 以便调试
+            let errorPipe = Pipe()
+            process.standardError = errorPipe
+            
+            process.terminationHandler = { proc in
+                Task { @MainActor in
+                    // 读取 stderr
+                    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                    let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+                    if !errorOutput.isEmpty {
+                        self.logger.warning("📸 stderr: \(errorOutput)")
+                    }
+                    
+                    defer {
+                        try? FileManager.default.removeItem(at: tempFile)
+                    }
+                    
+                    let fileExists = FileManager.default.fileExists(atPath: tempFile.path)
+                    
+                    if fileExists {
+                        if let image = NSImage(contentsOf: tempFile) {
+                            self.logger.info("✅ Region captured: \(Int(image.size.width))x\(Int(image.size.height))")
+                            continuation.resume(returning: image)
+                        } else {
+                            self.logger.error("❌ Failed to load captured image")
+                            continuation.resume(returning: nil)
+                        }
+                    } else {
+                        self.logger.debug("🚫 Region capture cancelled")
+                        continuation.resume(returning: nil)
+                    }
+                }
+            }
+            
+            do {
+                try process.run()
+            } catch {
+                self.logger.error("❌ Failed to start screencapture: \(error.localizedDescription)")
+                continuation.resume(returning: nil)
+            }
+        }
+    }
+    
     // MARK: - Permission Check
     
     /// 检查屏幕录制权限
