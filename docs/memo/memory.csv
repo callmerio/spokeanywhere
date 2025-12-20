@@ -214,3 +214,8 @@ timestamp,scope,file,action,user_intent,mm_thought,implementation,ai_tips,ref
 2025-12-20T18:55,screenshot,UI/Screenshot/ScreenshotContentView.swift,bugfix,右键菜单编译器报错修复,移除validateMenuItem;同步setupContextMenu选择器,1.validateMenuItem是NSResponder协议方法非NSView Override;2.统一Legacy Menu selectors到perform...系列,无,Manual
 2025-12-20T19:50,screenshot,UI/Screenshot/ScreenshotContentView.swift,bugfix,右键菜单Fix Final,引入MenuActionProxy绕过Responder Chain,Live Text Overlay会拦截事件导致View Actions不触发;使用Proxy对象直接绑定MenuItem target并转发给View,无,Manual
 2025-12-20T20:02,workflow,*,lesson,修复Bug时需横向CodeReview,修复Pin右键菜单后没检查快捷键P和图标点击导致UI刷新不完整,修复功能Bug时必须：1.列出所有入口(右键/快捷键/按钮);2.统一调用路径;3.确保UI刷新完整(菜单/图标/光晕),修复功能时要横向思考所有触发路径;避免头痛医头脚痛医脚,Manual
+2025-12-20T21:58,screenshot,UI/Screenshot/*.swift,feat,单键快捷键P/M/A/C/T/Q实现,keyDown override处理单键事件统一调用ContentView.performXxxAction,Window层处理keyDown需要检查无修饰键;统一入口避免UI刷新遗漏,ScreenshotWindow.keyDown
+2025-12-20T21:58,screenshot,UI/Screenshot/ScreenshotContentView.swift,feat,MenuActionProxy绕过Responder Chain,ImageAnalysisOverlayView会拦截事件;创建Proxy对象作为Menu target转发给View,Live Text Overlay的右键菜单需用Proxy Target;不能直接target=self,MenuActionProxy pattern
+2025-12-20T21:58,screenshot,UI/Screenshot/ScreenshotContentView.swift,refactor,滚动手势处理分离,scrollWheel拆分为handleOpacityChange和handleSizeChange,长方法应按职责拆分;提高可读性和可维护性,SRP principle
+2025-12-20T21:58,screenshot,UI/Screenshot/ActionBarView.swift,refactor,refreshButtons改为internal,允许外部(ContentView)调用刷新按钮状态,避免硬编码subviews[index]访问;暴露刷新接口更安全,internal vs private
+2025-12-20T21:58,workflow,*,lesson,修复Bug时需横向CodeReview,修复Pin右键后没检查快捷键P导致UI不同步,修复功能Bug必须列出所有入口(右键/快捷键/按钮)并统一调用路径,横向思维

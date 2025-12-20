@@ -131,6 +131,18 @@
     - Pin to Space [√]
       - window.collectionBehavior = [] [√]
       - 切换 Space 不跟随 [√]
+    - 单键快捷键 [√] ⭐ NEW
+      - P -> Pin/Unpin [√]
+      - M -> Mark/Unmark [√]
+      - A -> Quick Ask [√]
+      - C -> Copy Image + flashFeedback [√]
+      - T -> Copy Text (OCR) [√]
+      - Q -> Close [√]
+      - 统一调用 ContentView.performXxxAction() [√]
+    - 右键菜单 (Live Text Overlay) [√]
+      - MenuActionProxy 绕过 Responder Chain [√]
+      - 菜单项显示快捷键提示 "Pin (P)" [√]
+      - keyEquivalentModifierMask = [] [√]
     - Action Bar [√]
       - Pin/Unpin + 动画 [√]
       - Lock/Unlock [√]
@@ -138,6 +150,7 @@
       - OCR -> 复用 ScreenOCRService [√]
       - Quick Ask -> 截图作为附件 [√]
       - Close [√]
+      - refreshButtons() internal 供外部调用 [√]
     - 持久化 [√]
       - 跨重启恢复 [√]
       - 显示器绑定 [√]
@@ -151,10 +164,12 @@
       - Mark -> 橙色光晕 (持久标记重点)
       - CALayer.shadow 实现
       - 优先级: Mark > Hover
-      - 右键菜单 Mark/Unmark (Cmd+M)
+      - 右键菜单 Mark/Unmark (M)
+      - 光晕透明度同步窗口 alphaValue [√]
     - 手势 [√]
       - 双指左右滑 -> 透明度 (0.3~1.0) [√]
       - 双指上下滑 -> 缩放 (40~2000px) [√]
+      - handleOpacityChange / handleSizeChange 分离 [√]
     - 纯 AppKit 实现 -> 解决 NSHostingView 约束循环 [√]
     - PRD -> docs/memo/plan/2025-12-19-screenshot-pin-to-space.md
   - 词典系统 -> Core/Dictionary/
