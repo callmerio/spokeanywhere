@@ -1,4 +1,5 @@
 import AppKit
+import Vision
 import VisionKit
 
 // MARK: - Screenshot Content View (Pure AppKit)
@@ -7,14 +8,25 @@ import VisionKit
 /// 避免 NSHostingView 的约束循环问题
 final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
+    // MARK: - Constants
+    
+    static let glowPadding: CGFloat = 40
+    
+    /// 光晕内缩距离（每侧），用于预留阴影扩散空间
+    static let paddingPerSide: CGFloat = 30
+    
     // MARK: - Properties
     
     let item: ScreenshotItem
     private let imageView: NSImageView
-    private var actionBar: ActionBarView?
+    private var actionBar: ActionBarView?      // 右上角：AI + Pin
+    private let glowLayer = CAShapeLayer()  // 光晕专用层（使用 ShapeLayer 支持路径绘制）
     private var trackingArea: NSTrackingArea?
     private var isHovered = false
     private var hideActionBarWorkItem: DispatchWorkItem?
+    
+    // 菜单事件代理，解决 Responder Chain 问题
+    private var menuActionProxy: MenuActionProxy?
     
     /// ActionBar 最小宽度（小于此宽度时隐藏）
     private let actionBarMinWidth: CGFloat = 200
@@ -35,9 +47,6 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     /// Live Text 是否已分析完成
     private var isLiveTextReady = false
-    
-    /// Live Text 是否已启用（点击 OCR 后启用）
-    private(set) var isLiveTextEnabled = false
     
     // MARK: - Init
     
@@ -60,9 +69,20 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     // MARK: - Setup
     
     private func setupImageView() {
+        wantsLayer = true
+        layer?.masksToBounds = false // 确保容器不裁剪超出边界的内容（如阴影）
+        
+        // 光晕层用于显示 border 和 shadow
+        // 使用 CAShapeLayer 绘制圆角矩形路径，确保 shadow 正确显示
+        glowLayer.fillColor = NSColor.clear.cgColor
+        glowLayer.strokeColor = nil
+        glowLayer.lineWidth = 0
+        glowLayer.zPosition = -1 // 确保在最底层
+        layer?.addSublayer(glowLayer)
+        
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.wantsLayer = true
-        imageView.layer?.cornerRadius = 8
+        imageView.layer?.cornerRadius = 10
         imageView.layer?.masksToBounds = true
         
         // 加载图片
@@ -70,22 +90,24 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
             imageView.image = image
         }
         
-        // 设置透明度
-        imageView.alphaValue = item.opacity
+        // 移除单独的 alpha 设置，由 Window 统一管理
+        // imageView.alphaValue = item.opacity
         
         addSubview(imageView)
     }
     
     /// 设置 Live Text 覆盖层 (macOS 13+)
-    /// 默认禁用交互，点击 OCR 按钮后启用
+    /// 使用 .automatic 让系统自动控制 OCR 按钮和交互
     private func setupLiveText() {
         guard #available(macOS 13.0, *) else { return }
         
         liveTextOverlay.frame = imageView.bounds
         liveTextOverlay.trackingImageView = imageView
         liveTextOverlay.delegate = self  // 设置 delegate 以扩展右键菜单
-        // 默认禁用交互（图片模式），点击 OCR 按钮后启用
-        liveTextOverlay.preferredInteractionTypes = []
+        // 使用 .automatic：系统自动控制 OCR 按钮显示和交互
+        liveTextOverlay.preferredInteractionTypes = .automatic
+        // 隐藏系统辅助界面（Translate 按钮等），只保留 Copy All
+        liveTextOverlay.isSupplementaryInterfaceHidden = true
         addSubview(liveTextOverlay)
         
         // 后台预分析图片
@@ -94,35 +116,89 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         }
     }
     
+    /// 获取识别的文本内容
+    func getRecognizedText() -> String? {
+        if #available(macOS 13.0, *),
+           let analysis = liveTextOverlay.analysis {
+            return analysis.transcript
+        }
+        return nil
+    }
+    
     // MARK: - ImageAnalysisOverlayViewDelegate
     
     /// 在系统菜单基础上添加自定义菜单项
     @available(macOS 13.0, *)
     func overlayView(_ overlayView: ImageAnalysisOverlayView, updatedMenuFor menu: NSMenu, for event: NSEvent, at point: CGPoint) -> NSMenu {
+        // 创建 Proxy 并持有
+        self.menuActionProxy = MenuActionProxy(view: self)
+        
+        // 移除系统的 Translate 菜单项，只保留 Copy All
+        for item in menu.items.reversed() {
+            let title = item.title.lowercased()
+            let actionName = item.action?.description.lowercased() ?? ""
+            if title.contains("translate") || title.contains("翻译") ||
+               actionName.contains("translate") ||
+               item.identifier?.rawValue.lowercased().contains("translate") == true {
+                menu.removeItem(item)
+            }
+        }
+        
         // 添加分隔线
         menu.addItem(NSMenuItem.separator())
         
-        // Pin 菜单项
-        let pinTitle = item.isPinned ? "Unpin (⌘P)" : "Pin to Space (⌘P)"
-        let pinItem = NSMenuItem(title: pinTitle, action: #selector(togglePin), keyEquivalent: "p")
-        pinItem.target = self
+        // 1. Copy Image (C)
+        let copyImgItem = NSMenuItem(title: "Copy Image (C)", action: #selector(MenuActionProxy.performCopyImage), keyEquivalent: "c")
+        copyImgItem.keyEquivalentModifierMask = [] 
+        copyImgItem.target = menuActionProxy
+        menu.addItem(copyImgItem)
+        
+        // 2. Copy Text (T)
+        if let text = getRecognizedText(), !text.isEmpty {
+            let copyTextItem = NSMenuItem(title: "Copy [T]ext", action: #selector(MenuActionProxy.performCopyText), keyEquivalent: "t")
+            copyTextItem.keyEquivalentModifierMask = []
+            copyTextItem.target = menuActionProxy
+            menu.addItem(copyTextItem)
+        }
+        
+        // 分隔线
+        menu.addItem(NSMenuItem.separator())
+        
+        // 3. Pin to Space (P)
+        let pinTitle = item.isPinned ? "Unpin (P)" : "Pin to Space (P)"
+        let pinItem = NSMenuItem(title: pinTitle, action: #selector(MenuActionProxy.performPinAction), keyEquivalent: "p")
+        pinItem.keyEquivalentModifierMask = []
+        pinItem.target = menuActionProxy
         menu.addItem(pinItem)
         
-        // AI 菜单项
-        let aiItem = NSMenuItem(title: "Quick Ask", action: #selector(openQuickAsk), keyEquivalent: "")
-        aiItem.target = self
+        // 4. Quick Ask (A)
+        let aiItem = NSMenuItem(title: "Quick Ask (A)", action: #selector(MenuActionProxy.performQuickAsk), keyEquivalent: "a")
+        aiItem.keyEquivalentModifierMask = []
+        aiItem.target = menuActionProxy
         menu.addItem(aiItem)
         
         // 分隔线
         menu.addItem(NSMenuItem.separator())
         
-        // Close 菜单项
-        let closeItem = NSMenuItem(title: "Close (⌘W)", action: #selector(closeWindow), keyEquivalent: "w")
-        closeItem.target = self
+        // 5. Mark (M)
+        let markTitle = item.isMarked ? "Unmark (M)" : "Mark (M)"
+        let markItem = NSMenuItem(title: markTitle, action: #selector(MenuActionProxy.performMarkAction), keyEquivalent: "m")
+        markItem.keyEquivalentModifierMask = []
+        markItem.target = menuActionProxy
+        menu.addItem(markItem)
+        
+        // 6. Close (Q)
+        let closeItem = NSMenuItem(title: "Close (Q)", action: #selector(MenuActionProxy.performCloseAction), keyEquivalent: "q")
+        closeItem.keyEquivalentModifierMask = []
+        closeItem.target = menuActionProxy
         menu.addItem(closeItem)
         
         return menu
     }
+    
+    // MARK: - Validation
+    
+
     
     /// 预分析图片中的文字 (macOS 13+)
     /// 只分析不启用交互，等待用户点击 OCR 按钮
@@ -141,24 +217,10 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         }
     }
     
-    /// 启用 Live Text 交互 (macOS 13+)
-    @available(macOS 13.0, *)
-    func enableLiveText() {
-        guard isLiveTextReady else { return }
-        liveTextOverlay.preferredInteractionTypes = .textSelection
-        isLiveTextEnabled = true
-    }
-    
-    /// 禁用 Live Text 交互 (macOS 13+)
-    @available(macOS 13.0, *)
-    func disableLiveText() {
-        liveTextOverlay.preferredInteractionTypes = []
-        isLiveTextEnabled = false
-    }
-    
     private func setupActionBar() {
+        // 右上角：AI + Pin 按钮组
         let bar = ActionBarView(item: item)
-        bar.isHidden = true  // 初始隐藏
+        bar.isHidden = true
         bar.alphaValue = 0
         addSubview(bar)
         self.actionBar = bar
@@ -168,7 +230,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         let menu = NSMenu()
         
         // Copy Image (Cmd+C)
-        let copyItem = NSMenuItem(title: "Copy Image", action: #selector(copyImage), keyEquivalent: "c")
+        let copyItem = NSMenuItem(title: "Copy Image", action: #selector(performCopyImage), keyEquivalent: "c")
         copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
         copyItem.target = self
         menu.addItem(copyItem)
@@ -178,7 +240,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         // Pin/Unpin (Cmd+P)
         let pinItem = NSMenuItem(
             title: item.isPinned ? "Unpin" : "Pin to Space",
-            action: #selector(togglePin),
+            action: #selector(performPinAction),
             keyEquivalent: "p"
         )
         pinItem.image = NSImage(systemSymbolName: item.isPinned ? "pin.slash" : "pin", accessibilityDescription: nil)
@@ -192,15 +254,27 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         menu.addItem(ocrItem)
         
         // Quick Ask
-        let quickAskItem = NSMenuItem(title: "Quick Ask", action: #selector(openQuickAsk), keyEquivalent: "")
+        let quickAskItem = NSMenuItem(title: "Quick Ask", action: #selector(performQuickAsk), keyEquivalent: "")
         quickAskItem.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
         quickAskItem.target = self
         menu.addItem(quickAskItem)
         
         menu.addItem(.separator())
         
+        // Mark/Unmark (Cmd+M)
+        let markItem = NSMenuItem(
+            title: item.isMarked ? "Unmark" : "Mark",
+            action: #selector(performMarkAction),
+            keyEquivalent: "m"
+        )
+        markItem.image = NSImage(systemSymbolName: item.isMarked ? "bookmark.slash" : "bookmark", accessibilityDescription: nil)
+        markItem.target = self
+        menu.addItem(markItem)
+        
+        menu.addItem(.separator())
+        
         // Close (Cmd+W)
-        let closeItem = NSMenuItem(title: "Close", action: #selector(closeWindow), keyEquivalent: "w")
+        let closeItem = NSMenuItem(title: "Close", action: #selector(performCloseAction), keyEquivalent: "w")
         closeItem.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)
         closeItem.target = self
         menu.addItem(closeItem)
@@ -212,19 +286,36 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     override func layout() {
         super.layout()
-        imageView.frame = bounds
+        
+        // 增加 padding，防止光晕和圆角被裁剪
+        // 父窗口可能裁剪 content view，所以在这里做内缩
+        // 阴影半径约为 20px，预留 30px padding 确保完全显示
+        let padding = Self.paddingPerSide
+        let contentFrame = bounds.insetBy(dx: padding, dy: padding)
+        
+        imageView.frame = contentFrame
+        
+        // 更新 glowLayer 的 frame 和 path（确保光晕圆角正确）
+        glowLayer.frame = bounds // glowLayer 使用全尺寸，利用 padding 区域显示光晕
+        
+        // path 基于 contentFrame，但转换为 glowLayer 的坐标系
+        // 向外扩展 1px，确保 border 不被 imageView 遮挡（stroke 是居中绘制的）
+        let pathRect = CGRect(x: padding, y: padding, width: contentFrame.width, height: contentFrame.height).insetBy(dx: -1, dy: -1)
+        let path = CGPath(roundedRect: pathRect, cornerWidth: 10, cornerHeight: 10, transform: nil)
+        glowLayer.path = path
+        glowLayer.shadowPath = path
         
         // Live Text 覆盖层布局 (macOS 13+)
         if #available(macOS 13.0, *) {
-            liveTextOverlay.frame = bounds
+            liveTextOverlay.frame = contentFrame
         }
         
-        // ActionBar 布局（右下角）
+        // ActionBar 布局（右上角：AI + Pin）
         if let bar = actionBar {
             let barSize = bar.intrinsicContentSize
             bar.frame = CGRect(
-                x: bounds.width - barSize.width - 8,  // 距离右边 8pt
-                y: 8,  // 距离底部 8pt
+                x: bounds.width - barSize.width - 8 - padding,  // 距离右边 8pt + padding
+                y: bounds.height - barSize.height - 8 - padding,  // 距离顶部 8pt + padding
                 width: barSize.width,
                 height: barSize.height
             )
@@ -260,6 +351,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         
         isHovered = true
         updateActionBarVisibility(animated: true)
+        
+        // 通知窗口显示蓝色光晕
+        (window as? ScreenshotWindow)?.updateGlow(hovered: true)
     }
     
     override func mouseExited(with event: NSEvent) {
@@ -271,12 +365,12 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
             guard let self = self else { return }
             self.isHovered = false
             self.updateActionBarVisibility(animated: true)
+            // 通知窗口隐藏蓝色光晕
+            (self.window as? ScreenshotWindow)?.updateGlow(hovered: false)
         }
         hideActionBarWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
     }
-    
-    // MARK: - Mouse Events
     
     /// 鼠标按下位置（用于判断是否拖动选择）
     private var mouseDownLocation: CGPoint = .zero
@@ -293,7 +387,15 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
             }
         }
         
-        // 未锁定时支持拖动窗口（Live Text 区域外）
+        // Live Text 有活跃选择时，让系统处理事件（不拖动窗口）
+        if #available(macOS 13.0, *) {
+            if liveTextOverlay.hasActiveTextSelection {
+                super.mouseDown(with: event)
+                return
+            }
+        }
+        
+        // 未锁定时支持拖动窗口
         if !item.isLocked {
             window?.performDrag(with: event)
         } else {
@@ -345,52 +447,76 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     }
     
     private func updateActionBarVisibility(animated: Bool) {
-        guard let bar = actionBar else { return }
-        
         // 宽度不足时始终隐藏
         let shouldShow = isHovered && bounds.width >= actionBarMinWidth
         
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.15
-                bar.animator().alphaValue = shouldShow ? 1 : 0
-            } completionHandler: {
+        // ActionBar（右上角：AI + Pin）
+        if let bar = actionBar {
+            if animated {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.15
+                    bar.animator().alphaValue = shouldShow ? 1 : 0
+                } completionHandler: {
+                    bar.isHidden = !shouldShow
+                }
+            } else {
+                bar.alphaValue = shouldShow ? 1 : 0
                 bar.isHidden = !shouldShow
             }
-        } else {
-            bar.alphaValue = shouldShow ? 1 : 0
-            bar.isHidden = !shouldShow
         }
     }
     
     // MARK: - Drawing
     
-    override var wantsUpdateLayer: Bool { true }
-    
-    override func updateLayer() {
-        layer?.cornerRadius = 8
-        layer?.masksToBounds = true
-        
-        // 阴影
-        layer?.shadowColor = NSColor.black.cgColor
-        layer?.shadowOpacity = 0.3
-        layer?.shadowOffset = CGSize(width: 0, height: -4)
-        layer?.shadowRadius = 8
-    }
+    // 移除 wantsUpdateLayer 和 updateLayer
+    // 直接在 setup 和 layout 中管理 layer 属性
     
     // MARK: - Update
     
-    func updateOpacity(_ opacity: Double) {
-        imageView.alphaValue = opacity
+    // 移除 updateOpacity，透明度由 Window 统一控制
+    
+    /// 更新光晕效果（由 ScreenshotWindow 调用）
+    /// 使用 CAShapeLayer 的 strokeColor 绘制边框，shadow 实现光晕
+    func updateGlow(isHovered: Bool, isMarked: Bool) {
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.25)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+        
+        if isMarked {
+            // 橙色光晕 (Mark 状态 - 持久) - 柔和版本
+            glowLayer.strokeColor = NSColor(red: 0.95, green: 0.6, blue: 0.2, alpha: 0.4).cgColor
+            glowLayer.lineWidth = 1.5
+            glowLayer.shadowColor = NSColor(red: 0.95, green: 0.55, blue: 0.2, alpha: 1.0).cgColor
+            glowLayer.shadowRadius = 12
+            glowLayer.shadowOffset = .zero
+            glowLayer.shadowOpacity = 0.5
+        } else if isHovered {
+            // 蓝色光晕 (Hover/Select 状态 - 临时) - 柔和版本
+            glowLayer.strokeColor = NSColor(red: 0.3, green: 0.5, blue: 0.9, alpha: 0.4).cgColor
+            glowLayer.lineWidth = 1.5
+            glowLayer.shadowColor = NSColor(red: 0.3, green: 0.5, blue: 0.9, alpha: 1.0).cgColor
+            glowLayer.shadowRadius = 10
+            glowLayer.shadowOffset = .zero
+            glowLayer.shadowOpacity = 0.45
+        } else {
+            // 无光晕
+            glowLayer.strokeColor = nil
+            glowLayer.lineWidth = 0
+            glowLayer.shadowColor = nil
+            glowLayer.shadowOpacity = 0
+        }
+        
+        CATransaction.commit()
     }
     
     func refreshMenuItems() {
         setupContextMenu()
     }
     
+    
     // MARK: - Actions
     
-    @objc private func togglePin() {
+    @objc func performPinAction() {
         if item.isPinned {
             ScreenshotManager.shared.unpin(item)
         } else {
@@ -401,9 +527,11 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
             window.updateCollectionBehavior()
         }
         refreshMenuItems()
+        // 刷新 ActionBar 的 Pin 图标状态
+        actionBar?.refreshButtons()
     }
     
-    @objc private func toggleLock() {
+    @objc func performLockAction() {
         if item.isLocked {
             ScreenshotManager.shared.unlock(item)
         } else {
@@ -416,29 +544,15 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         refreshMenuItems()
     }
     
-    @objc private func copyImage() {
+    @objc func performCopyImage() {
         ScreenshotManager.shared.copyToClipboard(item)
     }
     
-    @objc private func performOCR() {
-        // macOS 13+ 使用 Live Text 交互模式
-        if #available(macOS 13.0, *) {
-            if isLiveTextEnabled {
-                // 已启用，点击退出 OCR 模式
-                disableLiveText()
-            } else {
-                // 启用 Live Text 交互
-                enableLiveText()
-            }
-            return
-        }
-        
-        // macOS 12 及以下使用传统 OCR（复制全部文字到剪贴板）
+    @objc func performOCR() {
+        // Legacy OCR method for macOS 12
+        if #available(macOS 13.0, *) { return }
         guard let image = item.loadImage(),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            return
-        }
-        
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
         Task.detached {
             let text = await Self.extractText(from: cgImage)
             await MainActor.run {
@@ -448,6 +562,14 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
                     pasteboard.setString(text, forType: .string)
                 }
             }
+        }
+    }
+    
+    @objc func performCopyText() {
+        if let text = getRecognizedText(), !text.isEmpty {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
         }
     }
     
@@ -469,21 +591,55 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         }
     }
     
-    @objc private func openQuickAsk() {
+    @objc func performQuickAsk() {
         guard let image = item.loadImage() else { return }
-        
         QuickAskService.shared.startSession()
         QuickAskService.shared.state.addScreenshot(image)
     }
     
-    @objc private func closeWindow() {
+    // 公开给 Window 调用，支持快捷键 A 触发
+    func triggerQuickAsk() {
+        performQuickAsk()
+    }
+    
+    @objc func performCloseAction() {
         ScreenshotManager.shared.close(item)
     }
+    
+    @objc func performMarkAction() {
+        if item.isMarked {
+            ScreenshotManager.shared.unmark(item)
+        } else {
+            ScreenshotManager.shared.mark(item)
+        }
+        setupContextMenu()
+        // 刷新光晕效果
+        updateGlow(isHovered: isHovered, isMarked: item.isMarked)
+    }
+    
 }
 
-// MARK: - Vision Import
+// MARK: - Menu Action Proxy
 
-import Vision
+/// 专用 Target 类，绕过 View Responder Chain 问题
+/// 将菜单事件转发给 View 处理
+@objc class MenuActionProxy: NSObject {
+    weak var view: ScreenshotContentView?
+    
+    init(view: ScreenshotContentView) {
+        self.view = view
+    }
+    
+    @objc func performPinAction() { 
+        view?.performPinAction() 
+    }
+    @objc func performMarkAction() { view?.performMarkAction() }
+    @objc func performCopyImage() { view?.performCopyImage() }
+    @objc func performCopyText() { view?.performCopyText() }
+    @objc func performQuickAsk() { view?.performQuickAsk() }
+    @objc func performCloseAction() { view?.performCloseAction() }
+
+}
 
 // MARK: - Action Bar View (Pure AppKit)
 
@@ -513,7 +669,7 @@ final class ActionBarView: NSView {
     }
     
     private func setupButtons() {
-        // 三个按钮：AI (左) + Pin (中) + OCR (右下角)
+        // 右上角只放两个按钮：AI + Pin（OCR 单独在右下角）
         
         // Quick Ask 按钮 (AI)
         let quickAskButton = ActionBarButton(
@@ -530,14 +686,7 @@ final class ActionBarView: NSView {
         ) { [weak self] in self?.togglePin() }
         pinButton.toolTip = item.isPinned ? "Unpin (⌘P)" : "Pin to Space (⌘P)"
         
-        // OCR 按钮 - 切换文字选择模式
-        let ocrButton = ActionBarButton(
-            icon: "text.viewfinder",
-            activeColor: .systemGreen
-        ) { [weak self] in self?.toggleOCRMode() }
-        ocrButton.toolTip = "OCR Mode (⌘O)"
-        
-        actionButtons = [quickAskButton, pinButton, ocrButton]  // AI, Pin, OCR
+        actionButtons = [quickAskButton, pinButton]  // AI, Pin
         
         for (index, button) in actionButtons.enumerated() {
             button.frame = CGRect(
@@ -626,25 +775,8 @@ final class ActionBarView: NSView {
         ScreenshotManager.shared.close(item)
     }
     
-    /// 切换 OCR 模式（启用/禁用 Live Text 交互）
-    private func toggleOCRMode() {
-        guard let contentView = superview as? ScreenshotContentView else { return }
-        
-        if #available(macOS 13.0, *) {
-            if contentView.isLiveTextEnabled {
-                // 退出 OCR 模式
-                contentView.disableLiveText()
-                actionButtons[2].setActive(false, animated: true)
-            } else {
-                // 进入 OCR 模式
-                contentView.enableLiveText()
-                actionButtons[2].setActive(true, animated: true)
-            }
-        }
-    }
-    
-    private func refreshButtons() {
-        // 布局: AI(0), Pin(1), OCR(2)
+    func refreshButtons() {
+        // 布局: AI(0), Pin(1)
         // 更新 Pin 按钮（索引 1）
         actionButtons[1].updateIcon(item.isPinned ? "pin.fill" : "pin")
         actionButtons[1].setActive(item.isPinned, animated: true)

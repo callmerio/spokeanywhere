@@ -73,12 +73,14 @@ final class ScreenshotManager {
         }
         
         // 计算初始窗口位置（鼠标附近）
+        // 增加 padding (30px * 2 = 60px) 以容纳光晕
+        let padding: CGFloat = ScreenshotContentView.paddingPerSide
         let mouseLocation = NSEvent.mouseLocation
         let frame = CGRect(
-            x: mouseLocation.x - image.size.width / 2,
-            y: mouseLocation.y - image.size.height / 2,
-            width: image.size.width,
-            height: image.size.height
+            x: mouseLocation.x - (image.size.width + padding * 2) / 2,
+            y: mouseLocation.y - (image.size.height + padding * 2) / 2,
+            width: image.size.width + padding * 2,
+            height: image.size.height + padding * 2
         )
         
         // 创建 ScreenshotItem（记录原始尺寸用于保持宽高比）
@@ -101,9 +103,15 @@ final class ScreenshotManager {
     /// Pin 截图到当前 Space
     func pin(_ item: ScreenshotItem) {
         item.isPinned = true
+        
+        // 保存当前显示器名称，用于跨重启恢复
+        if let window = windows[item.id], let screen = window.screen ?? NSScreen.main {
+            item.screenLocalizedName = screen.localizedName
+        }
+        
         updateWindowBehavior(for: item)
         saveAll()
-        logger.info("📌 [ScreenshotManager] Pinned: \(item.id)")
+        logger.info("📌 [ScreenshotManager] Pinned: \(item.id) on screen: \(item.screenLocalizedName ?? "unknown")")
     }
     
     /// Unpin 截图
@@ -130,7 +138,24 @@ final class ScreenshotManager {
         logger.info("🔓 [ScreenshotManager] Unlocked: \(item.id)")
     }
     
+    /// 标记截图（橙色光晕）
+    func mark(_ item: ScreenshotItem) {
+        item.isMarked = true
+        updateGlow(for: item)
+        saveAll()
+        logger.info("🏷️ [ScreenshotManager] Marked: \(item.id)")
+    }
+    
+    /// 取消标记
+    func unmark(_ item: ScreenshotItem) {
+        item.isMarked = false
+        updateGlow(for: item)
+        saveAll()
+        logger.info("🏷️ [ScreenshotManager] Unmarked: \(item.id)")
+    }
+    
     /// 关闭截图窗口
+    /// Close = 永久删除，无论是否 Pinned
     func close(_ item: ScreenshotItem) {
         // 关闭窗口
         if let window = windows[item.id] {
@@ -138,12 +163,13 @@ final class ScreenshotManager {
             windows.removeValue(forKey: item.id)
         }
         
-        // 如果未 Pin，删除数据
-        if !item.isPinned {
-            removeItem(item)
-        }
+        // 删除数据（无论是否 Pinned）
+        removeItem(item)
         
-        logger.info("❌ [ScreenshotManager] Closed: \(item.id)")
+        // 更新持久化存储
+        saveAll()
+        
+        logger.info("❌ [ScreenshotManager] Closed and removed: \(item.id)")
     }
     
     /// 更新窗口位置
@@ -161,6 +187,24 @@ final class ScreenshotManager {
         pasteboard.writeObjects([image])
         
         logger.info("📋 [ScreenshotManager] Copied to clipboard: \(item.id)")
+    }
+    
+    /// 切换 Pin 状态
+    func togglePin(_ item: ScreenshotItem) {
+        if item.isPinned {
+            unpin(item)
+        } else {
+            pin(item)
+        }
+    }
+    
+    /// 切换 Mark 状态
+    func toggleMark(_ item: ScreenshotItem) {
+        if item.isMarked {
+            unmark(item)
+        } else {
+            mark(item)
+        }
     }
     
     // MARK: - Persistence
@@ -196,6 +240,9 @@ final class ScreenshotManager {
                     continue
                 }
                 
+                // 恢复到正确的显示器
+                adjustFrameToScreen(for: item)
+                
                 items.append(item)
                 showWindow(for: item)
             }
@@ -223,7 +270,7 @@ final class ScreenshotManager {
     }
     
     private func updateWindowBehavior(for item: ScreenshotItem) {
-        guard let window = windows[item.id] else { return }
+        guard let window = windows[item.id] as? ScreenshotWindow else { return }
         
         // Pin to Space 行为
         if item.isPinned {
@@ -234,6 +281,14 @@ final class ScreenshotManager {
         
         // Lock 行为
         window.isMovableByWindowBackground = !item.isLocked
+        
+        // 更新光晕
+        window.updateGlow()
+    }
+    
+    private func updateGlow(for item: ScreenshotItem) {
+        guard let window = windows[item.id] as? ScreenshotWindow else { return }
+        window.updateGlow()
     }
     
     private func removeItem(_ item: ScreenshotItem) {
@@ -244,6 +299,69 @@ final class ScreenshotManager {
         items.removeAll { $0.id == item.id }
         
         saveAll()
+    }
+    
+    /// 将窗口位置调整到保存时的显示器
+    private func adjustFrameToScreen(for item: ScreenshotItem) {
+        guard let savedScreenName = item.screenLocalizedName else {
+            // 没有保存的显示器信息，保持原位置
+            return
+        }
+        
+        // 查找匹配的显示器
+        let targetScreen = NSScreen.screens.first { $0.localizedName == savedScreenName }
+        
+        guard let screen = targetScreen else {
+            // 找不到原显示器，尝试放到主显示器
+            logger.info("📺 [ScreenshotManager] Original screen '\(savedScreenName)' not found, using main screen")
+            if let mainScreen = NSScreen.main {
+                item.frame = adjustFrameToFit(item.frame, in: mainScreen)
+            }
+            return
+        }
+        
+        // 检查窗口是否已经在目标显示器上
+        let screenFrame = screen.visibleFrame
+        if screenFrame.contains(item.frame.origin) {
+            return
+        }
+        
+        // 计算窗口在原显示器坐标系中的相对位置
+        // 然后映射到目标显示器
+        item.frame = adjustFrameToFit(item.frame, in: screen)
+        logger.info("📺 [ScreenshotManager] Adjusted frame to screen: \(savedScreenName)")
+    }
+    
+    /// 确保窗口位置在指定显示器的可见区域内
+    private func adjustFrameToFit(_ frame: CGRect, in screen: NSScreen) -> CGRect {
+        let screenFrame = screen.visibleFrame
+        var newFrame = frame
+        
+        // 确保窗口不会超出显示器边界
+        if newFrame.maxX > screenFrame.maxX {
+            newFrame.origin.x = screenFrame.maxX - newFrame.width
+        }
+        if newFrame.minX < screenFrame.minX {
+            newFrame.origin.x = screenFrame.minX
+        }
+        if newFrame.maxY > screenFrame.maxY {
+            newFrame.origin.y = screenFrame.maxY - newFrame.height
+        }
+        if newFrame.minY < screenFrame.minY {
+            newFrame.origin.y = screenFrame.minY
+        }
+        
+        // 如果窗口比显示器大，缩小窗口并居中
+        if newFrame.width > screenFrame.width {
+            newFrame.size.width = screenFrame.width * 0.9
+            newFrame.origin.x = screenFrame.minX + (screenFrame.width - newFrame.width) / 2
+        }
+        if newFrame.height > screenFrame.height {
+            newFrame.size.height = screenFrame.height * 0.9
+            newFrame.origin.y = screenFrame.minY + (screenFrame.height - newFrame.height) / 2
+        }
+        
+        return newFrame
     }
     
     private func saveImage(_ image: NSImage, to url: URL) -> Bool {

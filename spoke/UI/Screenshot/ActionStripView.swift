@@ -30,6 +30,16 @@ struct ActionStripView: View {
             }
             .help(item.isLocked ? "Unlock" : "Lock")
             
+            // Mark 按钮（橙色光晕标记）
+            ActionButton(
+                icon: item.isMarked ? "bookmark.fill" : "bookmark",
+                isActive: item.isMarked,
+                activeColor: .orange
+            ) {
+                toggleMark()
+            }
+            .help(item.isMarked ? "Unmark" : "Mark")
+            
             Divider()
                 .frame(height: 16)
                 .padding(.horizontal, 4)
@@ -95,6 +105,18 @@ struct ActionStripView: View {
         
         if let window = findWindow() {
             window.updateMovable()
+        }
+    }
+    
+    private func toggleMark() {
+        if item.isMarked {
+            ScreenshotManager.shared.unmark(item)
+        } else {
+            ScreenshotManager.shared.mark(item)
+        }
+        
+        if let window = findWindow() {
+            window.updateGlow()
         }
     }
     

@@ -39,6 +39,9 @@ final class ScreenshotItem: Identifiable {
     /// 是否已锁定（禁止拖拽/缩放）
     var isLocked: Bool = false
     
+    /// 是否已标记（橙色光晕标记重点项目）
+    var isMarked: Bool = false
+    
     /// 透明度 (0.0-1.0)
     var opacity: Double = 1.0
     
@@ -47,6 +50,9 @@ final class ScreenshotItem: Identifiable {
     
     /// 外观样式
     var appearance: ScreenshotAppearance = .default
+    
+    /// 所在显示器名称（用于跨重启恢复到正确显示器）
+    var screenLocalizedName: String?
     
     // MARK: - Transient (不持久化)
     
@@ -62,9 +68,11 @@ final class ScreenshotItem: Identifiable {
         originalSize: CGSize? = nil,
         isPinned: Bool = false,
         isLocked: Bool = false,
+        isMarked: Bool = false,
         opacity: Double = 1.0,
         zoomLevel: Double = 1.0,
         appearance: ScreenshotAppearance = .default,
+        screenLocalizedName: String? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -73,9 +81,11 @@ final class ScreenshotItem: Identifiable {
         self.originalSize = originalSize ?? frame.size
         self.isPinned = isPinned
         self.isLocked = isLocked
+        self.isMarked = isMarked
         self.opacity = opacity
         self.zoomLevel = zoomLevel
         self.appearance = appearance
+        self.screenLocalizedName = screenLocalizedName
         self.createdAt = createdAt
     }
     
@@ -107,8 +117,8 @@ final class ScreenshotItem: Identifiable {
 extension ScreenshotItem: @preconcurrency Codable {
     
     enum CodingKeys: String, CodingKey {
-        case id, imagePath, frame, originalSize, isPinned, isLocked
-        case opacity, zoomLevel, appearance, createdAt
+        case id, imagePath, frame, originalSize, isPinned, isLocked, isMarked
+        case opacity, zoomLevel, appearance, screenLocalizedName, createdAt
     }
     
     convenience init(from decoder: Decoder) throws {
@@ -120,9 +130,11 @@ extension ScreenshotItem: @preconcurrency Codable {
         let originalSize = try container.decodeIfPresent(CGSize.self, forKey: .originalSize)
         let isPinned = try container.decode(Bool.self, forKey: .isPinned)
         let isLocked = try container.decode(Bool.self, forKey: .isLocked)
+        let isMarked = try container.decodeIfPresent(Bool.self, forKey: .isMarked) ?? false
         let opacity = try container.decode(Double.self, forKey: .opacity)
         let zoomLevel = try container.decode(Double.self, forKey: .zoomLevel)
         let appearance = try container.decode(ScreenshotAppearance.self, forKey: .appearance)
+        let screenLocalizedName = try container.decodeIfPresent(String.self, forKey: .screenLocalizedName)
         let createdAt = try container.decode(Date.self, forKey: .createdAt)
         
         self.init(
@@ -132,9 +144,11 @@ extension ScreenshotItem: @preconcurrency Codable {
             originalSize: originalSize,
             isPinned: isPinned,
             isLocked: isLocked,
+            isMarked: isMarked,
             opacity: opacity,
             zoomLevel: zoomLevel,
             appearance: appearance,
+            screenLocalizedName: screenLocalizedName,
             createdAt: createdAt
         )
     }
@@ -148,9 +162,11 @@ extension ScreenshotItem: @preconcurrency Codable {
         try container.encode(originalSize, forKey: .originalSize)
         try container.encode(isPinned, forKey: .isPinned)
         try container.encode(isLocked, forKey: .isLocked)
+        try container.encode(isMarked, forKey: .isMarked)
         try container.encode(opacity, forKey: .opacity)
         try container.encode(zoomLevel, forKey: .zoomLevel)
         try container.encode(appearance, forKey: .appearance)
+        try container.encodeIfPresent(screenLocalizedName, forKey: .screenLocalizedName)
         try container.encode(createdAt, forKey: .createdAt)
     }
 }

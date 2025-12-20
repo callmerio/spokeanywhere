@@ -53,7 +53,7 @@ struct ScreenshotView: View {
                 .transition(.opacity)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

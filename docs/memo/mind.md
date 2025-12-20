@@ -140,6 +140,18 @@
       - Close [√]
     - 持久化 [√]
       - 跨重启恢复 [√]
+      - 显示器绑定 [√]
+        - 保存/恢复到正确显示器
+      - Space 绑定 [×] ⚠️ macOS 限制
+        - 需要私有 CGSSpace API
+        - 与 App Store 上架冲突
+        - 参考: steipete/Peekaboo, lwouis/alt-tab-macos
+    - 光晕标记系统 [√]
+      - Hover/Select -> 蓝色淡光晕 (交互时临时显示)
+      - Mark -> 橙色光晕 (持久标记重点)
+      - CALayer.shadow 实现
+      - 优先级: Mark > Hover
+      - 右键菜单 Mark/Unmark (Cmd+M)
     - 手势 [√]
       - 双指左右滑 -> 透明度 (0.3~1.0) [√]
       - 双指上下滑 -> 缩放 (40~2000px) [√]
