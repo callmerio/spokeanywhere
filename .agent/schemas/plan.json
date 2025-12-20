@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CCW Plan Schema",
+  "description": "Structure for lite-plan and full-plan output",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "2-3 sentence overview of the plan"
+    },
+    "approach": {
+      "type": "string",
+      "description": "High-level implementation strategy"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Task ID (1, 2, 3...)" },
+          "title": { "type": "string", "description": "Action verb + target (e.g., 'Implement auth token refresh')" },
+          "file": { "type": "string", "description": "Primary file to modify" },
+          "modification_points": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Specific changes to make (e.g., 'Line 42: Add error handling')"
+          },
+          "logic_flow": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Step-by-step logic explanation"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "IDs of tasks this depends on"
+          }
+        },
+        "required": ["id", "title", "modification_points"]
+      }
+    },
+    "complexity": {
+      "type": "string",
+      "enum": ["simple", "medium", "complex"],
+      "description": "Task complexity assessment"
+    },
+    "estimated_time": {
+      "type": "string",
+      "description": "Estimated time to complete (e.g., '15-30 min')"
+    },
+    "_metadata": {
+      "type": "object",
+      "properties": {
+        "generated_at": { "type": "string", "format": "date-time" },
+        "generator": { "type": "string", "description": "Agent/tool that generated this plan" }
+      }
+    }
+  },
+  "required": ["summary", "tasks", "complexity"]
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CCW Context Package",
+  "description": "Standardized context transfer protocol between CCW workflow phases",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "session_id": { "type": "string", "description": "Session identifier (e.g., WFS-feature-name)" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "phase": { "type": "string", "enum": ["brainstorm", "plan", "execute", "review", "complete"] }
+      },
+      "required": ["session_id", "created_at", "phase"]
+    },
+    "project_context": {
+      "type": "object",
+      "properties": {
+        "tech_stack": { "type": "array", "items": { "type": "string" }, "description": "Detected technologies (e.g., ['typescript', 'react', 'node'])" },
+        "entry_points": { "type": "array", "items": { "type": "string" }, "description": "Main entry files" },
+        "module_structure": { "type": "object", "description": "Key module paths and their purposes" }
+      }
+    },
+    "brainstorm_artifacts": {
+      "type": "object",
+      "properties": {
+        "framework_path": { "type": "string", "description": "Path to guidance-framework.md" },
+        "role_analyses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          }
+        },
+        "synthesis_path": { "type": "string", "description": "Path to synthesis.md" }
+      }
+    },
+    "plan_artifacts": {
+      "type": "object",
+      "properties": {
+        "impl_plan_path": { "type": "string" },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "status": { "type": "string", "enum": ["pending", "active", "completed", "blocked"] }
+            }
+          }
+        }
+      }
+    },
+    "execution_context": {
+      "type": "object",
+      "properties": {
+        "current_task_id": { "type": "string" },
+        "completed_tasks": { "type": "array", "items": { "type": "string" } },
+        "modified_files": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "clarifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": { "type": "string" },
+          "answer": { "type": "string" },
+          "phase": { "type": "string" }
+        }
+      },
+      "description": "User answers to clarifying questions across phases"
+    }
+  },
+  "required": ["metadata"]
+}
