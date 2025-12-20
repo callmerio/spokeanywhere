@@ -98,9 +98,11 @@
       - 右键查看/复制/保存/删除 [√]
     - 智能总结 -> SummaryService [√]
       - 点击展开 (原hover) [√]
-    - 触控板手势 [√]
-      - 左边缘右滑打开 [√]
-      - 任意位置左滑关闭 [√]
+    - 触控板手势 [√] -> TrackpadSwipeService (公开 API)
+      - 双指右滑打开 Pipeline [√]
+      - 双指左滑关闭 Pipeline [√]
+      - 需要 Accessibility 权限
+      - 实现: NSEvent.addGlobalMonitor + scrollWheel 累积检测
     - 分页懒加载 [√]
   - 划词工具栏 -> Core/SelectionToolbar/
     - 监听机制 [√]
@@ -236,6 +238,10 @@
       - 音频大小限制 2GB [√]
     - 崩溃日志 -> ~/Library/Application Support/Spoke/crashes/ [√]
     - Timer 泄漏修复 -> dismantleNSView [√]
+    - 音频引擎崩溃修复 [√]
+      - AirDrop/设备切换导致闪退 -> 已修复
+      - 显式锁定输入设备 (kAudioOutputUnitProperty_CurrentDevice) [√]
+      - 监听 Engine Configuration Change + debounce [√]
     - Legacy API 废弃标注 -> @available(deprecated) [√]
   - 技术栈
     - 语言 -> Swift 6
@@ -244,6 +250,46 @@
     - 翻译 -> Apple Translation
     - 存储 -> SwiftData + JSON
     - 音频 -> AVFoundation + ScreenCaptureKit
+  - App Store 合规 -> docs/outline/app_store_compliance.md
+    - 🔴 阻断项 (必须修复)
+      - TrackpadGestureService 使用私有 API [✓ 已替换]
+        - ~~MultitouchSupport.framework (dlopen)~~
+        - 新方案: TrackpadSwipeService (NSEvent.addGlobalMonitor)
+        - 监听 scrollWheel 事件检测双指滑动
+      - 缺失 entitlements 文件 [待处理]
+        - 需要启用 App Sandbox
+        - 配置最小权限集
+    - 权限需求矩阵
+      - Accessibility (辅助功能) - 需用户手动授权
+        - HotKeyService -> CGEvent.tapCreate [全局快捷键]
+        - SelectionMonitor -> AXUIElement [划词工具栏]
+        - InputService -> CGEventPost [模拟输入]
+      - Screen Recording (屏幕录制) - 系统弹窗
+        - ScreenOCR -> ScreenCaptureKit [截图上下文]
+        - LiveCaption -> SystemAudioCapture [实时字幕]
+      - Microphone (麦克风) - 标准权限
+        - AudioRecorder [语音输入]
+      - Network (网络) - 无需用户授权
+        - LLM API 调用
+    - ⚠️ 风险评估
+      - 手势功能 -> 🔴 致命 (私有 API)
+      - 全局快捷键 -> 🟠 高风险 (需说明)
+      - 划词工具栏 -> 🟠 高风险 (需说明)
+      - 截图上下文 -> 🟡 中风险 (标准权限)
+      - 模拟输入 -> 🟡 中风险 (建议改为剪贴板)
+    - 待办事项
+      - Phase 1: 修复阻断项
+        - [x] 移除 TrackpadGestureService
+        - [ ] 创建 SpokenAnyWhere.entitlements
+        - [ ] 沙盒功能测试
+      - Phase 2: 权限引导
+        - [ ] 首次启动向导 (Onboarding)
+        - [ ] 分步权限请求 UI
+        - [ ] 权限说明文案优化
+      - Phase 3: 提交准备 (暂缓)
+        - [ ] 审核演示视频
+        - [ ] 隐私政策页面
+        - [ ] App Store 元数据
   - 未来规划
     - P0 核心
       - 翻译行截断修复 [~]

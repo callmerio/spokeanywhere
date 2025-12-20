@@ -25,7 +25,8 @@ let package = Package(
                 "Tests",
                 "SpokenAnyWhere.app",  // 旧构建产物
                 "dev.sh",              // 开发脚本
-                "Bundler.toml"         // Swift Bundler 配置
+                "Bundler.toml",        // Swift Bundler 配置
+                ".deprecated"          // 已弃用的私有 API 代码
             ],
             sources: ["App", "Core", "Services", "UI"]
         )

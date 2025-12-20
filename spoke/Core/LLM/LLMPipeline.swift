@@ -161,13 +161,11 @@ final class LLMPipeline {
             prompt = await buildPrompt(for: text)
         }
         
-        // 调试：打印完整 Prompt
+        // 调试模式下可查看 Prompt（仅 DEBUG）
         logger.info("🤖 Starting LLM refinement...")
-        print("📝 === LLM PROMPT DEBUG ===")
-        print("📝 System Prompt:")
-        print(prompt.systemPrompt)
-        print("📝 User Message: \(prompt.userMessage)")
-        print("📝 === END PROMPT ===")
+        #if DEBUG
+        logger.debug("LLM Prompt: \(prompt.userMessage.prefix(200))...")
+        #endif
         
         do {
             let response = try await provider.complete(prompt: prompt)

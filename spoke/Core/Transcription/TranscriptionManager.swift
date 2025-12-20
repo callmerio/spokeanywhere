@@ -334,16 +334,13 @@ final class TranscriptionManager {
 // MARK: - Debug
 
 extension TranscriptionManager {
-    /// 打印调试信息
+    /// 打印调试信息 (使用 logger.debug，仅在调试时可见)
     func printDebugInfo() {
-        print("=== TranscriptionManager Debug ===")
-        print("Best Engine: \(bestAvailableEngine().displayName)")
-        print("Current Engine: \(currentEngineType?.displayName ?? "None")")
-        print("Available Engines:")
-        for engine in availableEngines() {
-            print("  - \(engine.displayName) (\(engine.minOSVersion)): \(engine.isAvailable ? "✅" : "❌")")
-        }
-        print("macOS 26+ Available: \(SpeechAnalyzerAvailability.isSupported)")
-        print("==================================")
+        #if DEBUG
+        logger.debug("=== TranscriptionManager ===")
+        logger.debug("Best Engine: \(self.bestAvailableEngine().displayName)")
+        logger.debug("Current Engine: \(self.currentEngineType?.displayName ?? "None")")
+        logger.debug("macOS 26+ Available: \(SpeechAnalyzerAvailability.isSupported)")
+        #endif
     }
 }

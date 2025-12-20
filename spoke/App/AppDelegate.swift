@@ -41,18 +41,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var shortcutObserver: NSObjectProtocol?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 启动计时（仅用于内部 logger）
         let launchStart = CFAbsoluteTimeGetCurrent()
-        var stepStart = launchStart
+        let logger = Logger(subsystem: "com.spokeanywhere", category: "Launch")
         
         func logStep(_ name: String) {
-            let now = CFAbsoluteTimeGetCurrent()
-            let stepTime = (now - stepStart) * 1000
-            let totalTime = (now - launchStart) * 1000
-            print("📍 \(name) [+\(String(format: "%.0f", stepTime))ms, total: \(String(format: "%.0f", totalTime))ms]")
-            stepStart = now
+            #if DEBUG
+            let totalTime = (CFAbsoluteTimeGetCurrent() - launchStart) * 1000
+            logger.debug("\(name) [\(String(format: "%.0f", totalTime))ms]")
+            #endif
         }
-        
-        print("🚀 SpokenAnyWhere started")
         
         logStep("Step 0: Installing crash logger...")
         // 安装崩溃日志记录器
@@ -182,8 +180,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupTrackpadGesture() {
-        NSLog("🖐️ 设置触控板手势...")
-        let gesture = TrackpadGestureService.shared
+        NSLog("🖐️ 设置触控板手势 (公开 API)...")
+        let gesture = TrackpadSwipeService.shared
         let panel = MessagePanelManager.shared
         
         // 配置回调
@@ -203,7 +201,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             panel.isVisible
         }
         
-        // 启动监听
+        // 启动监听 (需要 Accessibility 权限)
         gesture.start()
     }
     
@@ -263,7 +261,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         RecordingController.shared.stop()
-        TrackpadGestureService.shared.stop()
+        TrackpadSwipeService.shared.stop()
         SelectionToolbarManager.shared.stop()
         ResourceMonitor.shared.stop()
     }
@@ -431,10 +429,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         self.settingsWindow = window
         
-        print("⚙️ Showing window...")
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        print("⚙️ Window should be visible now, frame: \(window.frame)")
     }
     
     // MARK: - Speech Engine Warmup
@@ -442,30 +438,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 预热语音引擎，消除首次使用时的卡顿
     /// SpeechTranscriber assets 安装是主要耗时点（~1.8s）
     private static func warmupSpeechEngine() async {
-        let start = CFAbsoluteTimeGetCurrent()
-        print("🔥 [Warmup] Starting speech engine warmup...")
-        
         do {
             // 1. 创建 provider（触发引擎选择）- 需要在 MainActor 上执行
             let provider = await MainActor.run {
                 TranscriptionManager.shared.createBestProvider()
             }
-            print("🔥 [Warmup] Provider created: \(type(of: provider))")
             
             // 2. 调用 prepare() 触发 assets 安装
             try await provider.prepare()
             
             // 3. 立即重置，释放资源（预热完成后不需要保持）
-            // ⚠️ reset() 必须在 MainActor 上执行，因为 TranscriptionProvider 是 @MainActor 隔离的
             await MainActor.run {
                 provider.reset()
             }
-            
-            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            print("🔥 [Warmup] ✅ Speech engine warmed up in \(String(format: "%.0f", elapsed))ms")
         } catch {
-            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            print("🔥 [Warmup] ⚠️ Warmup failed after \(String(format: "%.0f", elapsed))ms: \(error.localizedDescription)")
+            // 预热失败不影响后续使用，静默忽略
         }
     }
 }

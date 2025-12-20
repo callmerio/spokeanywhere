@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreAudio
 import Speech
 import os
 
@@ -42,6 +43,12 @@ final class AudioRecorderService: NSObject {
     private var audioBuffer: [AVAudioPCMBuffer] = []
     private let bufferLock = NSLock()
     
+    /// 配置变更通知观察者
+    private var configurationChangeObserver: NSObjectProtocol?
+    
+    /// 配置变更 debounce
+    private var configurationChangeWorkItem: DispatchWorkItem?
+    
     /// 回调
     var onAudioLevelUpdate: ((Float) -> Void)?
     var onPartialResult: ((TranscriptionResult) -> Void)?  // 传递完整结果，包含 finalized/volatile 分离
@@ -72,6 +79,115 @@ final class AudioRecorderService: NSObject {
         // 这个过程可能产生 -10877，但在启动时触发比录音时更好
         let _ = audioEngine.inputNode.outputFormat(forBus: 0)
         logger.info("🔥 Audio engine warmed up")
+        
+        // 注册配置变更通知 (设备热插拔、采样率变化等)
+        setupConfigurationChangeObserver()
+    }
+    
+    /// 注册音频配置变更通知
+    private func setupConfigurationChangeObserver() {
+        configurationChangeObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: audioEngine,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleConfigurationChange()
+            }
+        }
+        logger.info("🔔 Audio configuration change observer registered")
+    }
+    
+    /// 处理音频配置变更 (设备切换/拔出)
+    private func handleConfigurationChange() {
+        // Debounce: 避免高频切换导致连续重启
+        configurationChangeWorkItem?.cancel()
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            
+            Task { @MainActor in
+                self.logger.warning("⚠️ Audio configuration changed")
+                
+                guard self.isRecording else {
+                    self.logger.info("ℹ️ Not recording, ignoring configuration change")
+                    return
+                }
+                
+                // 正在录音时，尝试恢复
+                self.logger.info("🔄 Attempting to recover recording after configuration change...")
+                
+                do {
+                    // 1. 停止引擎
+                    self.resetAudioEngine()
+                    
+                    // 2. 重新配置并启动
+                    try self.reconfigureAndRestartEngine()
+                    
+                    self.logger.info("✅ Recording recovered after configuration change")
+                } catch {
+                    self.logger.error("❌ Failed to recover recording: \(error.localizedDescription)")
+                    self.onError?(error)
+                }
+            }
+        }
+        
+        configurationChangeWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+    }
+    
+    /// 重新配置并启动引擎 (配置变更后恢复)
+    private func reconfigureAndRestartEngine() throws {
+        // 尝试绑定用户选择的设备
+        bindSelectedInputDevice()
+        
+        let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        
+        // 重新 installTap
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
+            guard let self = self else { return }
+            try? self.audioFile?.write(from: buffer)
+            self.processAudioLevel(buffer: buffer)
+            
+            if self.isEngineReady {
+                try? self.transcriptionProvider?.process(buffer: buffer)
+            }
+        }
+        isEngineConfigured = true
+        
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+    
+    /// 绑定用户选择的输入设备
+    private func bindSelectedInputDevice() {
+        guard let deviceID = AudioDeviceManager.getSelectedAudioDeviceID() else {
+            logger.info("ℹ️ No selected device or device not found, using system default")
+            return
+        }
+        
+        let inputNode = audioEngine.inputNode
+        guard let audioUnit = inputNode.audioUnit else {
+            logger.warning("⚠️ Could not get audioUnit from inputNode")
+            return
+        }
+        
+        var mutableDeviceID = deviceID
+        let status = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &mutableDeviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
+        
+        if status == noErr {
+            logger.info("✅ Bound input device: \(deviceID)")
+        } else {
+            logger.warning("⚠️ Failed to bind input device (status: \(status)), using system default")
+        }
     }
     
     // MARK: - Public API
@@ -108,6 +224,9 @@ final class AudioRecorderService: NSObject {
         
         // 创建临时文件用于保存音频
         tempAudioFileURL = createTempAudioFileURL()
+        
+        // 🎤 绑定用户选择的麦克风 (不随系统默认漂移)
+        bindSelectedInputDevice()
         
         // 获取输入节点
         let inputNode = audioEngine.inputNode

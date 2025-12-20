@@ -139,8 +139,16 @@ final class ScreenshotManager {
     }
     
     /// 标记截图（橙色光晕）
+    /// Mark 时自动 Pin：如果截图未 Pin，标记时会自动 Pin
     func mark(_ item: ScreenshotItem) {
         item.isMarked = true
+        
+        // 🎯 Mark 时自动 Pin：已标记的内容通常需要保留在当前 Space
+        if !item.isPinned {
+            pin(item)
+            logger.info("📌 [ScreenshotManager] Auto-pinned due to mark")
+        }
+        
         updateGlow(for: item)
         saveAll()
         logger.info("🏷️ [ScreenshotManager] Marked: \(item.id)")

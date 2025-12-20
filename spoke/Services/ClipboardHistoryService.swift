@@ -152,7 +152,6 @@ final class ClipboardHistoryService {
         saveHistory()
         
         logger.info("📋 Added to history: \(truncated.prefix(80), privacy: .public)...")
-        print("📋 Clipboard history count: \(history.count), latest: \(truncated.prefix(80))...")
     }
     
     /// 检测是否应忽略（垃圾过滤）
