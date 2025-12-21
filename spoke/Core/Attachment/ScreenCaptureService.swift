@@ -47,22 +47,24 @@ final class ScreenCaptureService {
             
             let filter = SCContentFilter(display: scDisplay, excludingWindows: [])
             let configuration = SCStreamConfiguration()
-            configuration.width = scDisplay.width
-            configuration.height = scDisplay.height
+            
+            // 🔧 Fix: SCStreamConfiguration 需要像素尺寸，不是逻辑尺寸！
+            // SCDisplay.width/height 返回逻辑尺寸（点）
+            // 需要乘以 backingScaleFactor 才能获得正确的像素密度
+            let scale = screen.backingScaleFactor
+            configuration.width = Int(CGFloat(scDisplay.width) * scale)
+            configuration.height = Int(CGFloat(scDisplay.height) * scale)
             configuration.showsCursor = false
             
             let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
             
-            // 🔧 Fix: SCDisplay.width/height 返回的是逻辑尺寸（点），不是像素尺寸！
-            // 在 HiDPI 缩放模式下（如 3360×1890 @ 2x），SCDisplay 返回 3360×1890
-            // 而不是物理像素 6720×3780
-            // 所以 NSImage.size 应该直接使用 scDisplay 的尺寸，不需要除以 backingScaleFactor
+            // NSImage.size 使用逻辑尺寸（点），这样绘制时 scale 正确
             let pointSize = NSSize(
                 width: CGFloat(scDisplay.width),
                 height: CGFloat(scDisplay.height)
             )
             let image = NSImage(cgImage: cgImage, size: pointSize)
-            logger.info("✅ Screen captured via SCK: \(Int(scDisplay.width))x\(Int(scDisplay.height)) pt, cgImage: \(cgImage.width)x\(cgImage.height) px")
+            logger.info("✅ Screen captured: \(Int(scDisplay.width))x\(Int(scDisplay.height)) pt, \(cgImage.width)x\(cgImage.height) px, scale=\(scale)")
             
             return image
         } catch {
