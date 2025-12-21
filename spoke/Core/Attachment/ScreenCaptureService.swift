@@ -52,8 +52,17 @@ final class ScreenCaptureService {
             configuration.showsCursor = false
             
             let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
-            let image = NSImage(cgImage: cgImage, size: screen.frame.size)
-            logger.info("✅ Screen captured via SCK: \(Int(scDisplay.width))x\(Int(scDisplay.height))")
+            
+            // 🔧 Fix: 使用屏幕的 backingScaleFactor 计算正确的点尺寸
+            // scDisplay.width/height 是像素尺寸，需要除以 scaleFactor 得到点尺寸
+            // 这样 NSImage 才能正确保留高分辨率信息
+            let scaleFactor = screen.backingScaleFactor
+            let pointSize = NSSize(
+                width: CGFloat(scDisplay.width) / scaleFactor,
+                height: CGFloat(scDisplay.height) / scaleFactor
+            )
+            let image = NSImage(cgImage: cgImage, size: pointSize)
+            logger.info("✅ Screen captured via SCK: \(Int(scDisplay.width))x\(Int(scDisplay.height)) px, scale=\(scaleFactor)")
             
             return image
         } catch {

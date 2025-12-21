@@ -198,16 +198,40 @@ final class RegionSelectionView: NSView {
     func getAnnotatedImage() -> NSImage? {
         guard let bgImage = backgroundImage else { return nil }
         
-        // 裁剪选区
-        let croppedImage = NSImage(size: selectionRect.size)
-        croppedImage.lockFocus()
-        bgImage.draw(
-            in: CGRect(origin: .zero, size: selectionRect.size),
-            from: selectionRect,
-            operation: .copy,
-            fraction: 1.0
+        // 从 NSImage 获取 CGImage representation
+        guard let cgImage = bgImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return nil
+        }
+        
+        // 🔧 Fix: 使用 CGImage 的实际像素尺寸计算 scale，而非 window.backingScaleFactor
+        // 这样可以正确处理不同屏幕的不同 DPI
+        let imagePixelWidth = CGFloat(cgImage.width)
+        let imagePixelHeight = CGFloat(cgImage.height)
+        
+        // 计算实际 scale (像素/点)
+        // bounds 是视图的点尺寸，imagePixel 是图片的像素尺寸
+        let scaleX = imagePixelWidth / bounds.width
+        let scaleY = imagePixelHeight / bounds.height
+        
+        // 使用 X/Y 的平均值（通常两者相等）
+        let scale = (scaleX + scaleY) / 2.0
+        
+        // 计算像素级别的裁剪区域
+        // CGImage 坐标系是左上角原点，需要从 AppKit 的左下角原点转换
+        let pixelRect = CGRect(
+            x: selectionRect.origin.x * scale,
+            y: (bounds.height - selectionRect.maxY) * scale, // 翻转 Y 坐标
+            width: selectionRect.width * scale,
+            height: selectionRect.height * scale
         )
-        croppedImage.unlockFocus()
+        
+        // 裁剪 CGImage
+        guard let croppedCGImage = cgImage.cropping(to: pixelRect) else {
+            return nil
+        }
+        
+        // 创建高分辨率 NSImage，使用选区的点尺寸
+        let croppedImage = NSImage(cgImage: croppedCGImage, size: selectionRect.size)
         
         // 叠加标注
         if let canvas = annotationCanvas, !canvas.annotations.isEmpty {
@@ -230,9 +254,18 @@ final class RegionSelectionView: NSView {
         
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         
+        // 设置高质量插值，避免 Retina 屏幕模糊
+        context.interpolationQuality = .high
+        
         // 1. 绘制背景图片
         if let image = backgroundImage {
-            image.draw(in: bounds, from: .zero, operation: .copy, fraction: 1.0)
+            // 使用 draw(in:from:operation:fraction:respectFlipped:hints:) 获得更好的质量
+            image.draw(in: bounds,
+                      from: NSRect(origin: .zero, size: image.size),
+                      operation: .copy,
+                      fraction: 1.0,
+                      respectFlipped: true,
+                      hints: [.interpolation: NSImageInterpolation.high])
         }
         
         // 2. 绘制半透明遮罩（选区外部变暗）
