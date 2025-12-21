@@ -1,6 +1,7 @@
 import AppKit
 import Vision
 import VisionKit
+import os
 
 // MARK: - Screenshot Content View (Pure AppKit)
 
@@ -10,6 +11,8 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     // MARK: - Constants
     
+    private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenshotContentView")
+    
     static let glowPadding: CGFloat = 40
     
     /// 光晕内缩距离（每侧），用于预留阴影扩散空间
@@ -17,19 +20,37 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     // MARK: - Properties
     
+    // MARK: - Properties
+    
     let item: ScreenshotItem
     private let imageView: NSImageView
-    private var actionBar: ActionBarView?      // 右上角：AI + Pin
-    private let glowLayer = CAShapeLayer()  // 光晕专用层（使用 ShapeLayer 支持路径绘制）
+    private var actionBar: ActionBarView?
+    private let glowLayer = CAShapeLayer()
     private var trackingArea: NSTrackingArea?
     private var isHovered = false
     private var hideActionBarWorkItem: DispatchWorkItem?
     
-    // 菜单事件代理，解决 Responder Chain 问题
+    // 菜单事件代理
     private var menuActionProxy: MenuActionProxy?
     
-    /// ActionBar 最小宽度（小于此宽度时隐藏）
     private let actionBarMinWidth: CGFloat = 200
+    
+    // MARK: - Image Enhancement
+    
+    /// 原始图片 (1x)
+    private var originalImage: NSImage?
+    
+    /// 图片增强防抖任务 (延迟启动)
+    private var enhanceDebounceTask: DispatchWorkItem?
+    
+    /// 当前正在执行的增强任务 (可取消)
+    private var currentEnhanceTask: Task<Void, Never>?
+    
+    /// 上次增强时的尺寸，避免微小变动重复计算
+    private var lastEnhancedSize: CGSize = .zero
+    
+    /// AI 增强防抖延迟 (1秒)
+    private let enhanceDebounceDelay: TimeInterval = 1.0
     
     // MARK: - Live Text (macOS 13+)
     
@@ -46,8 +67,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     private lazy var imageAnalyzer = ImageAnalyzer()
     
     /// Live Text 是否已分析完成
-    private var isLiveTextReady = false
-    
+    private var isLiveTextReady = false    
     // MARK: - Init
     
     init(item: ScreenshotItem) {
@@ -70,14 +90,12 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     private func setupImageView() {
         wantsLayer = true
-        layer?.masksToBounds = false // 确保容器不裁剪超出边界的内容（如阴影）
+        layer?.masksToBounds = false
         
-        // 光晕层用于显示 border 和 shadow
-        // 使用 CAShapeLayer 绘制圆角矩形路径，确保 shadow 正确显示
         glowLayer.fillColor = NSColor.clear.cgColor
         glowLayer.strokeColor = nil
         glowLayer.lineWidth = 0
-        glowLayer.zPosition = -1 // 确保在最底层
+        glowLayer.zPosition = -1
         layer?.addSublayer(glowLayer)
         
         imageView.imageScaling = .scaleProportionallyUpOrDown
@@ -85,15 +103,89 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         imageView.layer?.cornerRadius = 10
         imageView.layer?.masksToBounds = true
         
-        // 加载图片
+        // 加载图片并保存为原始图
         if let image = item.loadImage() {
+            self.originalImage = image
             imageView.image = image
         }
         
-        // 移除单独的 alpha 设置，由 Window 统一管理
-        // imageView.alphaValue = item.opacity
-        
         addSubview(imageView)
+    }
+    
+    /// 更新图片质量（响应缩放）
+    /// - Parameter targetSize: 目标显示尺寸
+    /// 
+    /// 防抖策略：
+    /// 1. 用户操作时取消之前的防抖定时器
+    /// 2. 如果有正在进行的 AI 处理，也取消它
+    /// 3. 等待 1 秒无操作后才启动 AI 处理
+    /// 4. 处理过程中如果用户又操作，立即取消并重新等待
+    func updateImageQuality(targetSize: CGSize) {
+        // 1. 取消之前的防抖定时器
+        enhanceDebounceTask?.cancel()
+        enhanceDebounceTask = nil
+        
+        // 2. 取消正在进行的 AI 处理任务
+        currentEnhanceTask?.cancel()
+        currentEnhanceTask = nil
+        
+        guard let original = originalImage else { return }
+        
+        // 3. 如果缩放比例接近 1x 或更小，直接使用原图
+        let scale = targetSize.width / original.size.width
+        if scale < 1.1 {
+            if imageView.image !== original {
+                imageView.image = original
+                lastEnhancedSize = .zero
+                logger.debug("Image quality reset to original (scale: \(scale))")
+            }
+            return
+        }
+        
+        // 4. 如果尺寸变化很小 (< 10px)，忽略
+        if abs(targetSize.width - lastEnhancedSize.width) < 10 {
+            return
+        }
+        
+        // 5. 创建防抖任务 (1秒延迟)
+        let debounceTask = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            
+            // 启动可取消的 AI 处理任务
+            self.currentEnhanceTask = Task { [weak self] in
+                guard let self = self else { return }
+                
+                // 检查是否被取消
+                if Task.isCancelled { return }
+                
+                self.logger.debug("🎨 Starting AI enhancement: \(targetSize.width)x\(targetSize.height)")
+                let start = CFAbsoluteTimeGetCurrent()
+                
+                // 在后台线程执行增强
+                let enhanced = await Task.detached(priority: .userInitiated) {
+                    ImageEnhancementService.shared.enhance(original, to: targetSize)
+                }.value
+                
+                // 再次检查是否被取消
+                if Task.isCancelled {
+                    self.logger.debug("🛑 AI enhancement cancelled")
+                    return
+                }
+                
+                if let enhanced = enhanced {
+                    let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
+                    self.logger.info("✅ Image enhanced in \(String(format: "%.1f", duration))ms")
+                    
+                    await MainActor.run {
+                        self.imageView.image = enhanced
+                        self.lastEnhancedSize = targetSize
+                    }
+                }
+            }
+        }
+        
+        self.enhanceDebounceTask = debounceTask
+        DispatchQueue.main.asyncAfter(deadline: .now() + enhanceDebounceDelay, execute: debounceTask)
     }
     
     /// 设置 Live Text 覆盖层 (macOS 13+)

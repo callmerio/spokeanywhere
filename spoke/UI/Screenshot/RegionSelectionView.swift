@@ -130,6 +130,22 @@ final class RegionSelectionView: NSView {
     
     private func setupView() {
         wantsLayer = true
+        // 注意: contentsScale 在 viewDidMoveToWindow 中设置
+    }
+    
+    /// 窗口变化时更新 layer 的 contentsScale
+    /// 🔧 Fix: 确保在多屏幕环境下正确设置缩放因子，避免模糊
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        updateContentsScale()
+    }
+    
+    /// 更新 layer 的 contentsScale 以匹配当前屏幕
+    private func updateContentsScale() {
+        guard let window = window else { return }
+        let scale = window.backingScaleFactor
+        layer?.contentsScale = scale
+        annotationCanvas?.layer?.contentsScale = scale
     }
     
     private func setupAnnotationCanvas() {
