@@ -27,6 +27,13 @@ final class ScreenshotSettings: ObservableObject {
         }
     }
     
+    /// 复制时使用 AI 增强后的图片（如果可用）
+    @Published var copyEnhancedImage: Bool {
+        didSet {
+            UserDefaults.standard.set(copyEnhancedImage, forKey: "Screenshot.CopyEnhancedImage")
+        }
+    }
+    
     private init() {
         if let rawValue = UserDefaults.standard.string(forKey: "Screenshot.UpscalingMode"),
            let mode = UpscalingMode(rawValue: rawValue) {
@@ -34,5 +41,8 @@ final class ScreenshotSettings: ObservableObject {
         } else {
             self.upscalingMode = .basic // Default
         }
+        
+        // 默认开启复制增强图片
+        self.copyEnhancedImage = UserDefaults.standard.object(forKey: "Screenshot.CopyEnhancedImage") as? Bool ?? true
     }
 }

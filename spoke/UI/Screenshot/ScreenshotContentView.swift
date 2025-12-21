@@ -663,7 +663,12 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     }
     
     @objc func performCopyImage() {
-        ScreenshotManager.shared.copyToClipboard(item)
+        ScreenshotManager.shared.copyToClipboard(item, enhancedImage: imageView.image)
+    }
+    
+    /// 获取当前显示的图片（可能是 AI 增强后的）
+    func getCurrentDisplayImage() -> NSImage? {
+        return imageView.image
     }
     
     @objc func performOCR() {
@@ -855,7 +860,9 @@ final class ActionBarView: NSView {
     }
     
     private func copyImage(button: ActionBarButton) {
-        ScreenshotManager.shared.copyToClipboard(item)
+        // 通过 window 获取 ScreenshotContentView 的增强图片
+        let enhancedImage = (window as? ScreenshotWindow)?.screenshotContentView?.getCurrentDisplayImage()
+        ScreenshotManager.shared.copyToClipboard(item, enhancedImage: enhancedImage)
         button.showFeedback()
     }
     

@@ -250,8 +250,22 @@ final class ScreenshotManager {
     }
     
     /// 复制图片到剪贴板
-    func copyToClipboard(_ item: ScreenshotItem) {
-        guard let image = item.loadImage() else { return }
+    /// - Parameters:
+    ///   - item: 截图项
+    ///   - enhancedImage: AI 增强后的图片（可选）。如果设置开启且提供了增强图片，则使用增强图片
+    func copyToClipboard(_ item: ScreenshotItem, enhancedImage: NSImage? = nil) {
+        let imageToUse: NSImage?
+        
+        // 如果设置开启且提供了增强图片，使用增强图片
+        if ScreenshotSettings.shared.copyEnhancedImage, let enhanced = enhancedImage {
+            imageToUse = enhanced
+            logger.info("📋 [ScreenshotManager] Using enhanced image for clipboard")
+        } else {
+            imageToUse = item.loadImage()
+            logger.info("📋 [ScreenshotManager] Using original image for clipboard")
+        }
+        
+        guard let image = imageToUse else { return }
         
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()

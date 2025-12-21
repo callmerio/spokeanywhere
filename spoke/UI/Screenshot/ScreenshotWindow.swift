@@ -15,7 +15,7 @@ final class ScreenshotWindow: NSPanel {
     var onFrameChanged: ((CGRect) -> Void)?
     
     /// 内容视图（纯 AppKit）
-    private var screenshotContentView: ScreenshotContentView?
+    private(set) var screenshotContentView: ScreenshotContentView?
     
     
     /// 当前是否 hover 状态
@@ -66,7 +66,7 @@ final class ScreenshotWindow: NSPanel {
             screenshotContentView?.triggerQuickAsk()
             
         case "c": // C -> Copy Image
-            ScreenshotManager.shared.copyToClipboard(item)
+            ScreenshotManager.shared.copyToClipboard(item, enhancedImage: screenshotContentView?.getCurrentDisplayImage())
             // 可选：添加简单的视觉反馈（如闪烁一下）
             flashFeedback()
             

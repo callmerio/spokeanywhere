@@ -57,6 +57,29 @@ struct ScreenshotSettingsView: View {
                     }
                 }
             }
+            
+            // Copy Enhanced Image Toggle
+            SettingsCard {
+                Toggle(isOn: $settings.copyEnhancedImage) {
+                    HStack {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.gray)
+                            .frame(width: 24)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("复制优化后图片")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white)
+                            Text("复制时使用 AI 增强后的高清图片")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                }
+                .toggleStyle(.switch)
+                .padding(16)
+            }
         }
         .onAppear {
             modelManager.checkState()

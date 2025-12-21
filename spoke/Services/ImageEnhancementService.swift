@@ -79,7 +79,14 @@ final class ImageEnhancementService {
             return nil
         }
         
-        return NSImage(cgImage: resultCGImage, size: targetSize)
+        // 🔧 Fix: 保持原图宽高比，不强制使用 targetSize
+        // Lanczos 等比例缩放后，实际尺寸是 (原宽*scaleX, 原高*scaleX)
+        // NSImage.size 必须与实际像素比例一致，否则 imageView 显示会错位
+        let actualSize = NSSize(
+            width: image.size.width * scaleX,
+            height: image.size.height * scaleX
+        )
+        return NSImage(cgImage: resultCGImage, size: actualSize)
     }
     
     // MARK: - AI Enhancement (CoreML with Tiling)
@@ -409,7 +416,13 @@ final class ImageEnhancementService {
             return nil
         }
         
-        return NSImage(cgImage: resultCGImage, size: targetSize)
+        // 🔧 Fix: 保持原图宽高比，不强制使用 targetSize
+        // Lanczos 等比例缩放后，实际尺寸是 (原宽*scale, 原高*scale)
+        let actualSize = NSSize(
+            width: ciImage.extent.width * scale,
+            height: ciImage.extent.height * scale
+        )
+        return NSImage(cgImage: resultCGImage, size: actualSize)
     }
     
     /// 仅锐化图片（不缩放）
