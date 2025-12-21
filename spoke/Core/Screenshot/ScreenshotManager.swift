@@ -48,56 +48,119 @@ final class ScreenshotManager {
     // MARK: - Public API
     
     /// 触发区域截图
+    /// 使用自建选区 UI，精确获取选区坐标
     func captureRegion() async {
-        print("📸 [ScreenshotManager] captureRegion triggered")
+        logger.info("📸 [ScreenshotManager] captureRegion triggered")
         
         // 检查屏幕录制权限
         let hasPermission = await checkAndRequestPermission()
         guard hasPermission else {
-            print("🚫 [ScreenshotManager] Screen capture permission not granted")
+            logger.warning("🚫 [ScreenshotManager] Screen capture permission not granted")
             return
         }
         
-        guard let image = await ScreenCaptureService.shared.captureRegion() else {
-            print("🚫 [ScreenshotManager] User cancelled or capture failed")
+        // 1. 截取鼠标所在屏幕
+        guard let (screenImage, screenFrame) = await ScreenCaptureService.shared.captureCurrentScreenWithFrame() else {
+            logger.error("❌ [ScreenshotManager] Failed to capture current screen")
             return
         }
         
-        // 保存图片到文件
+        // 2. 显示选区 UI，等待用户选择
+        let result = await showRegionSelectionUI(backgroundImage: screenImage, screenFrame: screenFrame)
+        
+        guard let (viewSelectionRect, croppedImage, confirmMode) = result else {
+            logger.info("🚫 [ScreenshotManager] User cancelled region selection")
+            return
+        }
+        
+        // 3. 处理不同的确认模式
+        switch confirmMode {
+        case .copy:
+            // 直接复制到剪贴板，不创建窗口
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.writeObjects([croppedImage])
+            logger.info("📋 [ScreenshotManager] Screenshot copied to clipboard")
+            return
+            
+        case .temporary, .pin:
+            break // 继续创建窗口
+        }
+        
+        // 4. 保存图片到文件
         let itemId = UUID()
         let imagePath = screenshotsDirectory.appendingPathComponent("\(itemId.uuidString).png")
         
-        guard saveImage(image, to: imagePath) else {
+        guard saveImage(croppedImage, to: imagePath) else {
             logger.error("❌ [ScreenshotManager] Failed to save image")
             return
         }
         
-        // 计算初始窗口位置（鼠标附近）
-        // 增加 padding (30px * 2 = 60px) 以容纳光晕
-        let padding: CGFloat = ScreenshotContentView.paddingPerSide
-        let mouseLocation = NSEvent.mouseLocation
-        let frame = CGRect(
-            x: mouseLocation.x - (image.size.width + padding * 2) / 2,
-            y: mouseLocation.y - (image.size.height + padding * 2) / 2,
-            width: image.size.width + padding * 2,
-            height: image.size.height + padding * 2
+        // 5. 计算窗口位置
+        let screenSelectionRect = CGRect(
+            x: screenFrame.origin.x + viewSelectionRect.origin.x,
+            y: screenFrame.origin.y + viewSelectionRect.origin.y,
+            width: viewSelectionRect.width,
+            height: viewSelectionRect.height
         )
         
-        // 创建 ScreenshotItem（记录原始尺寸用于保持宽高比）
+        let padding: CGFloat = ScreenshotContentView.paddingPerSide
+        let frame = CGRect(
+            x: screenSelectionRect.midX - (croppedImage.size.width + padding * 2) / 2,
+            y: screenSelectionRect.midY - (croppedImage.size.height + padding * 2) / 2,
+            width: croppedImage.size.width + padding * 2,
+            height: croppedImage.size.height + padding * 2
+        )
+        
+        // 6. 创建 ScreenshotItem
         let item = ScreenshotItem(
             id: itemId,
             imagePath: imagePath.path,
             frame: frame,
-            originalSize: image.size
+            originalSize: croppedImage.size
         )
-        item.cachedImage = image
+        item.cachedImage = croppedImage
+        
+        // 如果是 Pin 模式，直接标记为 Pinned
+        if confirmMode == .pin {
+            item.isPinned = true
+            // 保存当前显示器名称
+            let mouseLocation = NSEvent.mouseLocation
+            if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) {
+                item.screenLocalizedName = screen.localizedName
+            }
+        }
         
         items.append(item)
         
-        // 创建并显示窗口
+        // 7. 创建并显示窗口
         showWindow(for: item)
         
-        logger.info("✅ [ScreenshotManager] Screenshot created: \(itemId)")
+        // 如果是 Pin 模式，保存状态
+        if confirmMode == .pin {
+            saveAll()
+        }
+        
+        logger.info("✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode)): \(itemId)")
+    }
+    
+    /// 显示选区 UI 并等待用户选择
+    /// - Returns: (视图内选区坐标, 裁剪后的图片, 确认模式) 或 nil（用户取消）
+    private func showRegionSelectionUI(backgroundImage: NSImage, screenFrame: CGRect) async -> (CGRect, NSImage, RegionSelectionWindow.ConfirmMode)? {
+        return await withCheckedContinuation { continuation in
+            let selectionWindow = RegionSelectionWindow(screenFrame: screenFrame)
+            selectionWindow.setBackgroundImage(backgroundImage)
+            
+            selectionWindow.onComplete = { rect, croppedImage, confirmMode in
+                continuation.resume(returning: (rect, croppedImage, confirmMode))
+            }
+            
+            selectionWindow.onCancel = {
+                continuation.resume(returning: nil)
+            }
+            
+            selectionWindow.show()
+        }
     }
     
     /// Pin 截图到当前 Space

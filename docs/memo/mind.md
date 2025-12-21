@@ -174,6 +174,26 @@
       - handleOpacityChange / handleSizeChange 分离 [√]
     - 纯 AppKit 实现 -> 解决 NSHostingView 约束循环 [√]
     - PRD -> docs/memo/plan/2025-12-19-screenshot-pin-to-space.md
+    - 标注系统 [√] ⭐ NEW
+      - 触发 -> 框选后自动进入编辑模式 [√]
+      - 工具栏 -> ScreenshotToolbarView [√]
+        - Arrow (A) -> 箭头标注 [√]
+        - Pen (B) -> 画笔 (实心/细) [√]
+        - Marker (M) -> 荧光笔 (半透明/粗) [√]
+        - Text (T) -> 文字标注 [√]
+        - Eraser (E) -> 橡皮擦 (hover变淡/点击删除) [√]
+        - Undo/Redo -> 命令模式 [√]
+      - 交互
+        - scrollWheel -> 调整笔刷粗细 (1~100px) [√]
+        - 动态光标 -> 圆形大小随粗细变化 [√]
+        - 双击文字 -> 编辑模式 [√]
+        - 单击拖动 -> 移动标注 [√]
+        - Shift+Enter -> 文字换行 [√]
+        - maxWidth -> 保持输入时换行效果 [√]
+      - Annotation 协议 -> Arrow/Pen/Marker/TextAnnotation [√]
+      - AnnotationCommand -> Add/Remove 命令模式 [√]
+      - AnnotationCanvasView -> 画布绘制交互 [√]
+      - 图标映射: pen=highlighter/marker=paintbrush [√]
   - 词典系统 -> Core/Dictionary/
     - 词条管理 [√]
       - word + corrections 映射 [√]

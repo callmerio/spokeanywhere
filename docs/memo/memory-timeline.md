@@ -4,6 +4,7 @@
 
 ## Learns (Latest at top)
 
+- [T073] 截图标注系统：Annotation协议+命令模式Undo/Redo+scrollWheel动态笔刷光标；NSTextView.doCommandBy检测Shift键实现Shift+Enter换行；draw(in:)比draw(with:options:)更可靠；图标映射pen=highlighter/marker=paintbrush符合用户心智
 - [T072] VocabularyService 正则优化：按词长降序排列避免子串错误匹配（如 "AI Agent" 优先于 "AI"）；暴露 markVocabulary API 复用预编译正则
 - [T071] 双层缓冲区模型：frozenLines(已冻结)+currentLineBuffer(当前行 finalized)+volatileTail(尾巴)；volatile 不参与分行只追加显示；冻结条件>=65 字符或(>=40+句号)；displayWindowStart 单向滚动只增不减
 - [T070] [已被 T071 替代] 行缓冲区设计：旧实现，volatile 参与分行导致跳动
@@ -78,6 +79,25 @@
 - [T001] 纯代码窗口：NSWindowController + NSHostingView (SwiftUI)
 
 ## Timeline
+
+[2025-12-21 T073] 截图标注系统 Phase 1.1-1.3
+
+- PROB: 截图需要标注功能(箭头/画笔/荧光笔/文字/橡皮擦)和Undo/Redo支持
+- PLAN:
+  1. Annotation 协议 + Arrow/Pen/Marker/TextAnnotation 具体实现
+  2. AnnotationCommand 命令模式实现 Undo/Redo
+  3. AnnotationCanvasView 画布处理绘制交互
+  4. scrollWheel 调整笔刷粗细 + 动态圆形光标
+  5. 双击编辑文字 + 单击拖动
+  6. Shift+Enter 换行 (检测 Shift 修饰键)
+  7. maxWidth 保持输入时换行效果
+- TIME: 4h | TAGS: #screenshot #annotation #undo-redo #interaction
+- FILE: UI/Screenshot/Annotation.swift; AnnotationCanvasView.swift; AnnotationCommand.swift
+- STAT: [√] 功能完成
+- NOTE:
+  - NSTextView.doCommandBy 中检测 NSEvent.modifierFlags.contains(.shift) 实现 Shift+Enter
+  - draw(in:) 比 draw(with:options:) 更可靠，后者需要 flipped context
+  - 图标 pen=highlighter / marker=paintbrush 符合用户心智模型
 
 [2025-12-15 T072] LiveCaption 复制功能 + 生词正则优化
 

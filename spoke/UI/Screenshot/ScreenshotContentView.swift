@@ -363,6 +363,21 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         hideActionBarWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
+            
+            // Double Check: 只有当鼠标真正在视图外部时才执行隐藏
+            // 这解决了从子视图（按钮）移回父视图时可能误触 Exited 的问题
+            if let window = self.window {
+                let mouseLocation = window.mouseLocationOutsideOfEventStream
+                let localPoint = self.convert(mouseLocation, from: nil)
+                if self.bounds.contains(localPoint) {
+                    // 鼠标其实还在里面，恢复状态并取消隐藏
+                    self.isHovered = true
+                    self.updateActionBarVisibility(animated: true)
+                    (self.window as? ScreenshotWindow)?.updateGlow(hovered: true)
+                    return
+                }
+            }
+            
             self.isHovered = false
             self.updateActionBarVisibility(animated: true)
             // 通知窗口隐藏蓝色光晕
@@ -477,7 +492,8 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     /// 更新光晕效果（由 ScreenshotWindow 调用）
     /// 使用 CAShapeLayer 的 strokeColor 绘制边框，shadow 实现光晕
-    func updateGlow(isHovered: Bool, isMarked: Bool) {
+    /// 颜色优先级：Mark(橙) > Hover(蓝) > 非Pin(奶白) > 无
+    func updateGlow(isHovered: Bool, isMarked: Bool, isPinned: Bool) {
         CATransaction.begin()
         CATransaction.setAnimationDuration(0.25)
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
@@ -498,8 +514,18 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
             glowLayer.shadowRadius = 10
             glowLayer.shadowOffset = .zero
             glowLayer.shadowOpacity = 0.45
+        } else if !isPinned {
+            // 奶白色光晕 (非 Pin 状态) - 帮助用户定位新截图
+            // #E7D8AF -> RGB(231, 216, 175)
+            let creamColor = NSColor(red: 231/255.0, green: 216/255.0, blue: 175/255.0, alpha: 1.0)
+            glowLayer.strokeColor = creamColor.withAlphaComponent(0.5).cgColor
+            glowLayer.lineWidth = 1.5
+            glowLayer.shadowColor = creamColor.cgColor
+            glowLayer.shadowRadius = 10
+            glowLayer.shadowOffset = .zero
+            glowLayer.shadowOpacity = 0.6
         } else {
-            // 无光晕
+            // 无光晕 (Pin 状态且非 hover/mark)
             glowLayer.strokeColor = nil
             glowLayer.lineWidth = 0
             glowLayer.shadowColor = nil
@@ -614,7 +640,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         }
         setupContextMenu()
         // 刷新光晕效果
-        updateGlow(isHovered: isHovered, isMarked: item.isMarked)
+        updateGlow(isHovered: isHovered, isMarked: item.isMarked, isPinned: item.isPinned)
+        // 刷新 ActionBar Pin 按钮状态（Mark 会自动 Pin）
+        actionBar?.refreshButtons()
     }
     
 }
@@ -865,6 +893,8 @@ final class ActionBarButton: NSView {
         iconView.imageScaling = .scaleProportionallyDown
         iconView.image = NSImage(systemSymbolName: defaultIcon, accessibilityDescription: nil)
         iconView.contentTintColor = isActive ? activeColor : .white
+        iconView.wantsLayer = true
+        iconView.layer?.zPosition = 10 // 确保在最上层
         addSubview(iconView)
         
         // Spinner（可选）
@@ -916,6 +946,14 @@ final class ActionBarButton: NSView {
     
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
+        
+        // 安全检查：如果鼠标实际上还在视图范围内（包括在子视图如 ActionBar 上），就不视为离开
+        // 这能修复从按钮移出时 ActionBar 意外消失的问题
+        let location = convert(event.locationInWindow, from: nil)
+        if bounds.contains(location) {
+            return
+        }
+        
         isHovered = false
         updateHoverState(animated: true)
     }
@@ -947,39 +985,39 @@ final class ActionBarButton: NSView {
     }
     
     private func updateHoverState(animated: Bool) {
-        // 默认半透明黑色，hover 时更亮
+        // 默认半透明黑色，hover 时更深（增加对比度）
         let bgColor = isHovered 
-            ? NSColor.white.withAlphaComponent(0.25).cgColor 
-            : NSColor.black.withAlphaComponent(0.5).cgColor
+            ? NSColor.black.withAlphaComponent(0.8).cgColor  // Hover: 深黑 (0.8)
+            : NSColor.black.withAlphaComponent(0.5).cgColor  // Normal: 半透黑 (0.5)
+            
+        // 确保图标颜色正确（非 active 时始终为白色）
+        let iconColor = isActive ? activeColor : .white
         
         if animated {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.15
                 backgroundView.animator().layer?.backgroundColor = bgColor
+                iconView.animator().contentTintColor = iconColor
             }
         } else {
             backgroundView.layer?.backgroundColor = bgColor
+            iconView.contentTintColor = iconColor
         }
     }
     
     // MARK: - Public
     
     func updateIcon(_ icon: String) {
-        iconView.image = NSImage(systemSymbolName: icon, accessibilityDescription: nil)
+        // 确保使用 template image 以便支持着色
+        let image = NSImage(systemSymbolName: icon, accessibilityDescription: nil)
+        image?.isTemplate = true
+        iconView.image = image
     }
     
     func setActive(_ active: Bool, animated: Bool) {
         isActive = active
-        let color = active ? activeColor : .white
-        
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = animationDuration
-                iconView.animator().contentTintColor = color
-            }
-        } else {
-            iconView.contentTintColor = color
-        }
+        // 触发状态更新以应用颜色
+        updateHoverState(animated: animated)
     }
     
     func flashActive() {
@@ -987,49 +1025,8 @@ final class ActionBarButton: NSView {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = animationDuration
             iconView.animator().contentTintColor = activeColor
-        } completionHandler: { [weak self] in
-            guard let self = self else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = self.animationDuration
-                    self.iconView.animator().contentTintColor = .white
-                }
-            }
-        }
-    }
-    
-    func showFeedback() {
-        guard let feedbackIcon = feedbackIcon else { return }
-        
-        // 变为勾
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = animationDuration
-            iconView.animator().alphaValue = 0
-        } completionHandler: { [weak self] in
-            guard let self = self else { return }
-            self.iconView.image = NSImage(systemSymbolName: feedbackIcon, accessibilityDescription: nil)
-            self.iconView.contentTintColor = .systemGreen
-            
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = self.animationDuration
-                self.iconView.animator().alphaValue = 1
-            } completionHandler: {
-                // 恢复原图标
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
-                    guard let self = self else { return }
-                    NSAnimationContext.runAnimationGroup { context in
-                        context.duration = self.animationDuration
-                        self.iconView.animator().alphaValue = 0
-                    } completionHandler: {
-                        self.iconView.image = NSImage(systemSymbolName: self.defaultIcon, accessibilityDescription: nil)
-                        self.iconView.contentTintColor = .white
-                        NSAnimationContext.runAnimationGroup { context in
-                            context.duration = self.animationDuration
-                            self.iconView.animator().alphaValue = 1
-                        }
-                    }
-                }
-            }
+        } completionHandler: {
+            self.updateHoverState(animated: true)
         }
     }
     
@@ -1043,5 +1040,22 @@ final class ActionBarButton: NSView {
         spinnerView?.stopAnimation(nil)
         spinnerView?.isHidden = true
         iconView.isHidden = false
+    }
+    
+    func showFeedback() {
+        guard let feedbackIcon = feedbackIcon else { return }
+        
+        // 切换到反馈图标
+        let originalIcon = iconView.image
+        iconView.image = NSImage(systemSymbolName: feedbackIcon, accessibilityDescription: nil)
+        iconView.contentTintColor = .green
+        
+        // 1.5秒后恢复
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self = self else { return }
+            self.iconView.image = originalIcon
+            // 恢复 hover 状态（会自动设置正确的颜色）
+            self.updateHoverState(animated: true)
+        }
     }
 }

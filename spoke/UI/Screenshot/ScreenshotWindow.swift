@@ -157,8 +157,7 @@ final class ScreenshotWindow: NSPanel {
         // 设置光晕层
         setupGlowLayer()
         
-        // 设置 window 级别的 tracking area
-        setupWindowTrackingArea()
+        // Window 级别 tracking area 已移除，由 ContentView 接管
         
         // 监听窗口移动
         NotificationCenter.default.addObserver(
@@ -179,38 +178,11 @@ final class ScreenshotWindow: NSPanel {
         acceptsMouseMovedEvents = true
     }
     
-    // MARK: - Mouse Tracking (Window 级别)
+    // MARK: - Mouse Tracking (Window 级别 - 已移除，统一由 ContentView 管理)
     
-    private var windowTrackingArea: NSTrackingArea?
-    
-    private func setupWindowTrackingArea() {
-        guard let cv = contentView else { return }
-        
-        // 移除旧的 tracking area
-        if let existing = windowTrackingArea {
-            cv.removeTrackingArea(existing)
-        }
-        
-        // 创建新的 tracking area
-        let trackingArea = NSTrackingArea(
-            rect: cv.bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-            owner: self,
-            userInfo: nil
-        )
-        cv.addTrackingArea(trackingArea)
-        windowTrackingArea = trackingArea
-    }
-    
-    override func mouseEntered(with event: NSEvent) {
-        super.mouseEntered(with: event)
-        updateGlow(hovered: true)
-    }
-    
-    override func mouseExited(with event: NSEvent) {
-        super.mouseExited(with: event)
-        updateGlow(hovered: false)
-    }
+    // 移除 Window 级别的 TrackingArea，避免与 ContentView 的逻辑冲突（Duplicate Source of Truth）
+    // 参考: ContentView 已经实现了完善的 bounds 检查和防抖逻辑
+
     
     
     // MARK: - Glow Effect
@@ -228,8 +200,8 @@ final class ScreenshotWindow: NSPanel {
             isHovered = h
         }
         
-        // 通知 contentView 更新光晕
-        screenshotContentView?.updateGlow(isHovered: isHovered, isMarked: item.isMarked)
+        // 通知 contentView 更新光晕（传入 isPinned 以支持非 Pin 状态的奶白色光晕）
+        screenshotContentView?.updateGlow(isHovered: isHovered, isMarked: item.isMarked, isPinned: item.isPinned)
     }
     
     // MARK: - Public
@@ -262,54 +234,95 @@ final class ScreenshotWindow: NSPanel {
     
     /// 双指左右滑动：调整透明度
     /// 双指上下滑动：调整大小
+    // MARK: - Scroll Wheel (双指手势 / 鼠标滚轮)
+    
+    /// 用于锁定当前滚动也就是是否为透明度模式
+    /// 一旦在滚动过程中按下了 Shift，该次滚动余下的部分将一直保持为透明度调整，防止回跳
+    private var isOpacityScrollLocked: Bool = false
+    
+    /// 调整大小和透明度的统一入口
     override func scrollWheel(with event: NSEvent) {
-        // 只在 Pinned 状态下响应
-        guard item.isPinned else {
-            super.scrollWheel(with: event)
+        // 1. 手势生命周期管理
+        if event.phase == .began {
+            // 新手势开始，重置锁定状态
+            // 但如果一开始就按着 Shift，直接锁定
+            isOpacityScrollLocked = event.modifierFlags.contains(.shift)
+        } else if event.phase == .changed || event.phase == [] {
+            // 手势进行中：如果检测到 Shift 按下，立即“升级”并锁定为透明度模式
+            if event.modifierFlags.contains(.shift) {
+                isOpacityScrollLocked = true
+            }
+        }
+        
+        // 2. 状态重置 (手势结束或取消)
+        if event.phase == .ended || event.phase == .cancelled {
+            isOpacityScrollLocked = false
+            // 惯性阶段如果需要也可以在此处理，通常此处重置即可
+        }
+        
+        // 3. 执行逻辑分发
+        // 只要被锁定 (isOpacityScrollLocked)，或者当前正按着 Shift，就强制走透明度逻辑
+        if isOpacityScrollLocked || event.modifierFlags.contains(.shift) {
+            
+            // --- 透明度模式 (锁定或 Shift 按下) ---
+            let deltaY = event.scrollingDeltaY
+            
+            let sensitivity: CGFloat = event.hasPreciseScrollingDeltas ? 0.003 : 0.05
+            let threshold: CGFloat = event.hasPreciseScrollingDeltas ? 1.0 : 0.0
+            
+            if abs(deltaY) > threshold {
+                // 向上(正) = 增加不透明度, 向下(负) = 减少不透明度
+                handleOpacityChange(delta: deltaY, sensitivity: sensitivity)
+            }
             return
         }
         
-        let deltaX = event.scrollingDeltaX
-        let deltaY = event.scrollingDeltaY
-        
-        // 优先处理绝对值较大的方向
-        if abs(deltaX) > abs(deltaY) {
-            handleOpacityChange(with: event)
+        // --- 默认模式 (无 Shift 且 未锁定) ---
+        if event.hasPreciseScrollingDeltas {
+            // [触控板]
+            // 左右滑 -> 透明度
+            // 上下滑 -> 大小
+            
+            let deltaX = event.scrollingDeltaX
+            let deltaY = event.scrollingDeltaY
+            
+            if abs(deltaX) > abs(deltaY) {
+                // 横向主导 -> 透明度
+                if abs(deltaX) > 1 {
+                    handleOpacityChange(delta: deltaX, sensitivity: 0.003)
+                }
+            } else {
+                // 纵向主导 -> 大小
+                if abs(deltaY) > 1 {
+                    handleSizeChange(delta: deltaY, sensitivity: 0.003, event: event)
+                }
+            }
         } else {
-            handleSizeChange(with: event)
+            // [鼠标滚轮]
+            // 默认 -> 大小
+            handleSizeChange(delta: event.scrollingDeltaY, sensitivity: 0.05, event: event)
         }
     }
     
-    /// 处理透明度调整（双指左右滑动）
-    private func handleOpacityChange(with event: NSEvent) {
-        let deltaX = event.scrollingDeltaX
-        
-        // 阈值过滤，避免误触
-        guard abs(deltaX) > 2 else { return }
-        
-        // 右滑(deltaX > 0) = 更不透明, 左滑(deltaX < 0) = 更透明
-        // 灵敏度：0.003
-        let opacityDelta = deltaX * 0.003
+    /// 处理透明度调整
+    private func handleOpacityChange(delta: CGFloat, sensitivity: CGFloat) {
+        // Delta > 0 = 更不透明, Delta < 0 = 更透明
+        let opacityDelta = delta * sensitivity
         let newOpacity = max(0.3, min(1.0, item.opacity + opacityDelta))
         
-        item.opacity = newOpacity
-        alphaValue = newOpacity
-        
-        // 移除 redundant 的 contentView 调用
-        // screenshotContentView?.updateOpacity(newOpacity)
-        
-        ScreenshotManager.shared.saveAll()
+        // 只有变化时才更新，减少开销
+        if abs(item.opacity - newOpacity) > 0.001 {
+            item.opacity = newOpacity
+            alphaValue = newOpacity
+            ScreenshotManager.shared.saveAll()
+        }
     }
     
-    /// 处理大小调整（双指上下滑动）
-    private func handleSizeChange(with event: NSEvent) {
-        let deltaY = event.scrollingDeltaY
-        
-        // 阈值过滤，避免误触
-        guard abs(deltaY) > 2 else { return }
-        
-        // 上滑(deltaY > 0) = 放大, 下滑(deltaY < 0) = 缩小
-        let scaleFactor = 1.0 + (deltaY * 0.003)
+    /// 处理大小调整
+    /// 处理大小调整
+    private func handleSizeChange(delta: CGFloat, sensitivity: CGFloat, event: NSEvent) {
+        // Delta > 0 = 放大, Delta < 0 = 缩小
+        let scaleFactor = 1.0 + (delta * sensitivity)
         
         // 考虑 padding (Window Padding = Content Padding * 2)
         let padding = ScreenshotContentView.paddingPerSide * 2
@@ -337,8 +350,8 @@ final class ScreenshotWindow: NSPanel {
         let currentMax = max(frame.width, frame.height)
         
         // 边界检查：已经达到极限则不再处理
-        if deltaY < 0 && currentMin <= minDim { return }
-        if deltaY > 0 && currentMax >= maxDim { return }
+        if delta < 0 && currentMin <= minDim { return }
+        if delta > 0 && currentMax >= maxDim { return }
         
         // 应用尺寸限制并重新计算宽高以保持比例
         if newWidth < minDim {
@@ -351,7 +364,7 @@ final class ScreenshotWindow: NSPanel {
             newHeight = (contentW / aspectRatio) + padding
         }
         
-        // 高度检查（虽然宽度限制通常足够，但为了保险起见）
+        // 高度检查
         if newHeight < minDim {
             newHeight = minDim
             let contentH = newHeight - padding

@@ -75,6 +75,26 @@ final class ScreenCaptureService {
         return images
     }
     
+    /// 截取鼠标所在屏幕（用于选区 UI 背景）
+    /// 返回 (截图, 屏幕 frame)
+    func captureCurrentScreenWithFrame() async -> (NSImage, CGRect)? {
+        // 获取鼠标所在的屏幕
+        let mouseLocation = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) })
+              ?? NSScreen.main else {
+            logger.error("❌ No screen found for mouse location")
+            return nil
+        }
+        
+        guard let image = await captureScreen(screen) else {
+            logger.error("❌ Failed to capture current screen")
+            return nil
+        }
+        
+        logger.info("✅ Current screen captured: \(Int(screen.frame.width))x\(Int(screen.frame.height))")
+        return (image, screen.frame)
+    }
+    
     // MARK: - Region Capture
     
     /// 区域截图（调用系统 screencapture 工具）
