@@ -124,6 +124,7 @@ final class RegionSelectionWindow: NSPanel {
     
     private func setupToolbar() {
         let toolbar = ScreenshotToolbarView()
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
         toolbar.isHidden = true
         
         toolbar.onAction = { [weak self] action in
