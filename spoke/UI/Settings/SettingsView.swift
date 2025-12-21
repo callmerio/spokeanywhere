@@ -22,6 +22,7 @@ struct SettingsView: View {
     
     enum SettingsTab: String, CaseIterable {
         case general = "常规"
+        case screenshot = "截图"
         case toolbar = "划词工具栏"
         case model = "听写模型"
         case ai = "AI 处理"
@@ -33,6 +34,7 @@ struct SettingsView: View {
         var icon: String {
             switch self {
             case .general: return "gear"
+            case .screenshot: return "camera.viewfinder"
             case .toolbar: return "text.cursor"
             case .model: return "waveform"
             case .ai: return "sparkles"
@@ -112,6 +114,8 @@ struct SettingsView: View {
                         audioManager: audioManager,
                         micTester: micTester
                     )
+                case .screenshot:
+                    ScreenshotSettingsView()
                 case .toolbar:
                     ToolbarSettingsView()
                 case .model:

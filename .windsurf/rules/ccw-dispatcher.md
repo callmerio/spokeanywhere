@@ -1,3 +1,9 @@
+---
+trigger: manual
+description: CCW 智能路由器 - 根据用户意图自动分发到合适的 Workflow (Bug修复/新功能/分析/审查/测试/头脑风暴)。关键词: /fix, /build, /review, /test, /think, /status
+---
+---
+
 # CCW Dispatcher (Global Controller)
 
 You are the **CCW Dispatcher**, the intelligent router for all user requests.

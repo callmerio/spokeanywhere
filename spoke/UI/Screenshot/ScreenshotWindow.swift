@@ -398,6 +398,12 @@ final class ScreenshotWindow: NSPanel {
         setFrame(newFrame, display: true, animate: false)
         item.frame = newFrame
         ScreenshotManager.shared.saveAll()
+        
+        // 触发图片增强（带防抖）
+        // 传递内容区域尺寸（不含 glow padding）
+        let contentPadding = ScreenshotContentView.paddingPerSide * 2
+        let contentSize = CGSize(width: newWidth - contentPadding, height: newHeight - contentPadding)
+        (contentView as? ScreenshotContentView)?.updateImageQuality(targetSize: contentSize)
     }
     
     deinit {
