@@ -174,6 +174,13 @@
       - handleOpacityChange / handleSizeChange 分离 [√]
     - 纯 AppKit 实现 -> 解决 NSHostingView 约束循环 [√]
     - PRD -> docs/memo/plan/2025-12-19-screenshot-pin-to-space.md
+    - HiDPI 多屏幕支持 [√] ⭐ NEW
+      - SCStreamConfiguration 需要像素尺寸 (非逻辑尺寸) [√]
+      - 乘以 backingScaleFactor 获得正确像素密度 [√]
+      - 支持非标准分辨率 (如 P2710V 3360×1890 @2x) [√]
+    - AI 增强优化 [√]
+      - 防抖延迟 1s -> 0.3s [√]
+      - 可中断任务 [√]
     - 标注系统 [√] ⭐ NEW
       - 触发 -> 框选后自动进入编辑模式 [√]
       - 工具栏 -> ScreenshotToolbarView [√]
