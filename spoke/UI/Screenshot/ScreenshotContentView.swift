@@ -49,8 +49,8 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     /// 上次增强时的尺寸，避免微小变动重复计算
     private var lastEnhancedSize: CGSize = .zero
     
-    /// AI 增强防抖延迟 (1秒)
-    private let enhanceDebounceDelay: TimeInterval = 1.0
+    /// AI 增强防抖延迟 (0.3秒 - 快速响应)
+    private let enhanceDebounceDelay: TimeInterval = 0.3
     
     // MARK: - Live Text (macOS 13+)
     
