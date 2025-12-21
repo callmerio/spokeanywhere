@@ -130,11 +130,22 @@ final class RegionSelectionView: NSView {
     
     private func setupView() {
         wantsLayer = true
-        // 注意: contentsScale 在 viewDidMoveToWindow 中设置
+        // 🔧 Fix: 设置 layerContentsRedrawPolicy 确保正确重绘
+        // .onSetNeedsDisplay = 每次 needsDisplay 时重新调用 draw(_:)
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
     }
     
-    /// 窗口变化时更新 layer 的 contentsScale
-    /// 🔧 Fix: 确保在多屏幕环境下正确设置缩放因子，避免模糊
+    /// 响应 backing properties 变化（屏幕切换、分辨率变化）
+    /// 🔧 Fix: 使用 viewDidChangeBackingProperties 而非 viewDidMoveToWindow
+    /// 参考: https://supermegaultragroovy.com/2012/10/24/coding-for-high-resolution-on-os-x-read-this/
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        updateContentsScale()
+        // 强制重绘以使用新的 scale
+        needsDisplay = true
+    }
+    
+    /// 窗口变化时也更新（首次显示）
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         updateContentsScale()
@@ -142,10 +153,14 @@ final class RegionSelectionView: NSView {
     
     /// 更新 layer 的 contentsScale 以匹配当前屏幕
     private func updateContentsScale() {
-        guard let window = window else { return }
+        guard let window = window, let layer = layer else { return }
         let scale = window.backingScaleFactor
-        layer?.contentsScale = scale
+        layer.contentsScale = scale
+        // 同步更新子视图的 layer scale
         annotationCanvas?.layer?.contentsScale = scale
+        #if DEBUG
+        print("🔍 [RegionSelectionView] contentsScale set to \(scale)")
+        #endif
     }
     
     private func setupAnnotationCanvas() {
