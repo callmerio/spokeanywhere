@@ -124,126 +124,120 @@ final class ImageEnhancementService {
         
         guard let model = loadedMLModel else { return nil }
         
-        let inputWidth = cgImage.width
-        let inputHeight = cgImage.height
-        let outputWidth = inputWidth * scaleFactor
-        let outputHeight = inputHeight * scaleFactor
+        // 🔧 Fix: 区分像素尺寸和点尺寸
+        // - cgImage.width/height 是像素尺寸
+        // - image.size 是点尺寸
+        // - NSImage(cgImage:size:) 的 size 参数必须是点尺寸
+        let inputPixelWidth = cgImage.width
+        let inputPixelHeight = cgImage.height
         
-        // 如果图片小于等于 tile 尺寸，直接处理
-        if inputWidth <= tileSize && inputHeight <= tileSize {
-            return processSingleTile(cgImage, model: model, targetSize: targetSize)
-        }
+        // 🔧 Fix: 原图的 NSImage.size 可能不精确（DPI 信息丢失）
+        // 强制使用 像素/backingScale 作为正确的点尺寸
+        let backingScale = NSScreen.main?.backingScaleFactor ?? 2.0
+        let correctedInputPointSize = NSSize(
+            width: CGFloat(inputPixelWidth) / backingScale,
+            height: CGFloat(inputPixelHeight) / backingScale
+        )
         
-        // Tiling 处理大图 (使用 tilePad 策略，参考 Real-ESRGAN)
-        logger.info("🔲 Using tiling: \(inputWidth)x\(inputHeight) -> \(outputWidth)x\(outputHeight)")
+        logger.info("🔍 Original Image: pixels=\(inputPixelWidth)x\(inputPixelHeight), original.size=\(image.size.width)x\(image.size.height), corrected=\(correctedInputPointSize.width)x\(correctedInputPointSize.height)")
         
-        // 创建输出画布 (4x 尺寸)
-        guard let outputContext = createOutputContext(width: outputWidth, height: outputHeight) else {
-            logger.error("Failed to create output context")
+        let outputPixelWidth = inputPixelWidth * scaleFactor
+        let outputPixelHeight = inputPixelHeight * scaleFactor
+        
+        // ============================================================
+        // 新方案：先放大拼接，后裁剪
+        // 1. 按 512 切分 tile
+        // 2. 每个 tile 填充到 512×512
+        // 3. AI 放大到 2048×2048
+        // 4. 直接拼接 2048 块（不缩放！）
+        // 5. 裁剪掉填充区域，保留原图 ×4 的有效区域
+        // 6. 最后缩放到 targetSize
+        // ============================================================
+        
+        // 计算 tile 数量
+        let tilesX = Int(ceil(Double(inputPixelWidth) / Double(tileSize)))
+        let tilesY = Int(ceil(Double(inputPixelHeight) / Double(tileSize)))
+        
+        // 拼接画布尺寸 = tile数量 × 2048
+        let canvasWidth = tilesX * tileSize * scaleFactor   // tilesX * 2048
+        let canvasHeight = tilesY * tileSize * scaleFactor  // tilesY * 2048
+        
+        logger.info("🔲 New tiling: \(inputPixelWidth)x\(inputPixelHeight) -> canvas \(canvasWidth)x\(canvasHeight), tiles=\(tilesX)x\(tilesY)")
+        
+        // 创建拼接画布
+        guard let canvasContext = createOutputContext(width: canvasWidth, height: canvasHeight) else {
+            logger.error("Failed to create canvas context")
             return nil
         }
         
-        // 计算 tile 数量 (stride = tileSize，无 overlap)
-        let tilesX = Int(ceil(Double(inputWidth) / Double(tileSize)))
-        let tilesY = Int(ceil(Double(inputHeight) / Double(tileSize)))
-        
-        logger.info("📦 Processing \(tilesX * tilesY) tiles (\(tilesX)x\(tilesY)) with tilePad=\(self.tilePad)")
-        
+        // 处理每个 tile
         for tileY in 0..<tilesY {
             for tileX in 0..<tilesX {
-                // 计算 tile 的原始区域 (不含 padding)
-                let inputStartX = tileX * tileSize
-                let inputStartY = tileY * tileSize
-                let inputEndX = min(inputStartX + tileSize, inputWidth)
-                let inputEndY = min(inputStartY + tileSize, inputHeight)
+                // 计算 tile 在原图中的区域
+                let srcX = tileX * tileSize
+                let srcY = tileY * tileSize
+                let srcW = min(tileSize, inputPixelWidth - srcX)
+                let srcH = min(tileSize, inputPixelHeight - srcY)
                 
-                // tile 的实际尺寸
-                let tileWidth = inputEndX - inputStartX
-                let tileHeight = inputEndY - inputStartY
+                // 裁剪 tile（可能小于 512）
+                let cropRect = CGRect(x: srcX, y: srcY, width: srcW, height: srcH)
+                guard let tileCGImage = cgImage.cropping(to: cropRect) else { continue }
                 
-                // 计算带 padding 的裁剪区域 (向外扩展 tilePad)
-                let inputStartXPad = max(inputStartX - tilePad, 0)
-                let inputStartYPad = max(inputStartY - tilePad, 0)
-                let inputEndXPad = min(inputEndX + tilePad, inputWidth)
-                let inputEndYPad = min(inputEndY + tilePad, inputHeight)
+                // 填充到 512×512
+                let paddedTile = padTileToModelSize(tileCGImage)
                 
-                // 裁剪带 padding 的 tile
-                let paddedRect = CGRect(
-                    x: inputStartXPad,
-                    y: inputStartYPad,
-                    width: inputEndXPad - inputStartXPad,
-                    height: inputEndYPad - inputStartYPad
-                )
-                guard let paddedTileCGImage = cgImage.cropping(to: paddedRect) else { continue }
+                // AI 放大到 2048×2048
+                guard let upscaledTile = processOneTile(paddedTile, model: model) else { continue }
                 
-                // Pad 到 512x512 (如果需要)
-                let modelInputTile = padTileToModelSize(paddedTileCGImage)
+                // 直接放到画布上（坐标 = tileIndex × 2048）
+                let dstX = tileX * tileSize * scaleFactor
+                let dstY = tileY * tileSize * scaleFactor
                 
-                // 处理 tile
-                guard let upscaledTile = processOneTile(modelInputTile, model: model) else { continue }
-                
-                // 计算输出中有效区域的位置 (去掉 padding)
-                // padding 在输入侧的偏移量
-                let padLeft = inputStartX - inputStartXPad
-                let padTop = inputStartY - inputStartYPad
-                
-                // 输出侧对应的偏移量 (4x)
-                let outputStartXTile = padLeft * scaleFactor
-                let outputStartYTile = padTop * scaleFactor
-                let outputTileWidth = tileWidth * scaleFactor
-                let outputTileHeight = tileHeight * scaleFactor
-                
-                // 从 upscaledTile 中裁剪有效区域
-                // 注意: CGImage 坐标系是左上角原点
-                let validRect = CGRect(
-                    x: outputStartXTile,
-                    y: outputStartYTile,
-                    width: outputTileWidth,
-                    height: outputTileHeight
-                )
-                guard let validTile = upscaledTile.cropping(to: validRect) else { continue }
-                
-                // 计算在输出画布上的位置
-                let outX = inputStartX * scaleFactor
-                let outY = inputStartY * scaleFactor
-                
-                // 绘制到输出画布 (CGContext 坐标系是左下角原点，需要翻转 Y)
+                // CGContext Y 轴翻转
                 let drawRect = CGRect(
-                    x: outX,
-                    y: outputHeight - outY - outputTileHeight,
-                    width: outputTileWidth,
-                    height: outputTileHeight
+                    x: dstX,
+                    y: canvasHeight - dstY - tileSize * scaleFactor,
+                    width: tileSize * scaleFactor,
+                    height: tileSize * scaleFactor
                 )
-                outputContext.draw(validTile, in: drawRect)
+                canvasContext.draw(upscaledTile, in: drawRect)
             }
         }
         
-        // 生成最终图像
-        guard let resultCGImage = outputContext.makeImage() else {
-            logger.error("Failed to create result image")
+        // 生成拼接后的完整画布
+        guard let canvasImage = canvasContext.makeImage() else {
+            logger.error("Failed to create canvas image")
             return nil
         }
         
-        let resultImage = NSImage(cgImage: resultCGImage, size: NSSize(width: outputWidth, height: outputHeight))
+        // 裁剪掉填充区域，保留原图 ×4 的有效区域
+        let validRect = CGRect(x: 0, y: 0, width: outputPixelWidth, height: outputPixelHeight)
+        guard let croppedResult = canvasImage.cropping(to: validRect) else {
+            logger.error("Failed to crop valid region")
+            return nil
+        }
         
-        // 缩放到目标尺寸
-        return scaleNSImage(resultImage, to: targetSize)
+        logger.info("🔍 enhanceAI: canvas=\(canvasWidth)x\(canvasHeight), cropped=\(croppedResult.width)x\(croppedResult.height), target=\(targetSize.width)x\(targetSize.height)")
+        
+        // 最后缩放到 targetSize
+        return scaleCGImage(croppedResult, to: targetSize, backingScale: backingScale)
     }
     
     /// 处理单个 tile (小于 512x512 的图片直接处理)
-    private func processSingleTile(_ cgImage: CGImage, model: MLModel, targetSize: NSSize) -> NSImage? {
+    private func processSingleTile(_ cgImage: CGImage, model: MLModel, targetSize: NSSize, originalPointSize: NSSize) -> NSImage? {
         let paddedTile = padTileToModelSize(cgImage)
         guard let upscaled = processOneTile(paddedTile, model: model) else { return nil }
         
-        // 裁剪到实际输出尺寸 (从左上角开始)
-        let actualWidth = cgImage.width * scaleFactor
-        let actualHeight = cgImage.height * scaleFactor
-        let cropRect = CGRect(x: 0, y: 0, width: actualWidth, height: actualHeight)
+        // 裁剪到实际输出像素尺寸 (从左上角开始)
+        let actualPixelWidth = cgImage.width * scaleFactor
+        let actualPixelHeight = cgImage.height * scaleFactor
+        let cropRect = CGRect(x: 0, y: 0, width: actualPixelWidth, height: actualPixelHeight)
         
         guard let croppedImage = upscaled.cropping(to: cropRect) else { return nil }
-        let resultImage = NSImage(cgImage: croppedImage, size: NSSize(width: actualWidth, height: actualHeight))
         
-        return scaleNSImage(resultImage, to: targetSize)
+        // 🔧 Fix: 使用屏幕真实 backingScaleFactor
+        let backingScale = NSScreen.main?.backingScaleFactor ?? 2.0
+        return scaleCGImage(croppedImage, to: targetSize, backingScale: backingScale)
     }
     
     /// 处理单个 512x512 tile
@@ -395,34 +389,57 @@ final class ImageEnhancementService {
         return NSImage(cgImage: cgImage, size: size)
     }
     
-    /// 缩放 NSImage 到目标尺寸
-    private func scaleNSImage(_ image: NSImage, to targetSize: NSSize) -> NSImage? {
+    /// 缩放 CGImage 到目标尺寸（使用 CGContext 直接绘制，100% 精确像素控制）
+    /// - Parameters:
+    ///   - cgImage: 原始 CGImage（像素尺寸）
+    ///   - targetSize: 目标点尺寸
+    ///   - backingScale: 屏幕缩放因子（Retina=2.0）
+    /// - Note: 方案 A - 使用 CGContext 直接绘制，避免 CILanczosScaleTransform 输出尺寸不精确问题
+    private func scaleCGImage(_ cgImage: CGImage, to targetSize: NSSize, backingScale: CGFloat) -> NSImage? {
+        // 精确计算目标像素尺寸（整数）
+        let targetPixelWidth = Int(targetSize.width * backingScale)
+        let targetPixelHeight = Int(targetSize.height * backingScale)
+        
+        logger.info("🔍 scaleCGImage Debug: cgImage=\(cgImage.width)x\(cgImage.height), targetPixels=\(targetPixelWidth)x\(targetPixelHeight), backingScale=\(backingScale)")
+        
+        // 创建精确像素尺寸的 CGContext
+        guard let colorSpace = cgImage.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                data: nil,
+                width: targetPixelWidth,
+                height: targetPixelHeight,
+                bitsPerComponent: cgImage.bitsPerComponent,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: cgImage.bitmapInfo.rawValue
+              ) else {
+            logger.error("❌ scaleCGImage: Failed to create CGContext")
+            return nil
+        }
+        
+        // 高质量插值
+        context.interpolationQuality = .high
+        
+        // 绘制到精确尺寸
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: targetPixelWidth, height: targetPixelHeight))
+        
+        guard let resultCGImage = context.makeImage() else {
+            logger.error("❌ scaleCGImage: Failed to create result image")
+            return nil
+        }
+        
+        logger.info("🔍 scaleCGImage Output: resultCGImage=\(resultCGImage.width)x\(resultCGImage.height), targetSize=\(targetSize.width)x\(targetSize.height)")
+        
+        // NSImage.size 使用点尺寸，CGImage 像素 = targetSize × backingScale（精确对应）
+        return NSImage(cgImage: resultCGImage, size: targetSize)
+    }
+    
+    /// 兼容旧接口：缩放 NSImage 到目标尺寸
+    private func scaleNSImage(_ image: NSImage, to targetSize: NSSize, backingScale: CGFloat = 2.0) -> NSImage? {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             return nil
         }
-        
-        let ciImage = CIImage(cgImage: cgImage)
-        let scaleX = targetSize.width / ciImage.extent.width
-        let scaleY = targetSize.height / ciImage.extent.height
-        let scale = min(scaleX, scaleY)
-        
-        guard let lanczos = CIFilter(name: "CILanczosScaleTransform") else { return nil }
-        lanczos.setValue(ciImage, forKey: kCIInputImageKey)
-        lanczos.setValue(scale, forKey: kCIInputScaleKey)
-        lanczos.setValue(1.0, forKey: kCIInputAspectRatioKey)
-        
-        guard let output = lanczos.outputImage,
-              let resultCGImage = context.createCGImage(output, from: output.extent) else {
-            return nil
-        }
-        
-        // 🔧 Fix: 保持原图宽高比，不强制使用 targetSize
-        // Lanczos 等比例缩放后，实际尺寸是 (原宽*scale, 原高*scale)
-        let actualSize = NSSize(
-            width: ciImage.extent.width * scale,
-            height: ciImage.extent.height * scale
-        )
-        return NSImage(cgImage: resultCGImage, size: actualSize)
+        return scaleCGImage(cgImage, to: targetSize, backingScale: backingScale)
     }
     
     /// 仅锐化图片（不缩放）

@@ -181,6 +181,10 @@
     - AI 增强优化 [√]
       - 防抖延迟 1s -> 0.3s [√]
       - 可中断任务 [√]
+      - 偏移修复 [√] ⭐ NEW
+        - 根因: PNG DPI丢失导致 NSImage.size 不精确 (ratio=2.001362)
+        - 修复: 强制使用 pixels/backingScale 作为正确点尺寸
+        - 新 Tiling 方案: 512切→填充→2048放大→直接拼接→裁剪→缩放
     - 标注系统 [√] ⭐ NEW
       - 触发 -> 框选后自动进入编辑模式 [√]
       - 工具栏 -> ScreenshotToolbarView [√]

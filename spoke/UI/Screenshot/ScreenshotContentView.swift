@@ -98,7 +98,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         glowLayer.zPosition = -1
         layer?.addSublayer(glowLayer)
         
-        imageView.imageScaling = .scaleProportionallyUpOrDown
+        // 🔧 Fix: 使用 scaleAxesIndependently 完全填满 frame，避免居中偏移
+        // 之前用 scaleProportionallyUpOrDown 会在宽高比不匹配时居中显示
+        imageView.imageScaling = .scaleAxesIndependently
         imageView.wantsLayer = true
         imageView.layer?.cornerRadius = 10
         imageView.layer?.masksToBounds = true
@@ -244,6 +246,13 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         copyImgItem.keyEquivalentModifierMask = [] 
         copyImgItem.target = menuActionProxy
         menu.addItem(copyImgItem)
+        
+        // 1.5 Copy Enhanced Image (仅当 upscalingMode != .none 时显示)
+        if ScreenshotSettings.shared.upscalingMode != .none {
+            let copyEnhancedItem = NSMenuItem(title: "Copy Enhanced Image", action: #selector(MenuActionProxy.performCopyEnhancedImage), keyEquivalent: "")
+            copyEnhancedItem.target = menuActionProxy
+            menu.addItem(copyEnhancedItem)
+        }
         
         // 2. Copy Text (T)
         if let text = getRecognizedText(), !text.isEmpty {
@@ -671,6 +680,48 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         return imageView.image
     }
     
+    /// 复制增强后的图片（如果未增强则先触发增强）
+    @objc func performCopyEnhancedImage() {
+        guard let original = originalImage else { return }
+        
+        // 如果当前已有增强图片（与原图不同），直接复制
+        if let currentImage = imageView.image, currentImage !== original {
+            copyImageToClipboard(currentImage)
+            return
+        }
+        
+        // 否则触发增强后复制
+        let targetSize = CGSize(
+            width: original.size.width * 2,  // 2x 放大
+            height: original.size.height * 2
+        )
+        
+        logger.info("🎨 Enhancing image before copy...")
+        
+        Task {
+            let enhanced = await Task.detached(priority: .userInitiated) {
+                ImageEnhancementService.shared.enhance(original, to: targetSize)
+            }.value
+            
+            await MainActor.run {
+                if let enhanced = enhanced {
+                    self.copyImageToClipboard(enhanced)
+                    self.logger.info("✅ Enhanced image copied to clipboard")
+                } else {
+                    // 增强失败，复制原图
+                    self.copyImageToClipboard(original)
+                    self.logger.warning("⚠️ Enhancement failed, copied original image")
+                }
+            }
+        }
+    }
+    
+    private func copyImageToClipboard(_ image: NSImage) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.writeObjects([image])
+    }
+    
     @objc func performOCR() {
         // Legacy OCR method for macOS 12
         if #available(macOS 13.0, *) { return }
@@ -760,6 +811,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     }
     @objc func performMarkAction() { view?.performMarkAction() }
     @objc func performCopyImage() { view?.performCopyImage() }
+    @objc func performCopyEnhancedImage() { view?.performCopyEnhancedImage() }
     @objc func performCopyText() { view?.performCopyText() }
     @objc func performQuickAsk() { view?.performQuickAsk() }
     @objc func performCloseAction() { view?.performCloseAction() }
