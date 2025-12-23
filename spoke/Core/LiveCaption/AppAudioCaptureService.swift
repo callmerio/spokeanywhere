@@ -153,11 +153,15 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
         Task { @MainActor in
             self.isWaitingForSelection = false
-            self.currentAppName = self.extractAppName(from: filter) ?? "Selected App"
+            let appName = self.extractAppName(from: filter) ?? "Selected App"
             
             do {
                 try await self.startCapture(with: filter)
-                self.onSelectionComplete?(true)
+                // 延迟更新 UI 状态，避免在 Display Cycle 中触发约束循环
+                DispatchQueue.main.async {
+                    self.currentAppName = appName
+                    self.onSelectionComplete?(true)
+                }
             } catch {
                 self.logger.error("❌ Failed to start capture: \(error.localizedDescription)")
                 self.onError?(error)

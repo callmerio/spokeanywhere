@@ -231,7 +231,10 @@ final class LiveCaptionManager: ObservableObject {
         appCapture.onSelectionComplete = { [weak self] success in
             guard let self = self, success else { return }
             Task { @MainActor in
-                self.currentAppName = appCapture.currentAppName
+                // 延迟更新 UI 状态，避免在 Display Cycle 中触发约束循环
+                DispatchQueue.main.async {
+                    self.currentAppName = appCapture.currentAppName
+                }
                 do {
                     try await self.setupSpeechAnalyzer(withAppCapture: true)
                 } catch {

@@ -34,6 +34,7 @@
         - 设置页选择: 全局模式/应用选择模式
         - 工具栏显示当前应用名 + 重选按钮
         - 取消选择自动回退全局模式
+        - Display Cycle 冲突修复 -> DispatchQueue.main.async 延迟 [√]
     - 转录引擎 -> 复用TranscriptionProvider [√]
     - 翻译 -> Apple Translation (macOS 15+) [√]
       - 重试机制 -> 3次指数退避 [√]
