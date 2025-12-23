@@ -129,6 +129,35 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
         scrollView.reflectScrolledClipView(scrollView.contentView)
         coordinator.isAtBottomBinding.wrappedValue = true
+        coordinator.lastScrollY = maxScrollY + CaptionDesign.scrollExtraOffset
+        
+        // 🔥 追赶检查：100ms 后再次检查是否真的到底部
+        // 解决"一口气输出太多"时布局更新滞后的问题
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak scrollView, weak coordinator] in
+            guard let scrollView = scrollView, let coordinator = coordinator else { return }
+            guard let documentView = scrollView.documentView else { return }
+            
+            // 再次强制布局
+            if let hostingView = documentView.subviews.first {
+                hostingView.layoutSubtreeIfNeeded()
+            }
+            documentView.layoutSubtreeIfNeeded()
+            
+            let newContentHeight = documentView.frame.height
+            let newMaxScrollY = max(0, newContentHeight - clipHeight)
+            let currentY = scrollView.contentView.bounds.origin.y
+            
+            // 如果内容高度增加了，追赶滚动
+            if newMaxScrollY > currentY + CaptionDesign.scrollCatchUpThreshold {
+                coordinator.isScrollingProgrammatically = true
+                scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY + CaptionDesign.scrollExtraOffset))
+                scrollView.reflectScrolledClipView(scrollView.contentView)
+                coordinator.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
+                DispatchQueue.main.async {
+                    coordinator.isScrollingProgrammatically = false
+                }
+            }
+        }
     }
     
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
@@ -156,7 +185,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         private var lastOverscrollTime: Date = .distantPast
         
         /// 上次滚动位置（用于区分用户滚动 vs 内容增加）
-        private var lastScrollY: CGFloat = 0
+        var lastScrollY: CGFloat = 0
         
         init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
             self.isAtBottomBinding = isAtBottom
@@ -485,9 +514,18 @@ struct LiveCaptionView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .translationUpdated)) { _ in
             // 翻译完成后强制触发滚动（解决放久了错位问题）
+            // 🔥 关键修复：延迟触发滚动，等待 UI 布局完成
+            // 当"一口气输出太多"时，布局更新是异步的，立即滚动会基于旧高度计算
             scrollLogger.debug("📜 翻译完成通知: isAtBottom=\(isAtBottom) isUserSelecting=\(isUserSelecting)")
             if isAtBottom && !isUserSelecting {
+                // 立即触发一次
                 scrollTrigger += 1
+                // 延迟 100ms 再触发一次，确保布局完成后追赶
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if isAtBottom && !isUserSelecting {
+                        scrollTrigger += 1
+                    }
+                }
             }
         }
     }

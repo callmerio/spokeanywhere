@@ -45,6 +45,7 @@
       - 折叠态 2行窗口 [√]
       - 展开态 滚动历史 [√]
       - 拖动指示器 [√]
+      - 滚动追赶机制 -> 100ms 延迟二次触发 [√] ⭐ NEW
     - 多语言支持
       - 英文 -> 中文 [√]
       - 中文 -> 不翻译 [√]
@@ -109,6 +110,9 @@
       - AXObserver 全局监听 [√]
       - NSEvent 辅助 [√]
       - AXIsProcessTrusted 权限检查 [√]
+      - 双击过滤 -> 0.5s 冷却期 [√] ⭐ NEW
+      - 内容验证 -> isValidSelection() [√] ⭐ NEW
+      - AX 后台线程 -> Task.detached [√] ⭐ NEW
     - UI [√]
       - 毛玻璃样式 [√]
       - 非激活窗口 -> NSPanel.nonactivatingPanel [√]
@@ -185,7 +189,8 @@
         - 根因: PNG DPI丢失导致 NSImage.size 不精确 (ratio=2.001362)
         - 修复: 强制使用 pixels/backingScale 作为正确点尺寸
         - 新 Tiling 方案: 512切→填充→2048放大→直接拼接→裁剪→缩放
-    - 标注系统 [√] ⭐ NEW
+    - acceptsFirstMouse -> 非活跃窗口直接拖拽 [√] ⭐ NEW
+    - 标注系统 [√]
       - 触发 -> 框选后自动进入编辑模式 [√]
       - 工具栏 -> ScreenshotToolbarView [√]
         - Arrow (A) -> 箭头标注 [√]

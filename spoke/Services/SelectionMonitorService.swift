@@ -72,6 +72,15 @@ final class SelectionMonitorService {
     /// 判定为拖动的最小距离 (像素)
     private let dragThreshold: CGFloat = 5
     
+    /// 🔥 最后一次点击的 clickCount (用于过滤双击)
+    private var lastClickCount: Int = 0
+    
+    /// 🔥 最后一次点击的时间戳
+    private var lastClickTime: CFAbsoluteTime = 0
+    
+    /// 🔥 双击冷却期阈值 (秒) - 双击后这段时间内忽略 AX 通知
+    private let doubleClickCooldownThreshold: CFAbsoluteTime = 0.5
+    
     /// AXObserver 实例 (用于监听选择变化通知)
     private var axObserver: AXObserver?
     
@@ -190,11 +199,15 @@ final class SelectionMonitorService {
     }
     
     /// 手动触发检查选中文本
-    func checkSelection() {
+    /// - Parameter source: 触发来源（用于调试）
+    func checkSelection(source: String = "unknown") {
         guard isMonitoring else {
             logger.debug("📋 [SelectionMonitor] checkSelection 跳过: isMonitoring=false")
             return
         }
+        
+        // 🔥 诊断：记录触发来源
+        logger.debug("📋 [SelectionMonitor] checkSelection 触发 (source=\(source))")
         
         debounceTimer?.invalidate()
         debounceTimer = Timer.scheduledTimer(withTimeInterval: debounceDelay, repeats: false) { [weak self] _ in
@@ -315,8 +328,17 @@ final class SelectionMonitorService {
             return
         }
         
-        // 直接调用检查，不打日志（避免打字时刷屏）
-        checkSelection()
+        // 🔥 方案 B: 过滤双击触发的 AX 通知
+        // 如果最近发生了双击 (clickCount >= 2)，且在冷却期内，跳过此通知
+        let timeSinceClick = now - lastClickTime
+        if lastClickCount >= 2 && timeSinceClick < doubleClickCooldownThreshold {
+            logger.info("📋 [SelectionMonitor] 跳过双击触发的 AX 通知 (clickCount=\(self.lastClickCount), timeSinceClick=\(String(format: "%.3f", timeSinceClick))s)")
+            return
+        }
+        
+        // 调用检查，标记来源
+        logger.debug("📋 [SelectionMonitor] AX 通知触发 checkSelection (clickCount=\(self.lastClickCount), timeSinceClick=\(String(format: "%.3f", timeSinceClick))s)")
+        checkSelection(source: "AX")
     }
     
     // MARK: 鼠标/键盘监听
@@ -328,6 +350,9 @@ final class SelectionMonitorService {
             Task { @MainActor [weak self] in
                 self?.isMouseDown = true
                 self?.mouseDownLocation = NSEvent.mouseLocation
+                // 🔥 记录 clickCount 用于过滤双击
+                self?.lastClickCount = event.clickCount
+                self?.lastClickTime = CFAbsoluteTimeGetCurrent()
             }
         }
         
@@ -345,7 +370,14 @@ final class SelectionMonitorService {
                     SelectionToolbarManager.shared.hide()
                 } else {
                     // 拖动选择，检查是否有选中文本
-                    self.checkSelection()
+                    // 🔥 也需要检查双击冷却期
+                    let now = CFAbsoluteTimeGetCurrent()
+                    let timeSinceClick = now - self.lastClickTime
+                    if self.lastClickCount >= 2 && timeSinceClick < self.doubleClickCooldownThreshold {
+                        logger.info("📋 [SelectionMonitor] 跳过双击拖动 (Global mouseUp, clickCount=\(self.lastClickCount))")
+                    } else {
+                        self.checkSelection(source: "Global mouseUp")
+                    }
                 }
             }
         }
@@ -355,6 +387,9 @@ final class SelectionMonitorService {
             Task { @MainActor [weak self] in
                 self?.isMouseDown = true
                 self?.mouseDownLocation = NSEvent.mouseLocation
+                // 🔥 记录 clickCount 用于过滤双击
+                self?.lastClickCount = event.clickCount
+                self?.lastClickTime = CFAbsoluteTimeGetCurrent()
             }
             return event
         }
@@ -382,7 +417,14 @@ final class SelectionMonitorService {
                     SelectionToolbarManager.shared.hide(force: true)
                 } else {
                     // 拖动选择，检查是否有选中文本
-                    self.checkSelection()
+                    // 🔥 也需要检查双击冷却期
+                    let now = CFAbsoluteTimeGetCurrent()
+                    let timeSinceClick = now - self.lastClickTime
+                    if self.lastClickCount >= 2 && timeSinceClick < self.doubleClickCooldownThreshold {
+                        logger.info("📋 [SelectionMonitor] 跳过双击拖动 (Local mouseUp, clickCount=\(self.lastClickCount))")
+                    } else {
+                        self.checkSelection(source: "Local mouseUp")
+                    }
                 }
             }
             return event
@@ -402,7 +444,7 @@ final class SelectionMonitorService {
             
             if isShiftPressed && isArrowKey || isSelectAll {
                 Task { @MainActor [weak self] in
-                    self?.checkSelection()
+                    self?.checkSelection(source: "Keyboard")
                 }
             }
         }
@@ -416,21 +458,45 @@ final class SelectionMonitorService {
         }
         
         let bundleId = frontApp.bundleIdentifier ?? ""
+        let appName = frontApp.localizedName
         
         // 忽略特定应用
         if ignoredBundleIds.contains(bundleId) {
             return
         }
         
-        // 一次性获取选中文本和位置（内部已包含快速检查逻辑）
-        guard let (selectedText, bounds) = getSelectedTextAndBounds(for: frontApp) else {
-            return
+        // 🔥 修复: 将耗时的 AX 遍历移到后台线程，避免卡死主线程
+        // AXUIElementCopyAttributeValue 是同步 IPC 调用，复杂 UI 应用（Chrome/Electron）会很慢
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+            
+            // 在后台线程执行耗时的 AX 操作
+            guard let (selectedText, bounds) = self.getSelectedTextAndBounds(for: frontApp) else {
+                return
+            }
+            
+            // 回到主线程处理结果
+            await MainActor.run {
+                self.handleSelectionResult(selectedText, bounds: bounds, bundleId: bundleId, appName: appName)
+            }
         }
-        
+    }
+    
+    /// 🔥 处理选中结果（主线程调用）
+    private func handleSelectionResult(_ selectedText: String, bounds: CGRect, bundleId: String, appName: String?) {
         // 验证文本长度
         let trimmedText = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmedText.count >= minSelectionLength,
               trimmedText.count <= maxSelectionLength else {
+            return
+        }
+        
+        // 🔥 方案 C: 增强内容验证 - 过滤无意义的选中内容
+        // 1. 纯空白字符（空格、制表符、换行等）
+        // 2. 纯标点符号
+        // 3. 单个字符且非字母数字（如单个符号）
+        if !isValidSelection(trimmedText) {
+            logger.debug("📋 [SelectionMonitor] 跳过无意义的选中内容: '\(trimmedText.prefix(20))'")
             return
         }
         
@@ -442,17 +508,18 @@ final class SelectionMonitorService {
             selectedText: trimmedText,
             selectionBounds: bounds,
             sourceAppBundleId: bundleId,
-            sourceAppName: frontApp.localizedName
+            sourceAppName: appName
         )
         
-        logger.info("📋 [SelectionMonitor] 检测到选中文本 | 长度: \(trimmedText.count) | 应用: \(frontApp.localizedName ?? "unknown")")
+        logger.info("📋 [SelectionMonitor] 检测到选中文本 | 长度: \(trimmedText.count) | 应用: \(appName ?? "unknown")")
         
         // 回调
         onSelectionChanged?(context)
     }
     
     /// 使用 Accessibility API 获取选中文本和位置
-    private func getSelectedTextAndBounds(for app: NSRunningApplication) -> (String, CGRect)? {
+    /// 🔥 nonisolated: 允许在后台线程调用，避免主线程卡死
+    nonisolated private func getSelectedTextAndBounds(for app: NSRunningApplication) -> (String, CGRect)? {
         var bounds = CGRect.zero
         var selectedText: String?
         var focusedElement: AXUIElement?
@@ -620,7 +687,8 @@ final class SelectionMonitorService {
     }
     
     /// 递归遍历子元素寻找选中文本 (用于某些复杂 UI 结构)
-    private func findSelectedTextInChildren(_ element: AXUIElement, depth: Int) -> String? {
+    /// 🔥 nonisolated: 允许在后台线程调用
+    nonisolated private func findSelectedTextInChildren(_ element: AXUIElement, depth: Int) -> String? {
         // 限制遍历深度，避免无限循环
         guard depth < 10 else { return nil }
         
@@ -691,11 +759,44 @@ final class SelectionMonitorService {
         lastSelectedText = nil
     }
     
+    /// 🔥 方案 C: 验证选中内容是否有意义
+    /// 过滤纯空白、纯标点、单个非字母数字字符等无意义选中
+    private func isValidSelection(_ text: String) -> Bool {
+        // 空文本无效
+        guard !text.isEmpty else { return false }
+        
+        // 检查是否包含至少一个字母或数字（支持中文等 Unicode 字母）
+        let hasAlphanumeric = text.unicodeScalars.contains { scalar in
+            CharacterSet.alphanumerics.contains(scalar) ||
+            // 包含中日韩字符
+            (scalar.value >= 0x4E00 && scalar.value <= 0x9FFF) ||  // CJK 基本
+            (scalar.value >= 0x3400 && scalar.value <= 0x4DBF) ||  // CJK 扩展 A
+            (scalar.value >= 0x3040 && scalar.value <= 0x30FF)     // 平假名 + 片假名
+        }
+        
+        // 如果没有任何字母数字字符，认为无效
+        if !hasAlphanumeric {
+            return false
+        }
+        
+        // 单字符且是常见标点，无效
+        if text.count == 1 {
+            let singleChar = text.first!
+            let punctuationSet = CharacterSet.punctuationCharacters.union(.symbols)
+            if singleChar.unicodeScalars.allSatisfy({ punctuationSet.contains($0) }) {
+                return false
+            }
+        }
+        
+        return true
+    }
+    
     // MARK: - Electron/Chrome Accessibility 支持
     
     /// 为 Electron/Chrome 等应用启用 Accessibility
     /// 这些应用默认不暴露 AX tree，需要设置特殊属性才能访问
-    private func enableAccessibilityForApp(_ appElement: AXUIElement) {
+    /// 🔥 nonisolated: 允许在后台线程调用
+    nonisolated private func enableAccessibilityForApp(_ appElement: AXUIElement) {
         // AXEnhancedUserInterface: 告诉应用有辅助技术在使用
         // 这会让 Electron/Chrome 应用暴露其 accessibility tree
         let enhancedUI: CFBoolean = kCFBooleanTrue

@@ -491,6 +491,11 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     /// 鼠标按下位置（用于判断是否拖动选择）
     private var mouseDownLocation: CGPoint = .zero
     
+    /// 允许非活跃窗口响应首次点击（单击直接拖拽，无需先激活窗口）
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
+    }
+    
     override func mouseDown(with event: NSEvent) {
         mouseDownLocation = event.locationInWindow
         
