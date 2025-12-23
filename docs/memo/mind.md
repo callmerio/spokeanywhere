@@ -27,7 +27,13 @@
     - 纠错可视化 [√]
       - 删除线原词 + 橙色正确词 [√]
   - 实时字幕 -> Core/LiveCaption/
-    - 系统音频捕获 -> ScreenCaptureKit [√]
+    - 音频捕获
+      - 系统音频捕获 -> ScreenCaptureKit [√]
+      - 应用选择模式 -> SCContentSharingPicker (macOS 14+) [√] ⭐ NEW
+        - AppAudioCaptureService 单独管理
+        - 设置页选择: 全局模式/应用选择模式
+        - 工具栏显示当前应用名 + 重选按钮
+        - 取消选择自动回退全局模式
     - 转录引擎 -> 复用TranscriptionProvider [√]
     - 翻译 -> Apple Translation (macOS 15+) [√]
       - 重试机制 -> 3次指数退避 [√]

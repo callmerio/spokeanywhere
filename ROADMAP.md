@@ -21,6 +21,7 @@ macOS 语音助手应用开发路线图，按功能模块划分。
 - [x] 双层缓冲区稳定输出 (frozenLines + volatileTail)
 - [x] 生词记忆 + 橙色高亮
 - [x] 简洁卡片式 UI (毛玻璃 + 圆角)
+- [x] 应用选择模式 (SCContentSharingPicker, macOS 14+)
 
 ### 💬 Quick Ask
 

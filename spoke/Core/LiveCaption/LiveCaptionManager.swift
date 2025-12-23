@@ -69,6 +69,14 @@ final class LiveCaptionManager: ObservableObject {
     /// 存储 locale 标识符，如 "en-US", "zh-Hans"
     @AppStorage("LiveCaptionLocale") var captionLocale: String = "en-US"
     
+    /// 音频捕获模式
+    /// - global: 捕获所有系统音频（默认）
+    /// - appPicker: macOS 14+ 让用户选择特定应用
+    @AppStorage("LiveCaptionCaptureMode") var captureMode: String = CaptureMode.global.rawValue
+    
+    /// 当前捕获的应用名称（应用模式时）
+    @Published private(set) var currentAppName: String?
+    
     /// 行缓冲区（折叠模式使用）
     let lineBuffer = CaptionLineBuffer()
     
@@ -84,6 +92,26 @@ final class LiveCaptionManager: ObservableObject {
         ("ja-JP", "日语 (Japanese)"),
         ("ko-KR", "韩语 (Korean)"),
     ]
+    
+    /// 音频捕获模式枚举
+    enum CaptureMode: String, CaseIterable {
+        case global = "global"           // 全局模式 (捕获所有系统音频)
+        case appPicker = "appPicker"     // 应用选择模式 (macOS 14+)
+        
+        var displayName: String {
+            switch self {
+            case .global: return "全局模式"
+            case .appPicker: return "应用选择模式"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .global: return "捕获所有系统音频"
+            case .appPicker: return "选择特定应用 (macOS 14+)"
+            }
+        }
+    }
     
     // MARK: - Dependencies
     
@@ -182,6 +210,81 @@ final class LiveCaptionManager: ObservableObject {
     /// 使用 SpeechAnalyzerProvider (macOS 26+)
     @available(macOS 26.0, *)
     private func startWithSpeechAnalyzer() async throws {
+        // 检查是否使用应用选择模式
+        let useAppPicker = captureMode == CaptureMode.appPicker.rawValue
+        
+        if useAppPicker {
+            try await startWithAppPicker()
+            return
+        }
+        
+        // 全局模式
+        try await startWithGlobalCapture()
+    }
+    
+    /// 使用应用选择器模式 (macOS 26+ 因为依赖 SpeechAnalyzerProvider)
+    @available(macOS 26.0, *)
+    private func startWithAppPicker() async throws {
+        let appCapture = AppAudioCaptureService.shared
+        
+        // 设置选择完成回调
+        appCapture.onSelectionComplete = { [weak self] success in
+            guard let self = self, success else { return }
+            Task { @MainActor in
+                self.currentAppName = appCapture.currentAppName
+                do {
+                    try await self.setupSpeechAnalyzer(withAppCapture: true)
+                } catch {
+                    self.logger.error("❌ Failed to setup speech analyzer: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        appCapture.onSelectionCancelled = { [weak self] in
+            Task { @MainActor in
+                guard let self = self else { return }
+                self.logger.info("⚠️ User cancelled app selection, falling back to global mode")
+                do {
+                    try await self.startWithGlobalCapture()
+                } catch {
+                    self.logger.error("❌ Failed to start global capture: \(error.localizedDescription)")
+                    self.isActive = false
+                }
+            }
+        }
+        
+        appCapture.onError = { [weak self] error in
+            Task { @MainActor in
+                self?.logger.error("❌ App capture error: \(error.localizedDescription)")
+                await self?.stop()
+            }
+        }
+        
+        // 显示应用选择器
+        appCapture.presentPicker()
+        logger.info("📱 Waiting for user to select app...")
+    }
+    
+    /// 使用全局音频捕获模式
+    @available(macOS 26.0, *)
+    private func startWithGlobalCapture() async throws {
+        try await setupSpeechAnalyzer(withAppCapture: false)
+        
+        // 启动全局音频捕获
+        let capture = SystemAudioCaptureService.shared
+        do {
+            try await capture.startCapture()
+        } catch {
+            logger.error("❌ Failed to start audio capture: \(error.localizedDescription)")
+            throw LiveCaptionError.captureError("需要屏幕录制权限才能捕获系统音频。")
+        }
+        
+        logger.info("🎬 Live Caption started with global capture")
+    }
+    
+    /// 设置语音分析器
+    @available(macOS 26.0, *)
+    private func setupSpeechAnalyzer(withAppCapture: Bool) async throws {
         // 获取用户配置的实时字幕模型
         let modelManager = TranscriptionModelManager.shared
         let liveCaptionModelId = modelManager.settings.liveCaptionModelId
@@ -215,35 +318,38 @@ final class LiveCaptionManager: ObservableObject {
         try await speechProvider.prepare()
         self.provider = speechProvider
         
-        // 设置音频回调
-        let capture = SystemAudioCaptureService.shared
-        capture.onPCMBuffer = { [weak self] buffer in
-            guard let self = self else { return }
-            do {
-                try self.provider?.process(buffer: buffer)
-            } catch {
-                self.logger.error("❌ Process buffer error: \(error.localizedDescription)")
+        // 根据模式设置音频回调
+        if withAppCapture {
+            let appCapture = AppAudioCaptureService.shared
+            appCapture.onPCMBuffer = { [weak self] buffer in
+                guard let self = self else { return }
+                do {
+                    try self.provider?.process(buffer: buffer)
+                } catch {
+                    self.logger.error("❌ Process buffer error: \(error.localizedDescription)")
+                }
+            }
+        } else {
+            let capture = SystemAudioCaptureService.shared
+            capture.onPCMBuffer = { [weak self] buffer in
+                guard let self = self else { return }
+                do {
+                    try self.provider?.process(buffer: buffer)
+                } catch {
+                    self.logger.error("❌ Process buffer error: \(error.localizedDescription)")
+                }
+            }
+            
+            capture.onError = { [weak self] error in
+                guard let self = self else { return }
+                self.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+                Task { @MainActor in
+                    await self.stop()
+                }
             }
         }
         
-        capture.onError = { [weak self] error in
-            guard let self = self else { return }
-            self.logger.error("❌ Audio capture error: \(error.localizedDescription)")
-            // 捕获错误时停止并更新状态
-            Task { @MainActor in
-                await self.stop()
-            }
-        }
-        
-        // 启动音频捕获
-        do {
-            try await capture.startCapture()
-        } catch {
-            logger.error("❌ Failed to start audio capture: \(error.localizedDescription)")
-            throw LiveCaptionError.captureError("需要屏幕录制权限才能捕获系统音频。")
-        }
-        
-        logger.info("🎬 Live Caption started with SpeechAnalyzerProvider")
+        logger.info("🎬 SpeechAnalyzer setup completed (appCapture: \(withAppCapture))")
     }
     
     /// 使用旧的 LiveCaptionTranscriber (macOS < 26)
@@ -324,9 +430,15 @@ final class LiveCaptionManager: ObservableObject {
         legacyTranscriber?.stopTranscribing()
         legacyTranscriber = nil
         
-        // 停止音频捕获
-        if #available(macOS 12.3, *) {
-            await SystemAudioCaptureService.shared.stopCapture()
+        // 停止音频捕获（根据当前模式）
+        if captureMode == CaptureMode.appPicker.rawValue {
+            if #available(macOS 14.0, *) {
+                await AppAudioCaptureService.shared.stopCapture()
+            }
+        } else {
+            if #available(macOS 12.3, *) {
+                await SystemAudioCaptureService.shared.stopCapture()
+            }
         }
         
         // 取消翻译任务
@@ -336,11 +448,22 @@ final class LiveCaptionManager: ObservableObject {
         isActive = false
         pendingText = ""
         lastFinalizedLength = 0
+        currentAppName = nil
         
         // 停止时保存历史
         saveSegments()
         
         logger.info("🛑 Live Caption stopped")
+    }
+    
+    /// 重新选择应用（应用模式专用）
+    func reselectApp() {
+        guard isActive, captureMode == CaptureMode.appPicker.rawValue else { return }
+        
+        if #available(macOS 14.0, *) {
+            logger.info("🔄 Re-selecting app...")
+            AppAudioCaptureService.shared.reselectApp()
+        }
     }
     
     /// 切换开关

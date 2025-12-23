@@ -79,6 +79,11 @@ struct TranscriptionModelSettingsView: View {
             
             // Info Card
             infoCard
+            
+            // Live Caption Audio Capture Mode (macOS 14+)
+            if #available(macOS 14.0, *) {
+                liveCaptionCaptureSettings
+            }
         }
         .alert("下载模型", isPresented: $showDownloadAlert) {
             Button("下载") {
@@ -125,6 +130,98 @@ struct TranscriptionModelSettingsView: View {
         .padding(12)
         .background(ModelSettingsColors.infoBackground)
         .cornerRadius(8)
+    }
+    
+    private var liveCaptionCaptureSettings: some View {
+        LiveCaptionCaptureSettingsSection()
+    }
+}
+
+// MARK: - Live Caption Capture Settings Section
+
+@available(macOS 14.0, *)
+private struct LiveCaptionCaptureSettingsSection: View {
+    @AppStorage("LiveCaptionCaptureMode") private var captureMode: String = LiveCaptionManager.CaptureMode.global.rawValue
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("实时字幕音频源")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.gray)
+                .padding(.leading, 4)
+            
+            VStack(spacing: 0) {
+                ForEach(LiveCaptionManager.CaptureMode.allCases, id: \.rawValue) { mode in
+                    CaptureModeRow(
+                        mode: mode,
+                        isSelected: captureMode == mode.rawValue,
+                        onSelect: {
+                            captureMode = mode.rawValue
+                        }
+                    )
+                    
+                    if mode != LiveCaptionManager.CaptureMode.allCases.last {
+                        Divider()
+                            .background(ModelSettingsColors.dividerColor)
+                    }
+                }
+            }
+            .background(ModelSettingsColors.cardBackground)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(ModelSettingsColors.borderColor, lineWidth: 1)
+            )
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("• 切换模式后需重新启动实时字幕生效")
+                Text("• 应用模式：取消选择将自动使用全局模式")
+            }
+            .font(.system(size: 10))
+            .foregroundStyle(.gray.opacity(0.7))
+            .padding(.leading, 4)
+        }
+    }
+}
+
+// MARK: - Capture Mode Row
+
+@available(macOS 14.0, *)
+private struct CaptureModeRow: View {
+    let mode: LiveCaptionManager.CaptureMode
+    let isSelected: Bool
+    let onSelect: () -> Void
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                Image(systemName: mode == .global ? "speaker.wave.3" : "app.badge.checkmark")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.gray)
+                    .frame(width: 24)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mode.displayName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                    
+                    Text(mode.description)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

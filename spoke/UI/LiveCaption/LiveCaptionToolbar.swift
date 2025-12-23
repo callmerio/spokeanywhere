@@ -12,6 +12,12 @@ struct LiveCaptionToolbar: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // 应用模式时显示当前应用名
+            if manager.captureMode == LiveCaptionManager.CaptureMode.appPicker.rawValue,
+               let appName = manager.currentAppName {
+                appNameButton(appName)
+            }
+            
             // 识别语言选择（独立于全局设置）
             languageMenu
             
@@ -26,6 +32,27 @@ struct LiveCaptionToolbar: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color(white: 0.1))
+    }
+    
+    // MARK: - App Name Button
+    
+    private func appNameButton(_ appName: String) -> some View {
+        Button {
+            manager.reselectApp()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "app.fill")
+                    .font(.system(size: 10))
+                Text(appName)
+                    .font(.system(size: 12))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8))
+            }
+            .foregroundColor(.white.opacity(0.8))
+        }
+        .buttonStyle(.plain)
+        .help("点击重新选择应用")
     }
     
     // MARK: - Components
