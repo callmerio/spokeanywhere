@@ -81,6 +81,15 @@ final class SelectionMonitorService {
     /// 🔥 双击冷却期阈值 (秒) - 双击后这段时间内忽略 AX 通知
     private let doubleClickCooldownThreshold: CFAbsoluteTime = 0.5
     
+    /// 🔥 是否刚发生了鼠标拖动选择 (用于过滤打字触发的 AX 通知)
+    private var didRecentMouseDrag: Bool = false
+    
+    /// 🔥 鼠标拖动选择的有效时间窗口 (秒) - 超过此时间的 AX 通知将被忽略
+    private let mouseDragValidWindow: CFAbsoluteTime = 0.3
+    
+    /// 🔥 最后一次鼠标拖动选择的时间
+    private var lastMouseDragTime: CFAbsoluteTime = 0
+    
     /// AXObserver 实例 (用于监听选择变化通知)
     private var axObserver: AXObserver?
     
@@ -95,6 +104,9 @@ final class SelectionMonitorService {
         "com.apple.loginwindow",
         "com.apple.screencaptureui",
     ]
+    
+    /// 自身应用的 Bundle ID
+    private let selfBundleId = Bundle.main.bundleIdentifier ?? "app.spokenly"
     
     // MARK: - Init
     
@@ -257,6 +269,13 @@ final class SelectionMonitorService {
             return
         }
         
+        // 🔥 忽略自身应用（Dictionary Panel 打字会触发 AX 通知）
+        if bundleId == selfBundleId {
+            logger.debug("📋 [SelectionMonitor] 跳过自身应用的 AXObserver 设置")
+            removeCurrentAXObserver()
+            return
+        }
+        
         logger.info("📋 [SelectionMonitor] 切换到应用: \(frontApp.localizedName ?? "unknown") (pid: \(pid))")
         
         // 移除旧的观察者
@@ -328,6 +347,14 @@ final class SelectionMonitorService {
             return
         }
         
+        // 🔥 核心修复：只有在最近发生了鼠标拖动选择时才响应 AX 通知
+        // 这样可以过滤掉打字、键盘移动光标等导致的文本选择变化
+        let timeSinceDrag = now - lastMouseDragTime
+        guard didRecentMouseDrag && timeSinceDrag < mouseDragValidWindow else {
+            // 没有最近的鼠标拖动，忽略此 AX 通知（可能是打字触发的）
+            return
+        }
+        
         // 🔥 方案 B: 过滤双击触发的 AX 通知
         // 如果最近发生了双击 (clickCount >= 2)，且在冷却期内，跳过此通知
         let timeSinceClick = now - lastClickTime
@@ -336,8 +363,11 @@ final class SelectionMonitorService {
             return
         }
         
+        // 重置拖动标志（已处理）
+        didRecentMouseDrag = false
+        
         // 调用检查，标记来源
-        logger.debug("📋 [SelectionMonitor] AX 通知触发 checkSelection (clickCount=\(self.lastClickCount), timeSinceClick=\(String(format: "%.3f", timeSinceClick))s)")
+        logger.debug("📋 [SelectionMonitor] AX 通知触发 checkSelection (拖动后 \(String(format: "%.3f", timeSinceDrag))s)")
         checkSelection(source: "AX")
     }
     
@@ -368,7 +398,13 @@ final class SelectionMonitorService {
                 // 如果是单击（移动距离小于阈值），隐藏工具栏
                 if distance < self.dragThreshold {
                     SelectionToolbarManager.shared.hide()
+                    // 单击不是拖动选择
+                    self.didRecentMouseDrag = false
                 } else {
+                    // 🔥 标记：发生了鼠标拖动选择
+                    self.didRecentMouseDrag = true
+                    self.lastMouseDragTime = CFAbsoluteTimeGetCurrent()
+                    
                     // 拖动选择，检查是否有选中文本
                     // 🔥 也需要检查双击冷却期
                     let now = CFAbsoluteTimeGetCurrent()
@@ -415,7 +451,13 @@ final class SelectionMonitorService {
                 if distance < self.dragThreshold {
                     // 🔥 点击工具栏外部（本应用内），强制隐藏（包括词典结果）
                     SelectionToolbarManager.shared.hide(force: true)
+                    // 单击不是拖动选择
+                    self.didRecentMouseDrag = false
                 } else {
+                    // 🔥 标记：发生了鼠标拖动选择
+                    self.didRecentMouseDrag = true
+                    self.lastMouseDragTime = CFAbsoluteTimeGetCurrent()
+                    
                     // 拖动选择，检查是否有选中文本
                     // 🔥 也需要检查双击冷却期
                     let now = CFAbsoluteTimeGetCurrent()
@@ -462,6 +504,12 @@ final class SelectionMonitorService {
         
         // 忽略特定应用
         if ignoredBundleIds.contains(bundleId) {
+            return
+        }
+        
+        // 🔥 忽略自身应用（Dictionary Panel 等 UI 打字会触发 AX 通知）
+        if bundleId == selfBundleId {
+            logger.debug("📋 [SelectionMonitor] 跳过自身应用的选择检查")
             return
         }
         

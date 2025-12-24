@@ -1,9 +1,9 @@
 # Code Review Report
 
-**Review Scope**: `git diff HEAD~1` (最新提交：截图光晕修复 + Live Text 双模式 + 智能缩放锚点)
-**Files Reviewed**: 8 个核心源文件
+**Review Scope**: Dictionary Panel 优化 (本次会话修改)
+**Files Reviewed**: 5 files
 **Reviewer**: Qwen (CCW Critic Role)
-**Date**: 2025-12-20T01:01
+**Date**: 2024-12-24
 
 ---
 
@@ -11,7 +11,7 @@
 
 ### 🎯 **APPROVE** ✅
 
-这次提交整体质量优秀，解决了长期困扰的光晕显示问题，代码架构清晰，无安全漏洞。以下是详细分析：
+代码质量良好，无严重问题。有少量改进建议。
 
 ---
 
@@ -23,149 +23,113 @@
 
 ## Security Findings 🔒
 
-**无安全漏洞**
+### ✅ 无安全漏洞
 
-扫描结果：
-- ❌ 无密码/密钥硬编码
-- ❌ 无 SQL 注入风险
-- ❌ 无 XSS 风险（纯 Native App）
-- ❌ 无危险的 eval/exec 调用
+审查了以下安全模式：
+- **敏感数据**: 无 password/secret/token/api_key 硬编码
+- **代码注入**: 无 eval/exec/innerHTML 使用
+- **URL 处理**: `dict://` URL 构造安全（Line 150 DictionaryPanelState.swift）
+- **文件操作**: 历史记录存储在 Application Support 目录，路径安全
 
 ---
 
 ## Quality Issues ⚠️
 
-### 1. **魔法数字分散** (`ScreenshotWindow.swift:221`, `ScreenshotContentView.swift:255`)
-
-- **问题**: `padding = 60` 和 `padding = 30` 分别定义在两个文件中，存在同步风险
-- **位置**: 
-  - `ScreenshotWindow.swift:221`: `let padding: CGFloat = 60`
-  - `ScreenshotContentView.swift:255`: `let padding: CGFloat = 30`
-- **关系**: 60 = 30 * 2（窗口总 padding = 内容单侧 padding * 2）
-- **风险**: 修改其中一处时可能忘记同步另一处
-- **建议**: 提取为 `ScreenshotContentView.paddingPerSide` 静态常量，`ScreenshotWindow` 引用 `paddingPerSide * 2`
-
+### 1. **[低] 强制解包风险** - `DictionaryPanelWindow.swift:100`
 ```swift
-// ScreenshotContentView.swift
-static let paddingPerSide: CGFloat = 30
-
-// ScreenshotWindow.swift
-let padding = ScreenshotContentView.paddingPerSide * 2  // 60
+let maxY = max(0, scrollView.documentView!.frame.height - clipView.bounds.height)
 ```
+**问题**: `documentView` 强制解包可能崩溃
+**建议**: 使用 guard let 或 optional chaining
 
-### 2. **重复的 togglePin/toggleLock 逻辑** (`ScreenshotContentView.swift:482-506`, `ActionBarView.swift:645-668`)
-
-- **问题**: `ScreenshotContentView` 和 `ActionBarView` 都有 `togglePin()` 和 `toggleLock()` 方法，代码重复
-- **风险**: 逻辑修改时需要同步两处，容易遗漏
-- **建议**: 提取到 `ScreenshotManager` 或扩展方法中
-
+### 2. **[低] 线程安全** - `LocalDictionaryService.swift:83`
 ```swift
-// 建议：直接调用 ScreenshotManager 的方法
-ScreenshotManager.shared.togglePin(item)
+final class LocalDictionaryService: @unchecked Sendable {
+    private var searchHistory: [String] = []
 ```
+**问题**: `@unchecked Sendable` 标记但 `searchHistory` 无同步保护
+**风险**: 后台搜索和主线程 `addToHistory` 可能竞态
+**建议**: 
+  - 使用 `NSLock` 保护 `searchHistory`
+  - 或将历史操作限制在主线程
 
-### 3. **行数过长的方法** (`ScreenshotWindow.scrollWheel(with:)`)
-
-- **问题**: `scrollWheel(with:)` 方法约 100 行，超过推荐的 50 行上限
-- **位置**: `ScreenshotWindow.swift:192-293`
-- **建议**: 提取为 `handleOpacityChange()` 和 `handleSizeChange()` 两个私有方法
-
-### 4. **嵌套层级较深** (`ScreenshotWindow.scrollWheel(with:)`)
-
-- **位置**: `ScreenshotWindow.swift:248-268`
-- **问题**: 4 层 if 嵌套用于尺寸限制检查
-- **建议**: 使用 guard 早返回或提取为 `clampDimension()` 辅助函数
+### 3. **[信息] 未使用代码** - `DictionaryPanelState.swift:147-153`
+```swift
+func openInDictionary() {
+    guard let result = selectedResult else { return }
+    let url = URL(string: "dict://\(result.word)")!
+    NSWorkspace.shared.open(url)
+    ...
+}
+```
+**问题**: 此方法已从 UI 中移除，但代码仍保留
+**建议**: 删除或标记 `@available(*, deprecated)`
 
 ---
 
 ## Architecture Concerns 🏗️
 
-### 1. **Window/ContentView 职责边界模糊**
+### ✅ 架构合理
 
-- **观察**: `ScreenshotWindow` 持有 `isHovered` 状态，但 `ScreenshotContentView` 也有独立的 `isHovered`
-- **分析**: 当前设计意图是 Window 级别 hover 控制光晕，ContentView 级别 hover 控制 ActionBar
-- **判断**: ✅ 这是有意设计，两个 hover 有不同语义，无需合并
+1. **状态管理**: `DictionaryPanelState` 使用 `@Observable` + `@MainActor`，符合 SwiftUI 最佳实践
+2. **异步搜索**: `Task.detached` 正确用于后台搜索，避免阻塞主线程
+3. **事件监听**: `NSEvent.addGlobalMonitorForEvents` 正确使用 `[weak self]` 避免循环引用
+4. **单例模式**: `DictionaryPanelManager.shared` 合理使用单例管理窗口生命周期
 
-### 2. **依赖方向正确 ✅**
+### 建议改进
 
-```
-ScreenshotWindow → ScreenshotContentView → ScreenshotItem
-       ↓
- ScreenshotManager（管理生命周期）
-```
-
-- 无循环依赖
-- Manager 单例模式使用得当
-- `@MainActor` 标注正确
-
-### 3. **Live Text 集成设计 ✅**
-
-- `.automatic` 模式让系统自动控制 OCR 按钮
-- `ImageAnalysisOverlayViewDelegate` 扩展右键菜单
-- 兼容性检查 `#available(macOS 13.0, *)` 正确
+1. **Monitor 清理**: `registerShortcut()` 中的 global/local monitor 未提供移除方法
+   - 当前不影响功能（应用生命周期内有效）
+   - 如需支持动态注销，应保存 monitor 引用
 
 ---
 
 ## Positive Observations ✅
 
-### 1. **CAShapeLayer + shadowPath 性能优化**
-```swift
-glowLayer.shadowPath = path  // ✅ 设置 shadowPath 避免每帧重算
-```
-
-### 2. **NSTrackingArea 优化**
-```swift
-// 只在 bounds 变化时重建，减少不必要的重建
-if existing.rect == bounds { return }
-```
-
-### 3. **防抖机制**
-```swift
-// 延迟隐藏 ActionBar，避免闪烁
-DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
-```
-
-### 4. **CATransaction 动画封装**
-```swift
-CATransaction.begin()
-CATransaction.setAnimationDuration(0.25)
-CATransaction.setAnimationTimingFunction(...)
-// ... 修改属性
-CATransaction.commit()
-```
-
-### 5. **多屏幕支持**
-```swift
-// 恢复时调整到正确显示器
-adjustFrameToScreen(for: item)
-```
-
-### 6. **权限检查完善**
-```swift
-// macOS 15+ 使用 SCShareableContent，14 及以下使用 CGPreflight
-if #available(macOS 15.0, *) { ... }
-```
-
-### 7. **Codable 兼容性处理**
-```swift
-// 新增字段使用 decodeIfPresent 兼容旧数据
-let isMarked = try container.decodeIfPresent(Bool.self, forKey: .isMarked) ?? false
-```
+1. **Debounce 实现**: 150ms debounce + Task 取消机制，有效防止快速输入卡顿
+2. **后台搜索**: `Task.detached(priority: .userInitiated)` 正确优先级
+3. **点击外部关闭**: 使用 `NSEvent.mouseLocation` + `windowFrame.contains()` 实现简洁
+4. **键盘导航**: ESC/Tab/上下键处理完整，用户体验好
+5. **滚动实现**: 递归查找 `NSScrollView` 并手动调整 bounds，解决 SwiftUI ScrollView 键盘滚动问题
 
 ---
 
 ## Recommendations
 
-### 优先级 P0（建议立即修复）
-无
+### 优先级 P1（建议修复）
 
-### 优先级 P1（下次迭代修复）
-1. **提取 padding 常量** - 避免硬编码同步问题
+1. **修复强制解包**
+   ```swift
+   guard let documentView = scrollView.documentView else { return }
+   let maxY = max(0, documentView.frame.height - clipView.bounds.height)
+   ```
 
-### 优先级 P2（技术债务积累）
-2. **提取 togglePin/toggleLock** - 消除重复代码
-3. **拆分 scrollWheel 方法** - 提高可读性
-4. **减少嵌套层级** - 使用 guard 早返回
+2. **添加线程同步**
+   ```swift
+   private let historyLock = NSLock()
+   
+   func addToHistory(_ word: String) {
+       historyLock.lock()
+       defer { historyLock.unlock() }
+       // ... existing code
+   }
+   ```
+
+### 优先级 P2（可选）
+
+3. **清理未使用代码** - 删除 `openInDictionary()` 方法
+
+---
+
+## Files Reviewed
+
+| File | Lines | Issues |
+|------|-------|--------|
+| `DictionaryPanelState.swift` | 155 | 1 (未使用代码) |
+| `DictionaryPanelWindow.swift` | 259 | 1 (强制解包) |
+| `LocalDictionaryService.swift` | 409 | 1 (线程安全) |
+| `DictionaryPanelView.swift` | 407 | 0 |
+| `FormattedDefinitionView.swift` | ~135 | 0 |
 
 ---
 
@@ -174,10 +138,9 @@ let isMarked = try container.decodeIfPresent(Bool.self, forKey: .isMarked) ?? fa
 | 维度 | 评分 | 说明 |
 |------|------|------|
 | 安全性 | ⭐⭐⭐⭐⭐ | 无漏洞 |
-| 代码质量 | ⭐⭐⭐⭐ | 少量重复代码，方法略长 |
-| 架构设计 | ⭐⭐⭐⭐⭐ | 职责清晰，依赖正确 |
-| 可维护性 | ⭐⭐⭐⭐ | 魔法数字需提取 |
-| 测试覆盖 | ⭐⭐ | 无新增测试（UI 代码难测） |
+| 代码质量 | ⭐⭐⭐⭐ | 少量强制解包 |
+| 架构设计 | ⭐⭐⭐⭐⭐ | 异步搜索设计合理 |
+| 可维护性 | ⭐⭐⭐⭐ | 线程安全需加强 |
 
 **综合评分**: ⭐⭐⭐⭐ (4/5)
 

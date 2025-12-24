@@ -122,7 +122,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logStep("Step 10: Setting up screenshot service...")
         setupScreenshotService()
         
-        logStep("Step 11: Application launch complete! ✅")
+        logStep("Step 11: Setting up dictionary panel...")
+        setupDictionaryPanel()
+        
+        logStep("Step 12: Application launch complete! ✅")
     }
     
     private func setupScreenshotService() {
@@ -146,6 +149,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ScreenshotManager.shared.restoreAll()
         
         logger.info("📸 [AppDelegate] ✅ Screenshot service setup complete")
+    }
+    
+    private func setupDictionaryPanel() {
+        logger.info("📖 [AppDelegate] setupDictionaryPanel() 开始")
+        
+        DictionaryPanelManager.shared.registerShortcut()
+        
+        logger.info("📖 [AppDelegate] ✅ Dictionary panel setup complete (⌥+Space)")
     }
     
     private func setupSelectionToolbar() {
@@ -317,6 +328,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         screenshotItem.keyEquivalentModifierMask = .option
         menu.addItem(screenshotItem)
         
+        // 查词
+        let dictionaryItem = NSMenuItem(title: "查词", action: #selector(toggleDictionaryPanel), keyEquivalent: " ")
+        dictionaryItem.keyEquivalentModifierMask = .option
+        menu.addItem(dictionaryItem)
+        
         menu.addItem(NSMenuItem.separator())
         
         menu.addItem(NSMenuItem(title: "设置...", action: #selector(openSettings), keyEquivalent: ","))
@@ -351,6 +367,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleSelectionToolbar() {
         AppSettings.shared.selectionToolbarEnabled.toggle()
         selectionToolbarMenuItem?.state = AppSettings.shared.selectionToolbarEnabled ? .on : .off
+    }
+    
+    @objc func toggleDictionaryPanel() {
+        DictionaryPanelManager.shared.toggle()
     }
     
     @objc func triggerScreenshot() {

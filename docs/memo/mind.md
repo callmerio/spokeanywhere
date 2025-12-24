@@ -117,9 +117,11 @@
       - AXObserver 全局监听 [√]
       - NSEvent 辅助 [√]
       - AXIsProcessTrusted 权限检查 [√]
-      - 双击过滤 -> 0.5s 冷却期 [√] ⭐ NEW
-      - 内容验证 -> isValidSelection() [√] ⭐ NEW
-      - AX 后台线程 -> Task.detached [√] ⭐ NEW
+      - 双击过滤 -> 0.5s 冷却期 [√]
+      - 内容验证 -> isValidSelection() [√]
+      - AX 后台线程 -> Task.detached [√]
+      - 自身应用过滤 -> 避免打字触发 [√] ⭐ NEW
+      - 鼠标拖动才响应 -> 过滤键盘输入 [√] ⭐ NEW
     - UI [√]
       - 毛玻璃样式 [√]
       - 非激活窗口 -> NSPanel.nonactivatingPanel [√]
@@ -233,8 +235,19 @@
       - 手动/批量输入 [√]
       - 热词推荐 [√]
       - 词典注入开关 [√]
-    - 划词查词 [ ]
-    - 生词本 [ ]
+    - 本地词典面板 [√] ⭐ NEW
+      - ⌥+Space 快捷键唤起 [√]
+      - 前缀搜索 + 历史记录 + 词形变化 [√]
+      - 列表/详情双视图 [√]
+      - Tab 切换生词 + ESC 返回 [√]
+      - 点击外部自动隐藏 [√]
+      - LRU 缓存 200 条 -> 避免 DCSCopyTextDefinition 重复调用 [√]
+      - NSLock 线程安全 [√]
+      - 50ms debounce + 后台线程搜索 [√]
+      - -> UI/Dictionary/* + LocalDictionaryService
+    - 生词本 [√]
+      - VocabularyService 管理 [√]
+      - 橙色高亮显示 [√]
     - 词形还原 [ ]
   - LLM 集成 -> Core/LLM/
     - 多 Provider [√]
