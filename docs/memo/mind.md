@@ -47,7 +47,10 @@
       - 橙色高亮 -> VocabularyService [√]
       - 右键添加/移除 [√]
       - 全量刷新 [√]
-    - 单词点击查词 [ ] ⭐ 当前重点
+    - 单词点击查词 [√] ⭐ 2025-12-26
+      - 单击单词 → 工具栏显示词典结果
+      - Hover 效果 → 橙色下划线 + 手型光标
+      - 复用 SelectionToolbar 组件
       - 点击单词 -> 弹出查词悬浮窗
       - hover 3D 突出效果 (scaleEffect + shadow + 弹性动画)
       - 复用 DictionaryResultView 展示
