@@ -631,12 +631,34 @@ final class VocabularyTextView: NSTextView {
             return
         }
         
+        // 🔥 关键修复：验证点击是否在字符边界框内（与 hover 一致）
+        let glyphIndex = layoutManager.glyphIndexForCharacter(at: characterIndex)
+        let glyphRect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyphIndex, length: 1), in: textContainer)
+        
+        // 如果点击位置在字形右侧太远（超出字形宽度），说明在空白区域
+        let pointInGlyph = locationInTextContainer.x - glyphRect.origin.x
+        if pointInGlyph > glyphRect.width + 5 || pointInGlyph < -5 {
+            vocabTextLogger.info("❌ Click in blank area, not on glyph")
+            return
+        }
+        
         // 找到单词边界
         let nsString = string as NSString
         let wordRange = nsString.rangeOfWord(at: characterIndex)
         
         guard wordRange.location != NSNotFound else {
             vocabTextLogger.warning("❌ wordRange not found")
+            return
+        }
+        
+        // 🔥 进一步验证：检查鼠标是否在整个单词的边界框内
+        let wordGlyphRange = layoutManager.glyphRange(forCharacterRange: wordRange, actualCharacterRange: nil)
+        let wordRect = layoutManager.boundingRect(forGlyphRange: wordGlyphRange, in: textContainer)
+        
+        // 添加少量容差 (2px)
+        let expandedWordRect = wordRect.insetBy(dx: -2, dy: -2)
+        if !expandedWordRect.contains(locationInTextContainer) {
+            vocabTextLogger.info("❌ Click outside word bounds")
             return
         }
         
