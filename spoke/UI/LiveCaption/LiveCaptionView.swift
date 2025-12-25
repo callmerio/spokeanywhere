@@ -749,15 +749,53 @@ struct LiveCaptionView: View {
         SelectionToolbarManager.shared.show(at: screenPoint)
     }
     
-    /// 处理单词点击，调用统一查词服务并显示结果
+    /// 处理单词点击，调用统一查词服务并在选择工具栏中显示结果
     private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
-        print("📖 [LiveCaption] handleWordClicked: \(word) at \(screenPoint)")
+        print("📖 [LiveCaption] handleWordClicked: '\(word)' at \(screenPoint)")
         
+        // 1. 创建选择上下文（将单词作为选中文本）
+        let context = SelectionContext(
+            selectedText: word,
+            selectionBounds: CGRect(x: screenPoint.x - 50, y: screenPoint.y, width: 100, height: 20),
+            sourceAppBundleId: Bundle.main.bundleIdentifier ?? "",
+            sourceAppName: "SpokenAnyWhere"
+        )
+        
+        // 2. 显示工具栏
+        SelectionToolbarState.shared.show(with: context)
+        SelectionToolbarManager.shared.show(at: screenPoint)
+        
+        // 3. 异步查词并在工具栏中显示结果
         Task { @MainActor in
-            // 调用统一查词服务（本地优先，在线兜底）
+            print("📖 [LiveCaption] Starting lookup for '\(word)'...")
+            
             if let result = await UnifiedDictionaryService.shared.lookup(word) {
-                // 显示查词结果弹窗
-                DictionaryResultManager.shared.showResult(result, at: screenPoint)
+                print("📖 [LiveCaption] ✅ Got result: \(result.word), \(result.senses.count) senses")
+                
+                // 转换为 DictionaryData 并在工具栏中显示
+                let senses = result.senses.map { sense in
+                    DictionarySense(
+                        pos: sense.pos,
+                        chinese: sense.chinese,
+                        english: sense.english,
+                        examples: sense.examples.isEmpty ? nil : sense.examples
+                    )
+                }
+                
+                let data = DictionaryData(
+                    word: result.word,
+                    phonetic: result.phonetic,
+                    senses: senses,
+                    lemma: result.lemma,
+                    lemmaInfo: nil
+                )
+                
+                // 在工具栏原地显示词典结果
+                SelectionToolbarState.shared.showDictionaryResult(data, forText: word)
+            } else {
+                print("📖 [LiveCaption] ❌ No result for '\(word)'")
+                // 查询失败时显示错误
+                SelectionToolbarState.shared.showDictionaryError(.notFound, word: word)
             }
         }
     }

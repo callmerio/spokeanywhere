@@ -1,5 +1,8 @@
 import SwiftUI
 import AppKit
+import OSLog
+
+private let vocabTextLogger = Logger(subsystem: "com.spokeanywhere", category: "VocabularyText")
 
 // MARK: - Vocabulary Highlight Text
 
@@ -147,16 +150,66 @@ struct VocabularyHighlightText: NSViewRepresentable {
         
         // MARK: - Selection Tracking
         
+        /// 上次选中变化时间，用于检测双击
+        private var lastSelectionTime: Date = .distantPast
+        private var lastSelectedWord: String?
+        
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             
-            let hasSelection = textView.selectedRange().length > 0
+            let selectedRange = textView.selectedRange()
+            let hasSelection = selectedRange.length > 0
+            
             if hasSelection && !isSelecting {
                 isSelecting = true
                 onSelectionStarted?()
             } else if !hasSelection && isSelecting {
                 isSelecting = false
                 onSelectionEnded?()
+            }
+            
+            // 🔥 检测双击选词：如果选中的是一个完整单词，且距离上次选中时间 < 500ms
+            // 这意味着用户双击了一个单词，同时触发查词
+            if hasSelection && onWordClicked != nil {
+                let nsString = textView.string as NSString
+                let selectedText = nsString.substring(with: selectedRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // 检查是否是单个单词（无空格）
+                let isSingleWord = !selectedText.contains(" ") && selectedText.count >= 2
+                let isEnglishWord = selectedText.unicodeScalars.allSatisfy { CharacterSet.letters.contains($0) }
+                
+                if isSingleWord && isEnglishWord {
+                    let now = Date()
+                    let timeSinceLastSelection = now.timeIntervalSince(lastSelectionTime)
+                    
+                    // 双击检测：500ms 内连续两次选中同一个单词
+                    if timeSinceLastSelection < 0.5 && lastSelectedWord == selectedText {
+                        vocabTextLogger.info("🖱️ Double-click word detected: '\(selectedText)'")
+                        
+                        // 计算屏幕坐标
+                        if let window = textView.window,
+                           let layoutManager = textView.layoutManager,
+                           let textContainer = textView.textContainer {
+                            let glyphRange = layoutManager.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
+                            let rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                            let rectInView = NSRect(
+                                x: rect.origin.x + textView.textContainerOrigin.x,
+                                y: rect.origin.y + textView.textContainerOrigin.y,
+                                width: rect.width,
+                                height: rect.height
+                            )
+                            let rectInWindow = textView.convert(rectInView, to: nil)
+                            let rectOnScreen = window.convertToScreen(rectInWindow)
+                            let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
+                            
+                            vocabTextLogger.info("✅ Calling onWordClicked for '\(selectedText)' at \(screenPoint.x), \(screenPoint.y)")
+                            onWordClicked?(selectedText, screenPoint)
+                        }
+                    }
+                    
+                    lastSelectedWord = selectedText
+                    lastSelectionTime = now
+                }
             }
             
             // 🔥 选中防抖：有选中时启动定时器，300ms 后触发工具栏
@@ -402,6 +455,107 @@ final class VocabularyTextView: NSTextView {
         textStorage.addLayoutManager(layoutManager)
         
         self.init(frame: .zero, textContainer: textContainer)
+        
+        // 🔥 添加双击手势识别器（单击被 NSTextView 选择行为消费，双击更可靠）
+        let clickGesture = NSClickGestureRecognizer(target: self, action: #selector(handleClickGesture(_:)))
+        clickGesture.numberOfClicksRequired = 2  // 双击触发查词
+        clickGesture.delaysPrimaryMouseButtonEvents = false
+        self.addGestureRecognizer(clickGesture)
+        
+        vocabTextLogger.info("✅ VocabularyTextView initialized, double-click gesture added")
+    }
+    
+    /// 处理单击手势
+    @objc private func handleClickGesture(_ gesture: NSClickGestureRecognizer) {
+        let point = gesture.location(in: self)
+        vocabTextLogger.info("🖱️ handleClickGesture at: \(point.x), \(point.y)")
+        
+        // 如果有选中文本（用户拖拽选择），不触发查词
+        if selectedRange().length > 1 {
+            vocabTextLogger.info("🖱️ Has selection (\(self.selectedRange().length)), skipping click handler")
+            return
+        }
+        
+        // 触发单词点击处理
+        handleWordClickFromGesture(at: point)
+    }
+    
+    /// 从手势识别器触发的单词点击处理
+    private func handleWordClickFromGesture(at point: NSPoint) {
+        guard let coordinator = coordinator else {
+            vocabTextLogger.error("❌ coordinator is nil")
+            return
+        }
+        
+        guard coordinator.onWordClicked != nil else {
+            vocabTextLogger.error("❌ onWordClicked callback is nil")
+            return
+        }
+        
+        guard let layoutManager = layoutManager,
+              let textContainer = textContainer else {
+            vocabTextLogger.error("❌ layoutManager or textContainer is nil")
+            return
+        }
+        
+        // 转换为文本容器坐标
+        let textContainerOrigin = textContainerOrigin
+        let locationInTextContainer = NSPoint(
+            x: point.x - textContainerOrigin.x,
+            y: point.y - textContainerOrigin.y
+        )
+        
+        // 获取字符索引
+        let characterIndex = layoutManager.characterIndex(
+            for: locationInTextContainer,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: nil
+        )
+        
+        guard characterIndex < string.count else {
+            vocabTextLogger.error("❌ characterIndex \(characterIndex) out of bounds (\(self.string.count))")
+            return
+        }
+        
+        // 找到单词边界
+        let nsString = string as NSString
+        let wordRange = nsString.rangeOfWord(at: characterIndex)
+        
+        guard wordRange.location != NSNotFound else {
+            vocabTextLogger.error("❌ wordRange not found")
+            return
+        }
+        
+        let word = nsString.substring(with: wordRange)
+        let trimmedWord = word.trimmingCharacters(in: .punctuationCharacters)
+        
+        vocabTextLogger.info("word: '\(word)', trimmed: '\(trimmedWord)'")
+        
+        guard trimmedWord.count >= 2 else {
+            vocabTextLogger.warning("❌ word too short")
+            return
+        }
+        
+        // 检查是否是纯英文单词
+        let isEnglishWord = trimmedWord.unicodeScalars.allSatisfy { 
+            CharacterSet.letters.contains($0)
+        }
+        guard isEnglishWord else {
+            vocabTextLogger.warning("❌ not an English word")
+            return
+        }
+        
+        // 计算屏幕坐标
+        if let window = window {
+            let rectInWindow = convert(NSRect(x: point.x, y: point.y, width: 1, height: 1), to: nil)
+            let rectOnScreen = window.convertToScreen(rectInWindow)
+            let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
+            
+            vocabTextLogger.info("✅ Calling onWordClicked for '\(trimmedWord)' at \(screenPoint.x), \(screenPoint.y)")
+            coordinator.onWordClicked?(trimmedWord, screenPoint)
+        } else {
+            vocabTextLogger.error("❌ window is nil")
+        }
     }
     
     override var intrinsicContentSize: NSSize {
@@ -424,43 +578,39 @@ final class VocabularyTextView: NSTextView {
         invalidateIntrinsicContentSize()
     }
     
-    // MARK: - 重写 mouseUp 直接触发工具栏 / 单词点击
+    // MARK: - 单击查词（在 mouseDown 时立即触发）
     
     /// 记录 mouseDown 位置，用于判断是否为拖拽
     private var mouseDownLocation: NSPoint = .zero
     private var mouseDownTime: Date = Date()
     
     override func mouseDown(with event: NSEvent) {
-        mouseDownLocation = convert(event.locationInWindow, from: nil)
+        let point = convert(event.locationInWindow, from: nil)
+        mouseDownLocation = point
         mouseDownTime = Date()
+        
+        vocabTextLogger.info("🖱️ mouseDown at: \(point.x), \(point.y)")
+        
+        // 🔥 关键：在 super.mouseDown 之前触发查词
+        // 因为 super.mouseDown 会启动选择模式并可能不返回（直到 mouseUp）
+        if event.clickCount == 1 {
+            // 单击 → 触发查词
+            triggerWordLookup(at: point)
+        }
+        
+        // 调用 super 让 NSTextView 处理选择
         super.mouseDown(with: event)
     }
     
-    override func mouseUp(with event: NSEvent) {
-        super.mouseUp(with: event)
-        
-        let mouseUpLocation = convert(event.locationInWindow, from: nil)
-        let distance = hypot(mouseUpLocation.x - mouseDownLocation.x, mouseUpLocation.y - mouseDownLocation.y)
-        let duration = Date().timeIntervalSince(mouseDownTime)
-        
-        // 判断是否为点击（距离 < 5px 且时间 < 300ms）
-        let isClick = distance < 5 && duration < 0.3
-        
-        if selectedRange().length > 0 {
-            // 有选中文本 → 触发选择工具栏
-            coordinator?.handleSelectionCompleted(in: self)
-        } else if isClick {
-            // 无选中 + 短点击 → 触发单词查词
-            handleWordClick(at: mouseUpLocation, event: event)
-        }
-    }
-    
-    /// 处理单词点击
-    private func handleWordClick(at point: NSPoint, event: NSEvent) {
+    /// 触发单词查词
+    private func triggerWordLookup(at point: NSPoint) {
         guard let coordinator = coordinator,
               coordinator.onWordClicked != nil,
               let layoutManager = layoutManager,
-              let textContainer = textContainer else { return }
+              let textContainer = textContainer else {
+            vocabTextLogger.warning("❌ triggerWordLookup: missing coordinator or callback")
+            return
+        }
         
         // 转换为文本容器坐标
         let textContainerOrigin = textContainerOrigin
@@ -476,24 +626,28 @@ final class VocabularyTextView: NSTextView {
             fractionOfDistanceBetweenInsertionPoints: nil
         )
         
-        guard characterIndex < string.count else { return }
+        guard characterIndex < string.count else {
+            vocabTextLogger.warning("❌ characterIndex out of bounds")
+            return
+        }
         
         // 找到单词边界
         let nsString = string as NSString
         let wordRange = nsString.rangeOfWord(at: characterIndex)
-        guard wordRange.location != NSNotFound else { return }
+        
+        guard wordRange.location != NSNotFound else {
+            vocabTextLogger.warning("❌ wordRange not found")
+            return
+        }
         
         let word = nsString.substring(with: wordRange)
         let trimmedWord = word.trimmingCharacters(in: .punctuationCharacters)
         
-        // 过滤太短的单词
-        guard trimmedWord.count >= 2 else { return }
-        
-        // 检查是否是纯英文单词
-        let isEnglishWord = trimmedWord.unicodeScalars.allSatisfy { 
-            CharacterSet.letters.contains($0)
+        // 过滤太短或非英文单词
+        guard trimmedWord.count >= 2,
+              trimmedWord.unicodeScalars.allSatisfy({ CharacterSet.letters.contains($0) }) else {
+            return
         }
-        guard isEnglishWord else { return }
         
         // 计算屏幕坐标
         if let window = window {
@@ -501,7 +655,118 @@ final class VocabularyTextView: NSTextView {
             let rectOnScreen = window.convertToScreen(rectInWindow)
             let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
             
+            vocabTextLogger.info("✅ Calling onWordClicked for '\(trimmedWord)' at \(screenPoint.x), \(screenPoint.y)")
             coordinator.onWordClicked?(trimmedWord, screenPoint)
+        }
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        print("🔍 [VocabularyText] 🖱️ mouseUp CALLED")
+        super.mouseUp(with: event)
+        
+        let mouseUpLocation = convert(event.locationInWindow, from: nil)
+        let distance = hypot(mouseUpLocation.x - mouseDownLocation.x, mouseUpLocation.y - mouseDownLocation.y)
+        let duration = Date().timeIntervalSince(mouseDownTime)
+        let hasSelection = selectedRange().length > 0
+        
+        // 判断是否为点击（距离 < 5px 且时间 < 300ms）
+        let isClick = distance < 5 && duration < 0.3
+        
+        print("🔍 [VocabularyText] mouseUp: distance=\(distance), duration=\(duration), hasSelection=\(hasSelection), isClick=\(isClick)")
+        
+        // 🔥 修改逻辑：优先判断是否为短点击
+        // 即使有选中文本，如果是短点击且选中长度 <= 1（可能是光标），也视为单词点击
+        if isClick && selectedRange().length <= 1 {
+            // 单击单词 → 触发查词
+            print("🔍 [VocabularyText] Detected click, calling handleWordClick")
+            handleWordClick(at: mouseUpLocation, event: event)
+        } else if hasSelection {
+            // 有选中文本 → 触发选择工具栏
+            print("🔍 [VocabularyText] Has selection, calling handleSelectionCompleted")
+            coordinator?.handleSelectionCompleted(in: self)
+        }
+    }
+    
+    /// 处理单词点击
+    private func handleWordClick(at point: NSPoint, event: NSEvent) {
+        print("🔍 [VocabularyText] handleWordClick called at: \(point)")
+        
+        guard let coordinator = coordinator else {
+            print("🔍 [VocabularyText] ❌ coordinator is nil")
+            return
+        }
+        
+        guard coordinator.onWordClicked != nil else {
+            print("🔍 [VocabularyText] ❌ onWordClicked callback is nil")
+            return
+        }
+        
+        guard let layoutManager = layoutManager,
+              let textContainer = textContainer else {
+            print("🔍 [VocabularyText] ❌ layoutManager or textContainer is nil")
+            return
+        }
+        
+        // 转换为文本容器坐标
+        let textContainerOrigin = textContainerOrigin
+        let locationInTextContainer = NSPoint(
+            x: point.x - textContainerOrigin.x,
+            y: point.y - textContainerOrigin.y
+        )
+        
+        // 获取字符索引
+        let characterIndex = layoutManager.characterIndex(
+            for: locationInTextContainer,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: nil
+        )
+        
+        print("🔍 [VocabularyText] characterIndex: \(characterIndex), string.count: \(string.count)")
+        
+        guard characterIndex < string.count else {
+            print("🔍 [VocabularyText] ❌ characterIndex out of bounds")
+            return
+        }
+        
+        // 找到单词边界
+        let nsString = string as NSString
+        let wordRange = nsString.rangeOfWord(at: characterIndex)
+        
+        guard wordRange.location != NSNotFound else {
+            print("🔍 [VocabularyText] ❌ wordRange not found")
+            return
+        }
+        
+        let word = nsString.substring(with: wordRange)
+        let trimmedWord = word.trimmingCharacters(in: .punctuationCharacters)
+        
+        print("🔍 [VocabularyText] word: '\(word)', trimmed: '\(trimmedWord)'")
+        
+        // 过滤太短的单词
+        guard trimmedWord.count >= 2 else {
+            print("🔍 [VocabularyText] ❌ word too short")
+            return
+        }
+        
+        // 检查是否是纯英文单词
+        let isEnglishWord = trimmedWord.unicodeScalars.allSatisfy { 
+            CharacterSet.letters.contains($0)
+        }
+        guard isEnglishWord else {
+            print("🔍 [VocabularyText] ❌ not an English word")
+            return
+        }
+        
+        // 计算屏幕坐标
+        if let window = window {
+            let rectInWindow = convert(NSRect(x: point.x, y: point.y, width: 1, height: 1), to: nil)
+            let rectOnScreen = window.convertToScreen(rectInWindow)
+            let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
+            
+            print("🔍 [VocabularyText] ✅ Calling onWordClicked for '\(trimmedWord)' at \(screenPoint)")
+            coordinator.onWordClicked?(trimmedWord, screenPoint)
+        } else {
+            print("🔍 [VocabularyText] ❌ window is nil")
         }
     }
     
@@ -546,13 +811,26 @@ final class VocabularyTextView: NSTextView {
             y: point.y - textContainerOrigin.y
         )
         
+        var fraction: CGFloat = 0
         let characterIndex = layoutManager.characterIndex(
             for: locationInTextContainer,
             in: textContainer,
-            fractionOfDistanceBetweenInsertionPoints: nil
+            fractionOfDistanceBetweenInsertionPoints: &fraction
         )
         
         guard characterIndex < string.count else {
+            clearHoverEffect()
+            return
+        }
+        
+        // 🔥 关键修复：验证鼠标是否真的在字符边界框内
+        // fraction > 0.5 说明鼠标更靠近下一个字符，可能在空白区域
+        let glyphIndex = layoutManager.glyphIndexForCharacter(at: characterIndex)
+        let glyphRect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyphIndex, length: 1), in: textContainer)
+        
+        // 如果点击位置在字形右侧太远（超出字形宽度），说明在空白区域
+        let pointInGlyph = locationInTextContainer.x - glyphRect.origin.x
+        if pointInGlyph > glyphRect.width + 5 || pointInGlyph < -5 {
             clearHoverEffect()
             return
         }
@@ -561,6 +839,17 @@ final class VocabularyTextView: NSTextView {
         let wordRange = nsString.rangeOfWord(at: characterIndex)
         
         guard wordRange.location != NSNotFound else {
+            clearHoverEffect()
+            return
+        }
+        
+        // 🔥 进一步验证：检查鼠标是否在整个单词的边界框内
+        let wordGlyphRange = layoutManager.glyphRange(forCharacterRange: wordRange, actualCharacterRange: nil)
+        let wordRect = layoutManager.boundingRect(forGlyphRange: wordGlyphRange, in: textContainer)
+        
+        // 添加少量容差 (2px)
+        let expandedWordRect = wordRect.insetBy(dx: -2, dy: -2)
+        if !expandedWordRect.contains(locationInTextContainer) {
             clearHoverEffect()
             return
         }
@@ -583,10 +872,10 @@ final class VocabularyTextView: NSTextView {
         hoveredWordRange = wordRange
         originalAttributes = textStorage.attributes(at: wordRange.location, effectiveRange: nil)
         
-        // 添加下划线效果
+        // 添加下划线效果（橙色，与生词高亮一致）
         textStorage.addAttributes([
             .underlineStyle: NSUnderlineStyle.single.rawValue,
-            .underlineColor: NSColor.systemBlue.withAlphaComponent(0.5),
+            .underlineColor: NSColor.systemOrange.withAlphaComponent(0.7),
             .cursor: NSCursor.pointingHand
         ], range: wordRange)
         
