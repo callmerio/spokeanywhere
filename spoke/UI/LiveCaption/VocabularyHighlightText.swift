@@ -20,6 +20,8 @@ struct VocabularyHighlightText: NSViewRepresentable {
     var onSelectionEnded: (() -> Void)?
     /// 当用户完成选择文本时的回调（用于显示工具栏）
     var onTextSelected: ((String, CGPoint) -> Void)?
+    /// 当用户点击单词时的回调（用于查词）
+    var onWordClicked: ((String, CGPoint) -> Void)?
     
     /// 用于触发刷新的版本号（生词列表变化时更新）
     var refreshTrigger: Int = 0
@@ -28,7 +30,8 @@ struct VocabularyHighlightText: NSViewRepresentable {
         Coordinator(
             onSelectionStarted: onSelectionStarted,
             onSelectionEnded: onSelectionEnded,
-            onTextSelected: onTextSelected
+            onTextSelected: onTextSelected,
+            onWordClicked: onWordClicked
         )
     }
     
@@ -64,6 +67,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
         context.coordinator.onSelectionStarted = onSelectionStarted
         context.coordinator.onSelectionEnded = onSelectionEnded
         context.coordinator.onTextSelected = onTextSelected
+        context.coordinator.onWordClicked = onWordClicked
         
         // 内容变化或生词列表变化时更新
         let needsUpdate = textView.string != text || textView.lastRefreshTrigger != refreshTrigger
@@ -116,6 +120,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
         var onSelectionStarted: (() -> Void)?
         var onSelectionEnded: (() -> Void)?
         var onTextSelected: ((String, CGPoint) -> Void)?
+        var onWordClicked: ((String, CGPoint) -> Void)?
         private var isSelecting = false
         
         /// 🔥 选中防抖：选中变化停止 300ms 后触发工具栏
@@ -127,10 +132,16 @@ struct VocabularyHighlightText: NSViewRepresentable {
         /// 正在加载的单词
         private static var loadingWords: Set<String> = []
         
-        init(onSelectionStarted: (() -> Void)?, onSelectionEnded: (() -> Void)?, onTextSelected: ((String, CGPoint) -> Void)?) {
+        init(
+            onSelectionStarted: (() -> Void)?,
+            onSelectionEnded: (() -> Void)?,
+            onTextSelected: ((String, CGPoint) -> Void)?,
+            onWordClicked: ((String, CGPoint) -> Void)?
+        ) {
             self.onSelectionStarted = onSelectionStarted
             self.onSelectionEnded = onSelectionEnded
             self.onTextSelected = onTextSelected
+            self.onWordClicked = onWordClicked
             super.init()
         }
         
@@ -413,15 +424,222 @@ final class VocabularyTextView: NSTextView {
         invalidateIntrinsicContentSize()
     }
     
-    // MARK: - 关键：重写 mouseUp 直接触发工具栏
+    // MARK: - 重写 mouseUp 直接触发工具栏 / 单词点击
+    
+    /// 记录 mouseDown 位置，用于判断是否为拖拽
+    private var mouseDownLocation: NSPoint = .zero
+    private var mouseDownTime: Date = Date()
+    
+    override func mouseDown(with event: NSEvent) {
+        mouseDownLocation = convert(event.locationInWindow, from: nil)
+        mouseDownTime = Date()
+        super.mouseDown(with: event)
+    }
     
     override func mouseUp(with event: NSEvent) {
         super.mouseUp(with: event)
         
-        // 选择完成后立即触发工具栏
+        let mouseUpLocation = convert(event.locationInWindow, from: nil)
+        let distance = hypot(mouseUpLocation.x - mouseDownLocation.x, mouseUpLocation.y - mouseDownLocation.y)
+        let duration = Date().timeIntervalSince(mouseDownTime)
+        
+        // 判断是否为点击（距离 < 5px 且时间 < 300ms）
+        let isClick = distance < 5 && duration < 0.3
+        
         if selectedRange().length > 0 {
+            // 有选中文本 → 触发选择工具栏
             coordinator?.handleSelectionCompleted(in: self)
+        } else if isClick {
+            // 无选中 + 短点击 → 触发单词查词
+            handleWordClick(at: mouseUpLocation, event: event)
         }
+    }
+    
+    /// 处理单词点击
+    private func handleWordClick(at point: NSPoint, event: NSEvent) {
+        guard let coordinator = coordinator,
+              coordinator.onWordClicked != nil,
+              let layoutManager = layoutManager,
+              let textContainer = textContainer else { return }
+        
+        // 转换为文本容器坐标
+        let textContainerOrigin = textContainerOrigin
+        let locationInTextContainer = NSPoint(
+            x: point.x - textContainerOrigin.x,
+            y: point.y - textContainerOrigin.y
+        )
+        
+        // 获取字符索引
+        let characterIndex = layoutManager.characterIndex(
+            for: locationInTextContainer,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: nil
+        )
+        
+        guard characterIndex < string.count else { return }
+        
+        // 找到单词边界
+        let nsString = string as NSString
+        let wordRange = nsString.rangeOfWord(at: characterIndex)
+        guard wordRange.location != NSNotFound else { return }
+        
+        let word = nsString.substring(with: wordRange)
+        let trimmedWord = word.trimmingCharacters(in: .punctuationCharacters)
+        
+        // 过滤太短的单词
+        guard trimmedWord.count >= 2 else { return }
+        
+        // 检查是否是纯英文单词
+        let isEnglishWord = trimmedWord.unicodeScalars.allSatisfy { 
+            CharacterSet.letters.contains($0)
+        }
+        guard isEnglishWord else { return }
+        
+        // 计算屏幕坐标
+        if let window = window {
+            let rectInWindow = convert(NSRect(x: point.x, y: point.y, width: 1, height: 1), to: nil)
+            let rectOnScreen = window.convertToScreen(rectInWindow)
+            let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
+            
+            coordinator.onWordClicked?(trimmedWord, screenPoint)
+        }
+    }
+    
+    // MARK: - Hover 效果 (可选扩展)
+    
+    private var trackingArea: NSTrackingArea?
+    private var hoveredWordRange: NSRange?
+    private var originalAttributes: [NSAttributedString.Key: Any]?
+    
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        
+        if let trackingArea = trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+        
+        let options: NSTrackingArea.Options = [.mouseMoved, .mouseEnteredAndExited, .activeInActiveApp]
+        trackingArea = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+        addTrackingArea(trackingArea!)
+    }
+    
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        
+        let point = convert(event.locationInWindow, from: nil)
+        updateHoverEffect(at: point)
+    }
+    
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        clearHoverEffect()
+    }
+    
+    private func updateHoverEffect(at point: NSPoint) {
+        guard let layoutManager = layoutManager,
+              let textContainer = textContainer,
+              let textStorage = textStorage else { return }
+        
+        let textContainerOrigin = textContainerOrigin
+        let locationInTextContainer = NSPoint(
+            x: point.x - textContainerOrigin.x,
+            y: point.y - textContainerOrigin.y
+        )
+        
+        let characterIndex = layoutManager.characterIndex(
+            for: locationInTextContainer,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: nil
+        )
+        
+        guard characterIndex < string.count else {
+            clearHoverEffect()
+            return
+        }
+        
+        let nsString = string as NSString
+        let wordRange = nsString.rangeOfWord(at: characterIndex)
+        
+        guard wordRange.location != NSNotFound else {
+            clearHoverEffect()
+            return
+        }
+        
+        // 如果是同一个单词，不需要更新
+        if let current = hoveredWordRange, NSEqualRanges(current, wordRange) {
+            return
+        }
+        
+        // 清除之前的高亮
+        clearHoverEffect()
+        
+        // 检查是否是有效的英文单词
+        let word = nsString.substring(with: wordRange).trimmingCharacters(in: .punctuationCharacters)
+        let isEnglishWord = word.count >= 2 && word.unicodeScalars.allSatisfy { CharacterSet.letters.contains($0) }
+        
+        guard isEnglishWord else { return }
+        
+        // 保存原始属性
+        hoveredWordRange = wordRange
+        originalAttributes = textStorage.attributes(at: wordRange.location, effectiveRange: nil)
+        
+        // 添加下划线效果
+        textStorage.addAttributes([
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+            .underlineColor: NSColor.systemBlue.withAlphaComponent(0.5),
+            .cursor: NSCursor.pointingHand
+        ], range: wordRange)
+        
+        // 设置手型光标
+        NSCursor.pointingHand.set()
+    }
+    
+    private func clearHoverEffect() {
+        guard let range = hoveredWordRange,
+              let textStorage = textStorage else { return }
+        
+        // 移除下划线
+        textStorage.removeAttribute(.underlineStyle, range: range)
+        textStorage.removeAttribute(.underlineColor, range: range)
+        textStorage.removeAttribute(.cursor, range: range)
+        
+        hoveredWordRange = nil
+        originalAttributes = nil
+        
+        // 恢复默认光标
+        NSCursor.iBeam.set()
+    }
+}
+
+// MARK: - NSString Extension for Word Range
+
+private extension NSString {
+    func rangeOfWord(at index: Int) -> NSRange {
+        guard index >= 0 && index < length else { return NSRange(location: NSNotFound, length: 0) }
+        
+        var start = index
+        var end = index
+        
+        // 向前找单词起点
+        while start > 0 {
+            let char = character(at: start - 1)
+            if !CharacterSet.letters.contains(UnicodeScalar(char)!) {
+                break
+            }
+            start -= 1
+        }
+        
+        // 向后找单词终点
+        while end < length {
+            let char = character(at: end)
+            if !CharacterSet.letters.contains(UnicodeScalar(char)!) {
+                break
+            }
+            end += 1
+        }
+        
+        guard end > start else { return NSRange(location: NSNotFound, length: 0) }
+        return NSRange(location: start, length: end - start)
     }
 }
 

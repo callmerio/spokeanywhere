@@ -712,7 +712,7 @@ struct LiveCaptionView: View {
     
     // MARK: - Components
     
-    /// 字幕文本（带生词高亮 + 右键菜单 + 颜色渐变 + 选中工具栏）
+    /// 字幕文本（带生词高亮 + 右键菜单 + 颜色渐变 + 选中工具栏 + 单词点击查词）
     @ViewBuilder
     private func captionText(for original: String, opacity: CGFloat = 1.0) -> some View {
         VocabularyHighlightText(
@@ -723,6 +723,9 @@ struct LiveCaptionView: View {
             onSelectionEnded: { isUserSelecting = false },
             onTextSelected: { selectedText, screenPoint in
                 handleTextSelected(selectedText, at: screenPoint)
+            },
+            onWordClicked: { word, screenPoint in
+                handleWordClicked(word, at: screenPoint)
             },
             refreshTrigger: vocabularyRefreshTrigger
         )
@@ -744,6 +747,19 @@ struct LiveCaptionView: View {
         // 显示工具栏
         SelectionToolbarState.shared.show(with: context)
         SelectionToolbarManager.shared.show(at: screenPoint)
+    }
+    
+    /// 处理单词点击，调用统一查词服务并显示结果
+    private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
+        print("📖 [LiveCaption] handleWordClicked: \(word) at \(screenPoint)")
+        
+        Task { @MainActor in
+            // 调用统一查词服务（本地优先，在线兜底）
+            if let result = await UnifiedDictionaryService.shared.lookup(word) {
+                // 显示查词结果弹窗
+                DictionaryResultManager.shared.showResult(result, at: screenPoint)
+            }
+        }
     }
     
     /// 底部拖动指示器

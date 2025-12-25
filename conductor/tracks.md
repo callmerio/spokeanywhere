@@ -4,6 +4,7 @@
 
 | Track ID | Status | Description |
 |----------|--------|-------------|
+| caption_word_lookup_20251225 | [ ] Pending | 字幕单词点击查词 + 统一查词接口 (UnifiedDictionaryService) ⭐ |
 | livecaption_app_picker_20251223 | [ ] Pending | 实时字幕添加应用选择模式 (SCContentSharingPicker) |
 | tiling_upscaling_20251221 | [~] In Progress | 修复 AI 增强 Tiling Upscaling 算法 (Phase 2 完成, 待验证) |
 | screenshot_multiscreen_fix_20251221 | [~] In Progress | 修复多屏幕截图错位和模糊问题 (待验证) |

@@ -47,6 +47,11 @@
       - 橙色高亮 -> VocabularyService [√]
       - 右键添加/移除 [√]
       - 全量刷新 [√]
+    - 单词点击查词 [ ] ⭐ 当前重点
+      - 点击单词 -> 弹出查词悬浮窗
+      - hover 3D 突出效果 (scaleEffect + shadow + 弹性动画)
+      - 复用 DictionaryResultView 展示
+      - -> VocabularyTextView + UnifiedDictionaryService
     - UI
       - 卡片式毛玻璃 [√]
       - 折叠态 2行窗口 [√]
@@ -248,6 +253,11 @@
     - 生词本 [√]
       - VocabularyService 管理 [√]
       - 橙色高亮显示 [√]
+    - 统一查词接口 [ ] ⭐ 当前重点
+      - UnifiedDictionaryService 聚合层
+      - 优先级: 本地词典 (LocalDictionaryService) -> 后端 API (DictionaryAPIService)
+      - 统一输出格式: pos + 释义
+      - 缓存策略: 内存 LRU -> 本地 DCS -> 在线 API
     - 词形还原 [ ]
   - LLM 集成 -> Core/LLM/
     - 多 Provider [√]
@@ -359,6 +369,14 @@
     - P3 低优
       - 菜单栏图标 [ ]
       - 多模态音频输入 [ ]
+    - 临近上线 (App Store 合规)
+      - App Sandbox 迁移 [ ]
+        - Security Scoped Bookmarks
+        - 沙盒下文件访问验证
+      - Onboarding 权限引导 [ ]
+        - 统一 PermissionManager
+        - 首次启动向导 UI
+      - Entitlements 配置 [ ]
     - 远期
       - 多语言 (日语/韩语) [ ]
       - iOS/iPadOS [ ]

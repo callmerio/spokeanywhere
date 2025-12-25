@@ -38,6 +38,30 @@ final class DictionaryResultManager {
         showWindow(at: anchorPoint, isError: true)
     }
     
+    /// 显示统一查词结果（支持 UnifiedDictionaryResult）
+    func showResult(_ result: UnifiedDictionaryResult, at anchorPoint: CGPoint) {
+        // 转换为 DictionaryData 并复用现有逻辑
+        let senses = result.senses.map { sense in
+            DictionarySense(
+                pos: sense.pos,
+                chinese: sense.chinese,
+                english: sense.english,
+                examples: sense.examples.isEmpty ? nil : sense.examples
+            )
+        }
+        
+        let data = DictionaryData(
+            word: result.word,
+            phonetic: result.phonetic,
+            senses: senses,
+            lemma: result.lemma,
+            lemmaInfo: nil
+        )
+        
+        show(data: data, anchorPoint: anchorPoint)
+        logger.info("📖 [DictionaryResult] 显示统一查词结果 | 单词: \(result.word) | 来源: \(result.source.rawValue)")
+    }
+    
     func hide() {
         resultWindow?.orderOut(nil)
         resultWindow = nil

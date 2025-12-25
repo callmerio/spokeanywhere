@@ -1,91 +1,28 @@
-# System Architect Analysis - Raycast 风格查词功能
+# Role Analysis: System Architect
 
 ## Architecture Overview
+System needs to be secure (Sandboxed), robust (Error handling), and performant (Low latency).
 
-### 入口方案对比
+## Analysis of Questions
 
-| 方案 | 优点 | 缺点 | 推荐度 |
-|------|------|------|--------|
-| A. Quick Ask 模式 (`/define`) | 复用现有 UI 框架 | Quick Ask 功能边界模糊 | ⭐⭐ |
-| B. 独立面板 | 功能清晰、可独立优化 | 需新建窗口管理 | ⭐⭐⭐ |
-| C. 设置页内嵌 | 无需新入口 | 使用场景不自然 | ⭐ |
+1. **里程碑优先级 (App Sandbox)**:
+   - **观点**: 沙盒化不仅仅是开关，它限制了文件访问（Open/Save Panels, Security Scoped Bookmarks）、IPC（XPC Services）和硬件访问。这是一个**架构级的重构**。必须现在做，因为所有文件 I/O 逻辑可能都需要修改。
+   - **风险**: 现有的自动保存、日志记录、截图保存路径可能全部失效。
+   - **建议**: **立即启动沙盒化迁移**，作为技术债务清偿的第一优先级。
 
-**推荐方案 B**: 独立面板，快捷键触发（如 ⌥+D 或复用 ⌥⌥ 时输入 `/define`）
+2. **核心痛点 (翻译截断)**:
+   - **观点**: 截断通常是由于 UI 布局计算（NSTextView/Label）与异步数据流的不匹配，或者是 API 返回数据的处理逻辑问题。这属于 Bug Fix。
+   - **建议**: 分配专门的 Debug 资源解决。
 
-### 系统架构图
+3. **技术偏好 (本地模型)**:
+   - **观点**: 引入本地模型（CoreML/Whisper.cpp）会引入复杂的依赖管理和性能调优（内存占用、热管理）。
+   - **建议**: 目前架构支持多引擎，可以先保持架构的灵活性，待 App 稳定后再通过插件化或可选下载的方式引入本地模型，避免主包过大。
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    DictionaryPanel                       │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │  SearchBar (TextField + debounce)                   ││
-│  └─────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────┐│
-│  │  ResultListView                                      ││
-│  │  ┌─────────────────────────────────────────────────┐││
-│  │  │ WordRow (word, pos, brief, isVocabulary?)      │││
-│  │  └─────────────────────────────────────────────────┘││
-│  └─────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────┐│
-│  │  ActionBar (Define | Show Details ↵ | Tab 标记)     ││
-│  └─────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────┘
-         │                         │
-         ▼                         ▼
-┌─────────────────┐    ┌─────────────────────┐
-│ DictionaryAPI   │    │ VocabularyService   │
-│ Service         │    │ (生词管理)           │
-└─────────────────┘    └─────────────────────┘
-```
+4. **交互体验 (Onboarding)**:
+   - **观点**: 权限检测逻辑目前分散在各 Service 中。
+   - **架构建议**: 统一 `PermissionManager` 模块，集中管理状态和请求逻辑，为 UI 提供统一的 State。
 
-## Component Design
-
-### 1. DictionaryPanelView (新建)
-- **职责**: 查词面板主视图
-- **状态**: 
-  - `searchText: String`
-  - `results: [WordResult]`
-  - `selectedIndex: Int`
-  - `viewMode: .list | .detail`
-
-### 2. WordResultRow (新建)
-- **职责**: 单词结果行
-- **显示**: 单词、词性、简短释义、生词标记（橙色）
-
-### 3. WordDetailView (新建/扩展 DictionaryResultView)
-- **职责**: 详细释义视图
-- **显示**: 同义词、反义词、例句、发音
-
-### 4. DictionaryPanelState (新建)
-- **职责**: 面板状态管理
-- **功能**: 搜索、导航、生词标记
-
-## Tech Stack
-
-| 层级 | 技术选型 | 说明 |
-|------|----------|------|
-| UI | SwiftUI + NSPanel | 非激活窗口，保持键盘焦点 |
-| 状态管理 | @Observable | Swift 5.9+ |
-| 搜索防抖 | Combine debounce | 300ms |
-| 词典数据 | DictionaryAPIService | 现有服务 |
-| 生词管理 | VocabularyService | 现有服务 |
-| 词形变化 | 方案待定 | 见下文 |
-
-### 词形变化方案
-
-| 方案 | 实现 | 优点 | 缺点 |
-|------|------|------|------|
-| A. 后端 API | 扩展 `/api/dictionary/en/:word/related` | 数据准确 | 依赖后端 |
-| B. 本地 Lemmatizer | NLTagger + 规则 | 离线可用 | 覆盖有限 |
-| C. macOS Dictionary | DCSCopyTextDefinition | 系统数据 | 需解析 |
-
-**推荐方案 A**: 后端 API 扩展，保持一致性
-
-## Risk Assessment
-
-| 风险 | 等级 | 缓解措施 |
-|------|------|----------|
-| API 延迟 | 中 | 加载态 + 缓存 |
-| 词形数据缺失 | 中 | 降级为仅搜索结果 |
-| 键盘焦点丢失 | 低 | NSPanel.becomesKeyOnlyIfNeeded |
-| 与 Quick Ask 冲突 | 低 | 独立快捷键 |
+## Proposal
+1. **Technical Foundation (P0)**: **App Sandbox Migration**. 彻底梳理文件访问权限，引入 `SecurityScopedBookmark` 机制。
+2. **Refactoring**: 统一权限管理模块 `PermissionManager`，支持响应式状态更新。
+3. **Maintenance**: 修复翻译/UI布局的 Bug。
