@@ -1,8 +1,12 @@
 # MM 记忆时间线
 
-维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-15 15:01
+维护者: MM | 项目: SpokenAnyWhere | 更新: 2025-12-26 08:39
 
 ## Learns (Latest at top)
+
+- [T075] Memo 引用标准化：统一 path:line 格式并修正过期路径（如 TrackpadGestureService → TrackpadSwipeService）
+- [T076] 状态一致性校验：roadmap 与 implementation-map 对齐，实时字幕状态调整为“基本可用/多语言待完善”
+- [T074] 文档索引化：新增 implementation-map 将功能->代码->链路->状态落盘；mind 增加 Memo 导航；状态优先级以代码实现为准
 
 - [T073] 截图标注系统：Annotation协议+命令模式Undo/Redo+scrollWheel动态笔刷光标；NSTextView.doCommandBy检测Shift键实现Shift+Enter换行；draw(in:)比draw(with:options:)更可靠；图标映射pen=highlighter/marker=paintbrush符合用户心智
 - [T072] VocabularyService 正则优化：按词长降序排列避免子串错误匹配（如 "AI Agent" 优先于 "AI"）；暴露 markVocabulary API 复用预编译正则
@@ -109,7 +113,7 @@
   4. 复制时创建数据快照，确保一致性
   5. 工具栏按钮增加 Hover 动画效果
 - TIME: 0.5h | TAGS: #live-caption #vocabulary #performance #ux
-- LINK: VocabularyService.swift; LiveCaptionView.swift
+- LINK: spoke/Services/VocabularyService.swift:24; spoke/UI/LiveCaption/LiveCaptionView.swift:400
 - STAT: [√] 编译通过
 - NOTE: 正则排列顺序至关重要；View 层不应重复构建正则
 
@@ -124,7 +128,7 @@
   5. displayWindowStart 单向滚动只增不减
   6. buildDisplayText:frozenLines[windowStart...]+lastLine
 - TIME: 2h | TAGS: #live-caption #buffer #stability
-- LINK: CaptionLineBuffer.swift#双层缓冲区
+- LINK: spoke/Core/LiveCaption/CaptionLineBuffer.swift:38
 - STAT: [√] 编译通过
 - NOTE: 核心原则:分行边界只由 finalized 决定 volatile 不参与;volatile 变化只影响 lastLine 尾巴;frozenLine 一旦冻结内容永不改变
 
@@ -136,7 +140,7 @@
   2. CaptionLineBuffer 行缓冲区：固定 2 行+智能分句 [已被 T071 替代]
   3. 字体 15→18pt，背景 0.4→0.6
 - TIME: 0.5h | TAGS: #memory-safety #live-caption #ux
-- LINK: SystemAudioCaptureService.swift; CaptionLineBuffer.swift
+- LINK: spoke/Core/LiveCaption/SystemAudioCaptureService.swift:12; spoke/Core/LiveCaption/CaptionLineBuffer.swift:38
 - STAT: [√] 编译通过
 - NOTE: assumingMemoryBound 适用于已知内存布局；分句标点集合包含中英文
 
@@ -149,7 +153,7 @@
   3. LiveCaptionManager 改用 SpeechAnalyzerProvider
   4. 增量计算 = finalizedText.count 差值
 - TIME: 3h | TAGS: #architecture #transcription #live-caption
-- LINK: Core/Transcription/Models/\*; LiveCaptionManager.swift
+- LINK: spoke/Core/Transcription/Models/TranscriptionModelManager.swift:8; spoke/Core/LiveCaption/LiveCaptionManager.swift:40
 - STAT: [√] 功能完整，UI 右键菜单可切换角色
 - NOTE: @available 存储属性用 Any + computed property 规避
 
@@ -161,7 +165,7 @@
   2. OCR 移到后台线程避免阻塞主线程
   3. MultitouchSupport.framework 实现边缘手势
 - TIME: 2h | TAGS: #tcc #performance #gesture
-- LINK: scripts/dev-build.sh; ScreenOCRService.swift; TrackpadGestureService.swift
+- LINK: scripts/dev-build.sh:1; spoke/Services/ScreenOCRService.swift:28; spoke/Services/TrackpadSwipeService.swift:18
 - STAT: [√] TCC 稳定；快捷键不再失效
 - NOTE: MTPoint 80bytes 布局必须精确匹配；主线程阻塞>1s 会禁用 tap
 
@@ -173,7 +177,7 @@
   2. 用户纠正时自动收集正确句子作为训练短语
   3. 预编译 LM 后台准备(短语)
 - TIME: 2h | TAGS: #dictionary #asr #ux
-- LINK: DictionaryEntry.swift; DictionaryService.swift; SpeechAnalyzerProvider.swift
+- LINK: spoke/Core/Dictionary/DictionaryEntry.swift:29; spoke/Core/Dictionary/DictionaryService.swift:10; spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift:11
 - STAT: [√] 双轨并行；UI 支持查看/编辑训练短语
 - NOTE: trainingPhrases 每词条最多 20 个；SpeechTranscriber 不支持预编译 LM
 
@@ -186,7 +190,7 @@
   3. ScreenCaptureBlurBackground 用 Image + .blur(radius:) GPU 渲染
   4. 删除 PureBlurBackground.swift 和 BlurMode enum
 - TIME: 0.5h | TAGS: #swiftui #blur #appstore #refactor
-- LINK: spoke/UI/Components/ScreenCaptureBlurBackground.swift
+- LINK: spoke/UI/Components/ScreenCaptureBlurBackground.swift:8
 - STAT: [√] 完成，编译通过
 - NOTE:
   - SwiftUI .blur(radius:) 支持浮点数，GPU 自动插值渲染
@@ -201,7 +205,7 @@
   1. 定义 AnswerPanelWindow 子类，重写 canBecomeKey 返回 true
   2. 使用 .titled + .fullSizeContentView 样式并隐藏标题栏，以获得更好的输入法支持
 - TIME: 0.2h | TAGS: #ui #appkit #bug-fix
-- LINK: spoke/UI/QuickAsk/AnswerPanelView.swift
+- LINK: spoke/UI/QuickAsk/AnswerPanelView.swift:72
 - STAT: [√] Completed
 - NOTE: 类似于 QuickAskPanel 的修复方案
 
@@ -210,7 +214,7 @@
 - PROB: Initial project setup and understanding required.
 - PLAN: Analyze codebase, create summary documentation.
 - TIME: 0.1h | TAGS: #onboarding #documentation
-- LINK: docs/memo/project_summary.md
+- LINK: docs/memo/project_summary.md:1
 - STAT: [√] Completed
 - NOTE: Created project_summary.md, tech_stack.md, conventions.md, suggested_commands.md. Identified missing README.md and test target.
 
@@ -225,7 +229,7 @@
   5. startSession: 延迟 0.2s 启动录音避免阻塞主线程
   6. updateNSView: hasMarkedText() 时跳过更新
 - TIME: 2h | TAGS: #ime #swiftui #appkit #nsviewrepresentable #bug-fix
-- LINK: spoke/UI/HUD/QuickAskInputView.swift#updateNSView
+- LINK: spoke/UI/HUD/QuickAskInputView.swift:196
 - STAT: [√]完成 输入法正常工作
 - NOTE:
   - SwiftUI @Observable 属性(audioLevel)频繁更新会触发整个视图树重绘
@@ -240,7 +244,7 @@
 - PROB: 多显示器/Space 切换时长按 ⌥R 被 flagsChanged 提前终止录音
 - PLAN: scheduleModifierReleaseCheck 延迟 100ms + NSEvent.modifierFlags 二次确认 + 防抖机制
 - TIME: 0.2h | TAGS: #cgevent #multi-display #bug-fix
-- LINK: spoke/Services/HotKeyService.swift#scheduleModifierReleaseCheck
+- LINK: spoke/Services/HotKeyService.swift:503
 - STAT: [√]完成 1/1 构建通过
 - NOTE: CGEvent.flagsChanged 在多屏切换时会发送虚假事件；用 NSEvent.modifierFlags 获取真实状态；keyUp 时取消待执行的防抖检查
 
@@ -249,7 +253,7 @@
 - PROB: NSTextView 拦截了拖拽事件，导致外层 SwiftUI onDrop 不触发
 - PLAN: 重写 draggingEntered/performDragOperation，返回 .none 并调用回调闭包转发给父视图
 - TIME: 0.3h | TAGS: #ui #drag-drop #appkit
-- LINK: spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
+- LINK: spoke/UI/HUD/QuickAskInputView.swift:246
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 必须返回 .none (NSDragOperation()) 才能让事件冒泡？或者手动调用回调
 
@@ -258,7 +262,7 @@
 - PROB: 当 Menu 打开时，下方的 View .onHover 不触发
 - PLAN: 引入 isMenuOpen 状态，在 Menu 出现时手动管理 hover 状态
 - TIME: 0.2h | TAGS: #swiftui #bug-fix
-- LINK: spoke/UI/HUD/QuickAskCapsuleView.swift
+- LINK: spoke/UI/HUD/QuickAskCapsuleView.swift:7
 - STAT: [√]完成 1/1 构建通过
 - NOTE: SwiftUI 的 Menu 是模态的，会拦截事件
 
@@ -267,7 +271,7 @@
 - PROB: 拖拽得到的 URL 可能是 file reference URL 或其他格式，直接 path 可能为空
 - PLAN: 检查 url.isFileURL，如果不是则尝试构造 fileURL
 - TIME: 0.1h | TAGS: #foundation #bug-fix
-- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- LINK: spoke/Core/Attachment/AttachmentManager.swift:39
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 拖拽 Web 图片得到的 URL 不是 file URL，需下载
 
@@ -276,7 +280,7 @@
 - PROB: 拖入包含大量文件的文件夹（如源码库）时，串行提取太慢
 - PLAN: 使用 TaskGroup 并行处理文件提取；限制并发数
 - TIME: 0.5h | TAGS: #concurrency #performance
-- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- LINK: spoke/Core/Attachment/AttachmentManager.swift:39
 - STAT: [√]完成 1/1 构建通过
 - NOTE: withTaskGroup 极大提升了大量小文件的处理速度
 
@@ -285,7 +289,7 @@
 - PROB: 附件逻辑散落在 View 和 Service 中，难以维护
 - PLAN: 抽象 Attachment 模型，统一 AttachmentManager 管理，解耦 UI 和逻辑
 - TIME: 1h | TAGS: #refactor #architecture
-- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- LINK: spoke/Core/Attachment/AttachmentManager.swift:39
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 统一入口 add(url) -> 自动判断类型 -> 生成缩略图 -> 提取文本
 
@@ -294,7 +298,7 @@
 - PROB: Edge TTS 接口返回 403/401
 - PLAN: 逆向分析 JS，发现需要 TrustedClientToken 和特定的时间戳哈希
 - TIME: 1.5h | TAGS: #reverse-engineering #network
-- LINK: spoke/Services/EdgeTTSService.swift
+- LINK: spoke/Services/EdgeTTSService.swift:50
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 微软的验证逻辑包含 Windows 文件时间戳转换
 
@@ -303,7 +307,7 @@
 - PROB: NSPanel (non-activating) 中的 NSTextView 无法使用 Cmd+V/C/A
 - PLAN: 重写 performKeyEquivalent，手动判断按键并调用对应方法
 - TIME: 0.5h | TAGS: #appkit #keyboard-event
-- LINK: spoke/UI/HUD/QuickAskInputView.swift
+- LINK: spoke/UI/HUD/QuickAskInputView.swift:12
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 只有 Key Window 才能自动分发菜单快捷键；Panel 需要手动处理
 
@@ -312,7 +316,7 @@
 - PROB: AnswerPanel 只能进行单轮问答，追问无反应
 - PLAN: 重构 UI 支持消息列表；QuickAskService 监听追问通知并构建带历史的 Prompt
 - TIME: 0.5h | TAGS: #swiftui #llm #chat-ui
-- LINK: spoke/UI/QuickAsk/AnswerPanelView.swift
+- LINK: spoke/UI/QuickAsk/AnswerPanelView.swift:72
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 简单拼接历史 Prompt 实现多轮对话，未来应迁移到 LLM Provider 内部维护 Session
 
@@ -321,7 +325,7 @@
 - PROB: Quick Ask 提交后 AnswerPanel 闪现即逝
 - PLAN: 修改 activation policy 管理逻辑，AnswerPanel 显示时不恢复 accessory 模式，关闭时才恢复
 - TIME: 0.2h | TAGS: #appkit #window-management
-- LINK: spoke/Services/QuickAskService.swift
+- LINK: spoke/Services/QuickAskService.swift:26
 - STAT: [√]完成 1/1 构建通过
 - NOTE: NSApp.setActivationPolicy(.accessory) 会导致非 accessory 窗口失去焦点或隐藏
 
@@ -330,7 +334,7 @@
 - PROB: 视频附件显示通用图标，无法预览
 - PLAN: 使用 AVAssetImageGenerator 提取第 0 秒帧
 - TIME: 0.3h | TAGS: #avfoundation #media
-- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- LINK: spoke/Core/Attachment/AttachmentManager.swift:39
 - STAT: [√]完成 1/1 构建通过
 - NOTE: copyCGImage 是同步的，需在后台线程执行
 
@@ -339,7 +343,7 @@
 - PROB: 加载大图导致 UI 卡顿
 - PLAN: 生成 256px 缩略图缓存；UI 只加载缩略图
 - TIME: 0.5h | TAGS: #performance #image-processing
-- LINK: spoke/Core/Attachment/AttachmentManager.swift
+- LINK: spoke/Core/Attachment/AttachmentManager.swift:39
 - STAT: [√]完成 1/1 构建通过
 - NOTE: ImageIO 的 CGImageSourceCreateThumbnailAtIndex 性能最好
 
@@ -348,7 +352,7 @@
 - PROB: 条件显示的 View (如 Loading) 导致父 View 尺寸跳动
 - PLAN: 将其放在 .overlay() 中，不影响父 View 布局尺寸
 - TIME: 0.1h | TAGS: #swiftui #layout
-- LINK: spoke/UI/HUD/FloatingCapsuleView.swift
+- LINK: spoke/UI/HUD/FloatingCapsuleView.swift:8
 - STAT: [√]完成 1/1 构建通过
 - NOTE: ZStack 会取最大子 View 尺寸；overlay 依附于主 View
 
@@ -357,7 +361,7 @@
 - PROB: NSTextView 占据了整个区域，SwiftUI 的 onDrop 无法触发
 - PLAN: 在 NSTextView 上层覆盖一个 Color.clear 的 View 用于响应 onDrop
 - TIME: 0.3h | TAGS: #swiftui #drag-drop
-- LINK: spoke/UI/HUD/QuickAskInputView.swift
+- LINK: spoke/UI/HUD/QuickAskInputView.swift:12
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 需设置 contentShape(Rectangle()) 确保透明区域可点击/拖拽
 
@@ -366,6 +370,6 @@
 - PROB: 附件显示统一图标太单调
 - PLAN: NSWorkspace.shared.icon(forFile:) 获取系统图标
 - TIME: 0.1h | TAGS: #appkit #ui
-- LINK: spoke/UI/Components/AttachmentView.swift
+- LINK: spoke/UI/Components/AttachmentThumbnailView.swift:112
 - STAT: [√]完成 1/1 构建通过
 - NOTE: 系统图标自带文件类型装饰，效果很好

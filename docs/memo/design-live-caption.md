@@ -40,29 +40,29 @@ ScreenCaptureKit → SFSpeechRecognizer → Apple Translation → 悬浮字幕�
 ### 新建文件
 
 ```
-Core/LiveCaption/
-├── SystemAudioCaptureService.swift   # ScreenCaptureKit音频捕获
-├── LiveCaptionTranscriber.swift      # 音频→文字转录
-├── LiveCaptionManager.swift          # 整合调度+状态管理
+spoke/Core/LiveCaption/
+├── SystemAudioCaptureService.swift:12   # ScreenCaptureKit音频捕获
+├── LiveCaptionTranscriber.swift:11      # 音频→文字转录
+├── LiveCaptionManager.swift:40          # 整合调度+状态管理
 
-Core/Translation/
-├── TranslationService.swift          # Apple Translation封装
+spoke/Core/Translation/
+├── TranslationService.swift:10          # Apple Translation封装
 
-UI/LiveCaption/
-├── LiveCaptionView.swift             # 双语UI(折叠/展开)
-├── LiveCaptionWindow.swift           # 可拖动悬浮窗
-├── LiveCaptionToolbar.swift          # 工具栏
+spoke/UI/LiveCaption/
+├── LiveCaptionView.swift:400             # 双语UI(折叠/展开)
+├── LiveCaptionWindow.swift:9             # 可拖动悬浮窗
+├── LiveCaptionToolbar.swift:6            # 工具栏
 
-UI/Settings/
-├── LiveCaptionSettingsView.swift     # 字幕设置
+spoke/UI/Settings/
+├── LiveCaptionSettingsView.swift         # 字幕设置（未实现）
 ```
 
 ### 修改文件
 
-- `Services/HotKeyService.swift` - 新增 ⌥S 快捷键
-- `App/AppDelegate.swift` - 菜单栏添加「实时字幕」
-- `UI/Settings/SettingsView.swift` - 添加字幕 Tab
-- `Services/AppSettings.swift` - 字幕配置项
+- `spoke/Services/HotKeyService.swift:43` - 新增 ⌥S 快捷键
+- `spoke/App/AppDelegate.swift:7` - 菜单栏添加「实时字幕」
+- `spoke/UI/Settings/SettingsView.swift:10` - 添加字幕 Tab
+- `spoke/Services/AppSettings.swift:53` - 字幕配置项
 
 ## 核心数据模型
 
@@ -109,7 +109,7 @@ class LiveCaptionManager: ObservableObject {
 ## 快捷键
 
 ```swift
-// HotKeyService.swift
+// spoke/Services/HotKeyService.swift:43
 var liveCaptionKeyCode: UInt32 = UInt32(kVK_ANSI_S)
 var liveCaptionModifiers: NSEvent.ModifierFlags = .option
 var onLiveCaptionToggle: (() -> Void)?

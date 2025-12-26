@@ -2,9 +2,16 @@
 
 > 愿景: Your Voice, Intelligently Refined.
 
-更新: 2025-12-08
+更新: 2025-12-26
 
 ---
+
+## 🔥 当前焦点: 合规 + 统一查词
+
+- [ ] App Sandbox 启用 + entitlements + 沙盒路径验证
+- [ ] 权限引导 Onboarding（麦克风/屏幕录制/辅助功能）
+- [ ] UnifiedDictionaryService：本地词典 + 在线 API 聚合输出
+- [ ] 模拟输入降级策略：默认剪贴板输出，允许授权后启用
 
 ## 🎯 当前焦点: 选择工具栏 + 实时字幕
 
@@ -15,9 +22,9 @@
 - [x] **Electron 兼容**: Windsurf/VSCode 已支持 ✅
 - [~] **Terminal 支持**: 待研究 (Accessibility API 限制)
 
-> 实时字幕已稳定
+> 实时字幕基本可用（多语言仍需完善）
 
-- [x] **实时字幕**: 应用 SpeechTranscriber 模型 ✅
+- [~] **实时字幕**: 应用 SpeechTranscriber 模型（多语言待完善）
 - [x] **实时翻译**: Apple Translation API 集成，无卡顿 ✅
 - [x] **生词记忆**: 右键添加 + 橙色高亮 ✅
 
@@ -66,20 +73,20 @@
 - [x] 预编译 LM (后台准备，高精度)
 - [x] 训练短语支持
 
-## Phase 4: 记忆系统 [ ]
+## Phase 4: 记忆系统 [~]
 
-- [ ] 历史记录管理器 (SwiftData)
+- [x] 历史记录管理器 (SwiftData) - 基础版
 - [ ] 智能标签 (#Idea, #Todo)
 - [ ] 旧音频重新处理
 
-## Phase 5: Quick Ask [ ]
+## Phase 5: Quick Ask [√]
 
 > 设计文档: [design-quick-ask.md](./design-quick-ask.md)
 
-- [ ] 独立快捷键触发
-- [ ] HUD: 波形 + 输入框
-- [ ] 截图上下文
-- [ ] AI 对话窗口
+- [x] 独立快捷键触发（双击 ⌥）
+- [x] HUD: 波形 + 输入框
+- [x] 截图上下文
+- [x] AI 对话窗口
 
 ---
 

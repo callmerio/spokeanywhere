@@ -8,7 +8,7 @@ ID: C001 | Tags: #swiftui #animation #overlay
 
 Q: SwiftUI 如何实现超出边界的流光效果？
 A: 使用 overlay 在 clipShape 之后，配合 AngularGradient + rotationEffect
-REF: T023,T024,T027 | spoke/UI/HUD/FloatingCapsuleView.swift#RunningLightBorder
+REF: T023,T024,T027 | spoke/UI/HUD/FloatingCapsuleView.swift:561
 
 ## C002|CGEvent 事件处理
 
@@ -16,7 +16,7 @@ ID: C002 | Tags: #cgevent #event-handling #macos
 
 Q: CGEvent tap 被系统禁用如何恢复？
 A: 监听 tapDisabledByTimeout/ByUserInput 事件，调用 CGEvent.tapEnable 重新启用
-REF: T026 | spoke/Services/HotKeyService.swift#handleEvent
+REF: T026 | spoke/Services/HotKeyService.swift:276
 
 ## C003|Keychain 缓存优化
 
@@ -24,7 +24,7 @@ ID: C003 | Tags: #keychain #security #performance
 
 Q: 如何避免开发阶段重复 Keychain 授权？
 A: 添加内存缓存，首次访问后缓存 API Key，使用 DispatchQueue 保证线程安全
-REF: T025 | spoke/Core/LLM/KeychainService.swift#cache
+REF: T025 | spoke/Core/LLM/KeychainService.swift:16
 
 ## C004|剪贴板历史作为 LLM 上下文
 
@@ -32,7 +32,7 @@ ID: C004 | Tags: #context #llm #design #clipboard
 
 Q: 如何利用剪贴板提供更丰富的转录上下文？
 A: 底层静默保存历史(20-50 条)替代当前剪贴板；用户可选开关；过滤敏感+限制长度
-REF: T028 | docs/roadmap.md#Context-Awareness
+REF: T028 | docs/roadmap.md:42
 
 ## C005|附件系统抽象化
 
@@ -40,7 +40,7 @@ ID: C005 | Tags: #architecture #attachment #refactor
 
 Q: 如何让附件功能跨多入口(QuickAsk/HUD)复用？
 A: Attachment 通用类型 + AttachmentManager 单例(handleDrop/pick/capture) + TextExtractionService + 通用 UI 组件
-REF: T048 | spoke/Core/Attachment/AttachmentManager.swift
+REF: T048 | spoke/Core/Attachment/AttachmentManager.swift:39
 
 ## C006|文件夹提取并行优化
 
@@ -48,7 +48,7 @@ ID: C006 | Tags: #performance #concurrency #swift
 
 Q: Swift actor 中如何并行处理文件读取？
 A: withTaskGroup + nonisolated 方法标记(可在 TaskGroup 中调用) + reserveCapacity 预分配内存
-REF: T049 | spoke/Core/Attachment/TextExtractionService.swift#mergeFilesParallel
+REF: T049 | spoke/Core/Attachment/TextExtractionService.swift:285
 
 ## C007|NSTextView 拖拽转发
 
@@ -56,7 +56,7 @@ ID: C007 | Tags: #appkit #drag-drop #nstextview
 
 Q: 如何让 NSTextView 不拦截拖拽并转发给父视图？
 A: 重写 draggingEntered/performDragOperation 禁用默认行为，通过回调链转发给 SwiftUI 层
-REF: T052 | spoke/UI/HUD/QuickAskInputView.swift#QuickAskNSTextView
+REF: T052 | spoke/UI/HUD/QuickAskInputView.swift:246
 
 ## C008|SwiftUI+NSTextView 输入法集成
 
@@ -70,7 +70,7 @@ A: 关键要点:
 3. becomeFirstResponder 后调用 inputContext.activate()
 4. 窗口必须是 keyWindow + mainWindow
 5. CGEvent tap 在输入时应完全放行
-   REF: T054,T055 | spoke/UI/HUD/QuickAskInputView.swift#updateNSView
+   REF: T054,T055 | spoke/UI/HUD/QuickAskInputView.swift:196
 
 ## C009|App Store 友好的纯模糊背景
 
@@ -83,7 +83,7 @@ A: ScreenCaptureKit 捕获背景 + SwiftUI Image + .blur(radius:)
 2. 输出原始帧 CGImage（不做模糊）
 3. View 层用 Image(nsImage:).blur(radius:) GPU 渲染
 4. 裁剪时注意坐标系转换（SwiftUI 左上 vs CGImage 左下）
-   REF: T060 | spoke/UI/Components/ScreenCaptureBlurBackground.swift
+   REF: T060 | spoke/Services/ScreenCaptureBlurService.swift:8
 
 ## C010|CGImage 坐标系转换
 
@@ -101,7 +101,7 @@ let cropRect = CGRect(
 )
 ```
 
-REF: T060 | spoke/UI/Components/ScreenCaptureBlurBackground.swift#croppedBlurredImage
+REF: T060 | spoke/Services/ScreenCaptureBlurService.swift:83
 
 ## C011|ScreenCaptureKit 系统音频捕获
 
@@ -116,7 +116,7 @@ A: SCStreamConfiguration 配置:
 - `channelCount = 1` 单声道
 - 视频设为最小(1x1)避免性能浪费
 - 监听 `.audio` 类型的 sampleBuffer
-  REF: T073 | docs/memo/design-live-caption.md
+  REF: T073 | docs/memo/design-live-caption.md:22
 
 ## C012|Apple Translation Framework
 
@@ -130,7 +130,7 @@ A: Translation.framework (macOS 14.4+):
 - SwiftUI: `.translationTask(config) { session in ... }`
 - 首次使用需下载语言包(100-300MB/语言对)
 - 完全本地运行，零 API 成本
-  REF: T073 | docs/memo/design-live-caption.md
+  REF: T073 | docs/memo/design-live-caption.md:49
 
 ## C013|Apple Live Captions 无公开 API
 
@@ -143,7 +143,7 @@ A: 不能。Apple Live Captions 无公开 API，只能通过系统设置开关�
 - 监听字幕事件
 - 自定义翻译语言
   必须自建 pipeline: ScreenCaptureKit → SFSpeech → Translation
-  REF: T073 | docs/memo/design-live-caption.md
+  REF: T073 | docs/memo/design-live-caption.md:28
 
 ## C014|macOS 26 TCC 崩溃与代码签名
 
@@ -168,7 +168,7 @@ open .build/bundler/App.app
 log stream --predicate 'process == "App"' --style compact
 ```
 
-REF: T075 | dev.sh; https://developer.apple.com/forums/thread/807898; TN3127
+REF: T075 | spoke/dev.sh:1; https://developer.apple.com/forums/thread/807898; TN3127
 
 ## C015|词典双轨策略
 
@@ -181,7 +181,7 @@ A: 双轨并行策略:
 2. **预编译 LM** - 后台准备，需要短语+发音，适合 DictationTranscriber
 3. 用户纠正时自动收集整句作为训练短语(每词条最多 20 个)
 4. SpeechTranscriber 只支持前者，DictationTranscriber 两者都支持
-   REF: T061,T062 | DictionaryInjector.swift; SpeechAnalyzerProvider.swift
+   REF: T061,T062 | spoke/Core/Dictionary/DictionaryInjector.swift:10; spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift:11
 
 ## C016|多转录模型架构
 
@@ -195,7 +195,7 @@ A: 三层架构:
 - **TranscriptionModelManager** - 状态管理(settings/downloadStates/roleAssignment)
 - 角色分配: transcriptionModelId(主转录) vs liveCaptionModelId(实时字幕)
 - @available 存储属性限制: 用 `Any?` + computed property 规避
-  REF: T066,T067 | Core/Transcription/Models/\*
+  REF: T066,T067 | spoke/Core/Transcription/Models/TranscriptionModelDefinition.swift:49; spoke/Core/Transcription/Models/TranscriptionModelSettings.swift:61; spoke/Core/Transcription/Models/TranscriptionModelManager.swift:8
 
 ## C017|UnsafeRawPointer 内存安全
 
@@ -208,7 +208,7 @@ A: 根据内存类型绑定历史:
 - **assumingMemoryBound** - 假定已绑定为目标类型，不做检查
 - CMBlockBuffer 返回的 Int8 指针实际是其他类型(Float32/Int16)，用 `assumingMemoryBound` 更安全
 - 典型场景: 音频 buffer 转换 CMSampleBuffer → AVAudioPCMBuffer
-  REF: T069 | SystemAudioCaptureService.swift#convertToPCMBuffer
+  REF: T069 | spoke/Core/LiveCaption/SystemAudioCaptureService.swift:160
 
 ## C018|实时字幕增量计算
 
@@ -221,7 +221,7 @@ A: 使用 finalizedText 长度差值:
 2. `volatileText` - 实时预览（覆盖式更新）
 3. 新段落 = `finalizedText[lastLength...]`
 4. 无需手动分段，SpeechAnalyzer 自动产生多个 isFinal
-   REF: T068 | LiveCaptionManager.swift
+   REF: T068 | spoke/Core/LiveCaption/LiveCaptionManager.swift:40
 
 ## C019|双层缓冲区模型
 
@@ -237,7 +237,7 @@ A: 双层缓冲区模型，volatile 不参与分行:
 5. 冻结条件: count>=65 或 (count>=40 且有句号)
 6. 切分优先级: 句号 > 逗号 > 空格 > 强制
 7. displayText = frozenLines[windowStart...] + (currentLineBuffer + volatileTail)
-   REF: T071 | CaptionLineBuffer.swift#双层缓冲区
+   REF: T071 | spoke/Core/LiveCaption/CaptionLineBuffer.swift:38
 
 ## C020|SwiftUI 主线程卡死调试
 
@@ -260,4 +260,4 @@ A: 分三步定位+三类常见原因:
 - `ForEach` 遍历 struct 会拷贝整个结构体，大结构体导致性能问题
 - debounce(50ms) 防抖避免频繁更新
 - 只比较 id 数组判断数据是否真正变化
-  REF: T099 | PerformanceTracer.swift; DictionarySelectableText.swift#fontCache; MessagePanelState.swift#filteredCards
+  REF: T099 | spoke/Core/Debug/PerformanceTracer.swift:10; spoke/UI/Components/DictionarySelectableText.swift:11; spoke/Core/MessagePanel/MessagePanelState.swift:443

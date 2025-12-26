@@ -137,14 +137,14 @@ SwiftData 历史记录清理功能报错，不影响词典功能，后续修复�
 
 | 文件                                                              | 说明                      |
 | ----------------------------------------------------------------- | ------------------------- |
-| `spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift` | DictationTranscriber 实现 |
-| `spoke/Core/Dictionary/DictionaryInjector.swift`                  | 预编译 LM 注入器          |
-| `spoke/Core/Transcription/TranscriptionManager.swift`             | 词典准备逻辑              |
-| `spoke/Core/Transcription/TranscriptionPostProcessor.swift`       | 词典默认开关              |
-| `spoke/App/AppDelegate.swift`                                     | 启动时词典准备            |
-| `spoke/dev.sh`                                                    | 开发调试脚本              |
-| `docs/roadmap.md`                                                 | TODO 记录                 |
-| `docs/memo/memory.csv`                                            | 修改历史                  |
+| `spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift:11` | DictationTranscriber 实现 |
+| `spoke/Core/Dictionary/DictionaryInjector.swift:10`                  | 预编译 LM 注入器          |
+| `spoke/Core/Transcription/TranscriptionManager.swift:30`             | 词典准备逻辑              |
+| `spoke/Core/Transcription/TranscriptionPostProcessor.swift:10`       | 词典默认开关              |
+| `spoke/App/AppDelegate.swift:7`                                      | 启动时词典准备            |
+| `spoke/dev.sh:1`                                                     | 开发调试脚本              |
+| `docs/roadmap.md:1`                                                  | TODO 记录                 |
+| `docs/memo/memory.csv:1`                                             | 修改历史                  |
 
 ## 六、架构图
 

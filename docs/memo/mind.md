@@ -1,3 +1,47 @@
+- 项目理解摘要 (2025-12-26)
+  - 系统定位
+    - macOS 桌面语音生产力工具：系统级快捷键驱动的语音转录 + AI 文本处理
+    - 统一流程：Audio -> Transcription -> LLM -> Output/Clipboard
+  - 核心交互入口
+    - ⌥+R 听写录音；双击 ⌥ 触发 Quick Ask
+    - ⌥+S 实时字幕；⌥+P Pipeline 面板；⌥+A 截图钉图；⌥+Space 词典面板
+  - 关键子系统
+    - 转录系统：多引擎并存 (DictationTranscriber/SpeechTranscriber/SFSpeech)，统一 TranscriptionProvider 协议
+    - 词典体系：双轨注入 (contextualStrings + 预编译 LM) + 后处理纠错 + 热词学习
+    - LLM 管线：多 Provider (Gemini/OpenAI Compatible 等)，Prompt = 全局主提示 + App 专属规则
+    - 实时字幕：系统音频捕获 + 双层缓冲区防抖 + 翻译 + 生词高亮
+    - Quick Ask：语音/文本/附件混合输入 + Workflow(/keyword) + Answer Panel
+    - 划词工具栏：AXObserver 监听 + 选区定位 + 动作执行 (TTS/LLM/OCR)
+    - Pipeline 面板：阶段卡片化展示 ASR/LLM/对话 + 标签/状态/附件
+    - 截图钉图：置顶/标注/AI 增强/快捷键 + Live Text 右键菜单
+    - 词典面板：本地词典 + LRU 缓存 + 生词本 + 快捷键唤起
+  - 数据与存储
+    - SwiftData：历史记录/会话数据
+    - App Support：dictionary.json、pending_hotwords.json、语言模型缓存、音频、崩溃日志
+    - Keychain：API Key 安全存储
+  - 合规与权限
+    - App Sandbox 未启用是上架阻断项；需 entitlements + 沙盒路径验证
+    - 高风险权限：Accessibility、Screen Recording；需权限引导与审核说明
+    - 模拟输入存在审查风险，默认建议剪贴板输出
+  - 当前重点与 TODO
+    - UnifiedDictionaryService：本地词典 + 在线 API 聚合输出
+    - App Sandbox 迁移 + Onboarding 权限引导
+    - Terminal 选区支持与长按 ESC 取消录音
+  - 测试与验证缺口
+    - Package.swift 缺少 test target，自动化覆盖不足
+    - 沙盒后文件路径/权限需回归验证
+    - 多屏 + HiDPI 的坐标/清晰度需持续回归
+
+- Memo 导航
+  - `docs/memo/implementation-map.md:1`：功能-代码索引与链路图（主入口）
+  - `docs/memo/mind.md:1`：项目理解摘要与功能清单
+  - `docs/memo/memory.csv:1`：变更记录（CSV）
+  - `docs/memo/memory-timeline.md:1`：学习与历史时间线
+  - `docs/memo/docs-maintenance.md:1`：docs 持续维护清单
+  - `docs/roadmap.md:1`：路线图与阶段状态
+  - `docs/design.md:1`：架构设计总览
+  - `docs/outline/app_store_compliance.md:1`：合规矩阵与风险
+
 - SpokenAnyWhere
   - 核心流程
     - 语音 -> 转录 -> AI处理 -> 剪贴板 [√]
@@ -194,7 +238,7 @@
       - 双指上下滑 -> 缩放 (40~2000px) [√]
       - handleOpacityChange / handleSizeChange 分离 [√]
     - 纯 AppKit 实现 -> 解决 NSHostingView 约束循环 [√]
-    - PRD -> docs/memo/plan/2025-12-19-screenshot-pin-to-space.md
+    - PRD -> docs/memo/plan/2025-12-19-screenshot-pin-to-space.md:1
     - HiDPI 多屏幕支持 [√] ⭐ NEW
       - SCStreamConfiguration 需要像素尺寸 (非逻辑尺寸) [√]
       - 乘以 backingScaleFactor 获得正确像素密度 [√]
@@ -319,7 +363,7 @@
     - 翻译 -> Apple Translation
     - 存储 -> SwiftData + JSON
     - 音频 -> AVFoundation + ScreenCaptureKit
-  - App Store 合规 -> docs/outline/app_store_compliance.md
+  - App Store 合规 -> docs/outline/app_store_compliance.md:1
     - 🔴 阻断项 (必须修复)
       - TrackpadGestureService 使用私有 API [✓ 已替换]
         - ~~MultitouchSupport.framework (dlopen)~~

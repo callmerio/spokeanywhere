@@ -131,5 +131,5 @@ Image(nsImage: nsImage)
 
 **Files:**
 
-- `spoke/UI/Components/ScreenCaptureBlurBackground.swift`
-- `spoke/Services/ScreenCaptureBlurService.swift`
+- `spoke/UI/Components/ScreenCaptureBlurBackground.swift:8`
+- `spoke/Services/ScreenCaptureBlurService.swift:8`

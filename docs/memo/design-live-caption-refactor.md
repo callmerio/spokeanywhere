@@ -135,7 +135,7 @@ UI
 
 ### 4.1 SystemAudioCaptureService 修改
 
-**文件**: `spoke/Core/LiveCaption/SystemAudioCaptureService.swift`
+**文件**: `spoke/Core/LiveCaption/SystemAudioCaptureService.swift:12`
 
 当前输出 `CMSampleBuffer`，需要改为或增加 `AVAudioPCMBuffer` 输出：
 
@@ -167,7 +167,7 @@ private func convertToPCMBuffer(_ sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuf
 
 ### 4.2 SpeechAnalyzerProvider 词典注入修改
 
-**文件**: `spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift`
+**文件**: `spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift:11`
 
 在 `setupSpeechAnalyzer()` 方法中添加词典注入：
 
@@ -194,7 +194,7 @@ private func setupSpeechAnalyzer() async throws {
 
 ### 4.3 LiveCaptionManager 重写
 
-**文件**: `spoke/Core/LiveCaption/LiveCaptionManager.swift`
+**文件**: `spoke/Core/LiveCaption/LiveCaptionManager.swift:40`
 
 ```swift
 import Foundation
@@ -354,7 +354,7 @@ final class LiveCaptionManager: ObservableObject {
 当前 `TranscriptionProvider.swift` 已支持 `finalizedText` 和 `volatileText`：
 
 ```swift
-// 已实现于 spoke/Core/Transcription/TranscriptionProvider.swift:13-53
+// 已实现于 spoke/Core/Transcription/TranscriptionProvider.swift:13
 struct TranscriptionResult {
     let text: String           // 完整文本 = finalizedText + volatileText
     let finalizedText: String  // 已确认文本
@@ -366,7 +366,7 @@ struct TranscriptionResult {
 
 ### 4.5 删除 LiveCaptionTranscriber
 
-**文件**: `spoke/Core/LiveCaption/LiveCaptionTranscriber.swift`
+**文件**: `spoke/Core/LiveCaption/LiveCaptionTranscriber.swift:11`
 
 **操作**: 删除整个文件，不再需要。
 
@@ -435,17 +435,17 @@ private func handleTranscriptionResult(_ result: TranscriptionResult) {
 spoke/
 ├── Core/
 │   ├── LiveCaption/
-│   │   ├── LiveCaptionManager.swift      ← 重写
-│   │   ├── LiveCaptionTranscriber.swift  ← 删除
-│   │   └── SystemAudioCaptureService.swift ← 修改（增加 PCMBuffer 输出）
+│   │   ├── LiveCaptionManager.swift:40        ← 重写
+│   │   ├── LiveCaptionTranscriber.swift:11    ← 删除
+│   │   └── SystemAudioCaptureService.swift:12 ← 修改（增加 PCMBuffer 输出）
 │   └── Transcription/
-│       ├── TranscriptionManager.swift    ← 少量修改
-│       ├── TranscriptionProvider.swift   ← 确认 Result 结构
+│       ├── TranscriptionManager.swift:30      ← 少量修改
+│       ├── TranscriptionProvider.swift:13     ← 确认 Result 结构
 │       └── Providers/
-│           └── SpeechAnalyzerProvider.swift ← 确认支持外部音频
+│           └── SpeechAnalyzerProvider.swift:11 ← 确认支持外部音频
 └── UI/
     └── LiveCaption/
-        └── LiveCaptionView.swift         ← 无需修改（数据绑定不变）
+        └── LiveCaptionView.swift:400          ← 无需修改（数据绑定不变）
 ```
 
 ## 8. 参考资料
@@ -465,9 +465,9 @@ spoke/
 - [MacStories: Apple's New Speech APIs Outpace Whisper](https://www.macstories.net/stories/hands-on-how-apples-new-speech-apis-outpace-whisper-for-lightning-fast-transcription/) - 性能对比测试
 
 ### 项目内部
-- `docs/memo/memory.csv` 第 74-78 行 - LiveCaption 开发历史
-- `spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift` - 当前实现
-- `spoke/Core/Dictionary/DictionaryInjector.swift` - 词典注入架构
+- `docs/memo/memory.csv:74` - LiveCaption 开发历史
+- `spoke/Core/Transcription/Providers/SpeechAnalyzerProvider.swift:11` - 当前实现
+- `spoke/Core/Dictionary/DictionaryInjector.swift:10` - 词典注入架构
 
 ---
 

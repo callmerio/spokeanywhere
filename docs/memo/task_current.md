@@ -28,7 +28,7 @@
 ### 3.1 文件变更
 | 文件路径 | 操作 | 说明 |
 |----------|------|------|
-| `spoke/UI/Screenshot/ScreenshotWindow.swift` | 修改 | 重写 `mouseDown`, `mouseDragged`, `mouseUp`, `mouseMoved`；<br>添加 `ResizeEdge` 枚举、`currentOperation` 状态、`frameForEdge` 计算逻辑。 |
+| `spoke/UI/Screenshot/ScreenshotWindow.swift:8` | 修改 | 重写 `mouseDown`, `mouseDragged`, `mouseUp`, `mouseMoved`；<br>添加 `ResizeEdge` 枚举、`currentOperation` 状态、`frameForEdge` 计算逻辑。 |
 
 ### 3.2 核心逻辑设计
 
