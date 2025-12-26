@@ -1,0 +1,81 @@
+# MCP Tools (Project)
+
+Generated: 2025-12-26
+Source: `codex mcp list --json` + runtime tool introspection
+
+## Enabled servers
+- chrome-devtools
+- context7
+- github (enabled; no runtime tool functions exposed)
+- memory
+- sequential-thinking
+- serena
+
+## Tools
+- chrome-devtools:click — Click an element by uid.
+- chrome-devtools:close_page — Close a page by index.
+- chrome-devtools:drag — Drag an element onto another.
+- chrome-devtools:emulate — Emulate CPU, network, or geolocation.
+- chrome-devtools:evaluate_script — Run JS in page context and return JSON.
+- chrome-devtools:fill — Type text into input/textarea/select.
+- chrome-devtools:fill_form — Fill multiple form elements.
+- chrome-devtools:get_console_message — Get a console message by ID.
+- chrome-devtools:get_network_request — Get a network request by ID/selection.
+- chrome-devtools:handle_dialog — Accept/dismiss browser dialog.
+- chrome-devtools:hover — Hover over an element.
+- chrome-devtools:list_console_messages — List console messages.
+- chrome-devtools:list_network_requests — List network requests.
+- chrome-devtools:list_pages — List open pages.
+- chrome-devtools:navigate_page — Navigate/reload page.
+- chrome-devtools:new_page — Open a new page.
+- chrome-devtools:performance_analyze_insight — Analyze a performance insight set.
+- chrome-devtools:performance_start_trace — Start a performance trace.
+- chrome-devtools:performance_stop_trace — Stop a performance trace.
+- chrome-devtools:press_key — Send a key or key combo.
+- chrome-devtools:resize_page — Resize the page viewport.
+- chrome-devtools:select_page — Select an active page.
+- chrome-devtools:take_screenshot — Capture screenshot of page/element.
+- chrome-devtools:take_snapshot — Capture a11y tree snapshot.
+- chrome-devtools:upload_file — Upload a local file.
+- chrome-devtools:wait_for — Wait for text to appear.
+- context7:resolve-library-id — Resolve a package/product name to a Context7-compatible ID.
+- context7:get-library-docs — Fetch library docs (requires resolve-library-id unless exact ID provided).
+- memory:add_observations — Add observations to existing entities.
+- memory:create_entities — Create new entities.
+- memory:create_relations — Create relations between entities.
+- memory:delete_entities — Delete entities and relations.
+- memory:delete_observations — Delete observations from entities.
+- memory:delete_relations — Delete relations.
+- memory:open_nodes — Retrieve entities by name.
+- memory:read_graph — Read the full knowledge graph.
+- memory:search_nodes — Search nodes by query.
+- sequential-thinking:sequentialthinking — Multi-step reflective reasoning tool.
+- serena:activate_project — Activate a project.
+- serena:check_onboarding_performed — Check onboarding status.
+- serena:create_text_file — Create/overwrite a text file.
+- serena:delete_memory — Delete a memory file.
+- serena:edit_memory — Edit memory content by literal/regex.
+- serena:execute_shell_command — Run a shell command in project.
+- serena:find_file — Find files by glob.
+- serena:find_referencing_symbols — Find references to a symbol.
+- serena:find_symbol — Search for code symbols.
+- serena:get_current_config — Show Serena config.
+- serena:get_symbols_overview — List top-level symbols in a file.
+- serena:initial_instructions — Read Serena instructions.
+- serena:insert_after_symbol — Insert content after a symbol.
+- serena:insert_before_symbol — Insert content before a symbol.
+- serena:list_dir — List directory contents.
+- serena:list_memories — List memories.
+- serena:onboarding — Run onboarding flow.
+- serena:prepare_for_new_conversation — Prep for new conversation.
+- serena:read_file — Read a file.
+- serena:read_memory — Read a memory file.
+- serena:rename_symbol — Rename symbol across codebase.
+- serena:replace_content — Replace content by literal/regex.
+- serena:replace_symbol_body — Replace a symbol definition.
+- serena:search_for_pattern — Search for text patterns.
+- serena:switch_modes — Activate Serena modes.
+- serena:think_about_collected_information — Reflect on gathered info.
+- serena:think_about_task_adherence — Check task adherence before edits.
+- serena:think_about_whether_you_are_done — Check if task is complete.
+- serena:write_memory — Write a memory file.

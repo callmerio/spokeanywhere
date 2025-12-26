@@ -55,3 +55,29 @@ spoke/.tmp_cache/
 
 # Build output (use swift-bundler to regenerate)
 spoke/SpokenAnyWhere.app/
+
+# --- codex template additions ---
+# OS
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+# Env
+.env
+.venv/
+.direnv/
+# Editors
+.vscode/
+*.iml
+# Misc
+.cache/
+/.tmp/
+*.log
+tmp/
+.claude_home/
