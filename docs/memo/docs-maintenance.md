@@ -16,6 +16,13 @@
 5. 有稳定知识沉淀时更新 `docs/memo/cards.md:1`
    - 卡片引用保持 path:line
 
+## 更新频率与优先级
+
+- 高优先级（每次功能入口/链路变更后立即）：`implementation-map`
+- 中优先级（每次阶段推进/roadmap 调整）：`roadmap`
+- 低优先级（每周或阶段回顾）：抽检引用可达性 + `memory-timeline`
+- 更新入口：`implementation-map` / `mind` / `roadmap` / `memory.csv`
+
 ## 引用规范
 
 - 统一使用 `path:line`，禁止纯文件名或锚点引用
