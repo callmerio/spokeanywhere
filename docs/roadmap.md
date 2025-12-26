@@ -17,49 +17,49 @@
 
 > 全局文本选择浮动工具栏 (类似 PopClip)
 
-- [x] **选择工具栏**: AXObserver + NSPanel 全局监听 ✅
-- [x] **多策略文本获取**: SelectedText → Parameterized → Value+Range ✅
-- [x] **Electron 兼容**: Windsurf/VSCode 已支持 ✅
+- [√] **选择工具栏**: AXObserver + NSPanel 全局监听 ✅
+- [√] **多策略文本获取**: SelectedText → Parameterized → Value+Range ✅
+- [√] **Electron 兼容**: Windsurf/VSCode 已支持 ✅
 - [~] **Terminal 支持**: 待研究 (Accessibility API 限制)
 
 > 实时字幕基本可用（多语言仍需完善）
 
 - [~] **实时字幕**: 应用 SpeechTranscriber 模型（多语言待完善）
-- [x] **实时翻译**: Apple Translation API 集成，无卡顿 ✅
-- [x] **生词记忆**: 右键添加 + 橙色高亮 ✅
+- [√] **实时翻译**: Apple Translation API 集成，无卡顿 ✅
+- [√] **生词记忆**: 右键添加 + 橙色高亮 ✅
 
 ---
 
 ## Phase 1: 基础体验 [√]
 
-- [x] 设置界面 + 快捷键自定义
-- [x] 边说边打字 (Real-time Typing via CGEvent)
+- [√] 设置界面 + 快捷键自定义
+- [√] 边说边打字 (Real-time Typing via CGEvent)
 
 ## Phase 2: AI 集成 [√]
 
-- [x] LLM Pipeline: 音频 → 转录 → LLM → 精炼
-- [x] 多 Provider: Ollama/OpenAI/Anthropic/Gemini/Groq/OpenRouter
-- [x] 上下文感知: 活跃应用检测 + 剪贴板历史
-- [x] OCR 上下文: 屏幕内容识别注入 Prompt
-- [x] Gemini 思考模式: thinkingBudget 控制 ✨
-- [x] Gemini 联网搜索: Google Search grounding ✨
-- [x] CLI2API 代理: v1beta + Bearer token 支持
+- [√] LLM Pipeline: 音频 → 转录 → LLM → 精炼
+- [√] 多 Provider: Ollama/OpenAI/Anthropic/Gemini/Groq/OpenRouter
+- [√] 上下文感知: 活跃应用检测 + 剪贴板历史
+- [√] OCR 上下文: 屏幕内容识别注入 Prompt
+- [√] Gemini 思考模式: thinkingBudget 控制 ✨
+- [√] Gemini 联网搜索: Google Search grounding ✨
+- [√] CLI2API 代理: v1beta + Bearer token 支持
 
 ## Phase 3: 本地智能 [√]
 
 ### 转录引擎 (macOS 26+)
 
-- [x] `TranscriptionProvider` 协议抽象
-- [x] `SpeechAnalyzerProvider` (DictationTranscriber/SpeechTranscriber)
-- [x] `SFSpeechProvider` 回退方案 (macOS 15+)
-- [x] 自动版本检测 + 引擎选择
+- [√] `TranscriptionProvider` 协议抽象
+- [√] `SpeechAnalyzerProvider` (DictationTranscriber/SpeechTranscriber)
+- [√] `SFSpeechProvider` 回退方案 (macOS 15+)
+- [√] 自动版本检测 + 引擎选择
 
 ### 多模型架构
 
-- [x] `TranscriptionModelDefinition`: 模型元数据
-- [x] `TranscriptionModelManager`: 选择/配置/持久化
-- [x] 设置 UI: 模型卡片 + 语言选择 + 预编译词典开关
-- [x] 模型切换通知 → Provider 自动重建
+- [√] `TranscriptionModelDefinition`: 模型元数据
+- [√] `TranscriptionModelManager`: 选择/配置/持久化
+- [√] 设置 UI: 模型卡片 + 语言选择 + 预编译词典开关
+- [√] 模型切换通知 → Provider 自动重建
 
 支持模型:
 | 模型 | 状态 | 特点 |
@@ -69,13 +69,13 @@
 
 ### 词典注入
 
-- [x] contextualStrings 轻量级注入 (实时生效)
-- [x] 预编译 LM (后台准备，高精度)
-- [x] 训练短语支持
+- [√] contextualStrings 轻量级注入 (实时生效)
+- [√] 预编译 LM (后台准备，高精度)
+- [√] 训练短语支持
 
 ## Phase 4: 记忆系统 [~]
 
-- [x] 历史记录管理器 (SwiftData) - 基础版
+- [√] 历史记录管理器 (SwiftData) - 基础版
 - [ ] 智能标签 (#Idea, #Todo)
 - [ ] 旧音频重新处理
 
@@ -83,10 +83,10 @@
 
 > 设计文档: [design-quick-ask.md](./design-quick-ask.md)
 
-- [x] 独立快捷键触发（双击 ⌥）
-- [x] HUD: 波形 + 输入框
-- [x] 截图上下文
-- [x] AI 对话窗口
+- [√] 独立快捷键触发（双击 ⌥）
+- [√] HUD: 波形 + 输入框
+- [√] 截图上下文
+- [√] AI 对话窗口
 
 ---
 
@@ -95,7 +95,7 @@
 ### P1 近期
 
 - [ ] 魔术键: Enter=原文 / Tab=AI 润色
-- [x] 选择工具栏: 朗读/查询/翻译/总结 ✅
+- [√] 选择工具栏: 朗读/查询/翻译/总结 ✅
 - [ ] 语音宏: "切换到编程模式"
 
 ### P2 中期 (封存)
@@ -106,5 +106,5 @@
 
 ### P3 低优先级
 
-- [x] TTS 朗读: 选中文本 → 语音 ✅ (集成到选择工具栏)
+- [√] TTS 朗读: 选中文本 → 语音 ✅ (集成到选择工具栏)
 - [ ] 多模态音频: 原始音频 + 转录同时发送 (token 消耗大，功能重复)
