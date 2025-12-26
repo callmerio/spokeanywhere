@@ -42,6 +42,13 @@
   - `docs/design.md:1`：架构设计总览
   - `docs/outline/app_store_compliance.md:1`：合规矩阵与风险
 
+- 角色边界
+  - mind：项目理解摘要与入口导航，不承载 roadmap 的阶段进度细节
+  - memory.csv：变更事实与引用记录（可追溯）
+  - roadmap：阶段计划与优先级
+  - implementation-map：功能 → 代码 → 链路 → 状态的主入口
+  - docs-maintenance：维护流程、抽检与一致性检查
+
 - SpokenAnyWhere
   - 核心流程
     - 语音 -> 转录 -> AI处理 -> 剪贴板 [√]
