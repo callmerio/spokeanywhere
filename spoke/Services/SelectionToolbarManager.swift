@@ -378,6 +378,8 @@ final class SelectionToolbarManager {
     
     /// 处理阶段变化
     private func handlePhaseChange(_ phase: SelectionToolbarPhase) {
+        logger.info("📋 [ToolbarManager] handlePhaseChange: \(String(describing: phase))")
+        
         switch phase {
         case .idle:
             // 隐藏窗口
@@ -398,6 +400,7 @@ final class SelectionToolbarManager {
             
         case .showingDictionary:
             // 工具栏原地变换显示词典结果，启动词典自动隐藏定时器
+            logger.info("📋 [ToolbarManager] 🔥 showingDictionary - 启动词典自动隐藏定时器")
             stopAutoHideTimer()
             startDictionaryAutoHideTimer()
         }
@@ -466,6 +469,7 @@ final class SelectionToolbarManager {
     
     /// 启动词典自动隐藏定时器（2秒无 hover 后隐藏）
     private func startDictionaryAutoHideTimer() {
+        logger.info("📋 [ToolbarManager] 🕐 startDictionaryAutoHideTimer 被调用")
         stopDictionaryAutoHideTimer()
         
         // 启动 hover 检测
@@ -473,6 +477,7 @@ final class SelectionToolbarManager {
         
         dictionaryAutoHideTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
             Task { @MainActor in
+                logger.info("📋 [ToolbarManager] ⏰ 2秒定时器触发，检查是否隐藏")
                 self?.checkAndHideDictionary()
             }
         }
@@ -527,10 +532,10 @@ final class SelectionToolbarManager {
         let mouseLocation = NSEvent.mouseLocation
         let windowFrame = window.frame
         
-        // 如果鼠标不在窗口内，隐藏
+        // 如果鼠标不在窗口内，强制隐藏
         if !windowFrame.contains(mouseLocation) {
             stopDictionaryAutoHideTimer()
-            hide()
+            hide(force: true)  // 🔥 使用 force: true 绕过词典显示状态检查
             logger.debug("📋 [ToolbarManager] 词典结果自动隐藏（2秒无 hover）")
         }
     }

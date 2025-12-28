@@ -222,12 +222,12 @@ struct LiveCaptionView: View {
                         // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
                         if manager.lineBuffer.pendingLineActive {
                             VStack(alignment: .leading, spacing: 4) {
-                                // 流式原文（空时用 " " 占位）
-                                let pendingText = manager.lineBuffer.pendingText
-                                Text(pendingText.isEmpty ? " " : pendingText)
+                                // 流式原文 - 使用 displayPendingText 保证内容不会瞬间变空
+                                let displayText = manager.lineBuffer.displayPendingText
+                                Text(displayText.isEmpty ? " " : displayText)
                                     .font(.system(size: CaptionDesign.fontSize, weight: .regular))
                                     .foregroundColor(
-                                        CaptionDesign.textPrimary.opacity(pendingText.isEmpty ? 0 : 0.7)
+                                        CaptionDesign.textPrimary.opacity(displayText.isEmpty ? 0 : 0.7)
                                     )
                                     .lineSpacing(4)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -310,13 +310,13 @@ struct LiveCaptionView: View {
                 // 正在输入的流式文本
                 // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
                 if manager.lineBuffer.pendingLineActive {
-                    let pendingText = manager.lineBuffer.pendingText
+                    let displayText = manager.lineBuffer.displayPendingText
                     let pendingTranslation = manager.lineBuffer.pendingTranslation
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(pendingText.isEmpty ? " " : pendingText)
+                        Text(displayText.isEmpty ? " " : displayText)
                             .font(.system(size: CaptionDesign.fontSize, weight: .regular))
                             .foregroundColor(
-                                CaptionDesign.textPrimary.opacity(pendingText.isEmpty ? 0 : 0.7)
+                                CaptionDesign.textPrimary.opacity(displayText.isEmpty ? 0 : 0.7)
                             )
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
@@ -357,8 +357,14 @@ struct LiveCaptionView: View {
             text: original,
             fontSize: CaptionDesign.fontSize,
             opacity: opacity,
-            onSelectionStarted: { isUserSelecting = true },
-            onSelectionEnded: { isUserSelecting = false },
+            onSelectionStarted: { 
+                isUserSelecting = true
+                manager.lineBuffer.setUserInteracting(true)
+            },
+            onSelectionEnded: { 
+                isUserSelecting = false
+                manager.lineBuffer.setUserInteracting(false)
+            },
             onTextSelected: { selectedText, screenPoint in
                 handleTextSelected(selectedText, at: screenPoint)
             },
@@ -391,26 +397,22 @@ struct LiveCaptionView: View {
     private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
         print("📖 [LiveCaption] handleWordClicked: '\(word)' at \(screenPoint)")
         
-        // 1. 创建选择上下文（将单词作为选中文本）
-        let context = SelectionContext(
-            selectedText: word,
-            selectionBounds: CGRect(x: screenPoint.x - 50, y: screenPoint.y, width: 100, height: 20),
-            sourceAppBundleId: Bundle.main.bundleIdentifier ?? "",
-            sourceAppName: "SpokenAnyWhere"
-        )
-        
-        // 2. 显示工具栏
-        SelectionToolbarState.shared.show(with: context)
-        SelectionToolbarManager.shared.show(at: screenPoint)
-        
-        // 3. 异步查词并在工具栏中显示结果
+        // 🔥 在后台异步查词，查词完成后才显示窗口
         Task { @MainActor in
             print("📖 [LiveCaption] Starting lookup for '\(word)'...")
+            
+            // 创建选择上下文
+            let context = SelectionContext(
+                selectedText: word,
+                selectionBounds: CGRect(x: screenPoint.x - 50, y: screenPoint.y, width: 100, height: 20),
+                sourceAppBundleId: Bundle.main.bundleIdentifier ?? "",
+                sourceAppName: "SpokenAnyWhere"
+            )
             
             if let result = await UnifiedDictionaryService.shared.lookup(word) {
                 print("📖 [LiveCaption] ✅ Got result: \(result.word), \(result.senses.count) senses")
                 
-                // 转换为 DictionaryData 并在工具栏中显示
+                // 转换为 DictionaryData
                 let senses = result.senses.map { sense in
                     DictionarySense(
                         pos: sense.pos,
@@ -428,12 +430,25 @@ struct LiveCaptionView: View {
                     lemmaInfo: nil
                 )
                 
-                // 在工具栏原地显示词典结果
+                // 🔥 设置上下文并直接进入词典显示状态（不经过 showing 阶段）
+                SelectionToolbarState.shared.currentContext = context
                 SelectionToolbarState.shared.showDictionaryResult(data, forText: word)
+                
+                // 🔥 等待一帧让 SwiftUI 更新视图，避免闪现旧内容
+                try? await Task.sleep(for: .milliseconds(16))
+                
+                // 显示窗口（此时 phase 已经是 showingDictionary，视图已更新）
+                SelectionToolbarManager.shared.show(at: screenPoint)
             } else {
                 print("📖 [LiveCaption] ❌ No result for '\(word)'")
-                // 查询失败时显示错误
+                // 查询失败时设置上下文并显示错误
+                SelectionToolbarState.shared.currentContext = context
                 SelectionToolbarState.shared.showDictionaryError(.notFound, word: word)
+                
+                // 🔥 同样等待一帧
+                try? await Task.sleep(for: .milliseconds(16))
+                
+                SelectionToolbarManager.shared.show(at: screenPoint)
             }
         }
     }

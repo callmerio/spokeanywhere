@@ -53,11 +53,22 @@ final class CaptionLineBuffer: ObservableObject {
     /// 流式文本的实时翻译
     @Published private(set) var pendingTranslation: String = ""
     
+    /// 🔥 备份最后一次非空的 pendingText，用于防止瞬间变空时UI闪烁
+    private var lastNonEmptyPendingText: String = ""
+    
+    /// 用于显示的 pendingText（空时返回备份值）
+    var displayPendingText: String {
+        pendingText.isEmpty ? lastNonEmptyPendingText : pendingText
+    }
+    
     /// 最大保留条数（用于 UI 显示）
     private let maxItems = 200
     
     /// 当前流式文本的版本号（用于解决翻译竞态）
     private var volatileVersion: Int = 0
+    
+    /// 🔥 用户是否正在交互中（选择/点击），此时不应清空 pendingLineActive
+    private var isUserInteracting: Bool = false
     
     // MARK: - Public API
     
@@ -92,6 +103,8 @@ final class CaptionLineBuffer: ObservableObject {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if !cleaned.isEmpty {
             pendingLineActive = true
+            // 🔥 保存非空值作为备份
+            lastNonEmptyPendingText = cleaned
         }
         pendingText = cleaned
     }
@@ -118,8 +131,22 @@ final class CaptionLineBuffer: ObservableObject {
     func clearPending() {
         pendingText = ""
         pendingTranslation = ""
-        pendingLineActive = false
+        // 🔥 用户交互中时保留 pendingLineActive 和备份值，防止视图消失
+        if !isUserInteracting {
+            pendingLineActive = false
+            lastNonEmptyPendingText = ""
+        }
         // 注意：这里不增加 version，因为 clearPending 通常和 addFinalized 一起调用，后者会处理 version
+    }
+    
+    /// 设置用户交互状态
+    /// - Parameter interacting: 是否正在交互
+    func setUserInteracting(_ interacting: Bool) {
+        isUserInteracting = interacting
+        // 交互结束后，如果没有新的 pending 内容，关闭行
+        if !interacting && pendingText.isEmpty {
+            pendingLineActive = false
+        }
     }
     
     /// 更新指定 Item 的翻译

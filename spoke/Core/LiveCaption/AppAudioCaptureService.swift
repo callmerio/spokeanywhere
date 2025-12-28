@@ -286,7 +286,8 @@ extension AppAudioCaptureService: SCStreamDelegate {
     
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
         Task { @MainActor in
-            self.logger.error("❌ Stream stopped with error: \(error.localizedDescription)")
+            let nsError = error as NSError
+            self.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
             self.isCapturing = false
             self.currentAppName = nil
             self.onError?(error)
