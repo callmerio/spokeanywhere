@@ -91,15 +91,15 @@ final class TranscriptionModelManager {
     
     /// Update locale for current model
     func setLocale(_ locale: String) {
-        updateSettings(for: settings.selectedModelId) { s in
-            s.locale = locale
+        updateSettings(for: settings.selectedModelId) { setting in
+            setting.locale = locale
         }
     }
     
     /// Toggle precompiled LM for current model
     func setPrecompiledLMEnabled(_ enabled: Bool) {
-        updateSettings(for: settings.selectedModelId) { s in
-            s.enablePrecompiledLM = enabled
+        updateSettings(for: settings.selectedModelId) { setting in
+            setting.enablePrecompiledLM = enabled
         }
     }
     
@@ -212,8 +212,8 @@ final class TranscriptionModelManager {
             let isAvailable = await checkSpeechTranscriberAvailability()
             if isAvailable {
                 downloadStates[modelId] = .downloaded
-                updateSettings(for: modelId) { s in
-                    s.isDownloaded = true
+                updateSettings(for: modelId) { setting in
+                    setting.isDownloaded = true
                 }
                 logger.info("✅ SpeechTranscriber is available (system managed)")
             } else {
@@ -229,8 +229,8 @@ final class TranscriptionModelManager {
         do {
             try await Task.sleep(for: .seconds(1))
             downloadStates[modelId] = .downloaded
-            updateSettings(for: modelId) { s in
-                s.isDownloaded = true
+            updateSettings(for: modelId) { setting in
+                setting.isDownloaded = true
             }
             logger.info("✅ Model downloaded (mock): \(modelId)")
         } catch {

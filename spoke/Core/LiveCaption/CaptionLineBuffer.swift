@@ -187,7 +187,7 @@ final class CaptionLineBuffer: ObservableObject {
     @available(*, deprecated, message: "Use addFinalized + updateTranslation instead")
     func append(text: String, translation: String? = nil) {
         guard addFinalized(text: text) != nil else { return }
-        if let t = translation { updateLastTranslation(t) }
+        if let trans = translation { updateLastTranslation(trans) }
     }
 }
 

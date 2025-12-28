@@ -686,9 +686,9 @@ final class MessagePanelState: ObservableObject {
         guard let index = targetIndex else { return }
         
         // 检查是否已存在相同的高亮
-        let isDuplicate = cards[index].highlights.contains { h in
-            h.targetWord.lowercased() == highlight.targetWord.lowercased() &&
-            h.type == highlight.type
+        let isDuplicate = cards[index].highlights.contains { existing in
+            existing.targetWord.lowercased() == highlight.targetWord.lowercased() &&
+            existing.type == highlight.type
         }
         
         guard !isDuplicate else { return }

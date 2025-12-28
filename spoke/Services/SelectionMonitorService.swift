@@ -599,8 +599,8 @@ final class SelectionMonitorService {
             var element: CFTypeRef?
             let focusResult = AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &element)
             
-            if focusResult == .success, let e = element {
-                focusedElement = (e as! AXUIElement)
+            if focusResult == .success, let element = element {
+                focusedElement = (element as! AXUIElement)
             }
         }
         

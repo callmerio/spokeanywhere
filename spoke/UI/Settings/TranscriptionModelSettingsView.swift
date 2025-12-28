@@ -45,13 +45,13 @@ struct TranscriptionModelSettingsView: View {
                             selectModel(model)
                         },
                         onLocaleChange: { locale in
-                            modelManager.updateSettings(for: model.id) { s in
-                                s.locale = locale
+                            modelManager.updateSettings(for: model.id) { setting in
+                                setting.locale = locale
                             }
                         },
                         onPrecompiledLMToggle: { enabled in
-                            modelManager.updateSettings(for: model.id) { s in
-                                s.enablePrecompiledLM = enabled
+                            modelManager.updateSettings(for: model.id) { setting in
+                                setting.enablePrecompiledLM = enabled
                             }
                         },
                         onDownload: {
@@ -509,7 +509,7 @@ struct RoleBadge: View {
     }
     
     private var badgeColor: Color {
-        let c = role.badgeColor
-        return Color(red: c.red, green: c.green, blue: c.blue).opacity(0.8)
+        let color = role.badgeColor
+        return Color(red: color.red, green: color.green, blue: color.blue).opacity(0.8)
     }
 }

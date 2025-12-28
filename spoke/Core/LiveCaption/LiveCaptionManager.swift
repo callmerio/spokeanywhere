@@ -424,9 +424,9 @@ final class LiveCaptionManager: ObservableObject {
         
         // 停止转录
         if #available(macOS 26.0, *) {
-            if let p = provider {
-                try? await p.finishProcessing()
-                p.reset()
+            if let captionProvider = provider {
+                try? await captionProvider.finishProcessing()
+                captionProvider.reset()
             }
             _provider = nil
         }

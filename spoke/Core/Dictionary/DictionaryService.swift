@@ -250,8 +250,8 @@ final class DictionaryService: ObservableObject {
         guard !trimmedPhrase.isEmpty else { return }
         
         // 检查是否与其他短语重复（排除自身）
-        let isDuplicate = entries[index].trainingPhrases.enumerated().contains { i, p in
-            i != phraseIndex && p.lowercased() == trimmedPhrase.lowercased()
+        let isDuplicate = entries[index].trainingPhrases.enumerated().contains { idx, phrase in
+            idx != phraseIndex && phrase.lowercased() == trimmedPhrase.lowercased()
         }
         
         if isDuplicate {

@@ -470,8 +470,8 @@ struct EditActionSheet: View {
         self.action = action
         _name = State(initialValue: action.name)
         _icon = State(initialValue: action.icon)
-        if case .custom(let p) = action.kind {
-            _prompt = State(initialValue: p)
+        if case .custom(let promptText) = action.kind {
+            _prompt = State(initialValue: promptText)
         } else {
             _prompt = State(initialValue: "")
         }
