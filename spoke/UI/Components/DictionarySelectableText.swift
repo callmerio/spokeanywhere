@@ -180,7 +180,7 @@ struct DictionarySelectableText: NSViewRepresentable {
             }
             
             // 创建新菜单（保留原有菜单项）
-            let newMenu = menu.copy() as! NSMenu
+            guard let newMenu = menu.copy() as? NSMenu else { return menu }
             
             // 在菜单顶部插入自定义项（位置 0 开始）
             var insertIndex = 0

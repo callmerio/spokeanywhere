@@ -458,7 +458,10 @@ struct LiveCaptionView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "globe")
                                         .font(.system(size: 12))
-                                    Text(LiveCaptionManager.supportedLanguages.first(where: { $0.id == manager.sourceLanguage })?.name ?? "Language")
+                                    Text(
+                                        LiveCaptionManager.supportedLanguages
+                                            .first(where: { $0.id == manager.sourceLanguage })?.name ?? "Language"
+                                    )
                                         .font(.system(size: 12, weight: .medium))
                                     Image(systemName: "chevron.down")
                                         .font(.system(size: 10))
@@ -604,19 +607,25 @@ struct LiveCaptionView: View {
                         if manager.lineBuffer.pendingLineActive {
                             VStack(alignment: .leading, spacing: 4) {
                                 // 流式原文（空时用 " " 占位）
-                                Text(manager.lineBuffer.pendingText.isEmpty ? " " : manager.lineBuffer.pendingText)
+                                let pendingText = manager.lineBuffer.pendingText
+                                Text(pendingText.isEmpty ? " " : pendingText)
                                     .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                                    .foregroundColor(CaptionDesign.textPrimary.opacity(manager.lineBuffer.pendingText.isEmpty ? 0 : 0.7))
+                                    .foregroundColor(
+                                        CaptionDesign.textPrimary.opacity(pendingText.isEmpty ? 0 : 0.7)
+                                    )
                                     .lineSpacing(4)
                                     .fixedSize(horizontal: false, vertical: true)
                                 
                                 // 流式翻译（始终占位，防止闪烁）
-                                Text(manager.lineBuffer.pendingTranslation.isEmpty ? " " : manager.lineBuffer.pendingTranslation)
+                                let pendingTranslation = manager.lineBuffer.pendingTranslation
+                                Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
                                     .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                                    .foregroundColor(CaptionDesign.textSecondary.opacity(manager.lineBuffer.pendingTranslation.isEmpty ? 0 : 0.7))
+                                    .foregroundColor(
+                                        CaptionDesign.textSecondary.opacity(pendingTranslation.isEmpty ? 0 : 0.7)
+                                    )
                                     .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
-                                    .animation(.easeOut(duration: 0.2), value: manager.lineBuffer.pendingTranslation)
+                                    .animation(.easeOut(duration: 0.2), value: pendingTranslation)
                             }
                             .transition(.opacity)  // 🔥 纯 fade in/out
                         }
@@ -685,19 +694,25 @@ struct LiveCaptionView: View {
                 // 正在输入的流式文本
                 // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
                 if manager.lineBuffer.pendingLineActive {
+                    let pendingText = manager.lineBuffer.pendingText
+                    let pendingTranslation = manager.lineBuffer.pendingTranslation
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(manager.lineBuffer.pendingText.isEmpty ? " " : manager.lineBuffer.pendingText)
+                        Text(pendingText.isEmpty ? " " : pendingText)
                             .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                            .foregroundColor(CaptionDesign.textPrimary.opacity(manager.lineBuffer.pendingText.isEmpty ? 0 : 0.7))
+                            .foregroundColor(
+                                CaptionDesign.textPrimary.opacity(pendingText.isEmpty ? 0 : 0.7)
+                            )
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        Text(manager.lineBuffer.pendingTranslation.isEmpty ? " " : manager.lineBuffer.pendingTranslation)
+                        Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
                             .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
-                            .foregroundColor(CaptionDesign.textSecondary.opacity(manager.lineBuffer.pendingTranslation.isEmpty ? 0 : 0.7))
+                            .foregroundColor(
+                                CaptionDesign.textSecondary.opacity(pendingTranslation.isEmpty ? 0 : 0.7)
+                            )
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
-                            .animation(.easeOut(duration: 0.2), value: manager.lineBuffer.pendingTranslation)
+                            .animation(.easeOut(duration: 0.2), value: pendingTranslation)
                     }
                     .transition(.opacity)  // 🔥 纯 fade in/out
                 }
@@ -839,7 +854,11 @@ struct LiveCaptionView: View {
                     .foregroundStyle((isCopyHovered || isCopied) ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
                     .background((isCopyHovered || isCopied) ? DS.Colors.buttonHover : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: isCopyHovered || isCopied ? cornerRadius : buttonSize / 2))
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: isCopyHovered || isCopied ? cornerRadius : buttonSize / 2
+                        )
+                    )
                     .animation(.easeInOut(duration: 0.2), value: isCopyHovered)
                     .animation(.easeInOut(duration: 0.2), value: isCopied)
             }

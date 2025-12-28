@@ -143,7 +143,8 @@ struct TranscriptionModelSettingsView: View {
 
 @available(macOS 14.0, *)
 private struct LiveCaptionCaptureSettingsSection: View {
-    @AppStorage("LiveCaptionCaptureMode") private var captureMode: String = LiveCaptionManager.CaptureMode.global.rawValue
+    @AppStorage("LiveCaptionCaptureMode")
+    private var captureMode: String = LiveCaptionManager.CaptureMode.global.rawValue
     
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {

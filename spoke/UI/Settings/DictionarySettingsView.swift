@@ -798,7 +798,7 @@ struct AddDictionaryEntrySheet: View {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         
-        if let _ = dictionaryService.addEntry(word: word, corrections: corrections) {
+        if dictionaryService.addEntry(word: word, corrections: corrections) != nil {
             isPresented = false
         } else {
             showError = true

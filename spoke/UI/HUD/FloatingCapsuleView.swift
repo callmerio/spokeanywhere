@@ -38,7 +38,11 @@ struct FloatingCapsuleView: View {
             VStack(spacing: 0) {
                 // 上方：转写文字区域（向上扩展）
                 // .success 状态也保留文字显示，直到 UI 消失
-                if state.phase == .recording || state.phase == .processing || state.phase == .thinking || state.phase == .success {
+                let showText = state.phase == .recording
+                    || state.phase == .processing
+                    || state.phase == .thinking
+                    || state.phase == .success
+                if showText {
                     textArea
                 }
                 
@@ -183,9 +187,13 @@ struct FloatingCapsuleView: View {
                     if !state.partialText.isEmpty {
                         Text(state.partialText)
                             .font(.system(size: 14))
-                            .foregroundStyle(state.phase == .success ? DS.Colors.textPrimary : DS.Colors.textSecondary) // 成功后变亮
+                            // 成功后变亮
+                            .foregroundStyle(
+                                state.phase == .success ? DS.Colors.textPrimary : DS.Colors.textSecondary
+                            )
                             .lineSpacing(4)
-                            .blur(radius: state.phase == .thinking ? 2 : 0) // 思考时模糊，成功后清晰
+                            // 思考时模糊，成功后清晰
+                            .blur(radius: state.phase == .thinking ? 2 : 0)
                             .animation(.easeInOut(duration: 0.3), value: state.phase)
                     }
                     

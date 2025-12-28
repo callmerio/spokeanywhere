@@ -166,6 +166,7 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
         }
         
         // 类型擦除返回
+        // swiftlint:disable:next force_cast
         request = speechRequest as! T
         
         logger.debug("📚 Applied custom language model to request")
@@ -292,6 +293,7 @@ final class WhisperDictionaryInjector: DictionaryInjector {
         // 示例：如果是字典类型的配置
         if var config = request as? [String: Any] {
             config["initial_prompt"] = promptString
+            // swiftlint:disable:next force_cast
             request = config as! T
         }
         

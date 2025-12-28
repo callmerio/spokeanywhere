@@ -59,7 +59,17 @@ class HistoryItem {
     @Relationship(deleteRule: .nullify)
     var providerConfig: AIProviderConfig?
     
-    init(id: UUID = UUID(), createdAt: Date = Date(), rawText: String, processedText: String? = nil, audioPath: String? = nil, audioDuration: TimeInterval? = nil, appBundleId: String? = nil, tags: [String] = [], recordType: HistoryRecordType = .normal) {
+    init(
+        id: UUID = UUID(),
+        createdAt: Date = Date(),
+        rawText: String,
+        processedText: String? = nil,
+        audioPath: String? = nil,
+        audioDuration: TimeInterval? = nil,
+        appBundleId: String? = nil,
+        tags: [String] = [],
+        recordType: HistoryRecordType = .normal
+    ) {
         self.id = id
         self.createdAt = createdAt
         self.rawText = rawText
