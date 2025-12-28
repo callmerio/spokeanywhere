@@ -309,14 +309,18 @@ struct ModelCard: View {
         .contextMenu {
             // 设为转录模型
             if canSetRole(.transcription) {
-                Button(action: { onSetRole(.transcription) }) {
+                Button {
+                    onSetRole(.transcription)
+                } label: {
                     Label("设为转录模型", systemImage: TranscriptionModelRole.transcription.icon)
                 }
             }
             
             // 设为实时字幕模型（仅支持流式的模型显示）
             if canSetRole(.liveCaption) {
-                Button(action: { onSetRole(.liveCaption) }) {
+                Button {
+                    onSetRole(.liveCaption)
+                } label: {
                     Label("设为实时字幕模型", systemImage: TranscriptionModelRole.liveCaption.icon)
                 }
             }

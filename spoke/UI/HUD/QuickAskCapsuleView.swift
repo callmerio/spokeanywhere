@@ -229,31 +229,41 @@ struct QuickAskCapsuleView: View {
     private var attachmentMenuButton: some View {
         Menu {
             // 从设备上传
-            Button(action: { AttachmentManager.shared.pickFiles { state.addAttachment($0) } }) {
+            Button {
+                AttachmentManager.shared.pickFiles { state.addAttachment($0) }
+            } label: {
                 Label("从设备上传", systemImage: "doc.badge.plus")
             }
             
             Divider()
             
             // 导入文件夹
-            Button(action: { AttachmentManager.shared.pickFolder { state.addAttachment($0) } }) {
+            Button {
+                AttachmentManager.shared.pickFolder { state.addAttachment($0) }
+            } label: {
                 Label("导入文件夹 (转为文本)", systemImage: "folder.badge.plus")
             }
             
             // 导入 ZIP
-            Button(action: { AttachmentManager.shared.pickZIP { state.addAttachment($0) } }) {
+            Button {
+                AttachmentManager.shared.pickZIP { state.addAttachment($0) }
+            } label: {
                 Label("导入 ZIP (转为文本)", systemImage: "doc.zipper")
             }
             
             Divider()
             
             // 图库
-            Button(action: { AttachmentManager.shared.pickFromPhotos { state.addAttachment($0) } }) {
+            Button {
+                AttachmentManager.shared.pickFromPhotos { state.addAttachment($0) }
+            } label: {
                 Label("图库", systemImage: "photo.on.rectangle")
             }
             
             // 屏幕截图
-            Button(action: { AttachmentManager.shared.captureScreen { state.addAttachment($0) } }) {
+            Button {
+                AttachmentManager.shared.captureScreen { state.addAttachment($0) }
+            } label: {
                 Label("屏幕截图", systemImage: "camera.viewfinder")
             }
         } label: {

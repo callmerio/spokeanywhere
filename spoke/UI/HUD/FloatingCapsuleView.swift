@@ -245,7 +245,9 @@ struct FloatingCapsuleView: View {
     private var hoverOverlay: some View {
         VStack(spacing: 0) {
             // 上半部分：完成录音
-            Button(action: { onComplete?() }) {
+            Button {
+                onComplete?()
+            } label: {
                 ZStack {
                     // Hover 时显示淡淡的蓝色，否则几乎透明（显示底部的灰黑色）
                     DS.Colors.accentInfo.opacity(isHoveringComplete ? 0.15 : 0.001)
@@ -276,7 +278,9 @@ struct FloatingCapsuleView: View {
                 .overlay(DS.Colors.borderPrimary)
             
             // 下半部分：取消录音
-            Button(action: { onCancel?() }) {
+            Button {
+                onCancel?()
+            } label: {
                 ZStack {
                     // Hover 时显示淡淡的红色，否则几乎透明
                     DS.Colors.error.opacity(isHoveringCancel ? 0.15 : 0.001)

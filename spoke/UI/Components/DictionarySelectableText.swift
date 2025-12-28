@@ -524,7 +524,9 @@ struct QuickAddToDictionarySheet: View {
                 
                 Spacer()
                 
-                Button(action: { isPresented = false }) {
+                Button {
+                    isPresented = false
+                } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(DS.Colors.textSecondary)
@@ -635,7 +637,9 @@ struct CorrectToSheet: View {
                 
                 Spacer()
                 
-                Button(action: { isPresented = false }) {
+                Button {
+                    isPresented = false
+                } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(DS.Colors.textSecondary)

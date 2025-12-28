@@ -73,10 +73,14 @@ struct DictionarySettingsContent: View {
                 
                 // 新增热词按钮
             Menu {
-                Button(action: { showAddSheet = true }) {
+                Button {
+                    showAddSheet = true
+                } label: {
                     Label("添加单个词条", systemImage: "plus")
                 }
-                Button(action: { showBatchImportSheet = true }) {
+                Button {
+                    showBatchImportSheet = true
+                } label: {
                     Label("批量导入", systemImage: "doc.text")
                 }
             } label: {
@@ -240,7 +244,9 @@ struct DictionarySettingsContent: View {
                     .foregroundStyle(DS.Colors.textPrimary)
                 
                 if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
+                    Button {
+                        searchText = ""
+                    } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(DS.Colors.textSecondary)
                             .font(DS.Typography.caption)
@@ -337,7 +343,9 @@ struct DictionarySettingsContent: View {
                 .font(DS.Typography.caption)
                 .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
             
-            Button(action: { showAddSheet = true }) {
+            Button {
+                showAddSheet = true
+            } label: {
                 HStack(spacing: DS.Spacing.sm) {
                     Image(systemName: "plus")
                     Text("添加第一个词条")
@@ -366,17 +374,19 @@ struct DictionarySettingsContent: View {
             
             Spacer()
             
-            Button(action: { selectedEntries.removeAll() }) {
+            Button {
+                selectedEntries.removeAll()
+            } label: {
                 Text("取消选择")
                     .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.accentPrimary)
             }
             .buttonStyle(.plain)
             
-            Button(action: {
+            Button {
                 dictionaryService.deleteEntries(selectedEntries)
                 selectedEntries.removeAll()
-            }) {
+            } label: {
                 Text("删除选中")
                     .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.error)
@@ -625,10 +635,10 @@ struct HotwordChip: View {
                 .foregroundStyle(DS.Colors.warning)
             
             // 确认按钮
-            Button(action: {
+            Button {
                 showEditPopover = true
                 correctedWord = hotword.word
-            }) {
+            } label: {
                 Image(systemName: "checkmark")
                     .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
                     .foregroundStyle(DS.Colors.success)
@@ -636,7 +646,9 @@ struct HotwordChip: View {
             .buttonStyle(.plain)
             
             // 忽略按钮
-            Button(action: onDismiss) {
+            Button {
+                onDismiss()
+            } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
                     .foregroundStyle(DS.Colors.error.opacity(0.8))
@@ -703,7 +715,9 @@ struct AddDictionaryEntrySheet: View {
                 
                 Spacer()
                 
-                Button(action: { isPresented = false }) {
+                Button {
+                    isPresented = false
+                } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
                         .foregroundStyle(DS.Colors.textSecondary)
@@ -812,7 +826,9 @@ struct BatchImportSheet: View {
                 
                 Spacer()
                 
-                Button(action: { isPresented = false }) {
+                Button {
+                    isPresented = false
+                } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
                         .foregroundStyle(DS.Colors.textSecondary)
@@ -934,7 +950,9 @@ struct EditDictionaryEntrySheet: View {
                 
                 Spacer()
                 
-                Button(action: { isPresented = false }) {
+                Button {
+                    isPresented = false
+                } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
                         .foregroundStyle(DS.Colors.textSecondary)
@@ -1053,10 +1071,10 @@ struct EditDictionaryEntrySheet: View {
                 
                 Spacer()
                 
-                Button(role: .destructive, action: {
+                Button(role: .destructive) {
                     dictionaryService.deleteEntry(entry)
                     isPresented = false
-                }) {
+                } label: {
                     Text("删除")
                 }
                 .buttonStyle(.bordered)

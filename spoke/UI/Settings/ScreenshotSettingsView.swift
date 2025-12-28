@@ -106,7 +106,9 @@ struct ScreenshotSettingsView: View {
             Group {
                 switch modelManager.state {
                 case .notDownloaded:
-                    Button(action: { modelManager.downloadModel() }) {
+                    Button {
+                        modelManager.downloadModel()
+                    } label: {
                         HStack {
                             Image(systemName: "icloud.and.arrow.down")
                             Text("下载模型 (~50MB)")
@@ -142,7 +144,9 @@ struct ScreenshotSettingsView: View {
                 case .compiled:
                     HStack {
                         Spacer()
-                        Button(action: { modelManager.deleteModel() }) {
+                        Button {
+                            modelManager.deleteModel()
+                        } label: {
                             Label("删除模型", systemImage: "trash")
                                 .font(DS.Typography.captionSmall)
                         }
