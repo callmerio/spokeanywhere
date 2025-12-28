@@ -263,11 +263,8 @@ final class LLMPipeline {
         
         // 遍历所有词条，检查是否有 corrections 匹配
         for entry in dictionaryService.entries where entry.confirmedByUser {
-            for correction in entry.corrections {
-                // 不区分大小写检查是否包含
-                if text.range(of: correction, options: .caseInsensitive) != nil {
-                    hints.append((errorForm: correction, correctWord: entry.word))
-                }
+            for correction in entry.corrections where text.range(of: correction, options: .caseInsensitive) != nil {
+                hints.append((errorForm: correction, correctWord: entry.word))
             }
         }
         

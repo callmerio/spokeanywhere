@@ -173,8 +173,8 @@ final class ClipboardHistoryService {
             "Emitting module"
         ]
         
-        for keyword in ignoredKeywords {
-            if content.contains(keyword) { return true }
+        for keyword in ignoredKeywords where content.contains(keyword) {
+            return true
         }
         
         return false

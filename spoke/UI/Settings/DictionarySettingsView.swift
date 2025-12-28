@@ -1229,9 +1229,9 @@ struct TrainingPhraseCard: View {
                 var attributed = AttributedString(component.text)
                 attributed.backgroundColor = highlightColor
                 attributed.foregroundColor = DS.Colors.textPrimary
-                result = result + Text(attributed)
+                result = result + Text(attributed)  // swiftlint:disable:this shorthand_operator
             } else {
-                result = result + Text(component.text)
+                result = result + Text(component.text)  // swiftlint:disable:this shorthand_operator
             }
         }
         

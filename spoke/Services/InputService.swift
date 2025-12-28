@@ -157,10 +157,8 @@ final class InputService {
         let chars2 = Array(str2)
         let minLen = min(chars1.count, chars2.count)
         
-        for i in 0..<minLen {
-            if chars1[i] != chars2[i] {
-                return i
-            }
+        for idx in 0..<minLen where chars1[idx] != chars2[idx] {
+            return idx
         }
         return minLen
     }

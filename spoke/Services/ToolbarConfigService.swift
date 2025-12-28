@@ -105,17 +105,15 @@ final class ToolbarConfigService: ObservableObject {
         })
         
         var needsSave = false
-        for defaultAction in ToolbarAction.defaults {
-            if !existingBuiltinIds.contains(defaultAction.id) {
-                // 在朗读后面插入新动作（如果朗读存在），否则插入到开头
-                if let speakIndex = actions.firstIndex(where: { $0.id == "builtin.speak" }) {
-                    actions.insert(defaultAction, at: speakIndex + 1)
-                } else {
-                    actions.insert(defaultAction, at: 0)
-                }
-                logger.info("📋 [ToolbarConfig] 自动添加新内置动作: \(defaultAction.name)")
-                needsSave = true
+        for defaultAction in ToolbarAction.defaults where !existingBuiltinIds.contains(defaultAction.id) {
+            // 在朗读后面插入新动作（如果朗读存在），否则插入到开头
+            if let speakIndex = actions.firstIndex(where: { $0.id == "builtin.speak" }) {
+                actions.insert(defaultAction, at: speakIndex + 1)
+            } else {
+                actions.insert(defaultAction, at: 0)
             }
+            logger.info("📋 [ToolbarConfig] 自动添加新内置动作: \(defaultAction.name)")
+            needsSave = true
         }
         
         if needsSave {

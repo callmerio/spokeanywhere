@@ -357,13 +357,11 @@ actor TextExtractionService {
         var lineNumber = 1
         var lineStart = content.startIndex
         
-        for i in content.indices {
-            if content[i] == "\n" {
-                let line = content[lineStart..<i]
-                result += "\(lineNumber)│ \(line)\n"
-                lineNumber += 1
-                lineStart = content.index(after: i)
-            }
+        for i in content.indices where content[i] == "\n" {
+            let line = content[lineStart..<i]
+            result += "\(lineNumber)│ \(line)\n"
+            lineNumber += 1
+            lineStart = content.index(after: i)
         }
         
         // 最后一行

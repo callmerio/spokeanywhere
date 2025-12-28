@@ -811,11 +811,9 @@ final class MessagePanelState: ObservableObject {
     
     private func removeDeletedTagFromAllCards(_ tagId: UUID) {
         var modified = false
-        for i in cards.indices {
-            if cards[i].tagIds.contains(tagId) {
-                cards[i].tagIds.removeAll { $0 == tagId }
-                modified = true
-            }
+        for i in cards.indices where cards[i].tagIds.contains(tagId) {
+            cards[i].tagIds.removeAll { $0 == tagId }
+            modified = true
         }
         if modified {
             saveCards()

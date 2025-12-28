@@ -501,10 +501,8 @@ final class DictionaryService: ObservableObject {
     func importFromJSON(_ data: Data) throws {
         let imported = try JSONDecoder().decode([DictionaryEntry].self, from: data)
         
-        for entry in imported {
-            if !entries.contains(where: { $0.word.lowercased() == entry.word.lowercased() }) {
-                entries.append(entry)
-            }
+        for entry in imported where !entries.contains(where: { $0.word.lowercased() == entry.word.lowercased() }) {
+            entries.append(entry)
         }
         
         saveEntries()
