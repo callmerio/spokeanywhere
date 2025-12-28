@@ -32,6 +32,23 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     /// 是否正在等待用户选择
     @Published private(set) var isWaitingForSelection: Bool = false
     
+    /// 是否正在重试连接
+    @Published private(set) var isRetrying: Bool = false
+    
+    /// 重试计数
+    private var retryCount: Int = 0
+    private let maxRetryCount: Int = 3
+    private let retryDelays: [TimeInterval] = [1, 2, 4]
+    
+    /// 上次使用的 filter（用于重连）
+    private var lastFilter: SCContentFilter?
+    
+    /// 上次捕获的应用名（用于重连后恢复）
+    private var lastAppName: String?
+    
+    /// 是否用户主动停止（不触发重试）
+    private var isUserInitiatedStop: Bool = false
+    
     /// PCM 缓冲区回调（用于 SpeechAnalyzerProvider）
     var onPCMBuffer: ((AVAudioPCMBuffer) -> Void)?
     
@@ -43,6 +60,9 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     
     /// 用户取消选择回调
     var onSelectionCancelled: (() -> Void)?
+    
+    /// 重试状态变化回调
+    var onRetryStateChanged: ((Bool, Int) -> Void)?
     
     // MARK: - Init
     
@@ -79,7 +99,10 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     
     /// 停止捕获
     func stopCapture() async {
-        guard isCapturing else { return }
+        guard isCapturing || isRetrying else { return }
+        
+        // 标记为用户主动停止，不触发重试
+        isUserInitiatedStop = true
         
         do {
             try await stream?.stopCapture()
@@ -89,7 +112,12 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         
         stream = nil
         isCapturing = false
+        isRetrying = false
+        retryCount = 0
         currentAppName = nil
+        lastFilter = nil
+        lastAppName = nil
+        isUserInitiatedStop = false
         logger.info("🛑 App audio capture stopped")
     }
     
@@ -121,14 +149,29 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         config.queueDepth = 1
         
         if let existingStream = stream {
-            try await existingStream.stopCapture()
+            // 只在真正捕获中才尝试停止，避免 -3808 错误
+            if isCapturing {
+                do {
+                    try await existingStream.stopCapture()
+                } catch {
+                    // 忽略停止失败（可能已经停止）
+                    logger.warning("⚠️ stopCapture failed (ignored): \(error.localizedDescription)")
+                }
+            }
+            stream = nil  // 确保释放
         }
+        
+        // 保存 filter 用于重连
+        lastFilter = filter
+        isUserInitiatedStop = false
         
         stream = SCStream(filter: filter, configuration: config, delegate: self)
         try stream?.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
         try await stream?.startCapture()
         
         isCapturing = true
+        isRetrying = false
+        retryCount = 0
         logger.info("🎧 App audio capture started for: \(self.currentAppName ?? "Unknown")")
     }
     
@@ -160,6 +203,7 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
                 // 延迟更新 UI 状态，避免在 Display Cycle 中触发约束循环
                 DispatchQueue.main.async {
                     self.currentAppName = appName
+                    self.lastAppName = appName  // 保存用于重连
                     self.onSelectionComplete?(true)
                 }
             } catch {
@@ -288,9 +332,102 @@ extension AppAudioCaptureService: SCStreamDelegate {
         Task { @MainActor in
             let nsError = error as NSError
             self.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
+            
             self.isCapturing = false
-            self.currentAppName = nil
-            self.onError?(error)
+            self.stream = nil  // 🔥 释放 stream 资源（橙色指示器消失）
+            
+            // 用户主动停止，不触发重试
+            guard !self.isUserInitiatedStop else {
+                self.logger.info("🛑 User initiated stop, skipping retry")
+                return
+            }
+            
+            // 判断是否可恢复
+            if self.isRecoverableError(error) && self.lastFilter != nil {
+                self.scheduleRetry()
+            } else {
+                // 不可恢复，清理状态
+                self.currentAppName = nil
+                self.lastFilter = nil
+                self.lastAppName = nil
+                self.onError?(error)
+            }
+        }
+    }
+    
+    /// 判断错误是否可恢复
+    private func isRecoverableError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        
+        // 可恢复的错误（临时性问题，重试有意义）
+        // -3821: systemStoppedStream (系统停止)
+        // -3805: failedApplicationConnectionInterrupted (连接中断)
+        // -3811: internalError (内部错误)
+        let recoverableCodes: Set<Int> = [-3821, -3805, -3811]
+        
+        // 不可恢复的错误（重试无意义）
+        // -3801: userDeclined (用户拒绝)
+        // -3817: userStopped (用户停止)
+        // -3804: failedApplicationConnectionInvalid (连接无效 - 应用已关闭)
+        // -3815: noCaptureSource (无捕获源 - 目标已消失)
+        // -3808: attemptToStopStreamState (尝试停止已停止的流)
+        let nonRecoverableCodes: Set<Int> = [-3801, -3817, -3804, -3815, -3808]
+        
+        if nonRecoverableCodes.contains(nsError.code) {
+            logger.info("🚫 Error \(nsError.code) is non-recoverable")
+            return false
+        }
+        
+        // 只有明确可恢复的错误才重试
+        return recoverableCodes.contains(nsError.code)
+    }
+    
+    /// 安排重试
+    private func scheduleRetry() {
+        guard retryCount < maxRetryCount else {
+            logger.error("❌ Max retry count (\(self.maxRetryCount)) reached, giving up")
+            isRetrying = false
+            currentAppName = nil
+            lastFilter = nil
+            onRetryStateChanged?(false, retryCount)
+            onError?(CaptureError.streamCreationFailed)
+            return
+        }
+        
+        isRetrying = true
+        let delay = retryDelays[min(retryCount, retryDelays.count - 1)]
+        retryCount += 1
+        
+        logger.info("🔄 Scheduling retry \(self.retryCount)/\(self.maxRetryCount) in \(delay)s")
+        onRetryStateChanged?(true, retryCount)
+        
+        Task {
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            await self.attemptReconnect()
+        }
+    }
+    
+    /// 尝试重连
+    private func attemptReconnect() async {
+        guard let filter = lastFilter else {
+            logger.error("❌ No filter available for reconnect")
+            isRetrying = false
+            onError?(CaptureError.streamCreationFailed)
+            return
+        }
+        
+        logger.info("🔄 Attempting reconnect (\(self.retryCount)/\(self.maxRetryCount))...")
+        
+        do {
+            try await startCapture(with: filter)
+            if let appName = lastAppName {
+                currentAppName = appName
+            }
+            logger.info("✅ Reconnect successful!")
+            onRetryStateChanged?(false, 0)
+        } catch {
+            logger.error("❌ Reconnect failed: \(error.localizedDescription)")
+            // startCapture 失败会触发 didStopWithError，继续重试
         }
     }
 }

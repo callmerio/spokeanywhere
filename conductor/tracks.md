@@ -6,7 +6,8 @@
 |----------|--------|-------------|
 | swiftlint_refactor_A2A5_20251228 | [x] Done | SwiftLint 大文件拆分 A2-A5 (DictionarySettings/LiveCaption/SelectableText) |
 | swiftlint_cleanup_20251228 | [ ] Pending | SwiftLint 全仓清理 - 目标零违规 (273→0) |
-| caption_word_lookup_20251225 | [~] In Progress | 字幕单词点击查词 + 统一查词接口 (Phase 1-3 完成, 待验证) ⭐ |
+| scstream_auto_recovery_20251229 | [?] Observation | SCStream 自动恢复 - 3天无复现可关闭 (观察期至 2025-01-01) |
+| caption_word_lookup_20251225 | [x] Done | 字幕单词点击查词 + 统一查词接口 + pending text 支持 ✅ |
 | livecaption_app_picker_20251223 | [ ] Pending | 实时字幕添加应用选择模式 (SCContentSharingPicker) |
 | tiling_upscaling_20251221 | [~] In Progress | 修复 AI 增强 Tiling Upscaling 算法 (Phase 2 完成, 待验证) |
 | screenshot_multiscreen_fix_20251221 | [~] In Progress | 修复多屏幕截图错位和模糊问题 (待验证) |

@@ -223,14 +223,35 @@ struct LiveCaptionView: View {
                         if manager.lineBuffer.pendingLineActive {
                             VStack(alignment: .leading, spacing: 4) {
                                 // 流式原文 - 使用 displayPendingText 保证内容不会瞬间变空
+                                // 🔥 修复：也用 VocabularyHighlightText 支持点击查词
                                 let displayText = manager.lineBuffer.displayPendingText
-                                Text(displayText.isEmpty ? " " : displayText)
-                                    .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                                    .foregroundColor(
-                                        CaptionDesign.textPrimary.opacity(displayText.isEmpty ? 0 : 0.7)
+                                if displayText.isEmpty {
+                                    Text(" ")
+                                        .font(.system(size: CaptionDesign.fontSize, weight: .regular))
+                                        .foregroundColor(CaptionDesign.textPrimary.opacity(0))
+                                } else {
+                                    VocabularyHighlightText(
+                                        text: displayText,
+                                        fontSize: CaptionDesign.fontSize,
+                                        opacity: 0.7,
+                                        onSelectionStarted: { 
+                                            isUserSelecting = true
+                                            manager.lineBuffer.setUserInteracting(true)
+                                        },
+                                        onSelectionEnded: { 
+                                            isUserSelecting = false
+                                            manager.lineBuffer.setUserInteracting(false)
+                                        },
+                                        onTextSelected: { selectedText, screenPoint in
+                                            handleTextSelected(selectedText, at: screenPoint)
+                                        },
+                                        onWordClicked: { word, screenPoint in
+                                            handleWordClicked(word, at: screenPoint)
+                                        },
+                                        refreshTrigger: vocabularyRefreshTrigger
                                     )
-                                    .lineSpacing(4)
                                     .fixedSize(horizontal: false, vertical: true)
+                                }
                                 
                                 // 流式翻译（始终占位，防止闪烁）
                                 let pendingTranslation = manager.lineBuffer.pendingTranslation
@@ -313,13 +334,34 @@ struct LiveCaptionView: View {
                     let displayText = manager.lineBuffer.displayPendingText
                     let pendingTranslation = manager.lineBuffer.pendingTranslation
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(displayText.isEmpty ? " " : displayText)
-                            .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                            .foregroundColor(
-                                CaptionDesign.textPrimary.opacity(displayText.isEmpty ? 0 : 0.7)
+                        // 🔥 修复：也用 VocabularyHighlightText 支持点击查词
+                        if displayText.isEmpty {
+                            Text(" ")
+                                .font(.system(size: CaptionDesign.fontSize, weight: .regular))
+                                .foregroundColor(CaptionDesign.textPrimary.opacity(0))
+                        } else {
+                            VocabularyHighlightText(
+                                text: displayText,
+                                fontSize: CaptionDesign.fontSize,
+                                opacity: 0.7,
+                                onSelectionStarted: { 
+                                    isUserSelecting = true
+                                    manager.lineBuffer.setUserInteracting(true)
+                                },
+                                onSelectionEnded: { 
+                                    isUserSelecting = false
+                                    manager.lineBuffer.setUserInteracting(false)
+                                },
+                                onTextSelected: { selectedText, screenPoint in
+                                    handleTextSelected(selectedText, at: screenPoint)
+                                },
+                                onWordClicked: { word, screenPoint in
+                                    handleWordClicked(word, at: screenPoint)
+                                },
+                                refreshTrigger: vocabularyRefreshTrigger
                             )
-                            .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
+                        }
                         
                         Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
                             .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
@@ -397,8 +439,18 @@ struct LiveCaptionView: View {
     private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
         print("📖 [LiveCaption] handleWordClicked: '\(word)' at \(screenPoint)")
         
+        // 🔥 设置用户交互状态，防止 clearPending 时整行消失
+        isUserSelecting = true
+        manager.lineBuffer.setUserInteracting(true)
+        
         // 🔥 在后台异步查词，查词完成后才显示窗口
         Task { @MainActor in
+            defer {
+                // 🔥 交互结束，恢复状态
+                isUserSelecting = false
+                manager.lineBuffer.setUserInteracting(false)
+            }
+            
             print("📖 [LiveCaption] Starting lookup for '\(word)'...")
             
             // 创建选择上下文

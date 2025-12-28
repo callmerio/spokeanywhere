@@ -54,16 +54,18 @@ struct DictionarySense: Codable {
     var posDisplay: String {
         guard let pos = pos else { return "" }
         switch pos.lowercased() {
-        case "noun", "n": return "n."
-        case "verb", "v": return "v."
-        case "adjective", "adj": return "adj."
-        case "adverb", "adv": return "adv."
-        case "preposition", "prep": return "prep."
-        case "conjunction", "conj": return "conj."
-        case "pronoun", "pron": return "pron."
-        case "interjection", "interj": return "interj."
-        case "determiner", "det": return "det."
-        case "article", "art": return "art."
+        case "noun", "n", "n.": return "n."
+        case "verb", "v", "v.": return "v."
+        case "transitive verb", "vt", "vt.": return "vt."
+        case "intransitive verb", "vi", "vi.": return "vi."
+        case "adjective", "adj", "adj.": return "adj."
+        case "adverb", "adv", "adv.": return "adv."
+        case "preposition", "prep", "prep.": return "prep."
+        case "conjunction", "conj", "conj.": return "conj."
+        case "pronoun", "pron", "pron.": return "pron."
+        case "interjection", "interj", "interj.": return "interj."
+        case "determiner", "det", "det.": return "det."
+        case "article", "art", "art.": return "art."
         default: return pos
         }
     }

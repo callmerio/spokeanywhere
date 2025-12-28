@@ -307,11 +307,13 @@
     - 生词本 [√]
       - VocabularyService 管理 [√]
       - 橙色高亮显示 [√]
-    - 统一查词接口 [ ] ⭐ 当前重点
-      - UnifiedDictionaryService 聚合层
+    - 统一查词接口 [√] ⭐ 2025-12-29 完成
+      - UnifiedDictionaryService 聚合层 [√]
       - 优先级: 本地词典 (LocalDictionaryService) -> 后端 API (DictionaryAPIService)
-      - 统一输出格式: pos + 释义
-      - 缓存策略: 内存 LRU -> 本地 DCS -> 在线 API
+      - 统一输出格式: pos + 释义 [√]
+      - 缓存策略: 内存 LRU -> 本地 DCS -> 在线 API [√]
+      - pending text 也支持点击查词 (VocabularyHighlightText) [√]
+      - posDisplay 映射补全 (transitive verb -> vt. 等) [√]
     - 词形还原 [ ]
   - LLM 集成 -> Core/LLM/
     - 多 Provider [√]

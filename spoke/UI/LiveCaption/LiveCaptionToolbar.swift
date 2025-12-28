@@ -14,10 +14,14 @@ struct LiveCaptionToolbar: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // 应用模式时显示当前应用名
-            if manager.captureMode == LiveCaptionManager.CaptureMode.appPicker.rawValue,
-               let appName = manager.currentAppName {
-                appNameButton(appName)
+            // 应用模式时显示当前应用名或重试状态
+            if manager.captureMode == LiveCaptionManager.CaptureMode.appPicker.rawValue {
+                if let appName = manager.currentAppName {
+                    appNameButton(appName)
+                } else if manager.isRetrying {
+                    // 重试中但 appName 被清空
+                    retryingIndicator
+                }
             }
             
             // 识别语言选择（独立于全局设置）
@@ -43,18 +47,40 @@ struct LiveCaptionToolbar: View {
             manager.reselectApp()
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: "app.fill")
-                    .font(.system(size: 10))
-                Text(appName)
-                    .font(.system(size: 12))
-                    .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8))
+                if manager.isRetrying {
+                    // 重试中显示旋转图标
+                    ProgressView()
+                        .controlSize(.mini)
+                        .scaleEffect(0.8)
+                    Text("正在重连...")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.orange)
+                } else {
+                    Image(systemName: "app.fill")
+                        .font(.system(size: 10))
+                    Text(appName)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8))
+                }
             }
-            .foregroundStyle(DS.Colors.textPrimary)
+            .foregroundStyle(manager.isRetrying ? .orange : DS.Colors.textPrimary)
         }
         .buttonStyle(.plain)
-        .help("点击重新选择应用")
+        .help(manager.isRetrying ? "正在尝试重新连接..." : "点击重新选择应用")
+    }
+    
+    /// 重试中指示器（无应用名时显示）
+    private var retryingIndicator: some View {
+        HStack(spacing: 4) {
+            ProgressView()
+                .controlSize(.mini)
+                .scaleEffect(0.8)
+            Text("正在重连...")
+                .font(.system(size: 12))
+        }
+        .foregroundStyle(.orange)
     }
     
     // MARK: - Components

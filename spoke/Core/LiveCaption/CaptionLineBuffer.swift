@@ -100,6 +100,12 @@ final class CaptionLineBuffer: ObservableObject {
     
     /// 更新正在输入的流式文本
     func updateVolatile(text: String) {
+        // 🔥 用户交互中时冻结更新，防止原文被新内容覆盖导致闪烁
+        guard !isUserInteracting else {
+            logger.debug("🔒 updateVolatile skipped (user interacting)")
+            return
+        }
+        
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if !cleaned.isEmpty {
             pendingLineActive = true

@@ -77,6 +77,14 @@ final class LiveCaptionManager: ObservableObject {
     /// 当前捕获的应用名称（应用模式时）
     @Published private(set) var currentAppName: String?
     
+    /// 是否正在重试连接（UI 显示用）
+    var isRetrying: Bool {
+        if #available(macOS 14.0, *) {
+            return AppAudioCaptureService.shared.isRetrying
+        }
+        return false
+    }
+    
     /// 行缓冲区（折叠模式使用）
     let lineBuffer = CaptionLineBuffer()
     
@@ -256,10 +264,28 @@ final class LiveCaptionManager: ObservableObject {
             }
         }
         
+        // 重试状态变化回调
+        appCapture.onRetryStateChanged = { [weak self] isRetrying, retryCount in
+            Task { @MainActor in
+                guard let self = self else { return }
+                if isRetrying {
+                    self.logger.info("🔄 [LiveCaption] App capture retrying (\(retryCount)/3)...")
+                } else if retryCount > 0 {
+                    self.logger.info("✅ [LiveCaption] App capture reconnected!")
+                    // 重连成功，恢复应用名
+                    self.currentAppName = appCapture.currentAppName
+                }
+            }
+        }
+        
         appCapture.onError = { [weak self] error in
             Task { @MainActor in
-                self?.logger.error("❌ App capture error: \(error.localizedDescription)")
-                await self?.stop()
+                guard let self = self else { return }
+                // 只有在非重试状态下才停止（重试失败后 isRetrying 为 false）
+                if !appCapture.isRetrying {
+                    self.logger.error("❌ App capture error (final): \(error.localizedDescription)")
+                    await self.stop()
+                }
             }
         }
         
