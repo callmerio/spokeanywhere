@@ -4,7 +4,8 @@
 
 | Track ID | Status | Description |
 |----------|--------|-------------|
-| swiftlint_cleanup_20251228 | [ ] Pending | SwiftLint 全仓清理 - 目标零违规 (273→0) 🆕 |
+| swiftlint_refactor_A2A5_20251228 | [x] Done | SwiftLint 大文件拆分 A2-A5 (DictionarySettings/LiveCaption/SelectableText) |
+| swiftlint_cleanup_20251228 | [ ] Pending | SwiftLint 全仓清理 - 目标零违规 (273→0) |
 | caption_word_lookup_20251225 | [~] In Progress | 字幕单词点击查词 + 统一查词接口 (Phase 1-3 完成, 待验证) ⭐ |
 | livecaption_app_picker_20251223 | [ ] Pending | 实时字幕添加应用选择模式 (SCContentSharingPicker) |
 | tiling_upscaling_20251221 | [~] In Progress | 修复 AI 增强 Tiling Upscaling 算法 (Phase 2 完成, 待验证) |
@@ -15,3 +16,4 @@
 | Track ID | Description |
 |----------|-------------|
 | copy_enhanced_image_20251222 | 复制优化后图片功能 - 右键复制使用 AI 增强后的图片 |
+| swiftlint_refactor_A2A5_20251228 | SwiftLint file_length 重构 - 拆分 DictionarySettings/LiveCaption/DictionarySelectableText |
