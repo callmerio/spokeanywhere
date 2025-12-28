@@ -1,7 +1,7 @@
 import AppKit
-import SwiftUI
-import SwiftData
 import os
+import SwiftData
+import SwiftUI
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {

@@ -1,8 +1,8 @@
 #!/usr/bin/env swift
 
-import Foundation
-import CryptoKit
 import AVFoundation
+import CryptoKit
+import Foundation
 
 // MARK: - Edge TTS 测试脚本
 

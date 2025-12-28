@@ -1,6 +1,6 @@
-import Foundation
-import CoreGraphics
 import AppKit
+import CoreGraphics
+import Foundation
 import os
 
 /// 键盘输入模拟服务
@@ -110,7 +110,6 @@ final class InputService {
                 
                 // 500ms 过去了，文本稳定，可以输入
                 self?.flushPendingText()
-                
             } catch {
                 // Task 被取消，正常情况
             }
@@ -153,13 +152,13 @@ final class InputService {
     }
     
     /// 找到两个字符串的公共前缀长度
-    private func findCommonPrefixLength(_ a: String, _ b: String) -> Int {
-        let aChars = Array(a)
-        let bChars = Array(b)
-        let minLen = min(aChars.count, bChars.count)
+    private func findCommonPrefixLength(_ str1: String, _ str2: String) -> Int {
+        let chars1 = Array(str1)
+        let chars2 = Array(str2)
+        let minLen = min(chars1.count, chars2.count)
         
         for i in 0..<minLen {
-            if aChars[i] != bChars[i] {
+            if chars1[i] != chars2[i] {
                 return i
             }
         }

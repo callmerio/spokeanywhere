@@ -1,7 +1,7 @@
-import Foundation
 import AppKit
-import ScreenCaptureKit
+import Foundation
 import os
+import ScreenCaptureKit
 
 // MARK: - Screen Capture Service
 
@@ -130,7 +130,7 @@ final class ScreenCaptureService {
             let errorPipe = Pipe()
             process.standardError = errorPipe
             
-            process.terminationHandler = { proc in
+            process.terminationHandler = { _ in
                 Task { @MainActor in
                     // 读取 stderr
                     let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()

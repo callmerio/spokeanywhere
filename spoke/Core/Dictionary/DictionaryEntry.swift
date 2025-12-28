@@ -4,8 +4,8 @@ import Foundation
 
 /// 词典条目来源
 enum DictionaryEntrySource: String, Codable, CaseIterable {
-    case manual = "manual"      // 手动添加
-    case auto = "auto"          // 自动推荐（热词挖掘）
+    case manual      // 手动添加
+    case auto        // 自动推荐（热词挖掘）
     
     var displayName: String {
         switch self {

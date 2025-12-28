@@ -1,6 +1,6 @@
+import AppKit
 import Foundation
 import OSLog
-import AppKit
 
 /// 总结服务
 /// 负责生成卡片内容的智能摘要
@@ -63,7 +63,6 @@ final class SummaryService {
             state.saveCards()
             
             logger.info("✅ Summary generated for card: \(cardId)")
-            
         } catch {
             // 更新状态为失败
             state.cards[id: cardId]?.summaryStatus = .failed
@@ -256,4 +255,3 @@ enum SummaryError: LocalizedError {
         }
     }
 }
-

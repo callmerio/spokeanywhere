@@ -157,7 +157,6 @@ final class DictionaryAPIService {
                 logger.warning("📖 [DictionaryAPI] API 返回错误: \(errorMsg)")
                 return .failure(.apiError(errorMsg))
             }
-            
         } catch let error as DecodingError {
             logger.error("📖 [DictionaryAPI] 解码失败: \(error.localizedDescription)")
             return .failure(.decodingError(error.localizedDescription))

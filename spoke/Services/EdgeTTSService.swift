@@ -1,6 +1,6 @@
-import Foundation
 import AVFoundation
 import CryptoKit
+import Foundation
 
 // MARK: - Edge TTS 常量
 
@@ -430,7 +430,6 @@ final class TTSService: NSObject, ObservableObject {
             
             // 播放音频
             await playAudio(data: audioData)
-            
         } catch {
             self.error = error.localizedDescription
             print("❌ EdgeTTS Error: \(error)")

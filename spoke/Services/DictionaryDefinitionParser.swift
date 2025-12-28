@@ -193,9 +193,9 @@ final class DictionaryDefinitionParser {
     }
     
     private func parseSingleSense(number: String?, content: String) -> DefinitionSense {
-        var gloss: String? = nil
-        var chinese: String? = nil
-        var pinyin: String? = nil
+        var gloss: String?
+        var chinese: String?
+        var pinyin: String?
         var examples: [DefinitionExample] = []
         
         // 先分离例句部分（以 ▸ 开头）和释义部分

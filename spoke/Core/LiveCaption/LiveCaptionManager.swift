@@ -1,10 +1,10 @@
-import Foundation
-import Combine
-import OSLog
 import AppKit
-import SwiftUI
-import ScreenCaptureKit
 import AVFoundation
+import Combine
+import Foundation
+import OSLog
+import ScreenCaptureKit
+import SwiftUI
 
 // MARK: - Caption Segment Model
 
@@ -90,13 +90,13 @@ final class LiveCaptionManager: ObservableObject {
         ("en-US", "英语 (English)"),
         ("zh-Hans", "中文 (混合英文)"),
         ("ja-JP", "日语 (Japanese)"),
-        ("ko-KR", "韩语 (Korean)"),
+        ("ko-KR", "韩语 (Korean)")
     ]
     
     /// 音频捕获模式枚举
     enum CaptureMode: String, CaseIterable {
-        case global = "global"           // 全局模式 (捕获所有系统音频)
-        case appPicker = "appPicker"     // 应用选择模式 (macOS 14+)
+        case global           // 全局模式 (捕获所有系统音频)
+        case appPicker        // 应用选择模式 (macOS 14+)
         
         var displayName: String {
             switch self {

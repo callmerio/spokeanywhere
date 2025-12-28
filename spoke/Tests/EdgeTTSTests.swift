@@ -1,5 +1,5 @@
-import Foundation
 import AVFoundation
+import Foundation
 
 // MARK: - Edge TTS 单元测试
 
@@ -44,7 +44,6 @@ struct EdgeTTSTests {
                 try await Task.sleep(nanoseconds: 100_000_000)
             }
             print("   ✅ 播放完成!")
-            
         } catch {
             print("   ❌ 错误: \(error)")
         }

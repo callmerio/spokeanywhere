@@ -1,7 +1,7 @@
 import AVFoundation
 import CoreAudio
-import Speech
 import os
+import Speech
 
 /// 音频录制服务
 /// 负责麦克风录音、流式写入磁盘、实时转写
@@ -77,7 +77,7 @@ final class AudioRecorderService: NSObject {
     private func warmupAudioEngine() {
         // 访问 inputNode 会触发 CoreAudio 设备枚举和初始化
         // 这个过程可能产生 -10877，但在启动时触发比录音时更好
-        let _ = audioEngine.inputNode.outputFormat(forBus: 0)
+        _ = audioEngine.inputNode.outputFormat(forBus: 0)
         logger.info("🔥 Audio engine warmed up")
         
         // 注册配置变更通知 (设备热插拔、采样率变化等)

@@ -1,6 +1,6 @@
-import SwiftUI
-import ServiceManagement
 import Carbon.HIToolbox
+import ServiceManagement
+import SwiftUI
 
 // MARK: - Key Combo Formatter
 
@@ -294,9 +294,9 @@ class AppSettings: ObservableObject {
     @AppStorage("LiveCaptionTranslationEnabled") var liveCaptionTranslationEnabled: Bool = true
     
     enum RecordingMode: String, CaseIterable, Identifiable {
-        case hold = "hold"
-        case toggle = "toggle"
-        case mixed = "mixed"
+        case hold
+        case toggle
+        case mixed
         
         var id: String { rawValue }
         

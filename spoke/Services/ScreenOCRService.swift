@@ -1,9 +1,9 @@
 import AppKit
-import Vision
-import ScreenCaptureKit
 import ImageIO
-import UniformTypeIdentifiers
 import os
+import ScreenCaptureKit
+import UniformTypeIdentifiers
+import Vision
 
 // MARK: - String Extension
 
@@ -104,7 +104,7 @@ final class ScreenOCRService {
         logger.info("🔍 [OCR] 🚀 开始预取...")
         
         prefetchTask = Task {
-            let _ = await getActiveWindowText(maxLength: 1500)
+            _ = await getActiveWindowText(maxLength: 1500)
             return cachedText
         }
     }
@@ -194,8 +194,8 @@ final class ScreenOCRService {
             }
             
             // 选择最大的窗口（通常是主窗口）
-            let targetWindow = appWindows.max(by: { a, b in
-                (a.frame.width * a.frame.height) < (b.frame.width * b.frame.height)
+            let targetWindow = appWindows.max(by: { win1, win2 in
+                (win1.frame.width * win1.frame.height) < (win2.frame.width * win2.frame.height)
             })!
             
             logger.info("🔍 [OCR] 窗口选择 | 应用: \(frontApp.localizedName ?? "Unknown", privacy: .public) | 窗口数: \(appWindows.count, privacy: .public) | 选中: \(targetWindow.title ?? "无标题", privacy: .public) | 尺寸: \(Int(targetWindow.frame.width), privacy: .public)x\(Int(targetWindow.frame.height), privacy: .public)")
@@ -219,7 +219,6 @@ final class ScreenOCRService {
             saveDebugImage(image, appName: frontApp.localizedName ?? "Unknown")
             
             return image
-            
         } catch {
             logger.error("🔍 [OCR] ❌ ScreenCaptureKit 错误: \(error.localizedDescription, privacy: .public)")
             return nil

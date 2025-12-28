@@ -15,7 +15,7 @@ private enum TagDesign {
 /// 用于：Quick Ask 输入框、Answer Panel 用户消息、Answer Panel 输入框
 struct WorkflowTagView: View {
     let keyword: String
-    var onRemove: (() -> Void)? = nil
+    var onRemove: (() -> Void)?
     
     var body: some View {
         HStack(spacing: 4) {

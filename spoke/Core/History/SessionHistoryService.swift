@@ -1,13 +1,13 @@
 import Foundation
-import SwiftUI
 import os
+import SwiftUI
 
 // MARK: - Session Record Type
 
 /// 会话记录类型
 enum SessionRecordType: String, Codable, CaseIterable {
-    case conversation = "conversation"    // 对话（显示在前）
-    case transcription = "transcription"  // 转录（显示在后）
+    case conversation    // 对话（显示在前）
+    case transcription   // 转录（显示在后）
     
     var displayName: String {
         switch self {

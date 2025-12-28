@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import Observation
 
 /// 录音会话状态枚举

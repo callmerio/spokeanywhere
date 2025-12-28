@@ -1,6 +1,6 @@
-import Foundation
-import CoreServices
 import AppKit
+import CoreServices
+import Foundation
 import OSLog
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "LocalDictionaryService")

@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import os
+import SwiftUI
 
 /// 消息面板管理器
 /// 负责面板窗口的生命周期和交互

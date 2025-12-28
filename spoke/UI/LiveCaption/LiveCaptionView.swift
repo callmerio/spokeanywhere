@@ -1,7 +1,7 @@
-import SwiftUI
-import Translation
 import AppKit
 import os
+import SwiftUI
+import Translation
 
 private typealias DS = DesignTokens
 
@@ -48,14 +48,14 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             hostingView.topAnchor.constraint(equalTo: documentView.topAnchor),
             hostingView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
             hostingView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
-            hostingView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor)
         ])
         
         scrollView.documentView = documentView
         
         // 关键：让 documentView 宽度跟随 clipView（内容区），这样文字才会换行
         NSLayoutConstraint.activate([
-            documentView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
+            documentView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor)
         ])
         
         // 监听滚动

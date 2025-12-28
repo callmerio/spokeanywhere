@@ -2,8 +2,8 @@ import Foundation
 
 /// TTS 服务提供商
 enum TTSProvider: String, CaseIterable, Codable {
-    case system = "system"      // macOS 原生
-    case edge = "edge"          // Microsoft Edge TTS
+    case system      // macOS 原生
+    case edge        // Microsoft Edge TTS
     
     var displayName: String {
         switch self {

@@ -1,7 +1,7 @@
-import Foundation
-import SwiftData
 import AVFoundation
+import Foundation
 import os
+import SwiftData
 
 /// 历史记录管理器
 /// 负责录音记录的持久化、检索、重处理
@@ -211,7 +211,6 @@ final class HistoryManager {
             if !itemsToDelete.isEmpty {
                 logger.info("🧹 Cleanup completed: \(itemsToDelete.count, privacy: .public) items deleted")
             }
-            
         } catch {
             logger.error("❌ Cleanup failed: \(error.localizedDescription, privacy: .public)")
         }

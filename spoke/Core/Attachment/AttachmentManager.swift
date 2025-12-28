@@ -1,8 +1,8 @@
-import Foundation
 import AppKit
+import Foundation
+import os
 import SwiftUI
 import UniformTypeIdentifiers
-import os
 
 // MARK: - Attachment Manager
 

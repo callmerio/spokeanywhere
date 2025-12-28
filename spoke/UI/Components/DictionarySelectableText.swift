@@ -297,7 +297,7 @@ final class SelectionColorLayoutManager: NSLayoutManager {
             guard intersection.length > 0 else { continue }
             
             // 枚举每一行片段并绘制
-            self.enumerateLineFragments(forGlyphRange: intersection) { _, usedRect, _, lineGlyphRange, _ in
+            self.enumerateLineFragments(forGlyphRange: intersection) { _, _, _, lineGlyphRange, _ in
                 // 计算这一行中选中部分的边界
                 let lineIntersection = NSIntersectionRange(lineGlyphRange, intersection)
                 guard lineIntersection.length > 0 else { return }
@@ -422,13 +422,6 @@ final class DictionaryTextView: NSTextView {
     override func didChangeText() {
         super.didChangeText()
         invalidateIntrinsicContentSize()
-    }
-    
-    override func layout() {
-        super.layout()
-        // 注意：不能在 layout() 中调用 invalidateIntrinsicContentSize()
-        // 这会导致布局递归，触发 AppKit WarnOnce 警告
-        // intrinsicContentSize 的更新应该在 didChangeText() 中完成
     }
 }
 

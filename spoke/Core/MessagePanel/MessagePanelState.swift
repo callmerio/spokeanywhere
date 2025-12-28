@@ -1,8 +1,8 @@
-import SwiftUI
-import Combine
-import OSLog
 import AppKit
+import Combine
 import IdentifiedCollections
+import OSLog
+import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "MessagePanelState")
 

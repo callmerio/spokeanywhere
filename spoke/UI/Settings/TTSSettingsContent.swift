@@ -326,7 +326,7 @@ struct TTSSettingsContent: View {
         }
     }
     
-    private func testTTS() {
+    func testTTS() {
         if isTesting {
             TTSService.shared.stop()
             isTesting = false

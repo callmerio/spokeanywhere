@@ -1,6 +1,6 @@
-import Foundation
 import AppKit
 import AVFoundation
+import Foundation
 import UniformTypeIdentifiers
 
 // MARK: - Attachment Type

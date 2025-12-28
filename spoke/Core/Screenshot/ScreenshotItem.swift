@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import Observation
 
 // MARK: - Screenshot Appearance

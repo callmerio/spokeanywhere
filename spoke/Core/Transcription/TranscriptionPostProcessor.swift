@@ -188,11 +188,11 @@ extension DictionaryService: WhisperDictionaryProvider {
 /// 控制词典对 ASR 识别的影响程度
 enum DictionaryWeightLevel: String, CaseIterable, Identifiable {
     /// 轻量：基础提示，不影响正常识别
-    case light = "light"
+    case light
     /// 标准：适度提升词典词的识别概率
-    case standard = "standard"
+    case standard
     /// 增强：显著提升，适合专业术语场景
-    case enhanced = "enhanced"
+    case enhanced
     
     var id: String { rawValue }
     

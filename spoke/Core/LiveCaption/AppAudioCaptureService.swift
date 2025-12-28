@@ -1,7 +1,7 @@
-import Foundation
-import ScreenCaptureKit
 import AVFoundation
+import Foundation
 import OSLog
+import ScreenCaptureKit
 
 // MARK: - App Audio Capture Service
 

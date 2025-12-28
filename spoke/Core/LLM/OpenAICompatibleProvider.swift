@@ -138,7 +138,6 @@ actor OpenAICompatibleProvider: LLMProvider {
             }
             
             return try parseResponse(data: data)
-            
         } catch let error as LLMError {
             throw error
         } catch let error as URLError where error.code == .timedOut {
@@ -263,7 +262,6 @@ actor OpenAICompatibleProvider: LLMProvider {
             }
             
             return parseModelsResponse(data: data)
-            
         } catch {
             logger.warning("⚠️ Failed to fetch models: \(error.localizedDescription, privacy: .public)")
             return []

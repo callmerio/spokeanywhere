@@ -1,6 +1,6 @@
 import Foundation
-import UniformTypeIdentifiers
 import os
+import UniformTypeIdentifiers
 
 // MARK: - Text Bundle Result
 
@@ -221,7 +221,6 @@ actor TextExtractionService {
             case .failure(let error):
                 return .failure(error)
             }
-            
         } catch {
             try? FileManager.default.removeItem(at: tempDir)
             logger.error("❌ ZIP extraction failed: \(error)")
@@ -413,7 +412,6 @@ actor TextExtractionService {
                 parts.append("```\(ext)")
                 parts.append(numberedContent)
                 parts.append("```\n")
-                
             } catch {
                 logger.warning("⚠️ Failed to read file: \(relativePath)")
                 parts.append("## \(relativePath)\n")

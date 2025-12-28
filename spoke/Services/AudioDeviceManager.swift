@@ -1,6 +1,6 @@
-import Foundation
 import AVFoundation
 import CoreAudio
+import Foundation
 
 @MainActor
 class AudioDeviceManager: ObservableObject {

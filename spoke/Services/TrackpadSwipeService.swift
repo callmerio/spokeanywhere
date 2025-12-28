@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import os
 
 // MARK: - Trackpad Swipe Service (App Store Compatible)

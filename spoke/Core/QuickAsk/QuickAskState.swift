@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import Observation
 
 /// Quick Ask 会话阶段

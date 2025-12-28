@@ -1,6 +1,6 @@
+import AppKit
 import Foundation
 import Observation
-import AppKit
 import OSLog
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "WorkflowState")

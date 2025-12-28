@@ -1,7 +1,7 @@
-import Foundation
-import Speech
 import AVFoundation
+import Foundation
 import OSLog
+import Speech
 
 // MARK: - Live Caption Transcriber
 

@@ -1,6 +1,6 @@
-import Foundation
-import CoreML
 import Combine
+import CoreML
+import Foundation
 import os
 
 // MARK: - Model Download State

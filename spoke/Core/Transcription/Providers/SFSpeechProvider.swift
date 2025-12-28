@@ -1,6 +1,6 @@
 import AVFoundation
-import Speech
 import os
+import Speech
 
 /// SFSpeechRecognizer 实现
 /// 适用于 macOS 15+ / iOS 10+

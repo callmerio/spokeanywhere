@@ -1,6 +1,6 @@
-import Foundation
 import AppKit
 import Combine
+import Foundation
 import os
 
 /// 录音控制器

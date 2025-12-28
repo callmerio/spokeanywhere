@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 
 private typealias DS = DesignTokens
@@ -50,7 +50,7 @@ struct QuickAskCapsuleView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                     .onAppear {
                         // 设置键盘确认回调
-                        workflowState.onKeyboardConfirm = { workflow in
+                        workflowState.onKeyboardConfirm = { _ in
                             // 选中 Workflow 后，清空输入框（移除 /keyword），让用户开始输入内容
                             state.userInput = ""
                             // 注意：不立即执行 executeWorkflow，等待用户输入后按 Enter 发送
@@ -160,7 +160,6 @@ struct QuickAskCapsuleView: View {
             .hidden()
         }
     }
-    
     
     // MARK: - Background Elements
     

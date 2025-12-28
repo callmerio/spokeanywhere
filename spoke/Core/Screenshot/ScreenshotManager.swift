@@ -1,7 +1,7 @@
-import Foundation
 import AppKit
-import ScreenCaptureKit
+import Foundation
 import os
+import ScreenCaptureKit
 
 // MARK: - Screenshot Manager
 

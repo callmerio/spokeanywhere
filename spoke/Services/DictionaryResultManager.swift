@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import OSLog
+import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "DictionaryResultManager")
 

@@ -206,7 +206,6 @@ final class UnifiedDictionaryService {
         )
     }
 
-    
     private func convertRemoteResult(_ remote: DictionaryData) -> UnifiedDictionaryResult {
         let effectiveSenses = remote.effectiveSenses
         

@@ -47,7 +47,7 @@ final class TranslationService: ObservableObject {
     }
     
     /// 源语言（nil 表示自动检测）
-    @Published var sourceLanguage: String? = nil {
+    @Published var sourceLanguage: String? {
         didSet {
             invalidateSession()
         }
@@ -245,6 +245,6 @@ extension TranslationService {
         ("es", "Español"),
         ("pt-BR", "Português"),
         ("ru", "Русский"),
-        ("ar", "العربية"),
+        ("ar", "العربية")
     ]
 }

@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 private typealias DS = DesignTokens
 
@@ -350,7 +350,7 @@ struct FloatingCapsuleView: View {
 struct CustomBlurBackground: NSViewRepresentable {
     var radius: CGFloat = 20
     var cornerRadius: CGFloat = 0
-    var tintColor: NSColor? = nil
+    var tintColor: NSColor?
     
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
@@ -399,28 +399,28 @@ struct VisualEffectBackground: NSViewRepresentable {
     var cornerRadius: CGFloat = 0
     
     func makeNSView(context: Context) -> NSVisualEffectView {
-        let v = NSVisualEffectView()
-        v.material = material
-        v.blendingMode = blendingMode
-        v.state = .active
+        let effectView = NSVisualEffectView()
+        effectView.material = material
+        effectView.blendingMode = blendingMode
+        effectView.state = .active
         
         // 强调模式：让模糊更明显
-        v.isEmphasized = true
+        effectView.isEmphasized = true
         
-        v.wantsLayer = true
-        v.layer?.cornerRadius = cornerRadius
-        v.layer?.masksToBounds = true
-        return v
+        effectView.wantsLayer = true
+        effectView.layer?.cornerRadius = cornerRadius
+        effectView.layer?.masksToBounds = true
+        return effectView
     }
     
-    func updateNSView(_ v: NSVisualEffectView, context: Context) {
-        v.material = material
-        v.blendingMode = blendingMode
-        v.state = .active
+    func updateNSView(_ effectView: NSVisualEffectView, context: Context) {
+        effectView.material = material
+        effectView.blendingMode = blendingMode
+        effectView.state = .active
         
         if cornerRadius > 0 {
-            v.layer?.cornerRadius = cornerRadius
-            v.layer?.masksToBounds = true
+            effectView.layer?.cornerRadius = cornerRadius
+            effectView.layer?.masksToBounds = true
         }
     }
 }
@@ -477,7 +477,7 @@ struct StatusIndicator: View {
         DS.Colors.accentGlow,
         DS.Colors.accentDangerText,
         DS.Colors.warning,
-        DS.Colors.accentGradientStart,
+        DS.Colors.accentGradientStart
     ]
     
     var body: some View {

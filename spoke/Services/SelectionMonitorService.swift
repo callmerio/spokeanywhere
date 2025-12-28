@@ -102,7 +102,7 @@ final class SelectionMonitorService {
     /// 忽略的应用 Bundle ID (不在这些应用中显示工具栏)
     private let ignoredBundleIds: Set<String> = [
         "com.apple.loginwindow",
-        "com.apple.screencaptureui",
+        "com.apple.screencaptureui"
     ]
     
     /// 自身应用的 Bundle ID
@@ -205,7 +205,7 @@ final class SelectionMonitorService {
     /// 请求辅助功能权限
     func requestAccessibilityPermission() {
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        let _ = AXIsProcessTrustedWithOptions(options)
+        _ = AXIsProcessTrustedWithOptions(options)
         
         logger.info("📋 [SelectionMonitor] 已请求辅助功能权限")
     }
@@ -239,7 +239,7 @@ final class SelectionMonitorService {
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
+        ) { [weak self] _ in
             Task { @MainActor in
                 self?.updateAXObserverForFrontmostApp()
             }
@@ -386,7 +386,7 @@ final class SelectionMonitorService {
             }
         }
         
-        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
+        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 self.isMouseDown = false

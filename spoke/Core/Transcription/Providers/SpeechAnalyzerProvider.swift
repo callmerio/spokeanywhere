@@ -1,7 +1,7 @@
 import AVFoundation
-import Speech
-import os
 import CoreMedia
+import os
+import Speech
 
 /// SpeechAnalyzer 实现（支持 DictationTranscriber 和 SpeechTranscriber）
 /// 适用于 macOS 26+ / iOS 26+
@@ -52,7 +52,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
             Locale(identifier: "ko-KR"),
             Locale(identifier: "de-DE"),
             Locale(identifier: "fr-FR"),
-            Locale(identifier: "es-ES"),
+            Locale(identifier: "es-ES")
         ]
     }
     

@@ -1,7 +1,7 @@
 import AppKit
-import SwiftUI
 import Combine
 import OSLog
+import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "SelectionToolbarManager")
 
@@ -413,7 +413,7 @@ final class SelectionToolbarManager {
     private func setupClickOutsideMonitor() {
         removeClickOutsideMonitor()
         
-        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             guard let self = self,
                   let window = self.toolbarWindow,
                   window.isVisible else {

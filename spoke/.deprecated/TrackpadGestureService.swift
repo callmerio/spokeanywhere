@@ -1,6 +1,6 @@
+import AppKit
 import Foundation
 import os
-import AppKit
 
 // MARK: - MultitouchSupport Framework Bridge (Dynamic Loading)
 
@@ -356,7 +356,7 @@ final class TrackpadGestureService {
 // MARK: - C Callback
 
 /// 触控板回调函数（C 函数指针）
-private let trackpadCallback: MTContactCallback = { device, pointsRaw, numPoints, timestamp, frame in
+private let trackpadCallback: MTContactCallback = { _, pointsRaw, numPoints, timestamp, _ in
     TrackpadGestureService.sharedInstance?.handleContactFrame(
         pointsRaw: pointsRaw,
         numPoints: numPoints,

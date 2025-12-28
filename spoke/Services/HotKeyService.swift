@@ -829,7 +829,6 @@ final class HotKeyService {
         }
     }
     
-    
     /// 强制重置状态（用于异常恢复或取消录音）
     func resetState() {
         isRecording = false

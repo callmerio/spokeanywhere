@@ -1,8 +1,8 @@
-import Foundation
-import ScreenCaptureKit
-import CoreImage
 import AppKit
 import Combine
+import CoreImage
+import Foundation
+import ScreenCaptureKit
 
 @available(macOS 12.3, *)
 class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
@@ -46,7 +46,6 @@ class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
                 try await stream?.startCapture()
                 
                 print("🎥 ScreenCapture started")
-                
             } catch {
                 print("❌ Failed to start screen capture: \(error)")
             }

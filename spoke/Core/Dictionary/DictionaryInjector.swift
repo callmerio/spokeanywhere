@@ -1,6 +1,6 @@
 import Foundation
-import Speech
 import os
+import Speech
 
 // MARK: - Dictionary Injector Protocol
 
@@ -382,4 +382,3 @@ enum DictionaryInjectionError: LocalizedError {
         }
     }
 }
-

@@ -298,9 +298,9 @@ struct ProviderProfile: Codable, Identifiable, Equatable {
 
 /// 推理深度
 enum ReasoningEffort: String, Codable, CaseIterable {
-    case low = "low"
-    case medium = "medium"
-    case high = "high"
+    case low
+    case medium
+    case high
     
     var displayName: String {
         switch self {

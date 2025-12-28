@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import OSLog
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "SelectionActionService")
@@ -100,7 +100,6 @@ final class SelectionActionService {
                 object: nil,
                 userInfo: ["actionId": action.id, "success": true]
             )
-            
         } catch {
             state.updateActionPhase(.failed(message: error.localizedDescription))
             state.executingActionId = nil
@@ -262,7 +261,7 @@ final class SelectionActionService {
         }
         
         // 3. 获取 OCR 上下文 (如果启用)
-        var ocrContext: String? = nil
+        var ocrContext: String?
         if state.config.enableOCRContext {
             ocrContext = await screenOCR.getActiveWindowText(maxLength: state.config.ocrContextMaxLength)
         }
