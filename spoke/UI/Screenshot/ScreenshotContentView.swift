@@ -1,7 +1,7 @@
 import AppKit
+import os
 import Vision
 import VisionKit
-import os
 
 // MARK: - Screenshot Content View (Pure AppKit)
 
@@ -11,7 +11,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     // MARK: - Constants
     
-    private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenshotContentView")
+    let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenshotContentView")
     
     static let glowPadding: CGFloat = 40
     
@@ -20,15 +20,14 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     // MARK: - Properties
     
-    // MARK: - Properties
-    
     let item: ScreenshotItem
-    private let imageView: NSImageView
-    private var actionBar: ActionBarView?
+    let imageView: NSImageView
+    private(set) var actionBar: ActionBarView?
     private let glowLayer = CAShapeLayer()
     private var trackingArea: NSTrackingArea?
-    private var isHovered = false
+    private(set) var isHovered = false
     private var hideActionBarWorkItem: DispatchWorkItem?
+    private var mouseDownLocation: CGPoint = .zero
     
     // 菜单事件代理
     private var menuActionProxy: MenuActionProxy?
@@ -38,7 +37,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     // MARK: - Image Enhancement
     
     /// 原始图片 (1x)
-    private var originalImage: NSImage?
+    private(set) var originalImage: NSImage?
     
     /// 图片增强防抖任务 (延迟启动)
     private var enhanceDebounceTask: DispatchWorkItem?
@@ -67,7 +66,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     private lazy var imageAnalyzer = ImageAnalyzer()
     
     /// Live Text 是否已分析完成
-    private var isLiveTextReady = false    
+    private var isLiveTextReady = false
     // MARK: - Init
     
     init(item: ScreenshotItem) {
@@ -85,6 +84,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+}
+
+extension ScreenshotContentView {
     
     // MARK: - Setup
     
@@ -92,7 +94,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         wantsLayer = true
         layer?.masksToBounds = false
         
-        glowLayer.fillColor = NSColor.clear.cgColor
+        glowLayer.fillColor = DesignTokens.Colors.NS.clear.cgColor
         glowLayer.strokeColor = nil
         glowLayer.lineWidth = 0
         glowLayer.zPosition = -1
@@ -299,8 +301,6 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     // MARK: - Validation
     
-
-    
     /// 预分析图片中的文字 (macOS 13+)
     /// 只分析不启用交互，等待用户点击 OCR 按钮
     @available(macOS 13.0, *)
@@ -327,7 +327,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         self.actionBar = bar
     }
     
-    private func setupContextMenu() {
+    func setupContextMenu() {
         let menu = NSMenu()
         
         // Copy Image (Cmd+C)
@@ -382,6 +382,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         
         self.menu = menu
     }
+}
+
+extension ScreenshotContentView {
     
     // MARK: - Layout
     
@@ -441,6 +444,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         )
         addTrackingArea(trackingArea!)
     }
+}
+
+extension ScreenshotContentView {
     
     // MARK: - Mouse Events
     
@@ -487,9 +493,6 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         hideActionBarWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
     }
-    
-    /// 鼠标按下位置（用于判断是否拖动选择）
-    private var mouseDownLocation: CGPoint = .zero
     
     /// 允许非活跃窗口响应首次点击（单击直接拖拽，无需先激活窗口）
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
@@ -586,6 +589,9 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
             }
         }
     }
+}
+
+extension ScreenshotContentView {
     
     // MARK: - Drawing
     
@@ -606,27 +612,26 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         
         if isMarked {
             // 橙色光晕 (Mark 状态 - 持久) - 柔和版本
-            glowLayer.strokeColor = NSColor(red: 0.95, green: 0.6, blue: 0.2, alpha: 0.4).cgColor
+            glowLayer.strokeColor = DesignTokens.Colors.NS.glowMarkStroke.cgColor
             glowLayer.lineWidth = 1.5
-            glowLayer.shadowColor = NSColor(red: 0.95, green: 0.55, blue: 0.2, alpha: 1.0).cgColor
+            glowLayer.shadowColor = DesignTokens.Colors.NS.glowMarkShadow.cgColor
             glowLayer.shadowRadius = 12
             glowLayer.shadowOffset = .zero
             glowLayer.shadowOpacity = 0.5
         } else if isHovered {
             // 蓝色光晕 (Hover/Select 状态 - 临时) - 柔和版本
-            glowLayer.strokeColor = NSColor(red: 0.3, green: 0.5, blue: 0.9, alpha: 0.4).cgColor
+            glowLayer.strokeColor = DesignTokens.Colors.NS.glowHoverStroke.cgColor
             glowLayer.lineWidth = 1.5
-            glowLayer.shadowColor = NSColor(red: 0.3, green: 0.5, blue: 0.9, alpha: 1.0).cgColor
+            glowLayer.shadowColor = DesignTokens.Colors.NS.glowHoverShadow.cgColor
             glowLayer.shadowRadius = 10
             glowLayer.shadowOffset = .zero
             glowLayer.shadowOpacity = 0.45
         } else if !isPinned {
             // 奶白色光晕 (非 Pin 状态) - 帮助用户定位新截图
             // #E7D8AF -> RGB(231, 216, 175)
-            let creamColor = NSColor(red: 231/255.0, green: 216/255.0, blue: 175/255.0, alpha: 1.0)
-            glowLayer.strokeColor = creamColor.withAlphaComponent(0.5).cgColor
+            glowLayer.strokeColor = DesignTokens.Colors.NS.glowIdle.withAlphaComponent(0.5).cgColor
             glowLayer.lineWidth = 1.5
-            glowLayer.shadowColor = creamColor.cgColor
+            glowLayer.shadowColor = DesignTokens.Colors.NS.glowIdle.cgColor
             glowLayer.shadowRadius = 10
             glowLayer.shadowOffset = .zero
             glowLayer.shadowOpacity = 0.6
@@ -643,575 +648,5 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     
     func refreshMenuItems() {
         setupContextMenu()
-    }
-    
-    
-    // MARK: - Actions
-    
-    @objc func performPinAction() {
-        if item.isPinned {
-            ScreenshotManager.shared.unpin(item)
-        } else {
-            ScreenshotManager.shared.pin(item)
-        }
-        
-        if let window = window as? ScreenshotWindow {
-            window.updateCollectionBehavior()
-        }
-        refreshMenuItems()
-        // 刷新 ActionBar 的 Pin 图标状态
-        actionBar?.refreshButtons()
-    }
-    
-    @objc func performLockAction() {
-        if item.isLocked {
-            ScreenshotManager.shared.unlock(item)
-        } else {
-            ScreenshotManager.shared.lock(item)
-        }
-        
-        if let window = window as? ScreenshotWindow {
-            window.updateMovable()
-        }
-        refreshMenuItems()
-    }
-    
-    @objc func performCopyImage() {
-        ScreenshotManager.shared.copyToClipboard(item, enhancedImage: imageView.image)
-    }
-    
-    /// 获取当前显示的图片（可能是 AI 增强后的）
-    func getCurrentDisplayImage() -> NSImage? {
-        return imageView.image
-    }
-    
-    /// 复制增强后的图片（如果未增强则先触发增强）
-    @objc func performCopyEnhancedImage() {
-        guard let original = originalImage else { return }
-        
-        // 如果当前已有增强图片（与原图不同），直接复制
-        if let currentImage = imageView.image, currentImage !== original {
-            copyImageToClipboard(currentImage)
-            return
-        }
-        
-        // 否则触发增强后复制
-        let targetSize = CGSize(
-            width: original.size.width * 2,  // 2x 放大
-            height: original.size.height * 2
-        )
-        
-        logger.info("🎨 Enhancing image before copy...")
-        
-        Task {
-            let enhanced = await Task.detached(priority: .userInitiated) {
-                ImageEnhancementService.shared.enhance(original, to: targetSize)
-            }.value
-            
-            await MainActor.run {
-                if let enhanced = enhanced {
-                    self.copyImageToClipboard(enhanced)
-                    self.logger.info("✅ Enhanced image copied to clipboard")
-                } else {
-                    // 增强失败，复制原图
-                    self.copyImageToClipboard(original)
-                    self.logger.warning("⚠️ Enhancement failed, copied original image")
-                }
-            }
-        }
-    }
-    
-    private func copyImageToClipboard(_ image: NSImage) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
-    }
-    
-    @objc func performOCR() {
-        // Legacy OCR method for macOS 12
-        if #available(macOS 13.0, *) { return }
-        guard let image = item.loadImage(),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
-        Task.detached {
-            let text = await Self.extractText(from: cgImage)
-            await MainActor.run {
-                if !text.isEmpty {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(text, forType: .string)
-                }
-            }
-        }
-    }
-    
-    @objc func performCopyText() {
-        if let text = getRecognizedText(), !text.isEmpty {
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(text, forType: .string)
-        }
-    }
-    
-    static func extractText(from image: CGImage) async -> String {
-        await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                    continuation.resume(returning: "")
-                    return
-                }
-                let text = observations.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
-                continuation.resume(returning: text)
-            }
-            request.recognitionLevel = .accurate
-            request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US"]
-            
-            let handler = VNImageRequestHandler(cgImage: image, options: [:])
-            try? handler.perform([request])
-        }
-    }
-    
-    @objc func performQuickAsk() {
-        guard let image = item.loadImage() else { return }
-        QuickAskService.shared.startSession()
-        QuickAskService.shared.state.addScreenshot(image)
-    }
-    
-    // 公开给 Window 调用，支持快捷键 A 触发
-    func triggerQuickAsk() {
-        performQuickAsk()
-    }
-    
-    @objc func performCloseAction() {
-        ScreenshotManager.shared.close(item)
-    }
-    
-    @objc func performMarkAction() {
-        if item.isMarked {
-            ScreenshotManager.shared.unmark(item)
-        } else {
-            ScreenshotManager.shared.mark(item)
-        }
-        setupContextMenu()
-        // 刷新光晕效果
-        updateGlow(isHovered: isHovered, isMarked: item.isMarked, isPinned: item.isPinned)
-        // 刷新 ActionBar Pin 按钮状态（Mark 会自动 Pin）
-        actionBar?.refreshButtons()
-    }
-    
-}
-
-// MARK: - Menu Action Proxy
-
-/// 专用 Target 类，绕过 View Responder Chain 问题
-/// 将菜单事件转发给 View 处理
-@objc class MenuActionProxy: NSObject {
-    weak var view: ScreenshotContentView?
-    
-    init(view: ScreenshotContentView) {
-        self.view = view
-    }
-    
-    @objc func performPinAction() { 
-        view?.performPinAction() 
-    }
-    @objc func performMarkAction() { view?.performMarkAction() }
-    @objc func performCopyImage() { view?.performCopyImage() }
-    @objc func performCopyEnhancedImage() { view?.performCopyEnhancedImage() }
-    @objc func performCopyText() { view?.performCopyText() }
-    @objc func performQuickAsk() { view?.performQuickAsk() }
-    @objc func performCloseAction() { view?.performCloseAction() }
-
-}
-
-// MARK: - Action Bar View (Pure AppKit)
-
-/// 纯 AppKit 实现的操作条（无背景小按钮样式，类似系统 Live Text 按钮）
-final class ActionBarView: NSView {
-    
-    // MARK: - Properties
-    
-    private let item: ScreenshotItem
-    private var actionButtons: [ActionBarButton] = []
-    
-    private let buttonSize: CGFloat = 24
-    private let buttonSpacing: CGFloat = 2
-    
-    // MARK: - Init
-    
-    init(item: ScreenshotItem) {
-        self.item = item
-        super.init(frame: .zero)
-        
-        wantsLayer = true
-        setupButtons()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupButtons() {
-        // 右上角只放两个按钮：AI + Pin（OCR 单独在右下角）
-        
-        // Quick Ask 按钮 (AI)
-        let quickAskButton = ActionBarButton(
-            icon: "sparkles",
-            activeColor: .systemBlue
-        ) { [weak self] in self?.openQuickAsk() }
-        quickAskButton.toolTip = "Quick Ask"
-        
-        // Pin 按钮 (Cmd+P)
-        let pinButton = ActionBarButton(
-            icon: item.isPinned ? "pin.fill" : "pin",
-            activeColor: .orange,
-            isActive: item.isPinned
-        ) { [weak self] in self?.togglePin() }
-        pinButton.toolTip = item.isPinned ? "Unpin (⌘P)" : "Pin to Space (⌘P)"
-        
-        actionButtons = [quickAskButton, pinButton]  // AI, Pin
-        
-        for (index, button) in actionButtons.enumerated() {
-            button.frame = CGRect(
-                x: CGFloat(index) * (buttonSize + buttonSpacing),
-                y: 0,
-                width: buttonSize,
-                height: buttonSize
-            )
-            addSubview(button)
-        }
-    }
-    
-    // MARK: - Layout
-    
-    override var intrinsicContentSize: NSSize {
-        let width = CGFloat(actionButtons.count) * buttonSize + CGFloat(actionButtons.count - 1) * buttonSpacing
-        return NSSize(width: width, height: buttonSize)
-    }
-    
-    // MARK: - Actions
-    
-    private func togglePin() {
-        if item.isPinned {
-            ScreenshotManager.shared.unpin(item)
-        } else {
-            ScreenshotManager.shared.pin(item)
-        }
-        
-        if let window = window as? ScreenshotWindow {
-            window.updateCollectionBehavior()
-        }
-        refreshButtons()
-    }
-    
-    private func toggleLock() {
-        if item.isLocked {
-            ScreenshotManager.shared.unlock(item)
-        } else {
-            ScreenshotManager.shared.lock(item)
-        }
-        
-        if let window = window as? ScreenshotWindow {
-            window.updateMovable()
-        }
-        refreshButtons()
-    }
-    
-    private func copyImage(button: ActionBarButton) {
-        // 通过 window 获取 ScreenshotContentView 的增强图片
-        let enhancedImage = (window as? ScreenshotWindow)?.screenshotContentView?.getCurrentDisplayImage()
-        ScreenshotManager.shared.copyToClipboard(item, enhancedImage: enhancedImage)
-        button.showFeedback()
-    }
-    
-    private func performOCR(button: ActionBarButton) {
-        guard let image = item.loadImage(),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            return
-        }
-        
-        button.startSpinner()
-        
-        Task.detached {
-            let text = await ScreenshotContentView.extractText(from: cgImage)
-            await MainActor.run {
-                button.stopSpinner()
-                if !text.isEmpty {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(text, forType: .string)
-                    button.showFeedback()
-                }
-            }
-        }
-    }
-    
-    private func openQuickAsk() {
-        guard let image = item.loadImage() else { return }
-        
-        // 点击后短暂变色（AI 按钮是索引 0）
-        actionButtons[0].flashActive()
-        
-        QuickAskService.shared.startSession()
-        QuickAskService.shared.state.addScreenshot(image)
-    }
-    
-    private func closeWindow() {
-        ScreenshotManager.shared.close(item)
-    }
-    
-    func refreshButtons() {
-        // 布局: AI(0), Pin(1)
-        // 更新 Pin 按钮（索引 1）
-        actionButtons[1].updateIcon(item.isPinned ? "pin.fill" : "pin")
-        actionButtons[1].setActive(item.isPinned, animated: true)
-        actionButtons[1].toolTip = item.isPinned ? "Unpin (⌘P)" : "Pin to Space (⌘P)"
-        
-        // 同步更新右键菜单
-        if let contentView = superview as? ScreenshotContentView {
-            contentView.refreshMenuItems()
-        }
-    }
-}
-
-// MARK: - Action Bar Button
-
-/// 带 hover 和动画效果的操作按钮
-final class ActionBarButton: NSView {
-    
-    // MARK: - Properties
-    
-    private let iconView: NSImageView
-    private let backgroundView: NSView
-    private var spinnerView: NSProgressIndicator?
-    private var trackingArea: NSTrackingArea?
-    
-    private let defaultIcon: String
-    private let feedbackIcon: String?
-    private let activeColor: NSColor
-    private let showSpinnerOnAction: Bool
-    private var isActive: Bool = false
-    private var isHovered: Bool = false
-    
-    private var actionHandler: ((ActionBarButton) -> Void)?
-    private var simpleActionHandler: (() -> Void)?
-    
-    private let animationDuration: TimeInterval = 0.25
-    
-    // MARK: - Init
-    
-    init(icon: String, activeColor: NSColor = .white, feedbackIcon: String? = nil, showSpinner: Bool = false, isActive: Bool = false, action: @escaping () -> Void) {
-        self.defaultIcon = icon
-        self.feedbackIcon = feedbackIcon
-        self.activeColor = activeColor
-        self.showSpinnerOnAction = showSpinner
-        self.isActive = isActive
-        self.simpleActionHandler = action
-        
-        self.iconView = NSImageView()
-        self.backgroundView = NSView()
-        
-        super.init(frame: .zero)
-        setup()
-    }
-    
-    init(icon: String, activeColor: NSColor = .white, feedbackIcon: String? = nil, showSpinner: Bool = false, isActive: Bool = false, action: @escaping (ActionBarButton) -> Void) {
-        self.defaultIcon = icon
-        self.feedbackIcon = feedbackIcon
-        self.activeColor = activeColor
-        self.showSpinnerOnAction = showSpinner
-        self.isActive = isActive
-        self.actionHandler = action
-        
-        self.iconView = NSImageView()
-        self.backgroundView = NSView()
-        
-        super.init(frame: .zero)
-        setup()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    // MARK: - Setup
-    
-    private func setup() {
-        wantsLayer = true
-        
-        // 背景（默认显示半透明，hover 时更亮）
-        backgroundView.wantsLayer = true
-        backgroundView.layer?.cornerRadius = 6  // 小圆角正方形
-        backgroundView.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.5).cgColor
-        backgroundView.alphaValue = 1  // 默认显示，确保可见度
-        addSubview(backgroundView)
-        
-        // 图标
-        iconView.imageScaling = .scaleProportionallyDown
-        iconView.image = NSImage(systemSymbolName: defaultIcon, accessibilityDescription: nil)
-        iconView.contentTintColor = isActive ? activeColor : .white
-        iconView.wantsLayer = true
-        iconView.layer?.zPosition = 10 // 确保在最上层
-        addSubview(iconView)
-        
-        // Spinner（可选）
-        if showSpinnerOnAction {
-            let spinner = NSProgressIndicator()
-            spinner.style = .spinning
-            spinner.isIndeterminate = true
-            spinner.controlSize = .small
-            spinner.isHidden = true
-            addSubview(spinner)
-            self.spinnerView = spinner
-        }
-    }
-    
-    // MARK: - Layout
-    
-    override func layout() {
-        super.layout()
-        backgroundView.frame = bounds
-        iconView.frame = bounds.insetBy(dx: 4, dy: 4)
-        spinnerView?.frame = bounds.insetBy(dx: 6, dy: 6)
-    }
-    
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        
-        // 只在 trackingArea 为空或 bounds 变化时重建
-        if let existing = trackingArea {
-            if existing.rect == bounds { return }
-            removeTrackingArea(existing)
-        }
-        
-        trackingArea = NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-            owner: self,
-            userInfo: nil
-        )
-        addTrackingArea(trackingArea!)
-    }
-    
-    // MARK: - Mouse Events
-    
-    override func mouseEntered(with event: NSEvent) {
-        super.mouseEntered(with: event)
-        isHovered = true
-        updateHoverState(animated: true)
-    }
-    
-    override func mouseExited(with event: NSEvent) {
-        super.mouseExited(with: event)
-        
-        // 安全检查：如果鼠标实际上还在视图范围内（包括在子视图如 ActionBar 上），就不视为离开
-        // 这能修复从按钮移出时 ActionBar 意外消失的问题
-        let location = convert(event.locationInWindow, from: nil)
-        if bounds.contains(location) {
-            return
-        }
-        
-        isHovered = false
-        updateHoverState(animated: true)
-    }
-    
-    override func mouseDown(with event: NSEvent) {
-        super.mouseDown(with: event)
-        // 按下时背景更亮
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.1
-            backgroundView.animator().layer?.backgroundColor = NSColor.white.withAlphaComponent(0.3).cgColor
-        }
-    }
-    
-    override func mouseUp(with event: NSEvent) {
-        super.mouseUp(with: event)
-        
-        // 恢复 hover 状态
-        updateHoverState(animated: true)
-        
-        // 检查是否在按钮范围内
-        let location = convert(event.locationInWindow, from: nil)
-        if bounds.contains(location) {
-            if let handler = actionHandler {
-                handler(self)
-            } else {
-                simpleActionHandler?()
-            }
-        }
-    }
-    
-    private func updateHoverState(animated: Bool) {
-        // 默认半透明黑色，hover 时更深（增加对比度）
-        let bgColor = isHovered 
-            ? NSColor.black.withAlphaComponent(0.8).cgColor  // Hover: 深黑 (0.8)
-            : NSColor.black.withAlphaComponent(0.5).cgColor  // Normal: 半透黑 (0.5)
-            
-        // 确保图标颜色正确（非 active 时始终为白色）
-        let iconColor = isActive ? activeColor : .white
-        
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.15
-                backgroundView.animator().layer?.backgroundColor = bgColor
-                iconView.animator().contentTintColor = iconColor
-            }
-        } else {
-            backgroundView.layer?.backgroundColor = bgColor
-            iconView.contentTintColor = iconColor
-        }
-    }
-    
-    // MARK: - Public
-    
-    func updateIcon(_ icon: String) {
-        // 确保使用 template image 以便支持着色
-        let image = NSImage(systemSymbolName: icon, accessibilityDescription: nil)
-        image?.isTemplate = true
-        iconView.image = image
-    }
-    
-    func setActive(_ active: Bool, animated: Bool) {
-        isActive = active
-        // 触发状态更新以应用颜色
-        updateHoverState(animated: animated)
-    }
-    
-    func flashActive() {
-        // 短暂变色后恢复
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = animationDuration
-            iconView.animator().contentTintColor = activeColor
-        } completionHandler: {
-            self.updateHoverState(animated: true)
-        }
-    }
-    
-    func startSpinner() {
-        iconView.isHidden = true
-        spinnerView?.isHidden = false
-        spinnerView?.startAnimation(nil)
-    }
-    
-    func stopSpinner() {
-        spinnerView?.stopAnimation(nil)
-        spinnerView?.isHidden = true
-        iconView.isHidden = false
-    }
-    
-    func showFeedback() {
-        guard let feedbackIcon = feedbackIcon else { return }
-        
-        // 切换到反馈图标
-        let originalIcon = iconView.image
-        iconView.image = NSImage(systemSymbolName: feedbackIcon, accessibilityDescription: nil)
-        iconView.contentTintColor = .green
-        
-        // 1.5秒后恢复
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            guard let self = self else { return }
-            self.iconView.image = originalIcon
-            // 恢复 hover 状态（会自动设置正确的颜色）
-            self.updateHoverState(animated: true)
-        }
     }
 }

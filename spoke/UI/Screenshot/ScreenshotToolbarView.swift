@@ -110,7 +110,7 @@ final class ScreenshotToolbarView: NSView {
         addSubview(backgroundView)
         
         // 阴影
-        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowColor = DesignTokens.Colors.NS.inkDark.cgColor
         layer?.shadowOpacity = 0.3
         layer?.shadowRadius = 8
         layer?.shadowOffset = CGSize(width: 0, height: -2)
@@ -168,7 +168,7 @@ final class ScreenshotToolbarView: NSView {
     private func createSeparator() -> NSView {
         let separator = NSView()
         separator.wantsLayer = true
-        separator.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.3).cgColor
+        separator.layer?.backgroundColor = DesignTokens.Colors.NS.separatorStrong.cgColor
         
         separator.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([

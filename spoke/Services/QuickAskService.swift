@@ -1,7 +1,7 @@
-import Foundation
 import AppKit
-import SwiftUI
+import Foundation
 import os
+import SwiftUI
 
 /// Quick Ask 上下文来源
 enum ContextSource: String, CaseIterable {
@@ -168,16 +168,20 @@ final class QuickAskService {
         }
         
         // 组装 prompt（包含上下文来源追踪）
-        let (prompt, usedClipboard, usedCaption) = buildPromptWithSources(ocrContext: ocrContext)
-        if usedClipboard { contextSources.append(.clipboard) }
-        if usedCaption { contextSources.append(.liveCaption) }
+        let promptResult = buildPromptResult(ocrContext: ocrContext)
+        if promptResult.usedClipboard { contextSources.append(.clipboard) }
+        if promptResult.usedCaption { contextSources.append(.liveCaption) }
         
-        guard !prompt.isEmpty else {
+        guard !promptResult.prompt.isEmpty else {
             hudManager.fail(with: "请输入问题")
             return
         }
         
-        logger.info("📤 Sending question: \(prompt.prefix(100), privacy: .public)... sources: \(contextSources.map { $0.rawValue }, privacy: .public)")
+        let questionPreview = String(promptResult.prompt.prefix(100))
+        let sourceList = contextSources.map { $0.rawValue }
+        logger.info(
+            "📤 Sending question: \(questionPreview, privacy: .public)... sources: \(sourceList, privacy: .public)"
+        )
         
         // 隐藏输入 HUD (不恢复 Policy，因为 AnswerPanel 需要 Key Window)
         hudManager.hide(restorePolicy: false)
@@ -191,7 +195,7 @@ final class QuickAskService {
         )
         
         // 调用 LLM
-        let result = await llmPipeline.chat(prompt)
+        let result = await llmPipeline.chat(promptResult.prompt)
         
         switch result {
         case .success(let response):
@@ -327,86 +331,114 @@ final class QuickAskService {
         state.updateDuration(duration)
     }
     
+    private struct PromptBuildResult {
+        let prompt: String
+        let usedClipboard: Bool
+        let usedCaption: Bool
+    }
+    
+    private struct AttachmentSummary {
+        let summaryLine: String
+        let textBundleContents: [String]
+    }
+    
     /// 构建发送给 LLM 的 prompt（带上下文来源追踪）
-    /// - Parameter ocrContext: 异步获取的 OCR 上下文（可选）
-    /// - Returns: (prompt, usedClipboard, usedCaption)
-    private func buildPromptWithSources(ocrContext: String? = nil) -> (String, Bool, Bool) {
+    private func buildPromptResult(ocrContext: String? = nil) -> PromptBuildResult {
         let settings = LLMSettings.shared
         var parts: [String] = []
-        var usedClipboard = false
-        var usedCaption = false
         
-        // 用户输入
-        let userInput = state.userInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let userInput = trimmedText(state.userInput)
+        let voiceText = trimmedText(state.voiceTranscription)
+        
+        appendUserInput(userInput, to: &parts)
+        appendVoiceText(voiceText, userInput: userInput, to: &parts)
+        appendOCRContext(ocrContext, to: &parts)
+        
+        let usedClipboard = appendClipboardIfNeeded(settings: settings, to: &parts)
+        let usedCaption = appendLiveCaptionIfNeeded(settings: settings, to: &parts)
+        appendAttachments(to: &parts)
+        
+        return PromptBuildResult(
+            prompt: parts.joined(separator: "\n\n"),
+            usedClipboard: usedClipboard,
+            usedCaption: usedCaption
+        )
+    }
+    
+    private func trimmedText(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    private func appendUserInput(_ userInput: String, to parts: inout [String]) {
         if !userInput.isEmpty {
             parts.append("## 用户输入\n\(userInput)")
         }
+    }
+    
+    private func appendVoiceText(_ voiceText: String, userInput: String, to parts: inout [String]) {
+        guard !voiceText.isEmpty else { return }
+        parts.append("## 语音转写\n\(voiceText)")
+        if !userInput.isEmpty {
+            parts.append("> 注意：语音转写可能存在偏差（如专业术语、人名等），请结合用户输入理解真实意图。")
+        }
+    }
+    
+    private func appendOCRContext(_ ocrContext: String?, to parts: inout [String]) {
+        guard let ocrText = ocrContext, !ocrText.isEmpty else { return }
+        parts.append("## 当前屏幕内容（OCR）\n\(ocrText)")
+    }
+    
+    private func appendClipboardIfNeeded(settings: LLMSettings, to parts: inout [String]) -> Bool {
+        guard settings.quickAskIncludeClipboard else { return false }
+        let history = ClipboardHistoryService.shared.getHistoryForContext(limit: 5)
+        guard !history.isEmpty else { return false }
+        let historyText = history.map { "- \(String($0.prefix(200)))" }.joined(separator: "\n")
+        parts.append("## 剪贴板历史\n\(historyText)")
+        return true
+    }
+    
+    private func appendLiveCaptionIfNeeded(settings: LLMSettings, to parts: inout [String]) -> Bool {
+        guard settings.quickAskIncludeLiveCaption else { return false }
+        let limit = settings.quickAskLiveCaptionLimit
+        let captionText = LiveCaptionManager.shared.getOriginalTextHistory(limit: limit)
+        guard !captionText.isEmpty else { return false }
+        let limitDesc = limit == 0 ? "全量" : "最近\(limit)条"
+        parts.append("## 实时字幕历史（\(limitDesc)）\n\(captionText)")
+        return true
+    }
+    
+    private func appendAttachments(to parts: inout [String]) {
+        guard !state.attachments.isEmpty else { return }
+        let summary = buildAttachmentSummary(from: state.attachments)
+        parts.append("## 附件\n\(summary.summaryLine)")
         
-        // 语音转写
-        let voiceText = state.voiceTranscription.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !voiceText.isEmpty {
-            parts.append("## 语音转写\n\(voiceText)")
-            
-            // 如果同时有用户输入和语音，添加提示
-            if !userInput.isEmpty {
-                parts.append("> 注意：语音转写可能存在偏差（如专业术语、人名等），请结合用户输入理解真实意图。")
+        guard !summary.textBundleContents.isEmpty else { return }
+        let bundleText = summary.textBundleContents.joined(separator: "\n\n---\n\n")
+        parts.append("## 代码/文档内容\n\(bundleText)")
+    }
+    
+    private func buildAttachmentSummary(from attachments: [Attachment]) -> AttachmentSummary {
+        var attachmentParts: [String] = []
+        var textBundleContents: [String] = []
+        
+        for attachment in attachments {
+            switch attachment {
+            case .image:
+                attachmentParts.append("[图片]")
+            case .screenshot:
+                attachmentParts.append("[截图]")
+            case .file(let url, _):
+                attachmentParts.append("[文件: \(url.lastPathComponent)]")
+            case .textBundle(let content, let source, let count, _):
+                attachmentParts.append("[代码包: \(source) (\(count) 文件)]")
+                textBundleContents.append("### \(source)\n\(content)")
             }
         }
         
-        // 应用 OCR（异步获取的）
-        if let ocrText = ocrContext, !ocrText.isEmpty {
-            parts.append("## 当前屏幕内容（OCR）\n\(ocrText)")
-        }
-        
-        // 剪贴板历史
-        if settings.quickAskIncludeClipboard {
-            let clipboardHistory = ClipboardHistoryService.shared.getHistoryForContext(limit: 5)
-            if !clipboardHistory.isEmpty {
-                let historyText = clipboardHistory.map { "- \(String($0.prefix(200)))" }.joined(separator: "\n")
-                parts.append("## 剪贴板历史\n\(historyText)")
-                usedClipboard = true
-            }
-        }
-        
-        // 实时字幕上下文
-        if settings.quickAskIncludeLiveCaption {
-            let limit = settings.quickAskLiveCaptionLimit
-            let captionText = LiveCaptionManager.shared.getOriginalTextHistory(limit: limit)
-            if !captionText.isEmpty {
-                let limitDesc = limit == 0 ? "全量" : "最近\(limit)条"
-                parts.append("## 实时字幕历史（\(limitDesc)）\n\(captionText)")
-                usedCaption = true
-            }
-        }
-        
-        // 附件说明
-        if !state.attachments.isEmpty {
-            var attachmentParts: [String] = []
-            var textBundleContents: [String] = []
-            
-            for attachment in state.attachments {
-                switch attachment {
-                case .image:
-                    attachmentParts.append("[图片]")
-                case .screenshot:
-                    attachmentParts.append("[截图]")
-                case .file(let url, _):
-                    attachmentParts.append("[文件: \(url.lastPathComponent)]")
-                case .textBundle(let content, let source, let count, _):
-                    attachmentParts.append("[代码包: \(source) (\(count) 文件)]")
-                    textBundleContents.append("### \(source)\n\(content)")
-                }
-            }
-            
-            parts.append("## 附件\n\(attachmentParts.joined(separator: ", "))")
-            
-            // 添加文本包内容
-            if !textBundleContents.isEmpty {
-                parts.append("## 代码/文档内容\n\(textBundleContents.joined(separator: "\n\n---\n\n"))")
-            }
-        }
-        
-        return (parts.joined(separator: "\n\n"), usedClipboard, usedCaption)
+        return AttachmentSummary(
+            summaryLine: attachmentParts.joined(separator: ", "),
+            textBundleContents: textBundleContents
+        )
     }
 }
 

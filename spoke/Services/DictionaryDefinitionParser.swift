@@ -276,12 +276,8 @@ final class DictionaryDefinitionParser {
             let nsString = definition as NSString
             let matches = regex.matches(in: definition, options: [], range: NSRange(location: 0, length: nsString.length))
             
-            for (index, match) in matches.enumerated() {
+            for match in matches {
                 let pos = nsString.substring(with: match.range)
-                let startIndex = match.range.upperBound
-                let endIndex = index + 1 < matches.count ? matches[index + 1].range.location : nsString.length
-                let content = nsString.substring(with: NSRange(location: startIndex, length: endIndex - startIndex))
-                
                 let sense = DefinitionSense(
                     number: nil,
                     gloss: nil,

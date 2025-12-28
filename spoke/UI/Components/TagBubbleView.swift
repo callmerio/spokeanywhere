@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - Tag Bubble View
 
 /// 单个标签气泡视图
@@ -121,7 +123,7 @@ struct TagBubbleView: View {
             } label: {
                 Image(systemName: "checkmark")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.green)
+                    .foregroundColor(DS.Colors.success)
             }
             .buttonStyle(.plain)
             
@@ -130,7 +132,7 @@ struct TagBubbleView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.red)
+                    .foregroundColor(DS.Colors.error)
             }
             .buttonStyle(.plain)
         }
@@ -191,11 +193,11 @@ struct TagListView: View {
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 9, weight: .bold))
-                .foregroundColor(Color.white.opacity(isHoveringAdd ? 0.8 : 0.4))
+                .foregroundColor(isHoveringAdd ? DS.Colors.textPrimary : DS.Colors.textPlaceholder)
                 .frame(width: 20, height: 20)
                 .background(
                     Circle()
-                        .fill(Color.white.opacity(isHoveringAdd ? 0.15 : 0.08))
+                        .fill(isHoveringAdd ? DS.Colors.buttonHoverStrong : DS.Colors.chipBackground)
                 )
         }
         .buttonStyle(.plain)
@@ -322,7 +324,7 @@ struct AddTagPopover: View {
                     }
             }
             .padding(10)
-            .background(Color.white.opacity(0.08))
+            .background(DS.Colors.chipBackground)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
             // 最近使用
@@ -371,7 +373,7 @@ struct AddTagPopover: View {
                         Text("创建「\(searchQuery)」")
                             .font(.system(size: 12))
                     }
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(DS.Colors.accentPrimary)
                 }
                 .buttonStyle(.plain)
             }
@@ -498,5 +500,5 @@ struct ActiveFilterTagBubble: View {
         }
     }
     .padding()
-    .background(Color.black)
+    .background(DS.Colors.settingsBackground)
 }

@@ -46,8 +46,7 @@ struct MarkdownWebView: NSViewRepresentable {
         }
         
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // Initial height check
-            webView.evaluateJavaScript("document.body.scrollHeight") { (result, error) in
+            webView.evaluateJavaScript("document.body.scrollHeight") { result, _ in
                 if let height = result as? CGFloat {
                     DispatchQueue.main.async {
                         self.parent.dynamicHeight = height
@@ -56,7 +55,10 @@ struct MarkdownWebView: NSViewRepresentable {
             }
         }
         
-        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        func userContentController(
+            _ userContentController: WKUserContentController,
+            didReceive message: WKScriptMessage
+        ) {
             if message.name == "heightHandler", let height = message.body as? CGFloat {
                 DispatchQueue.main.async {
                     self.parent.dynamicHeight = height
@@ -65,14 +67,7 @@ struct MarkdownWebView: NSViewRepresentable {
         }
     }
     
-    private func generateHTML(from markdown: String) -> String {
-        // Escaping markdown for JS string
-        let escapedMarkdown = markdown
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "`", with: "\\`")
-            .replacingOccurrences(of: "$", with: "\\$")
-        
-        return """
+    private static let htmlTemplate = """
         <!DOCTYPE html>
         <html>
         <head>
@@ -97,21 +92,63 @@ struct MarkdownWebView: NSViewRepresentable {
                     display: none;
                 }
                 /* Markdown Styles */
-                h1, h2, h3, h4, h5, h6 { color: #fff; margin-top: 16px; margin-bottom: 8px; font-weight: 600; }
+                h1, h2, h3, h4, h5, h6 {
+                    color: #fff;
+                    margin-top: 16px;
+                    margin-bottom: 8px;
+                    font-weight: 600;
+                }
                 p { margin-bottom: 12px; }
-                code { background: rgba(255,255,255,0.15); padding: 2px 4px; border-radius: 4px; font-family: "Menlo", monospace; font-size: 0.9em; color: #ff9f9f; }
-                pre { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; overflow-x: auto; margin-bottom: 12px; }
-                pre code { background: none; padding: 0; color: #e0e0e0; }
-                blockquote { border-left: 3px solid #4a9eff; margin: 0 0 12px 0; padding-left: 12px; color: #a0a0a0; }
+                code {
+                    background: rgba(255,255,255,0.15);
+                    padding: 2px 4px;
+                    border-radius: 4px;
+                    font-family: "Menlo", monospace;
+                    font-size: 0.9em;
+                    color: #ff9f9f;
+                }
+                pre {
+                    background: rgba(0,0,0,0.3);
+                    padding: 12px;
+                    border-radius: 8px;
+                    overflow-x: auto;
+                    margin-bottom: 12px;
+                }
+                pre code {
+                    background: none;
+                    padding: 0;
+                    color: #e0e0e0;
+                }
+                blockquote {
+                    border-left: 3px solid #4a9eff;
+                    margin: 0 0 12px 0;
+                    padding-left: 12px;
+                    color: #a0a0a0;
+                }
                 a { color: #4a9eff; text-decoration: none; }
                 a:hover { text-decoration: underline; }
                 img { max-width: 100%; border-radius: 6px; }
                 ul, ol { padding-left: 20px; margin-bottom: 12px; }
                 li { margin-bottom: 4px; }
-                table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
-                th, td { border: 1px solid rgba(255,255,255,0.1); padding: 8px; text-align: left; }
-                th { background: rgba(255,255,255,0.05); font-weight: 600; }
-                hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0; }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin-bottom: 12px;
+                }
+                th, td {
+                    border: 1px solid rgba(255,255,255,0.1);
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background: rgba(255,255,255,0.05);
+                    font-weight: 600;
+                }
+                hr {
+                    border: none;
+                    border-top: 1px solid rgba(255,255,255,0.1);
+                    margin: 16px 0;
+                }
                 
                 /* Mermaid */
                 .mermaid { margin-bottom: 12px; text-align: center; }
@@ -136,7 +173,7 @@ struct MarkdownWebView: NSViewRepresentable {
                     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
                 });
                 
-                const markdown = `\(escapedMarkdown)`;
+                const markdown = `{{MARKDOWN}}`;
                 
                 // Custom Renderer
                 const renderer = new marked.Renderer();
@@ -211,5 +248,16 @@ struct MarkdownWebView: NSViewRepresentable {
         </body>
         </html>
         """
+    
+    private func generateHTML(from markdown: String) -> String {
+        let escapedMarkdown = markdown
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "`", with: "\\`")
+            .replacingOccurrences(of: "$", with: "\\$")
+        
+        return Self.htmlTemplate.replacingOccurrences(
+            of: "{{MARKDOWN}}",
+            with: escapedMarkdown
+        )
     }
 }

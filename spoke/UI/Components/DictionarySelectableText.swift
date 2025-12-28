@@ -1,4 +1,6 @@
 import SwiftUI
+
+private typealias DS = DesignTokens
 import AppKit
 
 // MARK: - Simple Markdown Parser
@@ -91,7 +93,7 @@ enum SimpleMarkdownParser {
                 let content = nsText.substring(with: match.range(at: 5))
                 var attrs = baseAttributes
                 attrs[.font] = codeFont
-                attrs[.backgroundColor] = NSColor.white.withAlphaComponent(0.1)
+                attrs[.backgroundColor] = DS.Colors.NS.codeBackground
                 result.append(NSAttributedString(string: content, attributes: attrs))
             }
             
@@ -116,7 +118,7 @@ enum SimpleMarkdownParser {
 struct DictionarySelectableText: NSViewRepresentable {
     let text: String
     var font: NSFont = .systemFont(ofSize: 13)
-    var foregroundColor: NSColor = NSColor.white
+    var foregroundColor: NSColor = DS.Colors.NS.textPrimary
     
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -262,13 +264,13 @@ struct DictionarySelectableText: NSViewRepresentable {
 final class SelectionColorLayoutManager: NSLayoutManager {
     
     /// 金黄色选中背景 #D79C00
-    var selectionColor = NSColor(red: 0.84, green: 0.61, blue: 0, alpha: 1.0)
+    var selectionColor = DS.Colors.NS.highlightGold
     /// 选中文字颜色
-    var selectedTextColor = NSColor.white
+    var selectedTextColor = DS.Colors.NS.textPrimary
     /// 选中文字外描边阴影
     var selectedTextShadow: NSShadow = {
         let shadow = NSShadow()
-        shadow.shadowColor = NSColor.black.withAlphaComponent(0.9)
+        shadow.shadowColor = DS.Colors.NS.selectionShadow
         shadow.shadowOffset = NSSize(width: 0, height: 0)  // 居中阴影
         shadow.shadowBlurRadius = 1.5  // 模糊半径模拟描边
         return shadow
@@ -522,17 +524,17 @@ struct QuickAddToDictionarySheet: View {
             // 标题
             HStack {
                 Image(systemName: "book.closed")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(DS.Colors.warning)
                 Text("添加到词典")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.gray)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -541,27 +543,27 @@ struct QuickAddToDictionarySheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("期望词形")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextField("如: Anthropic", text: $word)
                     .textFieldStyle(.plain)
-                    .padding(10)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(6)
+                    .padding(DS.Spacing.lg)
+                    .background(DS.Colors.rowHover)
+                    .cornerRadius(DS.CornerRadius.sm)
             }
             
             // 纠错输入（可选）
             VStack(alignment: .leading, spacing: 6) {
                 Text("纠错映射（可选，每行一个）")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextEditor(text: $correctionsText)
-                    .font(.system(size: 12))
+                    .font(DS.Typography.caption)
                     .scrollContentBackground(.hidden)
                     .padding(10)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(6)
+                    .background(DS.Colors.rowHover)
+                    .cornerRadius(DS.CornerRadius.sm)
                     .frame(height: 60)
             }
             
@@ -571,7 +573,7 @@ struct QuickAddToDictionarySheet: View {
                     isPresented = false
                 }
                 .buttonStyle(.bordered)
-                .tint(.gray)
+                .tint(DS.Colors.textSecondary)
                 .controlSize(.small)
                 
                 Spacer()
@@ -580,14 +582,14 @@ struct QuickAddToDictionarySheet: View {
                     addEntry()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(DS.Colors.warning)
                 .controlSize(.small)
                 .disabled(word.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(20)
+        .padding(DS.Spacing.xxl)
         .frame(width: 320)
-        .background(Color(hex: "1e1e1e"))
+        .background(DS.Colors.settingsPanelBackground)
     }
     
     private func addEntry() {
@@ -633,17 +635,17 @@ struct CorrectToSheet: View {
             // 标题
             HStack {
                 Image(systemName: "arrow.triangle.branch")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(DS.Colors.accentPrimary)
                 Text("纠正识别错误")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.gray)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -652,29 +654,29 @@ struct CorrectToSheet: View {
             HStack {
                 Text("错误识别:")
                     .font(.system(size: 12))
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 Text(errorText)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.red.opacity(0.9))
+                    .foregroundStyle(DS.Colors.error.opacity(0.9))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(4)
+                    .background(DS.Colors.error.opacity(0.1))
+                    .cornerRadius(DS.CornerRadius.xs)
             }
             
             // 正确词形输入
             VStack(alignment: .leading, spacing: 6) {
                 Text("正确词形")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextField("输入正确的词，如: Gemini", text: $correctWord)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .padding(10)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(6)
+                    .font(DS.Typography.button)
+                    .padding(DS.Spacing.lg)
+                    .background(DS.Colors.rowHover)
+                    .cornerRadius(DS.CornerRadius.sm)
                     .focused($isInputFocused)
                     .onSubmit {
                         if !correctWord.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -697,20 +699,20 @@ struct CorrectToSheet: View {
             if let matchedEntry = matchedEntry {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(DS.Colors.success)
                         .font(.system(size: 12))
                     Text("将添加到已有词条「\(matchedEntry.word)」的纠错列表")
                         .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
             } else if !correctWord.trimmingCharacters(in: .whitespaces).isEmpty {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(DS.Colors.warning)
                         .font(.system(size: 12))
                     Text("将创建新词条「\(correctWord)」并添加纠错")
                         .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
             }
             
@@ -720,7 +722,7 @@ struct CorrectToSheet: View {
                     isPresented = false
                 }
                 .buttonStyle(.bordered)
-                .tint(.gray)
+                .tint(DS.Colors.textSecondary)
                 .controlSize(.small)
                 
                 Spacer()
@@ -729,14 +731,14 @@ struct CorrectToSheet: View {
                     submitCorrection()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.blue)
+                .tint(DS.Colors.accentPrimary)
                 .controlSize(.small)
                 .disabled(correctWord.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .padding(20)
+        .padding(DS.Spacing.xxl)
         .frame(width: 320)
-        .background(Color(hex: "1e1e1e"))
+        .background(DS.Colors.settingsPanelBackground)
         .onAppear {
             isInputFocused = true
         }

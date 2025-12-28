@@ -1,31 +1,6 @@
 import SwiftUI
 
-// MARK: - 配色
-
-private enum ToolbarColors {
-    static let background = Color(hex: "1F1F1F")
-    static let border = Color.white.opacity(0.1)
-    static let buttonHover = Color.white.opacity(0.1)
-    static let buttonActive = Color.white.opacity(0.2)
-    static let separator = Color.white.opacity(0.15)
-    static let text = Color.white.opacity(0.95)
-    static let textSecondary = Color.white.opacity(0.6)
-    static let icon = Color.white.opacity(0.85)
-}
-
-private enum ToolbarLayout {
-    static let height: CGFloat = 40
-    static let buttonHeight: CGFloat = 32
-    static let buttonPaddingH: CGFloat = 3
-    static let logoButtonPaddingH: CGFloat = 10
-    static let buttonCornerRadius: CGFloat = 6
-    static let cornerRadius: CGFloat = 10  // 更小的圆角，更精致
-    static let iconSize: CGFloat = 15
-    static let fontSize: CGFloat = 13
-    static let spacing: CGFloat = 2
-    static let separatorWidth: CGFloat = 1
-    static let separatorHeight: CGFloat = 20
-}
+private typealias DS = DesignTokens
 
 // MARK: - 工具栏视图
 
@@ -34,46 +9,50 @@ struct SelectionToolbarView: View {
     @ObservedObject private var configService = ToolbarConfigService.shared
     
     var body: some View {
-        Group {
+        let shadowTight = DS.Shadow.tight()
+        let shadowMedium = DS.Shadow.medium()
+        let shadowFar = DS.Shadow.far()
+
+        return Group {
             if case .showingDictionary = state.phase {
                 dictionaryResultContent
             } else {
                 toolbarContent
             }
         }
-        .padding(.horizontal, 8)
-        .frame(height: ToolbarLayout.height)
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(height: DS.Layout.toolbarHeight)
         .background(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .fill(Color.black.opacity(0.3))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .fill(DS.Colors.overlayDark)
         )
         .background(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
                 .fill(.ultraThinMaterial)
                 .environment(\.colorScheme, .dark)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .strokeBorder(DS.Colors.separator, lineWidth: DS.BorderWidth.hairline)
         )
-        .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 0.5)
-        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
-        .shadow(color: .black.opacity(0.08), radius: 20, x: 0, y: 8)
-        .animation(.easeInOut(duration: 0.2), value: state.phase == .showingDictionary)
+        .shadow(color: shadowTight.color, radius: shadowTight.radius, x: shadowTight.x, y: shadowTight.y)
+        .shadow(color: shadowMedium.color, radius: shadowMedium.radius, x: shadowMedium.x, y: shadowMedium.y)
+        .shadow(color: shadowFar.color, radius: shadowFar.radius, x: shadowFar.x, y: shadowFar.y)
+        .animation(DS.Animation.normal, value: state.phase == .showingDictionary)
     }
     
     // MARK: - 工具栏内容
     
     private var toolbarContent: some View {
-        HStack(spacing: ToolbarLayout.spacing) {
+        HStack(spacing: DS.Spacing.xxs) {
             ToolbarLogoMenu {
                 executeAction($0)
             }
             
             ToolbarDivider()
             
-            HStack(spacing: 2) {
-                ForEach(Array(configService.visibleActions.enumerated()), id: \.element.id) { index, action in
+            HStack(spacing: DS.Spacing.xxs) {
+                ForEach(Array(configService.visibleActions.enumerated()), id: \.element.id) { _, action in
                     ToolbarActionButton(action: action) {
                         executeAction(action)
                     }
@@ -85,7 +64,7 @@ struct SelectionToolbarView: View {
     // MARK: - 词典结果内容
     
     private var dictionaryResultContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.md) {
             if let data = state.dictionaryResult {
                 // 每个释义带词性拼接（格式：a. 与言语相关的；n. 发音）
                 let combined = data.senses.prefix(3).compactMap { sense -> String? in
@@ -95,15 +74,15 @@ struct SelectionToolbarView: View {
                 }.joined(separator: "；")
                 
                 Text(combined)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.85))
+                    .font(DS.Typography.content)
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .lineLimit(1)
             } else if let error = state.dictionaryError {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.yellow)
+                    .foregroundStyle(DS.Colors.warning)
                 Text(error.localizedDescription)
-                    .font(.system(size: 13))
-                    .foregroundColor(.white.opacity(0.7))
+                    .font(DS.Typography.button)
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
             
             Spacer()
@@ -114,12 +93,12 @@ struct SelectionToolbarView: View {
                     state.toggleVocabulary()
                 } label: {
                     Image(systemName: state.isWordInVocabulary ? "heart.fill" : "heart")
-                        .font(.system(size: 14))
-                        .foregroundColor(state.isWordInVocabulary ? .red : .white.opacity(0.5))
+                        .font(DS.Typography.content)
+                        .foregroundStyle(state.isWordInVocabulary ? DS.Colors.error : DS.Colors.textPlaceholder)
                 }
                 .buttonStyle(.plain)
-                .padding(4)
-                .animation(.easeInOut(duration: 0.15), value: state.isWordInVocabulary)
+                .padding(DS.Spacing.xs)
+                .animation(DS.Animation.fast, value: state.isWordInVocabulary)
             }
         }
     }
@@ -134,9 +113,9 @@ struct SelectionToolbarView: View {
 private struct ToolbarDivider: View {
     var body: some View {
         Rectangle()
-            .fill(ToolbarColors.separator)
-            .frame(width: ToolbarLayout.separatorWidth, height: ToolbarLayout.separatorHeight)
-            .padding(.horizontal, 4)
+            .fill(DS.Colors.separator)
+            .frame(width: DS.BorderWidth.thin, height: DS.Layout.toolbarSeparatorHeight)
+            .padding(.horizontal, DS.Spacing.xs)
     }
 }
 
@@ -153,33 +132,32 @@ private struct ToolbarLogoMenu: View {
         Button {
             showMenu()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: "wand.and.stars")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(red: 0.6, green: 0.8, blue: 1.0), Color(red: 1.0, green: 0.6, blue: 1.0)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                    .font(.system(size: DS.Layout.iconSizeToolbar, weight: .semibold))
+                    .foregroundStyle(DS.Gradients.toolbarLogo)
+                    .shadow(
+                        color: DS.Colors.accentGlow.opacity(0.5),
+                        radius: DS.Spacing.xxs,
+                        x: 0,
+                        y: 0
                     )
-                    .shadow(color: Color(red: 0.7, green: 0.5, blue: 1.0).opacity(0.5), radius: 2, x: 0, y: 0)  // 发光效果
                 
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundColor(ToolbarColors.textSecondary)
+                    .font(.system(size: DS.Typography.fontSizeCaptionSmall, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
-            .padding(.horizontal, ToolbarLayout.logoButtonPaddingH)
-            .frame(height: ToolbarLayout.buttonHeight)
+            .padding(.horizontal, DS.Spacing.lg)
+            .frame(height: DS.Layout.toolbarButtonHeight)
             .background(
-                RoundedRectangle(cornerRadius: ToolbarLayout.buttonCornerRadius)
-                    .fill(isHovered ? ToolbarColors.buttonHover : Color.clear)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.sm)
+                    .fill(isHovered ? DS.Colors.buttonHover : Color.clear)
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
         }
@@ -287,33 +265,33 @@ struct ToolbarActionButton: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 if isExecuting {
                     ProgressView()
                         .scaleEffect(0.5)
-                        .frame(width: ToolbarLayout.iconSize, height: ToolbarLayout.iconSize)
+                        .frame(width: DS.Layout.iconSizeToolbar, height: DS.Layout.iconSizeToolbar)
                 } else {
                     Image(systemName: action.icon)
-                        .font(.system(size: ToolbarLayout.iconSize))
-                        .foregroundColor(ToolbarColors.icon)
+                        .font(.system(size: DS.Layout.iconSizeToolbar))
+                        .foregroundStyle(DS.Colors.icon)
                 }
                 
                 // 始终显示文字
                 Text(action.name)
-                    .font(.system(size: ToolbarLayout.fontSize, weight: .medium, design: .rounded))
-                    .foregroundColor(ToolbarColors.text)
+                    .font(.system(size: DS.Typography.fontSizeButton, weight: .medium, design: .rounded))
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .fixedSize()
             }
-            .padding(.horizontal, ToolbarLayout.buttonPaddingH)
-            .frame(height: ToolbarLayout.buttonHeight)
+            .padding(.horizontal, DS.Spacing.xs)
+            .frame(height: DS.Layout.toolbarButtonHeight)
             .background(
-                RoundedRectangle(cornerRadius: ToolbarLayout.buttonCornerRadius)
-                    .fill(isPressed ? ToolbarColors.buttonActive : (isHovered ? ToolbarColors.buttonHover : Color.clear))
+                RoundedRectangle(cornerRadius: DS.CornerRadius.sm)
+                    .fill(isPressed ? DS.Colors.buttonActive : (isHovered ? DS.Colors.buttonHover : Color.clear))
             )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
             if hovering {
@@ -349,22 +327,22 @@ struct ActionExecutingOverlay: View {
     @EnvironmentObject var state: SelectionToolbarState
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DS.Spacing.md) {
             ProgressView()
                 .scaleEffect(1.2)
             
             Text("正在\(action.displayName)...")
-                .font(.system(size: 12))
-                .foregroundColor(ToolbarColors.textSecondary)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.horizontal, DS.Spacing.xxl)
+        .padding(.vertical, DS.Spacing.xxl)
         .background(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
                 .fill(.ultraThinMaterial)
                 .overlay(
-                    RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                        .fill(ToolbarColors.background)
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                        .fill(DS.Colors.toolbarBackground)
                 )
         )
     }
@@ -377,29 +355,29 @@ struct ToolbarErrorView: View {
     let onDismiss: () -> Void
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.md) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
+                .foregroundStyle(DS.Colors.warning)
             
             Text(message)
-                .font(.system(size: 12))
-                .foregroundColor(ToolbarColors.text)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textPrimary)
                 .lineLimit(2)
             
             Button(action: onDismiss) {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(ToolbarColors.textSecondary)
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, DS.Spacing.xl)
+        .padding(.vertical, DS.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                .fill(Color.red.opacity(0.2))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .fill(DS.Colors.error.opacity(0.2))
                 .overlay(
-                    RoundedRectangle(cornerRadius: ToolbarLayout.cornerRadius)
-                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                        .stroke(DS.Colors.error.opacity(0.3), lineWidth: DS.BorderWidth.thin)
                 )
         )
     }
@@ -412,5 +390,5 @@ struct ToolbarErrorView: View {
         .environmentObject(SelectionToolbarState.shared)
         .frame(width: 400, height: 80)
         .padding()
-        .background(Color.gray)
+        .background(DS.Colors.settingsBackground)
 }

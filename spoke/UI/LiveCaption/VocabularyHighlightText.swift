@@ -2,6 +2,8 @@ import SwiftUI
 import AppKit
 import OSLog
 
+private typealias DS = DesignTokens
+
 private let vocabTextLogger = Logger(subsystem: "com.spokeanywhere", category: "VocabularyText")
 
 // MARK: - Vocabulary Highlight Text
@@ -14,7 +16,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
     
     let text: String
     var fontSize: CGFloat = 18
-    var textColor: NSColor = NSColor(red: 249/255, green: 250/255, blue: 251/255, alpha: 1)
+    var textColor: NSColor = DS.Colors.NS.textPrimary
     var opacity: CGFloat = 1.0
     
     /// 当用户开始选择文本时的回调（用于暂停滚动）
@@ -108,7 +110,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
             guard range.location + range.length <= text.utf16.count else { continue }
             
             attributedString.addAttributes([
-                .foregroundColor: NSColor.orange,
+                .foregroundColor: DS.Colors.NS.warning,
                 .font: NSFont.systemFont(ofSize: fontSize, weight: .medium)
             ], range: range)
         }
@@ -897,7 +899,7 @@ final class VocabularyTextView: NSTextView {
         // 添加下划线效果（橙色，与生词高亮一致）
         textStorage.addAttributes([
             .underlineStyle: NSUnderlineStyle.single.rawValue,
-            .underlineColor: NSColor.systemOrange.withAlphaComponent(0.7),
+            .underlineColor: DS.Colors.NS.warning.withAlphaComponent(0.7),
             .cursor: NSCursor.pointingHand
         ], range: wordRange)
         
@@ -972,5 +974,5 @@ private extension NSString {
         .frame(width: 400)
     }
     .padding()
-    .background(Color.black)
+    .background(DS.Colors.settingsBackground)
 }

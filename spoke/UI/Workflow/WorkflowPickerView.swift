@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 /// Workflow 选择器视图
 /// 显示在 Quick Ask 输入框上方，支持键盘导航
 struct WorkflowPickerView: View {
@@ -115,7 +117,7 @@ struct WorkflowOptionRow: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+        .background(isSelected ? DS.Colors.accentPrimary.opacity(0.2) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .contentShape(Rectangle())
     }
@@ -128,4 +130,3 @@ private extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
-

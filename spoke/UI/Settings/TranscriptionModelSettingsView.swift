@@ -1,13 +1,15 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - UI Constants
 
 private enum ModelSettingsColors {
-    static let cardBackground = Color(hex: "252525")
-    static let borderColor = Color.white.opacity(0.06)
-    static let dividerColor = Color.white.opacity(0.06)
-    static let badgeBackground = Color.white.opacity(0.05)
-    static let infoBackground = Color.blue.opacity(0.1)
+    static let cardBackground = DS.Colors.settingsCardBackground
+    static let borderColor = DS.Colors.settingsCardBorder
+    static let dividerColor = DS.Colors.settingsCardBorder
+    static let badgeBackground = DS.Colors.rowHover
+    static let infoBackground = DS.Colors.accentInfo.opacity(0.1)
 }
 
 // MARK: - Transcription Model Settings View
@@ -26,9 +28,9 @@ struct TranscriptionModelSettingsView: View {
         VStack(alignment: .leading, spacing: 20) {
             // Section Title
             Text("语音转文字引擎")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.gray)
-                .padding(.leading, 4)
+                .font(DS.Typography.caption.weight(.medium))
+                .foregroundStyle(DS.Colors.textSecondary)
+                .padding(.leading, DS.Spacing.xs)
             
             // Model Cards
             VStack(spacing: 0) {
@@ -71,10 +73,10 @@ struct TranscriptionModelSettingsView: View {
                 }
             }
             .background(ModelSettingsColors.cardBackground)
-            .cornerRadius(12)
+            .cornerRadius(DS.CornerRadius.lg)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(ModelSettingsColors.borderColor, lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                    .strokeBorder(ModelSettingsColors.borderColor, lineWidth: DS.BorderWidth.thin)
             )
             
             // Info Card
@@ -113,23 +115,23 @@ struct TranscriptionModelSettingsView: View {
     }
     
     private var infoCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            HStack(spacing: DS.Spacing.md) {
                 Image(systemName: "info.circle")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(DS.Colors.accentInfo)
                 Text("关于模型")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.caption.weight(.medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
             }
             
             Text("• **Apple Dictation**: 系统内置，快速，支持预编译词典\n• **Apple SpeechTranscriber**: 更强模型 (~2GB)，更好的多语言支持")
-                .font(.system(size: 11))
-                .foregroundStyle(.gray)
-                .lineSpacing(4)
+                .font(DS.Typography.captionSmall)
+                .foregroundStyle(DS.Colors.textSecondary)
+                .lineSpacing(DS.LineSpacing.normal)
         }
-        .padding(12)
+        .padding(DS.Spacing.lg)
         .background(ModelSettingsColors.infoBackground)
-        .cornerRadius(8)
+        .cornerRadius(DS.CornerRadius.md)
     }
     
     private var liveCaptionCaptureSettings: some View {
@@ -144,11 +146,11 @@ private struct LiveCaptionCaptureSettingsSection: View {
     @AppStorage("LiveCaptionCaptureMode") private var captureMode: String = LiveCaptionManager.CaptureMode.global.rawValue
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             Text("实时字幕音频源")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.gray)
-                .padding(.leading, 4)
+                .font(DS.Typography.caption.weight(.medium))
+                .foregroundStyle(DS.Colors.textSecondary)
+                .padding(.leading, DS.Spacing.xs)
             
             VStack(spacing: 0) {
                 ForEach(LiveCaptionManager.CaptureMode.allCases, id: \.rawValue) { mode in
@@ -167,19 +169,19 @@ private struct LiveCaptionCaptureSettingsSection: View {
                 }
             }
             .background(ModelSettingsColors.cardBackground)
-            .cornerRadius(12)
+            .cornerRadius(DS.CornerRadius.lg)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(ModelSettingsColors.borderColor, lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                    .strokeBorder(ModelSettingsColors.borderColor, lineWidth: DS.BorderWidth.thin)
             )
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text("• 切换模式后需重新启动实时字幕生效")
                 Text("• 应用模式：取消选择将自动使用全局模式")
             }
-            .font(.system(size: 10))
-            .foregroundStyle(.gray.opacity(0.7))
-            .padding(.leading, 4)
+            .font(DS.Typography.timestamp)
+            .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
+            .padding(.leading, DS.Spacing.xs)
         }
     }
 }
@@ -194,31 +196,31 @@ private struct CaptureModeRow: View {
     
     var body: some View {
         Button(action: onSelect) {
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Spacing.lg) {
                 Image(systemName: mode == .global ? "speaker.wave.3" : "app.badge.checkmark")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.gray)
-                    .frame(width: 24)
+                    .font(.system(size: DS.Layout.iconSizeToolbar))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .frame(width: DS.Layout.iconSizeLarge)
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text(mode.displayName)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white)
+                        .font(DS.Typography.button.weight(.medium))
+                        .foregroundStyle(DS.Colors.textPrimary)
                     
                     Text(mode.description)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(DS.Colors.accentPrimary)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, DS.Spacing.xl)
+            .padding(.vertical, DS.Spacing.lg)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -244,18 +246,18 @@ struct ModelCard: View {
     let canSetRole: (TranscriptionModelRole) -> Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             // Header Row
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Spacing.lg) {
                 // Icon
                 modelIcon
                 
                 // Title & Description
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
+                    HStack(spacing: DS.Spacing.md) {
                         Text(model.displayName)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(model.isAvailable ? .white : .gray)
+                            .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                            .foregroundStyle(model.isAvailable ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                         
                         // Role Badges
                         ForEach(roles, id: \.self) { role in
@@ -264,24 +266,24 @@ struct ModelCard: View {
                         
                         if model.isComingSoon {
                             Text("Coming Soon")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.gray)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(4)
+                                .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
+                                .foregroundStyle(DS.Colors.textSecondary)
+                                .padding(.horizontal, DS.Spacing.sm)
+                                .padding(.vertical, DS.Spacing.xxs)
+                                .background(DS.Colors.buttonHover)
+                                .cornerRadius(DS.CornerRadius.xs)
                         }
                         
                         if let minOS = model.minimumOS {
                             Text(minOS)
-                                .font(.system(size: 9))
-                                .foregroundStyle(.gray.opacity(0.7))
+                                .font(.system(size: DS.Typography.fontSizeTimestamp))
+                                .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
                         }
                     }
                     
                     Text(model.subtitle)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 
                 Spacer()
@@ -300,7 +302,7 @@ struct ModelCard: View {
                 capabilitiesRow
             }
         }
-        .padding(16)
+        .padding(DS.Spacing.xl)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .opacity(model.isAvailable ? 1.0 : 0.6)
@@ -326,12 +328,12 @@ struct ModelCard: View {
     private var modelIcon: some View {
         ZStack {
             Circle()
-                .fill(model.isAvailable ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                .frame(width: 40, height: 40)
+                .fill(model.isAvailable ? DS.Colors.accentPrimary.opacity(0.2) : DS.Colors.textSecondary.opacity(0.1))
+                .frame(width: DS.Layout.iconBackdropSize, height: DS.Layout.iconBackdropSize)
             
             Image(systemName: model.iconName)
-                .font(.system(size: 16))
-                .foregroundStyle(model.isAvailable ? .blue : .gray)
+                .font(.system(size: DS.Layout.iconSizeMedium))
+                .foregroundStyle(model.isAvailable ? DS.Colors.accentPrimary : DS.Colors.textSecondary)
         }
     }
     
@@ -341,20 +343,20 @@ struct ModelCard: View {
         case .notNeeded:
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.blue)
+                    .font(.system(size: DS.Layout.iconSizeStandard))
+                    .foregroundStyle(DS.Colors.accentPrimary)
             }
             
         case .notDownloaded:
             Button(action: onDownload) {
-                HStack(spacing: 4) {
+                HStack(spacing: DS.Spacing.xxs) {
                     Image(systemName: "arrow.down.circle")
                     if let size = model.sizeString {
                         Text(size)
-                            .font(.system(size: 11))
+                            .font(DS.Typography.captionSmall)
                     }
                 }
-                .foregroundStyle(.blue)
+                .foregroundStyle(DS.Colors.accentPrimary)
             }
             .buttonStyle(.plain)
             
@@ -367,28 +369,28 @@ struct ModelCard: View {
             // Only show checkmark for selected model
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.blue)
+                    .font(.system(size: DS.Layout.iconSizeStandard))
+                    .foregroundStyle(DS.Colors.accentPrimary)
             }
             // Not selected but downloaded: show nothing (download complete)
             
         case .failed:
             Button(action: onDownload) {
                 Image(systemName: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DS.Colors.error)
             }
             .buttonStyle(.plain)
         }
     }
     
     private var optionsRow: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DS.Spacing.xl) {
             // Language Selector
             if model.needsLanguageSelection {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Spacing.md) {
                     Text("语言:")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.textSecondary)
                     
                     Picker("", selection: Binding(
                         get: { settings.locale },
@@ -411,15 +413,15 @@ struct ModelCard: View {
                     set: { onPrecompiledLMToggle($0) }
                 )) {
                     Text("预编译词典")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .toggleStyle(.checkbox)
             }
             
             Spacer()
         }
-        .padding(.leading, 52)
+        .padding(.leading, DS.Layout.iconBackdropSize + DS.Spacing.lg)
     }
     
     private var capabilitiesRow: some View {
@@ -443,19 +445,19 @@ struct ModelCard: View {
             // Source
             HStack(spacing: 4) {
                 Image(systemName: model.source == .api ? "cloud" : "house")
-                    .font(.system(size: 10))
+                    .font(DS.Typography.timestamp)
                 Text(model.source == .api ? "云端" : "本地")
-                    .font(.system(size: 10))
+                    .font(DS.Typography.timestamp)
             }
-            .foregroundStyle(.gray)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .foregroundStyle(DS.Colors.textSecondary)
+            .padding(.horizontal, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.xs)
             .background(ModelSettingsColors.badgeBackground)
-            .cornerRadius(4)
+            .cornerRadius(DS.CornerRadius.xs)
             
             Spacer()
         }
-        .padding(.leading, 52)
+        .padding(.leading, DS.Layout.iconBackdropSize + DS.Spacing.lg)
     }
 }
 
@@ -470,23 +472,23 @@ struct CapabilityBadge: View {
     let maxValue: Int
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.xxs) {
             Image(systemName: icon)
-                .font(.system(size: 10))
-                .foregroundStyle(.gray)
+                .font(DS.Typography.timestamp)
+                .foregroundStyle(DS.Colors.textSecondary)
             
             HStack(spacing: 2) {
                 ForEach(0..<maxValue, id: \.self) { i in
                     Circle()
-                        .fill(i < value ? Color.blue : Color.gray.opacity(0.3))
-                        .frame(width: 6, height: 6)
+                        .fill(i < value ? DS.Colors.accentPrimary : DS.Colors.textSecondary.opacity(0.3))
+                        .frame(width: DS.Spacing.sm, height: DS.Spacing.sm)
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.xs)
         .background(ModelSettingsColors.badgeBackground)
-        .cornerRadius(4)
+        .cornerRadius(DS.CornerRadius.xs)
     }
 }
 
@@ -498,12 +500,12 @@ struct RoleBadge: View {
     
     var body: some View {
         Text(role.displayName)
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .font(DS.Typography.timestamp.weight(.bold))
+            .foregroundStyle(DS.Colors.textPrimary)
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.xxs)
             .background(badgeColor)
-            .cornerRadius(4)
+            .cornerRadius(DS.CornerRadius.xs)
     }
     
     private var badgeColor: Color {

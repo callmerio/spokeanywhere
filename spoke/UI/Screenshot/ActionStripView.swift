@@ -14,7 +14,7 @@ struct ActionStripView: View {
             ActionButton(
                 icon: item.isPinned ? "pin.fill" : "pin",
                 isActive: item.isPinned,
-                activeColor: .orange
+                activeColor: DesignTokens.Colors.warning
             ) {
                 togglePin()
             }
@@ -24,7 +24,7 @@ struct ActionStripView: View {
             ActionButton(
                 icon: item.isLocked ? "lock.fill" : "lock",
                 isActive: item.isLocked,
-                activeColor: .blue
+                activeColor: DesignTokens.Colors.accentInfo
             ) {
                 toggleLock()
             }
@@ -34,7 +34,7 @@ struct ActionStripView: View {
             ActionButton(
                 icon: item.isMarked ? "bookmark.fill" : "bookmark",
                 isActive: item.isMarked,
-                activeColor: .orange
+                activeColor: DesignTokens.Colors.warning
             ) {
                 toggleMark()
             }
@@ -67,7 +67,7 @@ struct ActionStripView: View {
                 .padding(.horizontal, 4)
             
             // Close 按钮
-            ActionButton(icon: "xmark", activeColor: .red) {
+            ActionButton(icon: "xmark", activeColor: DesignTokens.Colors.error) {
                 closeWindow()
             }
             .help("Close")
@@ -77,7 +77,7 @@ struct ActionStripView: View {
         .background(
             Capsule()
                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                .shadow(color: DesignTokens.Colors.overlayDark, radius: 4, x: 0, y: 2)
         )
         .padding(.bottom, 12)
     }
@@ -144,7 +144,7 @@ struct ActionStripView: View {
     
     private static func extractText(from image: CGImage) async -> String {
         await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
+            let request = VNRecognizeTextRequest { request, _ in
                 guard let observations = request.results as? [VNRecognizedTextObservation] else {
                     continuation.resume(returning: "")
                     return
@@ -183,7 +183,7 @@ private struct ActionButton: View {
     
     let icon: String
     var isActive: Bool = false
-    var activeColor: Color = .white
+    var activeColor: Color = DesignTokens.Colors.textPrimary
     let action: () -> Void
     
     @State private var isHovered = false
@@ -192,11 +192,11 @@ private struct ActionButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundColor(isActive ? activeColor : .primary)
+                .foregroundColor(isActive ? activeColor : DesignTokens.Colors.textPrimary)
                 .frame(width: 28, height: 28)
                 .background(
                     Circle()
-                        .fill(isHovered ? Color.white.opacity(0.2) : Color.clear)
+                        .fill(isHovered ? DesignTokens.Colors.buttonActive : DesignTokens.Colors.clear)
                 )
         }
         .buttonStyle(.plain)

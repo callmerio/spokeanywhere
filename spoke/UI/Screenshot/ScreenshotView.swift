@@ -19,11 +19,11 @@ struct ScreenshotView: View {
                     .opacity(item.opacity)
             } else {
                 Rectangle()
-                    .fill(Color.gray.opacity(0.3))
+                    .fill(DesignTokens.Colors.cardBackground)
                     .overlay(
                         Image(systemName: "photo")
                             .font(.largeTitle)
-                            .foregroundColor(.gray)
+                            .foregroundColor(DesignTokens.Colors.textSecondary)
                     )
             }
             
@@ -39,11 +39,11 @@ struct ScreenshotView: View {
                     HStack {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
                             .padding(5)
                             .background(
                                 Circle()
-                                    .fill(Color.black.opacity(0.6))
+                                    .fill(DesignTokens.Colors.overlayMedium)
                             )
                             .padding(8)
                         Spacer()
@@ -54,7 +54,7 @@ struct ScreenshotView: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        .shadow(color: DesignTokens.Colors.overlayDark, radius: 8, x: 0, y: 4)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
@@ -162,7 +162,7 @@ struct ScreenshotView: View {
     
     private static func extractText(from image: CGImage) async -> String {
         await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
+            let request = VNRecognizeTextRequest { request, _ in
                 guard let observations = request.results as? [VNRecognizedTextObservation] else {
                     continuation.resume(returning: "")
                     return

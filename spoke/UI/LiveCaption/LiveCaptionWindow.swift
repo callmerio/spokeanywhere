@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import OSLog
+import SwiftUI
 
 // MARK: - Live Caption Window Manager
 

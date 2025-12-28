@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - 常用图标列表
 
 private let commonIcons: [[String]] = [
@@ -19,7 +21,7 @@ struct ToolbarSettingsView: View {
     @State private var editingAIAction: ToolbarAction?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
             // 预览区
             ToolbarPreviewSection()
             
@@ -52,8 +54,8 @@ struct ToolbarSettingsView: View {
             }
             
             Text("前 \(configService.visibleCount) 个启用技能将显示在工具栏上，其余的将收纳在更多菜单中。")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary)
             
             // 可拖拽列表
             List {
@@ -79,10 +81,10 @@ struct ToolbarSettingsView: View {
                 Button("恢复默认") {
                     configService.resetToDefaults()
                 }
-                .foregroundColor(.secondary)
+                .foregroundStyle(DS.Colors.textSecondary)
             }
         }
-        .padding()
+        .padding(DS.Spacing.xl)
         .sheet(isPresented: $showAddSheet) {
             AddActionSheet()
         }
@@ -101,10 +103,12 @@ private struct ToolbarPreviewSection: View {
     @ObservedObject private var configService = ToolbarConfigService.shared
     
     var body: some View {
-        VStack(spacing: 12) {
+        let previewShadow = DS.Shadow.medium()
+
+        return VStack(spacing: DS.Spacing.lg) {
             Text("预览")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             // 模拟工具栏
@@ -112,69 +116,68 @@ private struct ToolbarPreviewSection: View {
                 // Logo
                 HStack(spacing: 0) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(red: 0.4, green: 0.6, blue: 1.0), Color(red: 0.8, green: 0.4, blue: 1.0)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 36, height: 44)
+                        .font(.system(size: DS.Layout.iconSizeToolbar, weight: .semibold))
+                        .foregroundStyle(DS.Gradients.toolbarLogo)
+                        .frame(width: DS.Layout.toolbarHeight, height: DS.Layout.toolbarHeight)
                 }
                 
                 // Divider
                 Rectangle()
-                    .fill(Color.white.opacity(0.15))
-                    .frame(width: 1, height: 18)
+                    .fill(DS.Colors.separator)
+                    .frame(width: DS.BorderWidth.thin, height: DS.Layout.toolbarSeparatorHeight)
                 
                 // Actions
-                HStack(spacing: 2) {
+                HStack(spacing: DS.Spacing.xxs) {
                     ForEach(configService.visibleActions) { action in
-                        HStack(spacing: 6) {
+                        HStack(spacing: DS.Spacing.sm) {
                             Image(systemName: action.icon)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.85))
+                                .font(.system(size: DS.Layout.iconSizeToolbar))
+                                .foregroundStyle(DS.Colors.icon)
                             Text(action.name)
-                                .font(.system(size: 13))
-                                .foregroundColor(.white.opacity(0.95))
+                                .font(DS.Typography.button)
+                                .foregroundStyle(DS.Colors.textPrimary)
                         }
-                        .padding(.horizontal, 8)
-                        .frame(height: 32)
+                        .padding(.horizontal, DS.Spacing.md)
+                        .frame(height: DS.Layout.toolbarButtonHeight)
                         // Hover effect simulation
                         .background(Color.clear)
                     }
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, DS.Spacing.xs)
                 
                 if configService.hasMenuActions {
                     // Divider
                     Rectangle()
-                        .fill(Color.white.opacity(0.15))
-                        .frame(width: 1, height: 18)
+                        .fill(DS.Colors.separator)
+                        .frame(width: DS.BorderWidth.thin, height: DS.Layout.toolbarSeparatorHeight)
                     
                     // Menu Button
                     HStack {
                         Image(systemName: "chevron.up")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white.opacity(0.85))
+                            .font(.system(size: DS.Layout.iconSizeSmall, weight: .bold))
+                            .foregroundStyle(DS.Colors.icon)
                     }
-                    .frame(width: 32, height: 44)
+                    .frame(width: DS.Layout.toolbarButtonHeight, height: DS.Layout.toolbarHeight)
                 }
             }
-            .frame(height: 44)
-            .background(Color(hex: "1F1F1F"))
-            .cornerRadius(12)
+            .frame(height: DS.Layout.toolbarHeight)
+            .background(DS.Colors.toolbarBackground)
+            .cornerRadius(DS.CornerRadius.lg)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                    .stroke(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
             )
-            .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+            .shadow(
+                color: previewShadow.color,
+                radius: previewShadow.radius,
+                x: previewShadow.x,
+                y: previewShadow.y
+            )
         }
-        .padding()
+        .padding(DS.Spacing.xl)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(white: 0.15))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                .fill(DS.Colors.settingsSurfaceElevated)
         )
     }
 }
@@ -191,16 +194,16 @@ private struct ActionRowView: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             // 拖动手柄
             Image(systemName: "line.3.horizontal")
-                .foregroundColor(.secondary)
-                .font(.system(size: 12))
+                .foregroundStyle(DS.Colors.textSecondary)
+                .font(DS.Typography.caption)
             
             // 图标
             Image(systemName: action.icon)
                 .foregroundColor(action.iconColor)
-                .frame(width: 20)
+                .frame(width: DS.Layout.iconSizeStandard)
             
             // 名称
             Text(action.name)
@@ -210,44 +213,44 @@ private struct ActionRowView: View {
             if !action.isBuiltin {
                 Text("自定义")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.2))
-                    .cornerRadius(4)
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xxs)
+                    .background(DS.Colors.badgeBackground)
+                    .cornerRadius(DS.CornerRadius.xs)
             } else if action.isAIAction {
                 // AI 动作显示模型名称
                 let modelName = action.profileId.flatMap { id in
                     LLMSettings.shared.profiles.first { $0.id == id }?.name
                 } ?? "默认"
                 
-                HStack(spacing: 4) {
+                HStack(spacing: DS.Spacing.xxs) {
                     Text(modelName)
                         .font(.caption2)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(DS.Colors.accentInfo)
                     
                     if action.enableSearch {
                         Image(systemName: "network")
-                            .font(.system(size: 8))
-                            .foregroundColor(.green)
+                            .font(.system(size: DS.Layout.iconSizeSmall))
+                            .foregroundStyle(DS.Colors.success)
                     }
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.blue.opacity(0.15))
-                .cornerRadius(4)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, DS.Spacing.xxs)
+                .background(DS.Colors.accentInfo.opacity(0.15))
+                .cornerRadius(DS.CornerRadius.xs)
             }
             
             Spacer()
             
             // 操作按钮 (hover 显示)
             if isHovered {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Spacing.md) {
                     // AI 动作编辑按钮
                     if action.isAIAction {
                         Button(action: onEditAI) {
                             Image(systemName: "slider.horizontal.3")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(DS.Colors.accentPrimary)
                         }
                         .buttonStyle(.plain)
                         .help("编辑提示词和模型")
@@ -257,7 +260,7 @@ private struct ActionRowView: View {
                     if !action.isBuiltin {
                         Button(action: onEdit) {
                             Image(systemName: "pencil")
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(DS.Colors.textSecondary)
                         }
                         .buttonStyle(.plain)
                     }
@@ -265,7 +268,7 @@ private struct ActionRowView: View {
                     // 删除/禁用按钮
                     Button(action: onDelete) {
                         Image(systemName: action.isBuiltin ? "eye.slash" : "trash")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(DS.Colors.textSecondary)
                     }
                     .buttonStyle(.plain)
                     .help(action.isBuiltin ? "禁用" : "删除")
@@ -281,11 +284,11 @@ private struct ActionRowView: View {
             .toggleStyle(.switch)
             .controlSize(.small)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
+        .padding(.vertical, DS.Spacing.md)
+        .padding(.horizontal, DS.Spacing.xs)
         .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isHovered ? Color.white.opacity(0.05) : Color.clear)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.sm)
+                .fill(isHovered ? DS.Colors.rowHover : Color.clear)
         )
         .onHover { isHovered = $0 }
     }
@@ -316,7 +319,7 @@ struct AddActionSheet: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -325,7 +328,7 @@ struct AddActionSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("技能名称和图标")
-                    Text("*").foregroundColor(.red)
+                    Text("*").foregroundStyle(DS.Colors.error)
                 }
                 .font(.subheadline)
                 
@@ -335,7 +338,7 @@ struct AddActionSheet: View {
                     
                     Text("\(name.count)/20")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(DS.Colors.textSecondary)
                     
                     // 图标选择按钮
                     Button {
@@ -344,8 +347,8 @@ struct AddActionSheet: View {
                         Image(systemName: icon)
                             .font(.system(size: 16))
                             .frame(width: 32, height: 32)
-                            .background(Color.secondary.opacity(0.2))
-                            .cornerRadius(6)
+                            .background(DS.Colors.iconButtonBackground)
+                            .cornerRadius(DS.CornerRadius.sm)
                     }
                     .buttonStyle(.plain)
                     .popover(isPresented: $showIconPicker) {
@@ -358,11 +361,11 @@ struct AddActionSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("提示词内容")
-                    Text("*").foregroundColor(.red)
+                    Text("*").foregroundStyle(DS.Colors.error)
                     Spacer()
                     Text("使用 \(ToolbarActionPlaceholder.selection) 代表选中文字")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(DS.Colors.textSecondary)
                     Button("示例") {
                         prompt = "请用简单易懂的语言解释以下内容：\n\n\(ToolbarActionPlaceholder.selection)"
                     }
@@ -374,11 +377,11 @@ struct AddActionSheet: View {
                     .font(.body)
                     .frame(minHeight: 150)
                     .padding(4)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(6)
+                    .background(DS.Colors.textFieldBackground)
+                    .cornerRadius(DS.CornerRadius.sm)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: DS.CornerRadius.sm)
+                            .stroke(DS.Colors.fieldBorder, lineWidth: DS.BorderWidth.thin)
                     )
             }
             
@@ -386,7 +389,7 @@ struct AddActionSheet: View {
             if let error = validationError {
                 Text(error)
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundStyle(DS.Colors.error)
             }
             
             Spacer()
@@ -485,7 +488,7 @@ struct EditActionSheet: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -506,8 +509,8 @@ struct EditActionSheet: View {
                         Image(systemName: icon)
                             .font(.system(size: 16))
                             .frame(width: 32, height: 32)
-                            .background(Color.secondary.opacity(0.2))
-                            .cornerRadius(6)
+                            .background(DS.Colors.iconButtonBackground)
+                            .cornerRadius(DS.CornerRadius.sm)
                     }
                     .buttonStyle(.plain)
                     .popover(isPresented: $showIconPicker) {
@@ -525,18 +528,18 @@ struct EditActionSheet: View {
                     .font(.body)
                     .frame(minHeight: 150)
                     .padding(4)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(6)
+                    .background(DS.Colors.textFieldBackground)
+                    .cornerRadius(DS.CornerRadius.sm)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: DS.CornerRadius.sm)
+                            .stroke(DS.Colors.fieldBorder, lineWidth: DS.BorderWidth.thin)
                     )
             }
             
             if let error = validationError {
                 Text(error)
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundStyle(DS.Colors.error)
             }
             
             Spacer()
@@ -616,49 +619,49 @@ struct AIActionEditSheet: View {
             // 标题栏
             HStack {
                 Image(systemName: action.icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: DS.Layout.iconSizeStandard))
                     .foregroundColor(action.iconColor)
                 Text("编辑 \(action.name)")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DS.Typography.title)
                 Spacer()
                 Button {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: DS.Layout.iconSizeStandard))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(20)
-            .background(Color(hex: "1a1a1a"))
+            .padding(DS.Spacing.xxl)
+            .background(DS.Colors.settingsBackground)
             
-            Divider().background(Color.white.opacity(0.1))
+            Divider().background(DS.Colors.borderPrimary)
             
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
                     // 模型选择
                     modelSelectionSection
                     
                     // 联网搜索开关
                     searchToggleSection
                     
-                    Divider().background(Color.white.opacity(0.1))
+                    Divider().background(DS.Colors.borderPrimary)
                     
                     // 提示词编辑
                     promptSection
                 }
-                .padding(20)
+                .padding(DS.Spacing.xxl)
             }
             
-            Divider().background(Color.white.opacity(0.1))
+            Divider().background(DS.Colors.borderPrimary)
             
             // 底部按钮
             HStack {
                 Button("恢复默认") {
                     resetToDefault()
                 }
-                .foregroundColor(.orange)
+                .foregroundStyle(DS.Colors.warning)
                 
                 Spacer()
                 
@@ -673,32 +676,32 @@ struct AIActionEditSheet: View {
                 .keyboardShortcut(.return)
                 .buttonStyle(.borderedProminent)
             }
-            .padding(20)
-            .background(Color(hex: "1a1a1a"))
+            .padding(DS.Spacing.xxl)
+            .background(DS.Colors.settingsBackground)
         }
         .frame(width: 520, height: 560)
-        .background(Color(hex: "1f1f1f"))
+        .background(DS.Colors.toolbarBackground)
     }
     
     // MARK: - 模型选择区
     
     private var modelSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             HStack {
                 Text("AI 模型")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.button.weight(.medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
                 if editingProfileId == nil {
                     Text("使用默认")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(4)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
+                        .padding(.horizontal, DS.Spacing.md)
+                        .padding(.vertical, DS.Spacing.xxs)
+                        .background(DS.Colors.buttonHover)
+                        .cornerRadius(DS.CornerRadius.xs)
                 }
             }
             
@@ -713,7 +716,7 @@ struct AIActionEditSheet: View {
                     editingProfileId = nil
                 }
                 
-                Divider().background(Color.white.opacity(0.06))
+                Divider().background(DS.Colors.settingsCardBorder)
                 
                 // 已配置的模型列表
                 ForEach(llmSettings.profiles, id: \.id) { profile in
@@ -726,37 +729,37 @@ struct AIActionEditSheet: View {
                     }
                     
                     if profile.id != llmSettings.profiles.last?.id {
-                        Divider().background(Color.white.opacity(0.06))
+                        Divider().background(DS.Colors.settingsCardBorder)
                     }
                 }
             }
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(8)
+            .background(DS.Colors.rowHover)
+            .cornerRadius(DS.CornerRadius.md)
         }
     }
     
     private func modelRow(name: String, subtitle: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Spacing.lg) {
                 // 选中标记
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .blue : .secondary)
+                    .font(.system(size: DS.Layout.iconSizeToolbar))
+                    .foregroundStyle(isSelected ? DS.Colors.accentPrimary : DS.Colors.textSecondary)
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text(name)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white)
+                        .font(DS.Typography.button.weight(.medium))
+                        .foregroundStyle(DS.Colors.textPrimary)
                     Text(subtitle)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.vertical, DS.Spacing.lg)
+            .background(isSelected ? DS.Colors.accentPrimary.opacity(0.1) : Color.clear)
         }
         .buttonStyle(.plain)
     }
@@ -765,13 +768,13 @@ struct AIActionEditSheet: View {
     
     private var searchToggleSection: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text("启用联网搜索")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.button.weight(.medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 Text("查询时联网获取最新信息")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
             
             Spacer()
@@ -781,49 +784,49 @@ struct AIActionEditSheet: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
         }
-        .padding(12)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(8)
+        .padding(DS.Spacing.lg)
+        .background(DS.Colors.rowHover)
+        .cornerRadius(DS.CornerRadius.md)
     }
     
     // MARK: - 提示词区
     
     private var promptSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
             HStack {
                 Text("提示词")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.button.weight(.medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
-                HStack(spacing: 6) {
-                    placeholderBadge("{{selection}}", color: .blue)
-                    placeholderBadge("{{context}}", color: .green)
+                HStack(spacing: DS.Spacing.sm) {
+                    placeholderBadge("{{selection}}", color: DS.Colors.accentPrimary)
+                    placeholderBadge("{{context}}", color: DS.Colors.success)
                 }
             }
             
             TextEditor(text: $editingPrompt)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: DS.Typography.fontSizeCaption, design: .monospaced))
                 .frame(minHeight: 160)
-                .padding(10)
-                .background(Color(hex: "141414"))
-                .cornerRadius(8)
+                .padding(DS.Spacing.lg)
+                .background(DS.Colors.settingsSidebarBackground)
+                .cornerRadius(DS.CornerRadius.md)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                        .stroke(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.thin)
                 )
         }
     }
     
     private func placeholderBadge(_ text: String, color: Color) -> some View {
         Text(text)
-            .font(.system(size: 10, design: .monospaced))
-            .foregroundColor(color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .font(.system(size: DS.Typography.fontSizeTimestamp, design: .monospaced))
+            .foregroundStyle(color)
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.xxs)
             .background(color.opacity(0.15))
-            .cornerRadius(4)
+            .cornerRadius(DS.CornerRadius.xs)
     }
     
     // MARK: - Actions
@@ -870,15 +873,15 @@ struct IconPickerPopover: View {
                                     .frame(width: 36, height: 36)
                                     .background(
                                         selectedIcon == iconName
-                                            ? Color.accentColor.opacity(0.2)
-                                            : Color.secondary.opacity(0.1)
+                                            ? DS.Colors.accentPrimary.opacity(0.2)
+                                            : DS.Colors.textSecondary.opacity(0.1)
                                     )
                                     .cornerRadius(8)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(
                                                 selectedIcon == iconName
-                                                    ? Color.accentColor
+                                                    ? DS.Colors.accentPrimary
                                                     : Color.clear,
                                                 lineWidth: 2
                                             )

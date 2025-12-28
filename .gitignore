@@ -81,3 +81,7 @@ htmlcov/
 *.log
 tmp/
 .claude_home/
+.codex/prompts/issues_csv_execute.md
+.codex/prompts/plan_to_issues_csv.md
+.codex/prompts/plan.md
+.codex/prompts/plan.md

@@ -1,5 +1,7 @@
-import SwiftUI
 import AppKit
+import SwiftUI
+
+private typealias DS = DesignTokens
 
 // MARK: - Attachment Thumbnail View
 
@@ -23,7 +25,7 @@ struct AttachmentThumbnailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                        .stroke(DS.Colors.borderPrimary, lineWidth: 0.5)
                 )
             
             // 删除按钮（Hover 时显示）
@@ -31,8 +33,8 @@ struct AttachmentThumbnailView: View {
                 Button(action: onRemove) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(.white)
-                        .background(Circle().fill(Color.black.opacity(0.6)))
+                        .foregroundStyle(DS.Colors.textPrimary)
+                        .background(Circle().fill(DS.Colors.overlayMedium))
                 }
                 .buttonStyle(.plain)
                 .offset(x: 4, y: -4)
@@ -72,7 +74,7 @@ struct AttachmentThumbnailView: View {
         } else {
             // 缩略图生成中
             ZStack {
-                Color.white.opacity(0.1)
+                DS.Colors.cardBackground
                 ProgressView()
                     .scaleEffect(0.6)
             }
@@ -91,14 +93,14 @@ struct AttachmentThumbnailView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {
-                    Color.white.opacity(0.1)
+                    DS.Colors.cardBackground
                     ProgressView()
                         .scaleEffect(0.6)
                 }
                 
                 Image(systemName: "play.fill")
                     .font(.system(size: 16))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .shadow(radius: 2)
             }
             .onAppear {
@@ -107,7 +109,7 @@ struct AttachmentThumbnailView: View {
         } else {
             // 普通文件：图标 + 扩展名
             ZStack {
-                Color.white.opacity(0.1)
+                DS.Colors.cardBackground
                 
                 Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
                     .resizable()
@@ -120,10 +122,10 @@ struct AttachmentThumbnailView: View {
                         Spacer()
                         Text(url.pathExtension.uppercased())
                             .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DS.Colors.textPrimary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-                            .background(Color.black.opacity(0.6))
+                            .background(DS.Colors.overlayMedium)
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
                 }
@@ -139,7 +141,10 @@ struct AttachmentThumbnailView: View {
         ZStack {
             // 渐变背景
             LinearGradient(
-                colors: [Color.purple.opacity(0.3), Color.blue.opacity(0.3)],
+                colors: [
+                    DS.Colors.accentGradientEnd.opacity(0.3),
+                    DS.Colors.accentGradientStart.opacity(0.3)
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -147,11 +152,11 @@ struct AttachmentThumbnailView: View {
             VStack(spacing: 2) {
                 Image(systemName: "doc.text.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Text("\(count)")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
             }
         }
     }
@@ -204,7 +209,7 @@ struct AttachmentsAreaView: View {
 
 #Preview("Single Thumbnail") {
     ZStack {
-        Color.black.opacity(0.8)
+        DS.Colors.overlayStrong
         
         HStack(spacing: 16) {
             // 图片

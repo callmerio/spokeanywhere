@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - Live Caption Toolbar
 
 /// 字幕工具栏
@@ -31,7 +33,7 @@ struct LiveCaptionToolbar: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color(white: 0.1))
+        .background(DS.Colors.toolbarBackground)
     }
     
     // MARK: - App Name Button
@@ -49,7 +51,7 @@ struct LiveCaptionToolbar: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8))
             }
-            .foregroundColor(.white.opacity(0.8))
+            .foregroundStyle(DS.Colors.textPrimary)
         }
         .buttonStyle(.plain)
         .help("点击重新选择应用")
@@ -82,7 +84,7 @@ struct LiveCaptionToolbar: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8))
             }
-            .foregroundColor(.white.opacity(0.8))
+            .foregroundStyle(DS.Colors.textPrimary)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -95,12 +97,16 @@ struct LiveCaptionToolbar: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: isExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                Image(
+                    systemName: isExpanded
+                        ? "arrow.down.right.and.arrow.up.left"
+                        : "arrow.up.left.and.arrow.down.right"
+                )
                     .font(.system(size: 11))
                 Text(isExpanded ? "收起字幕" : "展开字幕")
                     .font(.system(size: 12))
             }
-            .foregroundColor(.white.opacity(0.8))
+            .foregroundStyle(DS.Colors.textPrimary)
         }
         .buttonStyle(.plain)
     }
@@ -111,10 +117,10 @@ struct LiveCaptionToolbar: View {
         } label: {
             Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 16))
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundStyle(DS.Colors.textPlaceholder)
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
+        .onHover { _ in
             // 可以添加 hover 效果
         }
     }

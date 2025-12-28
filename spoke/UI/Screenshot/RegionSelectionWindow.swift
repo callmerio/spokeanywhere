@@ -95,13 +95,13 @@ final class RegionSelectionWindow: NSPanel {
         contentView = selectionView
         
         // 框选完成，进入编辑模式
-        selectionView.onSelectionComplete = { [weak self] rect in
+        selectionView.onSelectionComplete = { [weak self] _ in
             self?.showToolbar()
             self?.setupAnnotationHistoryCallback()
         }
         
         // 选区变化，更新工具栏位置
-        selectionView.onSelectionChanged = { [weak self] rect in
+        selectionView.onSelectionChanged = { [weak self] _ in
             self?.updateToolbarPosition()
         }
         
@@ -111,7 +111,7 @@ final class RegionSelectionWindow: NSPanel {
         }
         
         // Enter 确认
-        selectionView.onConfirm = { [weak self] rect in
+        selectionView.onConfirm = { [weak self] _ in
             self?.handleConfirm(mode: .temporary)
         }
     }

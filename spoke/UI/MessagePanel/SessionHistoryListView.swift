@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 // MARK: - History Group View
 
@@ -138,7 +138,6 @@ struct HistoryGroupView: View {
         }
         .padding(.bottom, 8)
     }
-    
 }
 
 // MARK: - Card Style
@@ -179,14 +178,14 @@ struct HistoryRecordCard: View {
                     .foregroundColor(Color.white.opacity(0.4))
                 
                 // 删除按钮（始终占位，opacity 控制显示）
-                Button(action: { onDelete?() }) {
+                Button(action: { onDelete?() }, label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.5))
                         .frame(width: 20, height: 20)
                         .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
-                }
+                })
                 .buttonStyle(.plain)
                 .opacity(isHovered && onDelete != nil ? 1 : 0)
                 .animation(.easeInOut(duration: 0.12), value: isHovered)
@@ -265,7 +264,7 @@ struct HistoryRecordCard: View {
 #Preview {
     let testRecords = [
         SessionRecord(type: .conversation, title: "测试对话", preview: "您好！我是 AI 助手。"),
-        SessionRecord(type: .transcription, title: "测试转录", preview: "这是一段转录文本"),
+        SessionRecord(type: .transcription, title: "测试转录", preview: "这是一段转录文本")
     ]
     
     return VStack(spacing: 12) {

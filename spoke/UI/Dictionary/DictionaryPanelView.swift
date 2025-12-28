@@ -1,6 +1,6 @@
-import SwiftUI
 import AppKit
 import OSLog
+import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "DictionaryPanelView")
 
@@ -147,7 +147,7 @@ struct DictionaryPanelView: View {
         }
         .padding(.horizontal, DesignTokens.Spacing.xl)
         .padding(.vertical, DesignTokens.Spacing.lg)
-        .background(Color.black.opacity(0.2))
+        .background(DesignTokens.Colors.overlayDark.opacity(0.7))
     }
     
     private func actionItem(_ title: String, key: String) -> some View {
@@ -179,11 +179,11 @@ struct DictionaryPanelView: View {
     
     private func detailHeader(_ result: LocalDictionaryResult) -> some View {
         HStack(spacing: DesignTokens.Spacing.lg) {
-            Button(action: { state.backToList() }) {
+            Button(action: { state.backToList() }, label: {
                 Image(systemName: "arrow.left")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(DesignTokens.Colors.textSecondary)
-            }
+            })
             .buttonStyle(.plain)
             
             Spacer()
@@ -237,7 +237,7 @@ struct DictionaryPanelView: View {
         }
         .padding(.horizontal, DesignTokens.Spacing.xl)
         .padding(.vertical, DesignTokens.Spacing.lg)
-        .background(Color.black.opacity(0.2))
+        .background(DesignTokens.Colors.overlayDark.opacity(0.7))
     }
 }
 
@@ -403,4 +403,3 @@ struct DictionarySearchField: NSViewRepresentable {
         }
     }
 }
-

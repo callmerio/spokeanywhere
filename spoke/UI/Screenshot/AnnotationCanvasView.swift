@@ -44,7 +44,7 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         }
     }
     
-    var currentColor: NSColor = .systemRed
+    var currentColor: NSColor = DesignTokens.Colors.NS.annotationPrimary
     var currentLineWidth: CGFloat = 3 // For arrow
     var currentBrushSize: CGFloat = 3 // For pen/marker
     
@@ -88,13 +88,16 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
     
     private func setup() {
         wantsLayer = true
-        layer?.backgroundColor = NSColor.clear.cgColor
+        layer?.backgroundColor = DesignTokens.Colors.NS.clear.cgColor
         
         historyManager.onHistoryChanged = { [weak self] in
             guard let self = self else { return }
             self.onHistoryChanged?(self.historyManager.canUndo, self.historyManager.canRedo)
         }
     }
+}
+
+extension AnnotationCanvasView {
     
     // MARK: - Drawing
     
@@ -186,6 +189,9 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         result.unlockFocus()
         return result
     }
+}
+
+extension AnnotationCanvasView {
     
     // MARK: - Mouse Events
     
@@ -321,7 +327,7 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         }
         
         // 检查是否 hover 到标注上（显示移动光标）
-        if let _ = findAnnotation(at: location) {
+        if findAnnotation(at: location) != nil {
             NSCursor.openHand.set()
         } else {
             updateCursor()
@@ -346,6 +352,9 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         
         window?.makeFirstResponder(textView)
     }
+}
+
+extension AnnotationCanvasView {
     
     // MARK: - Tracking Area
     
@@ -433,8 +442,6 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         needsDisplay = true
     }
     
-    // MARK: - Cursor
-    
     // MARK: - Scroll Wheel (Adjust Brush Size)
     
     override func scrollWheel(with event: NSEvent) {
@@ -485,11 +492,11 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         let rect = CGRect(x: 2, y: 2, width: cursorSize, height: cursorSize)
         
         // 绘制空心圆
-        context.setStrokeColor(NSColor.white.cgColor)
+        context.setStrokeColor(DesignTokens.Colors.NS.inkLight.cgColor)
         context.setLineWidth(1)
         context.strokeEllipse(in: rect.insetBy(dx: -0.5, dy: -0.5)) // 外白边（增加对比度）
         
-        context.setStrokeColor(NSColor.black.cgColor)
+        context.setStrokeColor(DesignTokens.Colors.NS.inkDark.cgColor)
         context.setLineWidth(1)
         context.strokeEllipse(in: rect) // 内黑边
         
@@ -511,16 +518,16 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         let context = NSGraphicsContext.current!.cgContext
         
         // 白色圆形背景
-        context.setFillColor(NSColor.white.cgColor)
+        context.setFillColor(DesignTokens.Colors.NS.inkLight.cgColor)
         context.fillEllipse(in: CGRect(x: 2, y: 2, width: size - 4, height: size - 4))
         
         // 灰色边框
-        context.setStrokeColor(NSColor.darkGray.cgColor)
+        context.setStrokeColor(DesignTokens.Colors.NS.inkMuted.cgColor)
         context.setLineWidth(2)
         context.strokeEllipse(in: CGRect(x: 2, y: 2, width: size - 4, height: size - 4))
         
         // 红色斜线（禁止符号）
-        context.setStrokeColor(NSColor.systemRed.cgColor)
+        context.setStrokeColor(DesignTokens.Colors.NS.error.cgColor)
         context.setLineWidth(2.5)
         context.move(to: CGPoint(x: 6, y: size - 6))
         context.addLine(to: CGPoint(x: size - 6, y: 6))

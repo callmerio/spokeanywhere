@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 private enum TagDesign {
     static let fontSize: CGFloat = 12
     static let closeIconSize: CGFloat = 8
@@ -7,9 +9,6 @@ private enum TagDesign {
     static let horizontalPadding: CGFloat = 8
     static let verticalPadding: CGFloat = 6
     static let cornerRadius: CGFloat = 6
-    static let textOpacity: Double = 0.9
-    static let iconOpacity: Double = 0.5
-    static let backgroundOpacity: Double = 0.15
 }
 
 /// Workflow 标签视图（方框样式，可选关闭按钮）
@@ -22,13 +21,13 @@ struct WorkflowTagView: View {
         HStack(spacing: 4) {
             Text("/\(keyword)")
                 .font(.system(size: TagDesign.fontSize, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(TagDesign.textOpacity))
+                .foregroundStyle(DS.Colors.textPrimary)
             
             if let onRemove = onRemove {
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
                         .font(.system(size: TagDesign.closeIconSize, weight: .bold))
-                        .foregroundStyle(.white.opacity(TagDesign.iconOpacity))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
                 .padding(TagDesign.closeButtonPadding)
@@ -38,7 +37,7 @@ struct WorkflowTagView: View {
         }
         .padding(.horizontal, TagDesign.horizontalPadding)
         .padding(.vertical, TagDesign.verticalPadding)
-        .background(Color.white.opacity(TagDesign.backgroundOpacity))
+        .background(DS.Colors.chipBackground)
         .clipShape(RoundedRectangle(cornerRadius: TagDesign.cornerRadius))
     }
 }
@@ -61,5 +60,5 @@ struct WorkflowTagBadge: View {
         WorkflowTagBadge(keyword: "cc")
     }
     .padding()
-    .background(Color.black)
+    .background(DS.Colors.settingsBackground)
 }

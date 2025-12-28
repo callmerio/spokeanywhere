@@ -19,7 +19,7 @@ struct DictionarySettingsContent: View {
     @State private var showVocabularyList = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xl) {
             // 标题和描述
             headerSection
             
@@ -57,16 +57,16 @@ struct DictionarySettingsContent: View {
     // MARK: - Header Section
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     Text("词典")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(DS.Typography.titleLarge)
+                        .foregroundStyle(DS.Colors.textPrimary)
                     
                     Text("手动维护热词词典，确保专有名词在转写与润色时始终准确输出。")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 
                 Spacer()
@@ -80,21 +80,17 @@ struct DictionarySettingsContent: View {
                     Label("批量导入", systemImage: "doc.text")
                 }
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Spacing.sm) {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: DS.Typography.fontSizeCaption, weight: .semibold))
                     Text("新增热词")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: DS.Typography.fontSizeButton, weight: .semibold))
                 }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .foregroundStyle(DS.Colors.textPrimary)
+                .padding(.horizontal, DS.Spacing.xl)
+                .padding(.vertical, DS.Spacing.lg)
                 .background(
-                    LinearGradient(
-                        colors: [Color.orange, Color.orange.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    DS.Gradients.ctaWarm
                 )
                 .cornerRadius(DS.CornerRadius.md)
             }
@@ -104,15 +100,15 @@ struct DictionarySettingsContent: View {
             // 词典设置开关
             dictionarySettingsRow
         }
-        .padding(.bottom, 4)
+        .padding(.bottom, DS.Spacing.xs)
     }
     
     private var dictionarySettingsRow: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: DS.Spacing.lg) {
             // 第一行：开关和状态
-            HStack(spacing: 16) {
+            HStack(spacing: DS.Spacing.xl) {
                 // 词典注入开关
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Spacing.md) {
                     Toggle("词典注入", isOn: Binding(
                         get: { TranscriptionManager.shared.isDictionaryInjectionEnabled },
                         set: { newValue in
@@ -126,29 +122,29 @@ struct DictionarySettingsContent: View {
                         }
                     ))
                     .toggleStyle(.switch)
-                    .tint(.orange)
+                    .tint(DS.Colors.warning)
                     
                     Image(systemName: "questionmark.circle")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                         .help("启用后，词典会在转录阶段生效，提高专有名词识别准确率")
                 }
                 
                 Divider()
-                    .frame(height: 16)
+                    .frame(height: DS.Spacing.xl)
                 
                 // 热词学习开关
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Spacing.md) {
                     Toggle("热词学习", isOn: Binding(
                         get: { UserDefaults.standard.isHotwordLearningEnabled },
                         set: { UserDefaults.standard.isHotwordLearningEnabled = $0 }
                     ))
                     .toggleStyle(.switch)
-                    .tint(.blue)
+                    .tint(DS.Colors.accentPrimary)
                     
                     Image(systemName: "questionmark.circle")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                         .help("启用后，自动分析转录内容，推荐高频专有名词")
                 }
                 
@@ -160,10 +156,10 @@ struct DictionarySettingsContent: View {
             
             // 第二行：权重选择（只在词典注入开启时显示）
             if TranscriptionManager.shared.isDictionaryInjectionEnabled {
-                HStack(spacing: 12) {
+                HStack(spacing: DS.Spacing.lg) {
                     Text("识别强度")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.textSecondary)
                     
                     // Apple HIG: Segmented Control 适合 2-5 个互斥选项
                     Picker("", selection: Binding(
@@ -185,41 +181,41 @@ struct DictionarySettingsContent: View {
                     
                     // 当前级别说明
                     Text(UserDefaults.standard.dictionaryWeightLevel.description)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray.opacity(0.8))
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.8))
                     
                     Spacer()
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .font(.system(size: 12))
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .font(DS.Typography.caption)
+        .foregroundStyle(DS.Colors.textSecondary)
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.lg)
         .background(DS.Colors.settingsCardBorder.opacity(0.5))
         .cornerRadius(DS.CornerRadius.md)
-        .animation(.easeInOut(duration: 0.2), value: TranscriptionManager.shared.isDictionaryInjectionEnabled)
+        .animation(DS.Animation.normal, value: TranscriptionManager.shared.isDictionaryInjectionEnabled)
     }
     
     private var dictionaryStatusBadge: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Spacing.sm) {
             Circle()
-                .fill(TranscriptionManager.shared.isDictionaryPrepared ? Color.green : Color.orange)
-                .frame(width: 6, height: 6)
+                .fill(TranscriptionManager.shared.isDictionaryPrepared ? DS.Colors.success : DS.Colors.warning)
+                .frame(width: DS.Spacing.sm, height: DS.Spacing.sm)
             
             Text(TranscriptionManager.shared.isDictionaryPrepared ? "已就绪" : "待准备")
-                .font(.system(size: 11))
-                .foregroundStyle(.gray)
+                .font(DS.Typography.captionSmall)
+                .foregroundStyle(DS.Colors.textSecondary)
         }
     }
     
     // MARK: - Filter and Search Section
     
     private var filterAndSearchSection: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             // 筛选标签
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 ForEach(DictionaryFilter.allCases, id: \.self) { filter in
                     FilterButton(
                         title: filter.displayName,
@@ -233,27 +229,27 @@ struct DictionarySettingsContent: View {
             Spacer()
             
             // 搜索框
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.gray)
-                    .font(.system(size: 12))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .font(DS.Typography.caption)
                 
                 TextField("搜索词条...", text: $searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.button)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 if !searchText.isEmpty {
                     Button(action: { searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.gray)
-                            .font(.system(size: 12))
+                            .foregroundStyle(DS.Colors.textSecondary)
+                            .font(DS.Typography.caption)
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.vertical, DS.Spacing.md)
             .background(DS.Colors.settingsCardBackground)
             .cornerRadius(DS.CornerRadius.md)
             .frame(width: 200)
@@ -303,24 +299,24 @@ struct DictionarySettingsContent: View {
     // MARK: - Intro Card (说明卡片)
     
     private var introCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
             Text("让小凹记住你的表达")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.system(size: DS.Typography.fontSizeContent, weight: .semibold))
+                .foregroundStyle(DS.Colors.textPrimary)
             
             Text("小凹会自动学习你常用的术语，也支持手动维护。添加行业词汇、公司名称或口头表达，让润色与注入更符合你的习惯。")
-                .font(.system(size: 12))
-                .foregroundStyle(.gray)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary)
                 .lineLimit(2)
         }
-        .padding(16)
+        .padding(DS.Spacing.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.orange.opacity(0.08))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                .fill(DS.Colors.warning.opacity(0.08))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                        .stroke(DS.Colors.warning.opacity(0.2), lineWidth: DS.BorderWidth.thin)
                 )
         )
     }
@@ -328,36 +324,36 @@ struct DictionarySettingsContent: View {
     // MARK: - Empty State
     
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: DS.Spacing.lg) {
             Image(systemName: "book.closed")
-                .font(.system(size: 32))
-                .foregroundStyle(.gray.opacity(0.5))
+                .font(.system(size: DS.Layout.iconSizeXLarge))
+                .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
             
             Text("暂无词条")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.gray)
+                .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                .foregroundStyle(DS.Colors.textSecondary)
             
             Text("点击「新增热词」添加你的专属词汇")
-                .font(.system(size: 12))
-                .foregroundStyle(.gray.opacity(0.7))
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
             
             Button(action: { showAddSheet = true }) {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Spacing.sm) {
                     Image(systemName: "plus")
                     Text("添加第一个词条")
                 }
-                .font(.system(size: 13))
-                .foregroundStyle(.orange)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.orange.opacity(0.1))
+                .font(DS.Typography.button)
+                .foregroundStyle(DS.Colors.warning)
+                .padding(.horizontal, DS.Spacing.xl)
+                .padding(.vertical, DS.Spacing.md)
+                .background(DS.Colors.warning.opacity(0.1))
                 .cornerRadius(DS.CornerRadius.md)
             }
             .buttonStyle(.plain)
-            .padding(.top, 8)
+            .padding(.top, DS.Spacing.md)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
+        .padding(.vertical, DS.Spacing.xxxl)
     }
     
     // MARK: - Batch Actions Bar
@@ -365,15 +361,15 @@ struct DictionarySettingsContent: View {
     private var batchActionsBar: some View {
         HStack {
             Text("\(selectedEntries.count) 个已选择")
-                .font(.system(size: 12))
-                .foregroundStyle(.gray)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary)
             
             Spacer()
             
             Button(action: { selectedEntries.removeAll() }) {
                 Text("取消选择")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.blue)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.accentPrimary)
             }
             .buttonStyle(.plain)
             
@@ -382,13 +378,13 @@ struct DictionarySettingsContent: View {
                 selectedEntries.removeAll()
             }) {
                 Text("删除选中")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.red)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.error)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, DS.Spacing.xl)
+        .padding(.vertical, DS.Spacing.lg)
         .background(DS.Colors.settingsCardBorder.opacity(0.5))
         .cornerRadius(DS.CornerRadius.md)
     }
@@ -396,22 +392,22 @@ struct DictionarySettingsContent: View {
     // MARK: - Hotword Recommendation Section
     
     private var hotwordRecommendationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             HStack {
                 Image(systemName: "sparkles")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(DS.Colors.warning)
                 Text("热词推荐")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption.weight(.medium))
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 Text("(\(dictionaryService.recommendedHotwords.count))")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray.opacity(0.7))
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
             }
-            .padding(.leading, 4)
+            .padding(.leading, DS.Spacing.xs)
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Spacing.md) {
                     ForEach(dictionaryService.recommendedHotwords) { hotword in
                         HotwordChip(
                             hotword: hotword,
@@ -426,9 +422,9 @@ struct DictionarySettingsContent: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color(hex: "252525"))
-        .cornerRadius(12)
+        .padding(DS.Spacing.xl)
+        .background(DS.Colors.settingsCardBackground)
+        .cornerRadius(DS.CornerRadius.lg)
     }
     
     // MARK: - Computed Properties
@@ -496,20 +492,20 @@ struct FilterButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: 11))
+                    .font(.system(size: DS.Layout.iconSizeSmall))
                 Text(title)
-                    .font(.system(size: 12))
+                    .font(DS.Typography.caption)
             }
-            .foregroundStyle(isSelected ? .orange : .gray)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(isSelected ? Color.orange.opacity(0.15) : Color.white.opacity(0.05))
-            .cornerRadius(16)
+            .foregroundStyle(isSelected ? DS.Colors.warning : DS.Colors.textSecondary)
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.vertical, DS.Spacing.sm)
+            .background(isSelected ? DS.Colors.warning.opacity(0.15) : DS.Colors.rowHover)
+            .cornerRadius(DS.CornerRadius.xl)
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.orange.opacity(0.3) : Color.clear, lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.xl)
+                    .stroke(isSelected ? DS.Colors.warning.opacity(0.3) : Color.clear, lineWidth: DS.BorderWidth.thin)
             )
         }
         .buttonStyle(.plain)
@@ -528,23 +524,23 @@ struct DictionaryEntryRow: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             // 来源图标
             Image(systemName: entry.source.icon)
-                .font(.system(size: 12))
-                .foregroundStyle(entry.source == .auto ? .orange : .blue)
-                .frame(width: 20)
+                .font(DS.Typography.caption)
+                .foregroundStyle(entry.source == .auto ? DS.Colors.warning : DS.Colors.accentPrimary)
+                .frame(width: DS.Layout.iconSizeStandard)
             
             // 词条内容
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.word)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 if !entry.corrections.isEmpty {
                     Text("纠错: " + entry.corrections.joined(separator: ", "))
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -554,28 +550,28 @@ struct DictionaryEntryRow: View {
             // 频率标签
             if entry.frequency > 0 {
                 Text("\(entry.frequency)次")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.gray.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .font(DS.Typography.timestamp)
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xxs)
                     .background(DS.Colors.settingsCardBackground)
-                    .cornerRadius(4)
+                    .cornerRadius(DS.CornerRadius.xs)
             }
             
             // 操作按钮（悬浮显示）
             if isHovered {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Spacing.md) {
                     Button(action: onEdit) {
                         Image(systemName: "pencil")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.gray)
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.textSecondary)
                     }
                     .buttonStyle(.plain)
                     
                     Button(action: onDelete) {
                         Image(systemName: "trash")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.red.opacity(0.8))
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.error.opacity(0.8))
                     }
                     .buttonStyle(.plain)
                 }
@@ -584,21 +580,21 @@ struct DictionaryEntryRow: View {
             
             // 箭头
             Image(systemName: "chevron.right")
-                .font(.system(size: 12))
-                .foregroundStyle(.gray.opacity(0.5))
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, DS.Spacing.xl)
+        .padding(.vertical, DS.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(isHovered ? Color.white.opacity(0.05) : Color(hex: "252525"))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .fill(isHovered ? DS.Colors.rowHover : DS.Colors.settingsCardBackground)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .stroke(DS.Colors.settingsCardBorder, lineWidth: DS.BorderWidth.thin)
         )
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
         }
@@ -619,14 +615,14 @@ struct HotwordChip: View {
     @State private var correctedWord = ""
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.md) {
             Text(hotword.word)
-                .font(.system(size: 13))
-                .foregroundStyle(.white)
+                .font(DS.Typography.button)
+                .foregroundStyle(DS.Colors.textPrimary)
             
             Text("×\(hotword.frequency)")
-                .font(.system(size: 10))
-                .foregroundStyle(.orange)
+                .font(DS.Typography.timestamp)
+                .foregroundStyle(DS.Colors.warning)
             
             // 确认按钮
             Button(action: {
@@ -634,35 +630,35 @@ struct HotwordChip: View {
                 correctedWord = hotword.word
             }) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.green)
+                    .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
+                    .foregroundStyle(DS.Colors.success)
             }
             .buttonStyle(.plain)
             
             // 忽略按钮
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.red.opacity(0.8))
+                    .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
+                    .foregroundStyle(DS.Colors.error.opacity(0.8))
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.white.opacity(0.08))
-        .cornerRadius(20)
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.md)
+        .background(DS.Colors.chipBackground)
+        .cornerRadius(DS.CornerRadius.xxl)
         .popover(isPresented: $showEditPopover) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: DS.Spacing.lg) {
                 Text("确认词形")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(DS.Typography.button.weight(.semibold))
                 
                 TextField("正确词形", text: $correctedWord)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 200)
                 
                 Text("转录可能识别成: \(hotword.word)")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 HStack {
                     Button("取消") {
@@ -677,10 +673,10 @@ struct HotwordChip: View {
                         showEditPopover = false
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.orange)
+                    .tint(DS.Colors.warning)
                 }
             }
-            .padding()
+            .padding(DS.Spacing.xl)
             .frame(width: 260)
         }
     }
@@ -698,19 +694,19 @@ struct AddDictionaryEntrySheet: View {
     @State private var errorMessage = ""
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
             // 标题
             HStack {
                 Text("添加词条")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.title)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.gray)
+                        .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -718,12 +714,12 @@ struct AddDictionaryEntrySheet: View {
             // 词条输入
             VStack(alignment: .leading, spacing: 8) {
                 Text("期望词形")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption.weight(.medium))
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextField("如: Anthropic, Claude, GPT-4", text: $word)
                     .textFieldStyle(.plain)
-                    .padding(12)
+                    .padding(DS.Spacing.lg)
                     .background(DS.Colors.settingsCardBackground)
                     .cornerRadius(DS.CornerRadius.md)
             }
@@ -732,31 +728,31 @@ struct AddDictionaryEntrySheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("纠错映射（可选）")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.caption.weight(.medium))
+                        .foregroundStyle(DS.Colors.textSecondary)
                     
                     Text("每行一个")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray.opacity(0.7))
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
                 }
                 
                 TextEditor(text: $correctionsText)
-                    .font(.system(size: 13))
+                    .font(DS.Typography.button)
                     .scrollContentBackground(.hidden)
-                    .padding(12)
+                    .padding(DS.Spacing.lg)
                     .background(DS.Colors.settingsCardBackground)
                     .cornerRadius(DS.CornerRadius.md)
                     .frame(height: 80)
                 
                 Text("转录引擎可能识别成的错误形式，后处理时会自动替换为正确词形")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray.opacity(0.7))
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
             }
             
             if showError {
                 Text(errorMessage)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.red)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.error)
             }
             
             // 操作按钮
@@ -765,7 +761,7 @@ struct AddDictionaryEntrySheet: View {
                     isPresented = false
                 }
                 .buttonStyle(.bordered)
-                .tint(.gray)
+                .tint(DS.Colors.textSecondary)
                 
                 Spacer()
                 
@@ -773,13 +769,13 @@ struct AddDictionaryEntrySheet: View {
                     addEntry()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(DS.Colors.warning)
                 .disabled(word.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
+        .padding(DS.Spacing.xxl)
         .frame(width: 400)
-        .background(Color(hex: "1e1e1e"))
+        .background(DS.Colors.settingsPanelBackground)
     }
     
     private func addEntry() {
@@ -807,64 +803,64 @@ struct BatchImportSheet: View {
     @State private var importResult: DictionaryImportResult?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
             // 标题
             HStack {
                 Text("批量导入")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.title)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.gray)
+                        .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
             
             // 说明
             Text("每行一个词条，支持格式：")
-                .font(.system(size: 12))
-                .foregroundStyle(.gray)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textSecondary)
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text("• 简单格式: 词条名")
                 Text("• 带纠错: 词条名=错误形式1,错误形式2")
             }
-            .font(.system(size: 11, design: .monospaced))
-            .foregroundStyle(.gray.opacity(0.8))
-            .padding(12)
+            .font(.system(size: DS.Typography.fontSizeCaptionSmall, design: .monospaced))
+            .foregroundStyle(DS.Colors.textSecondary.opacity(0.8))
+            .padding(DS.Spacing.lg)
             .background(DS.Colors.settingsCardBorder.opacity(0.5))
             .cornerRadius(DS.CornerRadius.md)
             
             // 输入框
             TextEditor(text: $importText)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.system(size: DS.Typography.fontSizeButton, design: .monospaced))
                 .scrollContentBackground(.hidden)
-                .padding(12)
+                .padding(DS.Spacing.lg)
                 .background(DS.Colors.settingsCardBackground)
                 .cornerRadius(DS.CornerRadius.md)
                 .frame(height: 200)
             
             // 导入结果
             if let result = importResult {
-                HStack(spacing: 16) {
+                HStack(spacing: DS.Spacing.xl) {
                     Label("\(result.successCount) 成功", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(DS.Colors.success)
                     
                     if result.duplicateCount > 0 {
                         Label("\(result.duplicateCount) 重复", systemImage: "arrow.triangle.2.circlepath")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(DS.Colors.warning)
                     }
                     
                     if result.errorCount > 0 {
                         Label("\(result.errorCount) 失败", systemImage: "xmark.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(DS.Colors.error)
                     }
                 }
-                .font(.system(size: 12))
+                .font(DS.Typography.caption)
             }
             
             // 操作按钮
@@ -873,7 +869,7 @@ struct BatchImportSheet: View {
                     isPresented = false
                 }
                 .buttonStyle(.bordered)
-                .tint(.gray)
+                .tint(DS.Colors.textSecondary)
                 
                 Spacer()
                 
@@ -886,13 +882,13 @@ struct BatchImportSheet: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(DS.Colors.warning)
                 .disabled(importText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
+        .padding(DS.Spacing.xxl)
         .frame(width: 450)
-        .background(Color(hex: "1e1e1e"))
+        .background(DS.Colors.settingsPanelBackground)
     }
 }
 
@@ -929,77 +925,77 @@ struct EditDictionaryEntrySheet: View {
     
     @ViewBuilder
     private func sheetContent(entry: DictionaryEntry) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
             // 标题
             HStack {
                 Text("编辑词条")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.title)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.gray)
+                        .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
             
             // 词条信息
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 Image(systemName: entry.source.icon)
-                    .foregroundStyle(entry.source == .auto ? .orange : .blue)
+                    .foregroundStyle(entry.source == .auto ? DS.Colors.warning : DS.Colors.accentPrimary)
                 Text(entry.source.displayName)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 Spacer()
                 
                 Text("创建于 \(entry.relativeCreatedAt)")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray.opacity(0.7))
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
             }
             
             // 词条输入
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 Text("期望词形")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption.weight(.medium))
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextField("词条名", text: $word)
                     .textFieldStyle(.plain)
-                    .padding(12)
+                    .padding(DS.Spacing.lg)
                     .background(DS.Colors.settingsCardBackground)
                     .cornerRadius(DS.CornerRadius.md)
             }
             
             // 纠错映射输入
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 Text("纠错映射（每行一个）")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption.weight(.medium))
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextEditor(text: $correctionsText)
-                    .font(.system(size: 13))
+                    .font(DS.Typography.button)
                     .scrollContentBackground(.hidden)
-                    .padding(12)
+                    .padding(DS.Spacing.lg)
                     .background(DS.Colors.settingsCardBackground)
                     .cornerRadius(DS.CornerRadius.md)
                     .frame(height: 80)
             }
             
             // 训练短语（预编译 LM 用）- Pipeline 风格卡片
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 HStack {
                     Text("训练短语")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.caption.weight(.medium))
+                        .foregroundStyle(DS.Colors.textSecondary)
                     
                     if !entry.trainingPhrases.isEmpty {
                         Text("(\(entry.trainingPhrases.count))")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.gray.opacity(0.7))
+                            .font(DS.Typography.captionSmall)
+                            .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
                     }
                     
                     Spacer()
@@ -1007,8 +1003,8 @@ struct EditDictionaryEntrySheet: View {
                     if !entry.trainingPhrases.isEmpty {
                         Button(action: clearTrainingPhrases) {
                             Text("清空")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.red.opacity(0.8))
+                                .font(DS.Typography.captionSmall)
+                                .foregroundStyle(DS.Colors.error.opacity(0.8))
                         }
                         .buttonStyle(.plain)
                     }
@@ -1017,14 +1013,14 @@ struct EditDictionaryEntrySheet: View {
                 if entry.trainingPhrases.isEmpty {
                     // 空状态
                     Text("暂无训练短语，右键纠正时自动收集")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray.opacity(0.5))
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 20)
+                        .padding(.vertical, DS.Spacing.xxl)
                 } else {
                     // Pipeline 风格卡片列表
                     ScrollView {
-                        VStack(spacing: 8) {
+                        VStack(spacing: DS.Spacing.md) {
                             ForEach(entry.trainingPhrases.indices, id: \.self) { index in
                                 TrainingPhraseCard(
                                     phrase: entry.trainingPhrases[index],
@@ -1043,8 +1039,8 @@ struct EditDictionaryEntrySheet: View {
                 }
                 
                 Text("用于预编译语言模型，提高「\(entry.word)」识别率")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.gray.opacity(0.6))
+                    .font(DS.Typography.timestamp)
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.6))
             }
             
             // 操作按钮
@@ -1053,7 +1049,7 @@ struct EditDictionaryEntrySheet: View {
                     isPresented = false
                 }
                 .buttonStyle(.bordered)
-                .tint(.gray)
+                .tint(DS.Colors.textSecondary)
                 
                 Spacer()
                 
@@ -1064,19 +1060,19 @@ struct EditDictionaryEntrySheet: View {
                     Text("删除")
                 }
                 .buttonStyle(.bordered)
-                .tint(.red)
+                .tint(DS.Colors.error)
                 
                 Button("保存") {
                     saveChanges()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(DS.Colors.warning)
                 .disabled(word.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
+        .padding(DS.Spacing.xxl)
         .frame(width: 400)
-        .background(Color(hex: "1e1e1e"))
+        .background(DS.Colors.settingsPanelBackground)
         .onAppear {
             // 打开时自动去重
             dictionaryService.deduplicateTrainingPhrases(for: entryId)
@@ -1123,7 +1119,7 @@ struct TrainingPhraseCard: View {
     @State private var editingText = ""
     
     /// 金黄色高亮颜色（复用 Pipeline 选中样式）
-    private let highlightColor = Color(red: 0.84, green: 0.61, blue: 0)
+    private let highlightColor = DS.Colors.highlightGold
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1135,11 +1131,11 @@ struct TrainingPhraseCard: View {
                 displayView
             }
         }
-        .padding(12)
+        .padding(DS.Spacing.lg)
         .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous))
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
         }
@@ -1155,7 +1151,7 @@ struct TrainingPhraseCard: View {
             
             // 操作按钮（hover 时悬浮在右上角）
             if isHovered {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Spacing.sm) {
                     // 编辑按钮
                     cardActionButton(icon: "pencil") {
                         editingText = phrase
@@ -1163,14 +1159,14 @@ struct TrainingPhraseCard: View {
                     }
                     
                     // 删除按钮
-                    cardActionButton(icon: "xmark", color: .red.opacity(0.7)) {
+                    cardActionButton(icon: "xmark", color: DS.Colors.error.opacity(0.7)) {
                         onDelete()
                     }
                 }
-                .padding(4)
+                .padding(DS.Spacing.xs)
                 .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .offset(x: 4, y: -4)  // 微调位置
+                .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
+                .offset(x: DS.Spacing.xs, y: -DS.Spacing.xs)  // 微调位置
                 .transition(.opacity)
             }
         }
@@ -1179,9 +1175,9 @@ struct TrainingPhraseCard: View {
     // MARK: - Editing View
     
     private var editingView: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
             TextEditor(text: $editingText)
-                .font(.system(size: 12))
+                .font(DS.Typography.caption)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 50, maxHeight: 80)
             
@@ -1190,8 +1186,8 @@ struct TrainingPhraseCard: View {
                     isEditing = false
                     editingText = ""
                 }
-                .font(.system(size: 11))
-                .foregroundStyle(.gray)
+                .font(DS.Typography.captionSmall)
+                .foregroundStyle(DS.Colors.textSecondary)
                 .buttonStyle(.plain)
                 
                 Spacer()
@@ -1204,8 +1200,8 @@ struct TrainingPhraseCard: View {
                     isEditing = false
                     editingText = ""
                 }
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.orange)
+                .font(DS.Typography.captionSmall.weight(.medium))
+                .foregroundStyle(DS.Colors.warning)
                 .buttonStyle(.plain)
                 .disabled(editingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -1218,8 +1214,8 @@ struct TrainingPhraseCard: View {
     private var highlightedText: some View {
         // 使用 Text 拼接实现高亮
         buildHighlightedText()
-            .font(.system(size: 12))
-            .foregroundStyle(.white.opacity(0.9))
+            .font(DS.Typography.caption)
+            .foregroundStyle(DS.Colors.textPrimary.opacity(0.9))
     }
     
     /// 构建高亮文本（使用 Text + AttributedString 支持自动换行）
@@ -1232,7 +1228,7 @@ struct TrainingPhraseCard: View {
                 // 目标词：金黄色背景
                 var attributed = AttributedString(component.text)
                 attributed.backgroundColor = highlightColor
-                attributed.foregroundColor = .white
+                attributed.foregroundColor = DS.Colors.textPrimary
                 result = result + Text(attributed)
             } else {
                 result = result + Text(component.text)
@@ -1310,17 +1306,17 @@ struct TrainingPhraseCard: View {
     }
     
     private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color.white.opacity(isHovered ? 0.08 : 0.03))
+        RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous)
+            .fill(isHovered ? DS.Colors.trainingCardBackgroundHover : DS.Colors.trainingCardBackground)
     }
     
-    private func cardActionButton(icon: String, color: Color = .gray, action: @escaping () -> Void) -> some View {
+    private func cardActionButton(icon: String, color: Color = DS.Colors.textSecondary, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .medium))
                 .foregroundStyle(color)
-                .frame(width: 20, height: 20)
-                .background(Color.white.opacity(0.08))
+                .frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
+                .background(DS.Colors.chipBackground)
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -1334,35 +1330,35 @@ extension DictionarySettingsContent {
         Button {
             showVocabularyList = true
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Spacing.lg) {
                 Image(systemName: "heart.text.square.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.red)
+                    .font(.system(size: DS.Layout.iconSizeStandard))
+                    .foregroundStyle(DS.Colors.error)
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text("生词本")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white)
+                        .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                        .foregroundStyle(DS.Colors.textPrimary)
                     
                     Text("查词时自动收藏的生词，同步到实时字幕高亮")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 
                 Spacer()
                 
                 Text("\(VocabularyService.shared.items.count) 个")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.gray.opacity(0.5))
+                    .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
             }
-            .padding(12)
+            .padding(DS.Spacing.lg)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.05))
+                RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                    .fill(DS.Colors.rowHover)
             )
         }
         .buttonStyle(.plain)
@@ -1390,8 +1386,8 @@ struct VocabularyListSheet: View {
             // 标题栏
             HStack {
                 Text("生词本")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(DS.Typography.title)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
@@ -1399,41 +1395,41 @@ struct VocabularyListSheet: View {
                     isPresented = false
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(.gray)
+                        .font(.system(size: DS.Layout.iconSizeStandard))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding()
-            .background(Color(hex: "1a1a1a"))
+            .padding(DS.Spacing.xl)
+            .background(DS.Colors.settingsBackground)
             
             Divider()
             
             // 搜索框
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 TextField("搜索生词...", text: $searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(DS.Typography.button)
             }
-            .padding(10)
+            .padding(DS.Spacing.lg)
             .background(DS.Colors.settingsCardBackground)
             .cornerRadius(DS.CornerRadius.md)
-            .padding()
+            .padding(DS.Spacing.xl)
             
             // 列表
             if filteredItems.isEmpty {
                 Spacer()
                 VStack(spacing: 8) {
                     Image(systemName: "heart.slash")
-                        .font(.system(size: 32))
-                        .foregroundStyle(.gray.opacity(0.5))
+                        .font(.system(size: DS.Layout.iconSizeXLarge))
+                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
                     Text(searchText.isEmpty ? "暂无生词" : "未找到匹配的生词")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.gray)
+                        .font(DS.Typography.button)
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
                 Spacer()
             } else {
@@ -1445,7 +1441,7 @@ struct VocabularyListSheet: View {
                             }
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, DS.Spacing.xl)
                 }
             }
             
@@ -1454,8 +1450,8 @@ struct VocabularyListSheet: View {
             // 底部操作栏
             HStack {
                 Text("\(vocabularyService.items.count) 个生词")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.textSecondary)
                 
                 Spacer()
                 
@@ -1464,17 +1460,17 @@ struct VocabularyListSheet: View {
                         vocabularyService.clearAll()
                     } label: {
                         Text("清空全部")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.red.opacity(0.8))
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.error.opacity(0.8))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding()
-            .background(Color(hex: "1a1a1a"))
+            .padding(DS.Spacing.xl)
+            .background(DS.Colors.settingsBackground)
         }
         .frame(width: 400, height: 500)
-        .background(Color(hex: "232323"))
+        .background(DS.Colors.settingsPanelSecondary)
     }
 }
 
@@ -1487,33 +1483,33 @@ private struct VocabularyItemRow: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             Text(item.word)
-                .font(.system(size: 14))
-                .foregroundStyle(.white)
+                .font(DS.Typography.content)
+                .foregroundStyle(DS.Colors.textPrimary)
             
             Spacer()
             
             Text(item.createdAt.formatted(date: .abbreviated, time: .omitted))
-                .font(.system(size: 11))
-                .foregroundStyle(.gray.opacity(0.6))
+                .font(DS.Typography.captionSmall)
+                .foregroundStyle(DS.Colors.textSecondary.opacity(0.6))
             
             if isHovered {
                 Button {
                     onRemove()
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.red.opacity(0.8))
+                        .font(DS.Typography.captionSmall)
+                        .foregroundStyle(DS.Colors.error.opacity(0.8))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isHovered ? Color.white.opacity(0.05) : Color.clear)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .fill(isHovered ? DS.Colors.rowHover : Color.clear)
         )
         .onHover { isHovered = $0 }
     }

@@ -1,6 +1,8 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+private typealias DS = DesignTokens
+
 // MARK: - Attachment Drop Overlay
 
 /// 通用拖拽蒙版视图
@@ -16,30 +18,30 @@ struct AttachmentDropOverlay: View {
         if isVisible {
             ZStack {
                 // 半透明背景
-                Color.black.opacity(0.6)
+                DS.Colors.overlayMedium
                 
                 // 蓝色背景
-                Color.blue.opacity(0.15)
+                DS.Colors.accentInfo.opacity(0.15)
                 
                 // 虚线边框
                 RoundedRectangle(cornerRadius: cornerRadius - 4)
                     .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
-                    .foregroundStyle(Color.blue.opacity(0.6))
+                    .foregroundStyle(DS.Colors.accentInfo.opacity(0.6))
                     .padding(4)
                 
                 // 提示内容
                 VStack(spacing: 12) {
                     Image(systemName: "paperclip")
                         .font(.system(size: 32))
-                        .foregroundStyle(Color.blue)
+                        .foregroundStyle(DS.Colors.accentInfo)
                     
                     Text("拖放文件到这里")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color.blue)
+                        .foregroundStyle(DS.Colors.accentInfo)
                     
                     Text("支持图片、文件、文件夹、ZIP")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color.blue.opacity(0.7))
+                        .foregroundStyle(DS.Colors.accentInfo.opacity(0.7))
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
@@ -102,11 +104,11 @@ extension View {
 
 #Preview {
     ZStack {
-        Color.black.opacity(0.8)
+        DS.Colors.overlayStrong
         
         VStack {
             Text("拖放文件到这里")
-                .foregroundStyle(.white)
+                .foregroundStyle(DS.Colors.textPrimary)
         }
         .frame(width: 340, height: 200)
         .attachmentDropHandler { attachment in

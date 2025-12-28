@@ -1,7 +1,7 @@
-import SwiftUI
 import AppKit
-import UniformTypeIdentifiers
 import OSLog
+import SwiftUI
+import UniformTypeIdentifiers
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "QuickAskInputView")
 
@@ -291,7 +291,6 @@ class QuickAskNSTextView: NSTextView {
     
     // MARK: - NSTextInputClient 关键方法（确保输入法正常工作）
     
-    
     // 确保输入法上下文被激活
     override func becomeFirstResponder() -> Bool {
         let result = super.becomeFirstResponder()
@@ -498,5 +497,5 @@ typealias AttachmentThumbnail = AttachmentThumbnailView
     
     return QuickAskInputView(state: state)
         .frame(width: 340, height: 150)
-        .background(Color.black.opacity(0.8))
+        .background(DesignTokens.Colors.settingsBackground)
 }

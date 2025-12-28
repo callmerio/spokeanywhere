@@ -16,8 +16,6 @@ final class ScreenshotWindow: NSPanel {
     
     /// 内容视图（纯 AppKit）
     private(set) var screenshotContentView: ScreenshotContentView?
-    
-    
     /// 当前是否 hover 状态
     private(set) var isHovered: Bool = false
     
@@ -44,7 +42,7 @@ final class ScreenshotWindow: NSPanel {
     override func keyDown(with event: NSEvent) {
         // 忽略带有修饰键的事件（除了 CapsLock和Function），交给系统/菜单处理
         let meaningfulModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
-        if !event.modifierFlags.intersection(meaningfulModifiers).isEmpty {
+        if !event.modifierFlags.isDisjoint(with: meaningfulModifiers) {
             super.keyDown(with: event)
             return
         }
@@ -100,7 +98,7 @@ final class ScreenshotWindow: NSPanel {
         guard let contentView = contentView else { return }
         let flash = NSView(frame: contentView.bounds)
         flash.wantsLayer = true
-        flash.layer?.backgroundColor = NSColor.white.cgColor
+        flash.layer?.backgroundColor = DesignTokens.Colors.NS.inkLight.cgColor
         flash.alphaValue = 0.3
         contentView.addSubview(flash)
         
@@ -183,8 +181,6 @@ final class ScreenshotWindow: NSPanel {
     // 移除 Window 级别的 TrackingArea，避免与 ContentView 的逻辑冲突（Duplicate Source of Truth）
     // 参考: ContentView 已经实现了完善的 bounds 检查和防抖逻辑
 
-    
-    
     // MARK: - Glow Effect
     
     private func setupGlowLayer() {
@@ -196,8 +192,8 @@ final class ScreenshotWindow: NSPanel {
     /// 更新光晕效果
     /// - Parameter hovered: 是否 hover 状态（蓝色光晕）
     func updateGlow(hovered: Bool? = nil) {
-        if let h = hovered {
-            isHovered = h
+        if let hoveredValue = hovered {
+            isHovered = hoveredValue
         }
         
         // 通知 contentView 更新光晕（传入 isPinned 以支持非 Pin 状态的奶白色光晕）

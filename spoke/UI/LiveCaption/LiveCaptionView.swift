@@ -3,6 +3,8 @@ import Translation
 import AppKit
 import os
 
+private typealias DS = DesignTokens
+
 private let scrollLogger = Logger(subsystem: "app.spokenly", category: "LiveCaptionScroll")
 
 // MARK: - NSScrollView Bridge
@@ -346,39 +348,39 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
 private enum CaptionDesign {
     // MARK: - Colors
     /// 卡片背景色 - rgba(27, 28, 30, 0.7)
-    static let cardBackground = Color(red: 27/255, green: 28/255, blue: 30/255).opacity(0.7)
+    static let cardBackground = DS.Colors.captionCardBackground
     /// 边框颜色 - rgba(255, 255, 255, 0.05)
-    static let borderColor = Color.white.opacity(0.05)
+    static let borderColor = DS.Colors.borderCaption
     /// 主文本色 - #f9fafb
-    static let textPrimary = Color(red: 249/255, green: 250/255, blue: 251/255)
+    static let textPrimary = DS.Colors.textCaption
     /// 次要文本色 - #9ca3af (译文)
-    static let textSecondary = Color(red: 156/255, green: 163/255, blue: 175/255)
+    static let textSecondary = DS.Colors.textTranslation
     /// 拖动指示器颜色 - white/20
-    static let dragIndicatorColor = Color.white.opacity(0.2)
+    static let dragIndicatorColor = DS.Colors.dragIndicator
     
     // MARK: - Dimensions
     /// 卡片最大宽度 - max-w-2xl ≈ 672px
-    static let maxWidth: CGFloat = 672
+    static let maxWidth: CGFloat = DS.Layout.captionMaxWidth
     /// 折叠状态内容区高度（2行英文 + 2行译文 + 间距）
-    static let collapsedContentHeight: CGFloat = 100
+    static let collapsedContentHeight: CGFloat = DS.Layout.captionCollapsedHeight
     /// 圆角 - rounded-xl = 1.25rem ≈ 20pt
-    static let cornerRadius: CGFloat = 20
+    static let cornerRadius: CGFloat = DS.CornerRadius.xxl
     /// 内边距 - p-6 = 1.5rem ≈ 24pt
-    static let padding: CGFloat = 24
+    static let padding: CGFloat = DS.Spacing.xxl
     /// 字体大小 - text-lg ≈ 18pt
-    static let fontSize: CGFloat = 18
+    static let fontSize: CGFloat = DS.Typography.fontSizeBody
     /// 译文字体大小
-    static let translatedFontSize: CGFloat = 16
+    static let translatedFontSize: CGFloat = DS.Typography.fontSizeBodySecondary
     /// 行间距 - space-y-1 ≈ 4pt
-    static let lineSpacing: CGFloat = 4
+    static let lineSpacing: CGFloat = DS.LineSpacing.normal
     /// 毛玻璃模糊半径 - blur(20px)
-    static let blurRadius: CGFloat = 20
+    static let blurRadius: CGFloat = DS.Layout.blurRadius
     /// 阴影半径 - shadow-2xl
-    static let shadowRadius: CGFloat = 25
+    static let shadowRadius: CGFloat = DS.Shadow.caption.radius
     /// 拖动指示器宽度 - w-8 = 32pt
-    static let dragIndicatorWidth: CGFloat = 32
+    static let dragIndicatorWidth: CGFloat = DS.Layout.dragIndicatorSize.width
     /// 拖动指示器高度 - h-1 = 4pt
-    static let dragIndicatorHeight: CGFloat = 4
+    static let dragIndicatorHeight: CGFloat = DS.Layout.dragIndicatorSize.height
     
     // MARK: - Scroll
     /// 底部检测容差（容忍布局误差）
@@ -494,7 +496,12 @@ struct LiveCaptionView: View {
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius))
         .overlay(cardBorder)
-        .shadow(color: .black.opacity(0.4), radius: CaptionDesign.shadowRadius, x: 0, y: 10)
+        .shadow(
+            color: DS.Shadow.caption.color,
+            radius: CaptionDesign.shadowRadius,
+            x: DS.Shadow.caption.x,
+            y: DS.Shadow.caption.y
+        )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
@@ -829,9 +836,9 @@ struct LiveCaptionView: View {
             } label: {
                 Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(isCopyHovered || isCopied ? 0.9 : 0.5))
+                    .foregroundStyle((isCopyHovered || isCopied) ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
-                    .background(Color.white.opacity(isCopyHovered || isCopied ? 0.15 : 0))
+                    .background((isCopyHovered || isCopied) ? DS.Colors.buttonHover : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: isCopyHovered || isCopied ? cornerRadius : buttonSize / 2))
                     .animation(.easeInOut(duration: 0.2), value: isCopyHovered)
                     .animation(.easeInOut(duration: 0.2), value: isCopied)
@@ -850,9 +857,9 @@ struct LiveCaptionView: View {
             } label: {
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(isExpandHovered ? 0.9 : 0.5))
+                    .foregroundStyle(isExpandHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
-                    .background(Color.white.opacity(isExpandHovered ? 0.15 : 0))
+                    .background(isExpandHovered ? DS.Colors.buttonHover : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: isExpandHovered ? cornerRadius : buttonSize / 2))
                     .animation(.easeInOut(duration: 0.2), value: isExpandHovered)
             }
@@ -867,9 +874,9 @@ struct LiveCaptionView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(isCloseHovered ? 0.9 : 0.5))
+                    .foregroundStyle(isCloseHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
-                    .background(Color.white.opacity(isCloseHovered ? 0.15 : 0))
+                    .background(isCloseHovered ? DS.Colors.buttonHover : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: isCloseHovered ? cornerRadius : buttonSize / 2))
                     .animation(.easeInOut(duration: 0.2), value: isCloseHovered)
             }
@@ -949,11 +956,11 @@ struct CaptionSegmentView: View {
     
     /// 主文本色 - #f9fafb
     private var textPrimary: Color {
-        Color(red: 249/255, green: 250/255, blue: 251/255)
+        DS.Colors.textPrimary
     }
     /// 次要文本色 - #9ca3af (译文)
     private var textSecondary: Color {
-        Color(red: 156/255, green: 163/255, blue: 175/255)
+        DS.Colors.textSecondary
     }
     
     var body: some View {
@@ -1049,7 +1056,10 @@ struct TranslationTaskModifier15: ViewModifier {
     ZStack {
         // 背景模拟
         LinearGradient(
-            colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)],
+            colors: [
+                DS.Colors.accentGradientStart.opacity(0.3),
+                DS.Colors.accentGradientEnd.opacity(0.3)
+            ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )

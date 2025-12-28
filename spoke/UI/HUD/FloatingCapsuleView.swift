@@ -67,8 +67,8 @@ struct FloatingCapsuleView: View {
                         Spacer()
                         LinearGradient(
                             colors: [
-                                Color.red.opacity(0.25),
-                                Color.red.opacity(0.08),
+                                DS.Colors.recordingGlow.opacity(0.25),
+                                DS.Colors.recordingGlow.opacity(0.08),
                                 Color.clear
                             ],
                             startPoint: .bottom,
@@ -248,13 +248,13 @@ struct FloatingCapsuleView: View {
             Button(action: { onComplete?() }) {
                 ZStack {
                     // Hover 时显示淡淡的蓝色，否则几乎透明（显示底部的灰黑色）
-                    Color.blue.opacity(isHoveringComplete ? 0.15 : 0.001)
+                    DS.Colors.accentInfo.opacity(isHoveringComplete ? 0.15 : 0.001)
                     
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundStyle(Color.blue)
-                            .shadow(color: .blue.opacity(0.5), radius: 4)
+                            .foregroundStyle(DS.Colors.accentInfo)
+                            .shadow(color: DS.Colors.accentInfo.opacity(0.5), radius: 4)
                         
                         Text("完成录音")
                             .font(.system(size: 15, weight: .medium))
@@ -279,13 +279,13 @@ struct FloatingCapsuleView: View {
             Button(action: { onCancel?() }) {
                 ZStack {
                     // Hover 时显示淡淡的红色，否则几乎透明
-                    Color.red.opacity(isHoveringCancel ? 0.15 : 0.001)
+                    DS.Colors.error.opacity(isHoveringCancel ? 0.15 : 0.001)
                     
                     HStack(spacing: 8) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundStyle(Color.red)
-                            .shadow(color: .red.opacity(0.5), radius: 4)
+                            .foregroundStyle(DS.Colors.error)
+                            .shadow(color: DS.Colors.error.opacity(0.5), radius: 4)
                         
                         Text("取消录音")
                             .font(.system(size: 15, weight: .medium))
@@ -303,7 +303,7 @@ struct FloatingCapsuleView: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl))
-        .background(Color.black.opacity(0.4)) // 稍微加深底色，使文字更清晰
+        .background(DS.Colors.overlayLight) // 稍微加深底色，使文字更清晰
     }
     
     private var appIcon: some View {
@@ -457,7 +457,7 @@ struct ScrollingWaveform: View {
         // 让右侧（最新）的波纹更亮更红
         let progress = Double(index) / Double(count - 1)
         // 增加一点不透明度
-        return Color.red.opacity(0.4 + 0.6 * progress)
+        return DS.Colors.recordingGlow.opacity(0.4 + 0.6 * progress)
     }
 }
 
@@ -472,12 +472,12 @@ struct StatusIndicator: View {
     
     // 彩色点的颜色
     private let dotColors: [Color] = [
-        Color(red: 0.3, green: 0.5, blue: 1.0),   // 蓝
-        Color(red: 0.5, green: 0.3, blue: 1.0),   // 紫蓝
-        Color(red: 0.8, green: 0.3, blue: 0.9),   // 紫
-        Color(red: 1.0, green: 0.4, blue: 0.7),   // 粉
-        Color(red: 1.0, green: 0.5, blue: 0.4),   // 橙红
-        Color(red: 0.3, green: 0.7, blue: 0.9),   // 青
+        DS.Colors.accentInfo,
+        DS.Colors.accentProcessing,
+        DS.Colors.accentGlow,
+        DS.Colors.accentDangerText,
+        DS.Colors.warning,
+        DS.Colors.accentGradientStart,
     ]
     
     var body: some View {
@@ -498,7 +498,7 @@ struct StatusIndicator: View {
                 // 成功对号
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(DS.Colors.success)
                     .scaleEffect(checkmarkScale)
             }
         }
@@ -539,7 +539,7 @@ struct ThinkingIndicator: View {
         HStack(spacing: 3) {
             ForEach(0..<3) { index in
                 Circle()
-                    .fill(Color.white.opacity(0.8))
+                    .fill(DS.Colors.textPrimary)
                     .frame(width: 4, height: 4)
                     .scaleEffect(isAnimating ? 1.0 : 0.5)
                     .animation(
@@ -568,11 +568,11 @@ struct RunningLightBorder: View {
                 .stroke(
                     AngularGradient(
                         colors: [
-                            Color.white.opacity(0.8),
+                            DS.Colors.accentBright,
                             DS.Colors.borderPrimary,
                             DS.Colors.borderPrimary,
                             DS.Colors.borderPrimary,
-                            Color.white.opacity(0.8)
+                            DS.Colors.accentBright
                         ],
                         center: .center,
                         angle: .degrees(rotation)
@@ -586,11 +586,11 @@ struct RunningLightBorder: View {
                 .stroke(
                     AngularGradient(
                         colors: [
-                            Color.white.opacity(0.9),
-                            Color.white.opacity(0.05),
-                            Color.white.opacity(0.05),
-                            Color.white.opacity(0.05),
-                            Color.white.opacity(0.9)
+                            DS.Colors.accentBright,
+                            DS.Colors.accentDim,
+                            DS.Colors.accentDim,
+                            DS.Colors.accentDim,
+                            DS.Colors.accentBright
                         ],
                         center: .center,
                         angle: .degrees(rotation)

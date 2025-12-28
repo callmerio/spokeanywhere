@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 struct DictionaryResultView: View {
     let word: String
     let data: DictionaryData?
@@ -9,15 +11,15 @@ struct DictionaryResultView: View {
     @State private var isAppearing = false
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             if let data = data {
                 successContent(data)
             } else if let error = error {
                 errorContent(error)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, DS.Spacing.xl)
+        .padding(.vertical, DS.Spacing.lg)
         .background(backgroundView)
         .onAppear {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -35,26 +37,26 @@ struct DictionaryResultView: View {
     
     @ViewBuilder
     private func successContent(_ data: DictionaryData) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .top, spacing: DS.Spacing.xl) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(data.word)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 if let phonetic = data.phonetic, !phonetic.isEmpty {
                     Text(phonetic)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.5))
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.8))
                 }
             }
             .frame(minWidth: 60)
             
             Divider()
                 .frame(height: 40)
-                .background(Color.white.opacity(0.2))
+                .background(DS.Colors.borderSecondary)
             
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(data.senses.prefix(3).enumerated()), id: \.offset) { index, sense in
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                ForEach(Array(data.senses.prefix(3).enumerated()), id: \.offset) { _, sense in
                     senseRow(sense)
                 }
             }
@@ -63,18 +65,18 @@ struct DictionaryResultView: View {
     
     @ViewBuilder
     private func senseRow(_ sense: DictionarySense) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
             if !sense.posDisplay.isEmpty {
                 Text(sense.posDisplay)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.cyan.opacity(0.9))
+                    .font(DS.Typography.captionSmall)
+                    .foregroundStyle(DS.Colors.accentPrimary.opacity(0.9))
                     .frame(minWidth: 30, alignment: .leading)
             }
             
             if let chinese = sense.chinese {
                 Text(chinese)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.9))
+                    .font(DS.Typography.content)
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .lineLimit(2)
             }
         }
@@ -84,19 +86,19 @@ struct DictionaryResultView: View {
     
     @ViewBuilder
     private func errorContent(_ error: DictionaryAPIError) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 20))
-                .foregroundColor(.yellow)
+                .font(.system(size: DS.Layout.iconSizeStandard))
+                .foregroundStyle(DS.Colors.warning)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(word)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: DS.Typography.fontSizeBodySecondary, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Text(error.localizedDescription)
-                    .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.85))
             }
         }
     }
@@ -104,18 +106,20 @@ struct DictionaryResultView: View {
     // MARK: - Background
     
     private var backgroundView: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(Color.black.opacity(0.75))
+        let shadow = DS.Shadow.far()
+
+        return RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+            .fill(DS.Colors.captionCardBackground)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
                     .fill(.ultraThinMaterial)
                     .environment(\.colorScheme, .dark)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                    .strokeBorder(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
             )
-            .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
     }
 }
 
@@ -163,5 +167,5 @@ struct DictionaryResultView: View {
         )
     }
     .padding()
-    .background(Color.gray.opacity(0.3))
+    .background(DS.Colors.settingsBackground)
 }

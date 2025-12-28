@@ -1,60 +1,88 @@
-# Research Summary: 查词接口统一 + 字幕单词点击交互
+# Research Summary for: SwiftLint 清理任务
 
-## 📁 Code Context (6 items)
+> 生成时间: 2025-12-28T08:17:55+08:00
 
-1. `spoke/Services/LocalDictionaryService.swift` - 本地词典服务，使用 `DCSCopyTextDefinition` API，支持 LRU 缓存(200条)，返回 `LocalDictionaryResult`
-2. `spoke/Services/DictionaryAPIService.swift` - 后端 API 服务，调用 `/api/dictionary/en/{word}`，返回 `DictionaryData`，支持词形还原
-3. `spoke/UI/LiveCaption/VocabularyHighlightText.swift` - 字幕文本组件（NSTextView），支持生词高亮、右键菜单、选中工具栏
-4. `spoke/UI/LiveCaption/LiveCaptionView.swift` - 实时字幕主视图，使用 `AppKitScrollView` + `VocabularyHighlightText`
-5. `spoke/Services/SelectionActionService.swift` - 选择工具栏动作服务，已集成 `DictionaryAPIService`
-6. `spoke/UI/SelectionToolbar/DictionaryResultView.swift` - 查词结果悬浮窗 UI 组件
+---
+
+## 📁 Code Context (10 items)
+
+| # | 位置 | 说明 |
+|---|------|------|
+| 1 | `.swiftlint.yml:1-118` | 项目 SwiftLint 配置文件，包含规则启用/禁用、阈值设置 |
+| 2 | `spoke/UI/Settings/DictionarySettingsView.swift:1516` | file_length 违规 (1197 行 > 500 行) |
+| 3 | `spoke/UI/Settings/DictionarySettingsView.swift:927` | function_body_length 违规 (124 行 > 50 行) |
+| 4 | `spoke/Services/SelectionMonitorService.swift:570` | cyclomatic_complexity 违规 (27 > 15) + function_body_length (124 行) |
+| 5 | `spoke/Services/SelectionMonitorService.swift:11` | type_body_length 违规 (542 行 > 300 行) |
+| 6 | `spoke/Services/LocalDictionaryService.swift:187` | cyclomatic_complexity (20) + function_body_length (71 行) |
+| 7 | `spoke/Core/LiveCaption/AppAudioCaptureService.swift:206` | function_body_length 违规 (60 行) |
+| 8 | `spoke/UI/Components/DictionarySelectableText.swift:792` | file_length 违规 (570 行) |
+| 9 | `spoke/UI/Settings/TranscriptionModelSettingsView.swift:319` | multiple_closures_with_trailing_closure 违规 |
+| 10 | `spoke/Services/` 多个文件 | sorted_imports 违规 (需要按字母排序 import) |
 
 ## 📜 Memory Context
 
-| Date | Entry | Insight |
-|------|-------|---------|
-| 2025-12-14 | DictionaryAPIService 完整实现 | 后端服务已完成，支持词形还原 |
-| 2025-12-24 | LocalDictionaryService LRU缓存 | 本地词典查询慢需缓存，遍历所有词典找中文释义 |
-| 2025-12-24 | VocabularyHighlightText | 支持右键菜单、选中文本工具栏、生词高亮 |
-| 2025-12-18 | 实时字幕选中文本工具栏 | mouseUp 触发工具栏，300ms 防抖 |
+- 已检查 `docs/memo/memory.csv` - 未发现与 SwiftLint 清理相关的历史记录
+- 最近活动集中在文档优化和 UI 设置重构
 
-## 🌐 External Research (12 items)
+## 🌐 External Research (15 items) 🔴
 
-### 查词接口架构
-1. [Local-First Architecture](https://dev.to) - **Key insight**: 本地数据作为 "单一真相来源"，网络作为伴侣而非必须；先查本地缓存 → 本地持久存储 → 在线 API
-2. [Cache-Aside Pattern](https://medium.com) - **Key insight**: 缓存未命中时从在线获取，存入缓存后返回；LRU 替换策略适合词典场景
-3. [Fallback Mechanism](https://siit.io) - **Key insight**: 主要方法失败时激活备用计划；本地未找到时调用远程 API
-
-### 单词点击交互
-4. [SwiftUI hoverEffect](https://swiftwithmajid.com) - **Key insight**: `.lift` 效果可缩放并添加阴影，适合 3D 突出效果；`.onHover` 可自定义动画
-5. [rotation3DEffect](https://medium.com) - **Key insight**: 可创建微妙的 3D 效果，结合阴影和偏移量模拟立体感
-6. [scaleEffect + withAnimation](https://swift-pal.com) - **Key insight**: 点击时缩放 + 弹性动画是常用交互反馈方式
-
-### NSTextView 文字点击
-7. [NSTextView word detection](https://stackoverflow.com) - **Key insight**: `characterIndexForInsertion(at:)` 获取字符索引，`enumerateSubstrings(.byWords)` 找到单词边界
-8. [NSTrackingArea for hover](https://stackoverflow.com) - **Key insight**: 添加 `NSTrackingArea` 实现鼠标追踪，检测 hover 位置
-9. [AttributedString + highlight](https://apple.com) - **Key insight**: 使用 `NSAttributedString` 为特定单词添加样式/高亮
-
-### SwiftUI Popover
-10. [popover(isPresented:)](https://apple.com/documentation) - **Key insight**: `.popover` 修饰符控制弹出窗口，支持 `attachmentAnchor` 和 `arrowEdge` 定位
-11. [Detachable Popovers](https://apple.com/design) - **Key insight**: macOS 支持可分离的 Popover，适合需要持续查看的词典场景
-12. [onHover delay](https://rampatra.com) - **Key insight**: hover 触发 popover 需要延迟（避免闪烁），建议 200-500ms
+| # | 来源 | 核心洞察 |
+|---|------|---------|
+| 1 | SwiftLint Best Practices 2024 | 使用 `.swiftlint.yml` 配置规则，CI/CD 集成确保代码质量 |
+| 2 | SwiftLint Auto-fix Guide | `swiftlint --fix` 可自动修复部分规则，但需备份代码 |
+| 3 | SwiftLint CI/CD Integration | 建议在 PR 时运行 lint，使用 CocoaPods 锁定版本 |
+| 4 | Force Cast 修复策略 | 使用 `as?` 替代 `as!`，配合 `if let` / `guard let` 安全解包 |
+| 5 | File Length 减少策略 | 使用 extension 拆分、提取子视图/子模块、MARK 分区 |
+| 6 | Function Body Length 策略 | 提取私有辅助函数、使用 guard 早退出、策略模式 |
+| 7 | Sorted Imports 修复 | `swiftlint --fix` 可自动修复 import 顺序 |
+| 8 | Multiple Closures 修复 | 需手动修改为显式参数标签语法 (非 autocorrect) |
+| 9 | Cyclomatic Complexity 策略 | 拆分函数、使用 guard、策略模式、减少嵌套 |
+| 10 | SwiftLint Rules 文档 | `swiftlint rules` 查看可自动修复的规则 |
+| 11 | Xcode Build Phase 集成 | Run Script Phase 实现构建时 lint |
+| 12 | Ray Wenderlich Style Guide | SwiftLint 默认基于此风格指南 |
+| 13 | 单一职责原则 | 每个函数/类只做一件事 |
+| 14 | Guard 语句最佳实践 | 用于前置条件检查，扁平化代码结构 |
+| 15 | 增量重构策略 | 小步提交、测试覆盖、逐步改进 |
 
 ## 💡 Key Takeaways
 
-### 架构设计
-- **分层策略**: 内存缓存(LRU) → 本地词典(DCS) → 在线 API(后端)
-- **统一接口**: 创建 `UnifiedDictionaryService` 聚合两个数据源
-- **结果格式**: 统一为 `pos + 释义` 格式，兼容两个来源
+### 1. 当前违规分布
+| 模块 | 违规数 | 占比 |
+|------|--------|------|
+| Services + Core | **180** | 66% |
+| Settings UI | **27** | 10% |
+| LiveCaption | **20** | 7% |
+| Components | **6** | 2% |
+| Screenshot | 0 | 0% ✅ |
+| QuickAsk + MessagePanel | 0 | 0% ✅ |
+| **总计** | **273** | 100% |
 
-### 交互设计
-- **单词检测**: 使用 NSTextView + `mouseMoved` 检测 hover 的单词
-- **3D 效果**: `scaleEffect(1.05)` + `shadow` + 微弹性动画
-- **Popover**: 使用现有 `DictionaryResultView` 组件展示结果
-- **触发方式**: 点击而非 hover（避免误触发）
+### 2. 高频违规类型
+1. **sorted_imports** - 可自动修复 (`swiftlint --fix`)
+2. **force_cast** - 需手动改用 `as?` + `guard`
+3. **multiple_closures_with_trailing_closure** - 需手动改为显式标签
+4. **file_length / type_body_length** - 需拆分文件/类
+5. **function_body_length / cyclomatic_complexity** - 需提取辅助函数
 
-### 技术方案
-1. 扩展 `VocabularyTextView` 支持单词点击
-2. 创建 `UnifiedDictionaryService` 聚合本地和在线
-3. 复用 `DictionaryResultView` 作为弹出窗口
-4. 点击单词时的视觉反馈：短暂放大 + 阴影
+### 3. 修复策略建议
+- **Phase 1**: 运行 `swiftlint --fix` 自动修复可修复规则
+- **Phase 2**: 手动修复简单违规 (sorted_imports, trailing_comma, vertical_whitespace)
+- **Phase 3**: 重构大文件/复杂函数 (需仔细测试)
+- **Phase 4**: 最终全仓库扫描，确保零违规
+
+### 4. 执行优先级调整
+原计划按模块分批 (A1-A5)，但实际数据显示:
+- A1 (Screenshot): 0 违规 → **跳过**
+- A2 (QuickAsk): 0 违规 → **跳过**
+- **建议调整**: 先自动修复全仓库，再按严重程度处理剩余
+
+---
+
+## ✅ Research Validation Checklist
+
+- [x] CODE_CONTEXT ≥ 3 条 (10 条)
+- [x] MEMORY_CONTEXT 已检查
+- [x] EXTERNAL_CONTEXT ≥ 10 条 (15 条)
+- [x] **Total ≥ 15 条** (25 条)
+
+**研究阶段完成** ✅ Ready for Phase 3: Spec Generation

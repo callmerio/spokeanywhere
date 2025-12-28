@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - Attachment Picker Menu
 
 /// 通用附件选择器菜单（加号按钮）
@@ -65,25 +67,24 @@ struct AttachmentPickerMenu: View {
             Button(action: captureScreen) {
                 Label("屏幕截图", systemImage: "camera.viewfinder")
             }
-            
         } label: {
             ZStack {
                 // 默认图标（paperclip）- hover 时 fade out
                 Image(systemName: "paperclip")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(DS.Colors.textSecondary)
                     .opacity(isHovering ? 0 : 1)
                 
                 // Hover 图标（plus）- hover 时 fade in
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .opacity(isHovering ? 1 : 0)
             }
             .frame(width: buttonSize, height: buttonSize)
             .background(
                 Circle()
-                    .fill(isHovering ? Color.white.opacity(0.15) : Color.clear)
+                    .fill(isHovering ? DS.Colors.buttonHoverStrong : Color.clear)
             )
             .contentShape(Circle())
         }
@@ -106,11 +107,11 @@ struct AttachmentPickerMenu: View {
                 ZStack(alignment: .leading) {
                     // 背景
                     Capsule()
-                        .fill(Color.white.opacity(0.1))
+                        .fill(DS.Colors.cardBackground)
                     
                     // 进度
                     Capsule()
-                        .fill(Color.blue.opacity(0.8))
+                        .fill(DS.Colors.accentInfo.opacity(0.8))
                         .frame(width: geo.size.width * attachmentManager.processingState.progress)
                         .animation(.linear(duration: 0.1), value: attachmentManager.processingState.progress)
                 }
@@ -121,7 +122,7 @@ struct AttachmentPickerMenu: View {
             if case .processing(let current, let total, _) = attachmentManager.processingState {
                 Text("\(current)/\(total)")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
         }
         .transition(.opacity.combined(with: .scale(scale: 0.8)))
@@ -154,7 +155,7 @@ struct AttachmentPickerMenu: View {
 
 #Preview {
     ZStack {
-        Color.black.opacity(0.8)
+        DS.Colors.overlayStrong
         
         AttachmentPickerMenu { attachment in
             print("Added: \(attachment.displayTitle)")

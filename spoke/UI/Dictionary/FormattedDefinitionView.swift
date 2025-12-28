@@ -260,5 +260,5 @@ struct WrappingHStack: Layout {
         .padding()
     }
     .frame(width: 600, height: 400)
-    .background(Color.black.opacity(0.8))
+    .background(DesignTokens.Colors.settingsBackground)
 }

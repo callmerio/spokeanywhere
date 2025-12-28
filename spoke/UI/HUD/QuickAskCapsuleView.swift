@@ -2,6 +2,8 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+private typealias DS = DesignTokens
+
 /// Quick Ask 悬浮面板视图
 /// 复用 FloatingCapsuleView 的样式，上方改为输入框
 struct QuickAskCapsuleView: View {
@@ -108,7 +110,7 @@ struct QuickAskCapsuleView: View {
                     VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
                     
                     // 深色叠加
-                    Color.black.opacity(0.3)
+                    DS.Colors.overlayDark
                     
                     // 底部红色晕染 (录音中)
                     if state.phase == .recording {
@@ -127,7 +129,7 @@ struct QuickAskCapsuleView: View {
                         RunningLightBorder()
                     } else {
                         RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                            .strokeBorder(DS.Colors.borderPrimary, lineWidth: 0.5)
                     }
                 }
             )
@@ -167,8 +169,8 @@ struct QuickAskCapsuleView: View {
             Spacer()
             LinearGradient(
                 colors: [
-                    Color.red.opacity(0.25),
-                    Color.red.opacity(0.08),
+                    DS.Colors.recordingGlow.opacity(0.25),
+                    DS.Colors.recordingGlow.opacity(0.08),
                     Color.clear
                 ],
                 startPoint: .bottom,
@@ -182,7 +184,7 @@ struct QuickAskCapsuleView: View {
         VStack {
             LinearGradient(
                 colors: [
-                    Color.white.opacity(0.08),
+                    DS.Colors.glowTop,
                     Color.clear
                 ],
                 startPoint: .top,
@@ -264,13 +266,13 @@ struct QuickAskCapsuleView: View {
                 // Hover 或菜单打开：加号
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .opacity(showPlusIcon ? 1 : 0)
             }
             .frame(width: 24, height: 24)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(showPlusIcon ? Color.white.opacity(0.15) : Color.clear)
+                    .fill(showPlusIcon ? DS.Colors.buttonHoverStrong : Color.clear)
             )
             .contentShape(Rectangle())
             .animation(.easeInOut(duration: 0.2), value: showPlusIcon)

@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import OSLog
+import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "DictionaryPanelWindow")
 
@@ -176,7 +176,7 @@ final class DictionaryPanelManager {
     private func setupClickOutsideMonitor() {
         removeClickOutsideMonitor()
         
-        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             guard let self = self,
                   let window = self.window,
                   window.isVisible else {

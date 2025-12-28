@@ -48,7 +48,7 @@ final class ArrowAnnotation: Annotation {
     /// 箭头头部长度
     var headLength: CGFloat = 12
     
-    init(start: CGPoint, end: CGPoint, color: NSColor = .systemRed, lineWidth: CGFloat = 3) {
+    init(start: CGPoint, end: CGPoint, color: NSColor = DesignTokens.Colors.NS.annotationPrimary, lineWidth: CGFloat = 3) {
         self.startPoint = start
         self.endPoint = end
         self.color = color
@@ -127,7 +127,6 @@ final class ArrowAnnotation: Annotation {
     }
 }
 
-
 // MARK: - Pen Annotation
 
 /// 画笔标注（实心，普通混合模式）
@@ -139,7 +138,7 @@ final class PenAnnotation: Annotation {
     var color: NSColor
     var lineWidth: CGFloat
     
-    init(points: [CGPoint] = [], color: NSColor = .systemRed, lineWidth: CGFloat = 3) {
+    init(points: [CGPoint] = [], color: NSColor = DesignTokens.Colors.NS.annotationPrimary, lineWidth: CGFloat = 3) {
         self.points = points
         self.color = color
         self.lineWidth = lineWidth
@@ -169,8 +168,8 @@ final class PenAnnotation: Annotation {
     }
     
     func hitTest(point: CGPoint) -> Bool {
-        for p in points {
-            let distance = hypot(p.x - point.x, p.y - point.y)
+        for pointValue in points {
+            let distance = hypot(pointValue.x - point.x, pointValue.y - point.y)
             if distance <= lineWidth / 2 + 5 {
                 return true
             }
@@ -199,7 +198,7 @@ final class MarkerAnnotation: Annotation {
     var color: NSColor
     var lineWidth: CGFloat
     
-    init(points: [CGPoint] = [], color: NSColor = .systemYellow, lineWidth: CGFloat = 20) {
+    init(points: [CGPoint] = [], color: NSColor = DesignTokens.Colors.NS.annotationHighlight, lineWidth: CGFloat = 20) {
         self.points = points
         // 确保颜色有透明度
         self.color = color.alphaComponent < 1.0 ? color : color.withAlphaComponent(0.4)
@@ -229,8 +228,8 @@ final class MarkerAnnotation: Annotation {
     }
     
     func hitTest(point: CGPoint) -> Bool {
-        for p in points {
-            let distance = hypot(p.x - point.x, p.y - point.y)
+        for pointValue in points {
+            let distance = hypot(pointValue.x - point.x, pointValue.y - point.y)
             if distance <= lineWidth / 2 + 5 {
                 return true
             }
@@ -267,7 +266,7 @@ final class TextAnnotation: Annotation {
     /// 缓存的文字尺寸
     private var cachedSize: CGSize = .zero
     
-    init(position: CGPoint, text: String = "", color: NSColor = .white, font: NSFont = .systemFont(ofSize: 16, weight: .medium)) {
+    init(position: CGPoint, text: String = "", color: NSColor = DesignTokens.Colors.NS.annotationText, font: NSFont = .systemFont(ofSize: 16, weight: .medium)) {
         self.position = position
         self.text = text
         self.color = color

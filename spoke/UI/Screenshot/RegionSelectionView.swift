@@ -55,16 +55,16 @@ final class RegionSelectionView: NSView {
     // MARK: - Constants
     
     private enum Design {
-        static let overlayColor = NSColor.black.withAlphaComponent(0.4)
-        static let borderColor = NSColor.systemBlue
+        static let overlayColor = DesignTokens.Colors.NS.overlayLight
+        static let borderColor = DesignTokens.Colors.NS.accentPrimary
         static let borderWidth: CGFloat = 2
         static let handleSize: CGFloat = 8
         static let handleHitSize: CGFloat = 14 // 命中检测区域更大
         static let sizeTagFont = NSFont.systemFont(ofSize: 12, weight: .medium)
         static let sizeTagPadding: CGFloat = 6
         static let sizeTagCornerRadius: CGFloat = 4
-        static let sizeTagBackgroundColor = NSColor.black.withAlphaComponent(0.7)
-        static let sizeTagTextColor = NSColor.white
+        static let sizeTagBackgroundColor = DesignTokens.Colors.NS.overlayStrong
+        static let sizeTagTextColor = DesignTokens.Colors.NS.textPrimary
         static let minSelectionSize: CGFloat = 20
     }
     
@@ -183,6 +183,9 @@ final class RegionSelectionView: NSView {
     private func updateAnnotationCanvasFrame() {
         annotationCanvas?.frame = selectionRect
     }
+}
+
+extension RegionSelectionView {
     
     // MARK: - Public API
     
@@ -277,6 +280,9 @@ final class RegionSelectionView: NSView {
         get { annotationCanvas?.onHistoryChanged }
         set { annotationCanvas?.onHistoryChanged = newValue }
     }
+}
+
+extension RegionSelectionView {
     
     // MARK: - Drawing
     
@@ -342,7 +348,7 @@ final class RegionSelectionView: NSView {
         let borderPath = NSBezierPath(rect: selectionRect)
         
         // 白色外边框
-        NSColor.white.withAlphaComponent(0.5).setStroke()
+        DesignTokens.Colors.NS.inkLight.withAlphaComponent(0.5).setStroke()
         borderPath.lineWidth = Design.borderWidth + 2
         borderPath.stroke()
         
@@ -358,7 +364,7 @@ final class RegionSelectionView: NSView {
             let rect = handle.hitRect(for: selectionRect, handleSize: Design.handleSize)
             
             // 白色填充
-            NSColor.white.setFill()
+            DesignTokens.Colors.NS.inkLight.setFill()
             let path = NSBezierPath(ovalIn: rect)
             path.fill()
             
@@ -419,7 +425,7 @@ final class RegionSelectionView: NSView {
         
         context.saveGState()
         
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.6).cgColor)
+        context.setStrokeColor(DesignTokens.Colors.NS.inkLight.withAlphaComponent(0.6).cgColor)
         context.setLineWidth(1)
         context.setLineDash(phase: 0, lengths: [5, 5])
         
@@ -434,6 +440,9 @@ final class RegionSelectionView: NSView {
         context.strokePath()
         context.restoreGState()
     }
+}
+
+extension RegionSelectionView {
     
     // MARK: - Hit Testing
     
@@ -552,6 +561,9 @@ final class RegionSelectionView: NSView {
             needsDisplay = true
         }
     }
+}
+
+extension RegionSelectionView {
     
     // MARK: - Resize Logic
     
@@ -606,6 +618,9 @@ final class RegionSelectionView: NSView {
         
         selectionRect = newRect
     }
+}
+
+extension RegionSelectionView {
     
     // MARK: - Keyboard Events
     
@@ -628,6 +643,9 @@ final class RegionSelectionView: NSView {
             super.keyDown(with: event)
         }
     }
+}
+
+extension RegionSelectionView {
     
     // MARK: - Tracking
     

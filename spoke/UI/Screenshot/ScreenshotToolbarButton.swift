@@ -53,7 +53,7 @@ final class ScreenshotToolbarButton: NSView {
         // 背景
         backgroundView.wantsLayer = true
         backgroundView.layer?.cornerRadius = Design.cornerRadius
-        backgroundView.layer?.backgroundColor = NSColor.clear.cgColor
+        backgroundView.layer?.backgroundColor = DesignTokens.Colors.NS.clear.cgColor
         backgroundView.frame = bounds
         backgroundView.autoresizingMask = [.width, .height]
         addSubview(backgroundView)
@@ -63,7 +63,7 @@ final class ScreenshotToolbarButton: NSView {
         image?.isTemplate = true
         iconView.image = image
         iconView.imageScaling = .scaleProportionallyDown
-        iconView.contentTintColor = isEnabled ? .white : .gray
+        iconView.contentTintColor = isEnabled ? DesignTokens.Colors.NS.textPrimary : DesignTokens.Colors.NS.textPlaceholder
         
         let iconFrame = NSRect(
             x: (Design.size - Design.iconSize) / 2,
@@ -120,7 +120,7 @@ final class ScreenshotToolbarButton: NSView {
         // 按下效果
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.1
-            backgroundView.animator().layer?.backgroundColor = NSColor.white.withAlphaComponent(0.3).cgColor
+            backgroundView.animator().layer?.backgroundColor = DesignTokens.Colors.NS.buttonPressed.cgColor
         }
     }
     
@@ -146,7 +146,7 @@ final class ScreenshotToolbarButton: NSView {
     
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
-        iconView.contentTintColor = enabled ? .white : .gray
+        iconView.contentTintColor = enabled ? DesignTokens.Colors.NS.textPrimary : DesignTokens.Colors.NS.textPlaceholder
         updateAppearance(animated: false)
     }
     
@@ -156,11 +156,11 @@ final class ScreenshotToolbarButton: NSView {
         let bgColor: CGColor
         
         if isSelected {
-            bgColor = NSColor.white.withAlphaComponent(0.3).cgColor
+            bgColor = DesignTokens.Colors.NS.buttonPressed.cgColor
         } else if isHovered && isEnabled {
-            bgColor = NSColor.white.withAlphaComponent(0.2).cgColor
+            bgColor = DesignTokens.Colors.NS.buttonActive.cgColor
         } else {
-            bgColor = NSColor.clear.cgColor
+            bgColor = DesignTokens.Colors.NS.clear.cgColor
         }
         
         if animated {
