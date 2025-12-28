@@ -355,13 +355,7 @@ final class SelectionMonitorService {
             return
         }
         
-        // 🔥 方案 B: 过滤双击触发的 AX 通知
-        // 如果最近发生了双击 (clickCount >= 2)，且在冷却期内，跳过此通知
-        let timeSinceClick = now - lastClickTime
-        if lastClickCount >= 2 && timeSinceClick < doubleClickCooldownThreshold {
-            logger.info("📋 [SelectionMonitor] 跳过双击触发的 AX 通知 (clickCount=\(self.lastClickCount), timeSinceClick=\(String(format: "%.3f", timeSinceClick))s)")
-            return
-        }
+        // 🔥 注：已在 mouseUp 中正确处理双击选中，此处不再过滤
         
         // 重置拖动标志（已处理）
         didRecentMouseDrag = false
@@ -395,10 +389,16 @@ final class SelectionMonitorService {
                 let distance = hypot(mouseUpLocation.x - self.mouseDownLocation.x,
                                    mouseUpLocation.y - self.mouseDownLocation.y)
                 
-                // 如果是单击（移动距离小于阈值），隐藏工具栏
+                // 如果是单击（移动距离小于阈值）
                 if distance < self.dragThreshold {
-                    SelectionToolbarManager.shared.hide()
-                    // 单击不是拖动选择
+                    // 🔥 修复：双击选中英文单词是核心查词操作，应该触发工具栏
+                    if self.lastClickCount >= 2 {
+                        // 双击选中，检查是否有选中文本
+                        self.checkSelection(source: "Global doubleClick")
+                    } else {
+                        // 真正的单击，隐藏工具栏
+                        SelectionToolbarManager.shared.hide()
+                    }
                     self.didRecentMouseDrag = false
                 } else {
                     // 🔥 标记：发生了鼠标拖动选择
@@ -406,14 +406,7 @@ final class SelectionMonitorService {
                     self.lastMouseDragTime = CFAbsoluteTimeGetCurrent()
                     
                     // 拖动选择，检查是否有选中文本
-                    // 🔥 也需要检查双击冷却期
-                    let now = CFAbsoluteTimeGetCurrent()
-                    let timeSinceClick = now - self.lastClickTime
-                    if self.lastClickCount >= 2 && timeSinceClick < self.doubleClickCooldownThreshold {
-                        logger.info("📋 [SelectionMonitor] 跳过双击拖动 (Global mouseUp, clickCount=\(self.lastClickCount))")
-                    } else {
-                        self.checkSelection(source: "Global mouseUp")
-                    }
+                    self.checkSelection(source: "Global mouseUp")
                 }
             }
         }
@@ -447,11 +440,16 @@ final class SelectionMonitorService {
                     return
                 }
                 
-                // 如果是单击（移动距离小于阈值），隐藏工具栏
+                // 如果是单击（移动距离小于阈值）
                 if distance < self.dragThreshold {
-                    // 🔥 点击工具栏外部（本应用内），强制隐藏（包括词典结果）
-                    SelectionToolbarManager.shared.hide(force: true)
-                    // 单击不是拖动选择
+                    // 🔥 修复：双击选中英文单词是核心查词操作，应该触发工具栏
+                    if self.lastClickCount >= 2 {
+                        // 双击选中，检查是否有选中文本
+                        self.checkSelection(source: "Local doubleClick")
+                    } else {
+                        // 真正的单击，点击工具栏外部（本应用内），强制隐藏（包括词典结果）
+                        SelectionToolbarManager.shared.hide(force: true)
+                    }
                     self.didRecentMouseDrag = false
                 } else {
                     // 🔥 标记：发生了鼠标拖动选择
@@ -459,14 +457,7 @@ final class SelectionMonitorService {
                     self.lastMouseDragTime = CFAbsoluteTimeGetCurrent()
                     
                     // 拖动选择，检查是否有选中文本
-                    // 🔥 也需要检查双击冷却期
-                    let now = CFAbsoluteTimeGetCurrent()
-                    let timeSinceClick = now - self.lastClickTime
-                    if self.lastClickCount >= 2 && timeSinceClick < self.doubleClickCooldownThreshold {
-                        logger.info("📋 [SelectionMonitor] 跳过双击拖动 (Local mouseUp, clickCount=\(self.lastClickCount))")
-                    } else {
-                        self.checkSelection(source: "Local mouseUp")
-                    }
+                    self.checkSelection(source: "Local mouseUp")
                 }
             }
             return event

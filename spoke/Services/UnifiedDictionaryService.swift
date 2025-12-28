@@ -68,6 +68,7 @@ struct UnifiedSense: Identifiable, Equatable {
             "noun": "n.", "verb": "v.", "adjective": "adj.", "adverb": "adv.",
             "preposition": "prep.", "conjunction": "conj.", "pronoun": "pron.",
             "interjection": "interj.", "determiner": "det.", "article": "art.",
+            "transitive verb": "vt.", "intransitive verb": "vi.",
             "n": "n.", "v": "v.", "adj": "adj.", "adv": "adv."
         ]
         return abbrs[pos.lowercased()] ?? pos
