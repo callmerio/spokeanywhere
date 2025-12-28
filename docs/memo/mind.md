@@ -253,10 +253,14 @@
     - AI 增强优化 [√]
       - 防抖延迟 1s -> 0.3s [√]
       - 可中断任务 [√]
-      - 偏移修复 [√] ⭐ NEW
+      - 偏移修复 [√]
         - 根因: PNG DPI丢失导致 NSImage.size 不精确 (ratio=2.001362)
         - 修复: 强制使用 pixels/backingScale 作为正确点尺寸
         - 新 Tiling 方案: 512切→填充→2048放大→直接拼接→裁剪→缩放
+      - Phase 4 性能+UX优化 [√] ⭐ NEW (2025-12-29)
+        - 并行处理: TaskGroup 并行处理 tiles -> 6x 加速
+        - 4x HighRes缓存: cachedHighResImage 只要原图不变任意缩放无需重跑AI
+        - 中间态: 放大瞬间立即显示 Basic (Lanczos+Sharpen) -> AI完成后替换
     - acceptsFirstMouse -> 非活跃窗口直接拖拽 [√] ⭐ NEW
     - 标注系统 [√]
       - 触发 -> 框选后自动进入编辑模式 [√]

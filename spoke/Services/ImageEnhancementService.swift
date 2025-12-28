@@ -21,7 +21,7 @@ final class ImageEnhancementService {
     
     // MARK: - Public API
     
-    /// 增强图片
+    /// 增强图片（同步版本）
     /// 根据 ScreenshotSettings 决定使用 AI 或 Basic 模式
     func enhance(_ image: NSImage, to targetSize: NSSize, sharpness: CGFloat = 0.6) -> NSImage? {
         let mode = ScreenshotSettings.shared.upscalingMode
@@ -34,7 +34,37 @@ final class ImageEnhancementService {
             return enhanceBasic(image, to: targetSize, sharpness: sharpness)
             
         case .ai:
-            if let result = enhanceAI(image, to: targetSize) {
+            // 同步版本使用信号量等待异步结果
+            var result: NSImage?
+            let semaphore = DispatchSemaphore(value: 0)
+            Task {
+                result = await enhanceAIAsync(image, to: targetSize)
+                semaphore.signal()
+            }
+            semaphore.wait()
+            
+            if let result = result {
+                return result
+            }
+            // Fallback to basic if AI fails
+            return enhanceBasic(image, to: targetSize, sharpness: sharpness)
+        }
+    }
+    
+    /// 增强图片（异步版本 - 推荐）
+    /// 根据 ScreenshotSettings 决定使用 AI 或 Basic 模式
+    func enhanceAsync(_ image: NSImage, to targetSize: NSSize, sharpness: CGFloat = 0.6) async -> NSImage? {
+        let mode = ScreenshotSettings.shared.upscalingMode
+        
+        switch mode {
+        case .none:
+            return nil
+            
+        case .basic:
+            return enhanceBasic(image, to: targetSize, sharpness: sharpness)
+            
+        case .ai:
+            if let result = await enhanceAIAsync(image, to: targetSize) {
                 return result
             }
             // Fallback to basic if AI fails
@@ -44,7 +74,9 @@ final class ImageEnhancementService {
     
     // MARK: - Basic Enhancement (Lanczos + Sharpen)
     
-    private func enhanceBasic(_ image: NSImage, to targetSize: NSSize, sharpness: CGFloat) -> NSImage? {
+    /// Basic 增强方法（Lanczos + Sharpen）
+    /// 公开供中间态显示使用
+    func enhanceBasic(_ image: NSImage, to targetSize: NSSize, sharpness: CGFloat = 0.6) -> NSImage? {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             return nil
         }
@@ -99,7 +131,21 @@ final class ImageEnhancementService {
     private let tilePad = 32          // 边缘 padding，避免接缝 (官方默认 10，我们用 32 更保守)
     private let scaleFactor = 4       // 模型 4x 放大
     
-    private func enhanceAI(_ image: NSImage, to targetSize: NSSize) -> NSImage? {
+    /// AI 增强（异步并行版本）
+    /// 使用 TaskGroup 并行处理多个 tiles，显著提升性能
+    private func enhanceAIAsync(_ image: NSImage, to targetSize: NSSize) async -> NSImage? {
+        guard let highResImage = await enhanceAIHighResAsync(image) else { return nil }
+        
+        let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
+        
+        guard let cgImage = highResImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        
+        return scaleCGImage(cgImage, to: targetSize, backingScale: backingScale)
+    }
+    
+    /// 获取 4x AI 增强原图（不缩放，异步版本）
+    /// 用于缓存：只要原图不变，此结果可复用于任意 targetSize
+    func enhanceAIHighResAsync(_ image: NSImage) async -> NSImage? {
         guard let modelURL = ImageUpscalerModelManager.shared.getCompiledModelURL() else {
             logger.warning("AI model not compiled or ready")
             return nil
@@ -109,60 +155,90 @@ final class ImageEnhancementService {
             return nil
         }
         
-        // Load Model (Lazy)
-        if loadedMLModel == nil {
-            do {
-                let config = MLModelConfiguration()
-                config.computeUnits = .all
-                loadedMLModel = try MLModel(contentsOf: modelURL, configuration: config)
-                logger.info("✅ CoreML model loaded successfully")
-            } catch {
-                logger.error("❌ Failed to load CoreML model: \(error.localizedDescription)")
-                return nil
-            }
-        }
+        // Load Model (Lazy) - 使用 actor 保护避免并发问题
+        await loadModelIfNeeded(from: modelURL)
         
         guard let model = loadedMLModel else { return nil }
         
-        // 🔧 Fix: 区分像素尺寸和点尺寸
-        // - cgImage.width/height 是像素尺寸
-        // - image.size 是点尺寸
-        // - NSImage(cgImage:size:) 的 size 参数必须是点尺寸
+        let start = CFAbsoluteTimeGetCurrent()
+        
+        // 执行 Tiling Upscaling (返回 4x CGImage)
+        guard let upscaledCGImage = await performTilingUpscale(cgImage, model: model) else {
+            return nil
+        }
+        
+        let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
+        logger.info("🎨 HighRes AI generation completed in \(String(format: "%.1f", duration), privacy: .public)ms")
+        
+        // 包装为 NSImage (以像素为单位，size = pixels)
+        // 注意：这里 size 设为 pixel size，由上层决定如何显示（通常是 pixels/2.0）
+        // 或者我们在这里就除以 backingScale？
+        // 最好是保持 pure pixel size，但在 NSImage 中需要指定一个逻辑 size。
+        // 为了方便计算，我们暂且设为 point size = pixel size / 2.0 (Retina default)
+        let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
+        let size = NSSize(width: CGFloat(upscaledCGImage.width) / backingScale, height: CGFloat(upscaledCGImage.height) / backingScale)
+        
+        return NSImage(cgImage: upscaledCGImage, size: size)
+    }
+    
+    /// 执行核心 Tiling Upscaling 逻辑
+    private func performTilingUpscale(_ cgImage: CGImage, model: MLModel) async -> CGImage? {
         let inputPixelWidth = cgImage.width
         let inputPixelHeight = cgImage.height
-        
-        // 🔧 Fix: 原图的 NSImage.size 可能不精确（DPI 信息丢失）
-        // 强制使用 像素/backingScale 作为正确的点尺寸
-        let backingScale = NSScreen.main?.backingScaleFactor ?? 2.0
-        let correctedInputPointSize = NSSize(
-            width: CGFloat(inputPixelWidth) / backingScale,
-            height: CGFloat(inputPixelHeight) / backingScale
-        )
-        
-        logger.info("🔍 Original Image: pixels=\(inputPixelWidth)x\(inputPixelHeight), original.size=\(image.size.width)x\(image.size.height), corrected=\(correctedInputPointSize.width)x\(correctedInputPointSize.height)")
-        
-        let outputPixelWidth = inputPixelWidth * scaleFactor
-        let outputPixelHeight = inputPixelHeight * scaleFactor
-        
-        // ============================================================
-        // 新方案：先放大拼接，后裁剪
-        // 1. 按 512 切分 tile
-        // 2. 每个 tile 填充到 512×512
-        // 3. AI 放大到 2048×2048
-        // 4. 直接拼接 2048 块（不缩放！）
-        // 5. 裁剪掉填充区域，保留原图 ×4 的有效区域
-        // 6. 最后缩放到 targetSize
-        // ============================================================
         
         // 计算 tile 数量
         let tilesX = Int(ceil(Double(inputPixelWidth) / Double(tileSize)))
         let tilesY = Int(ceil(Double(inputPixelHeight) / Double(tileSize)))
+        let totalTiles = tilesX * tilesY
         
         // 拼接画布尺寸 = tile数量 × 2048
-        let canvasWidth = tilesX * tileSize * scaleFactor   // tilesX * 2048
-        let canvasHeight = tilesY * tileSize * scaleFactor  // tilesY * 2048
+        let canvasWidth = tilesX * tileSize * scaleFactor
+        let canvasHeight = tilesY * tileSize * scaleFactor
         
-        logger.info("🔲 New tiling: \(inputPixelWidth)x\(inputPixelHeight) -> canvas \(canvasWidth)x\(canvasHeight), tiles=\(tilesX)x\(tilesY)")
+        let start = CFAbsoluteTimeGetCurrent()
+        logger.info("🔲 Parallel tiling started: \(inputPixelWidth, privacy: .public)x\(inputPixelHeight, privacy: .public) -> \(totalTiles, privacy: .public) tiles")
+        
+        // ============================================================
+        // 🚀 并行处理 tiles（使用 TaskGroup）
+        // ============================================================
+        typealias TileResult = (x: Int, y: Int, image: CGImage?)
+        
+        let tileResults: [TileResult] = await withTaskGroup(of: TileResult.self) { group in
+            // 预先裁剪所有 tiles（在主线程，CGImage 操作是线程安全的）
+            var tileInputs: [(x: Int, y: Int, tile: CGImage)] = []
+            for tileY in 0..<tilesY {
+                for tileX in 0..<tilesX {
+                    let srcX = tileX * tileSize
+                    let srcY = tileY * tileSize
+                    let srcW = min(tileSize, inputPixelWidth - srcX)
+                    let srcH = min(tileSize, inputPixelHeight - srcY)
+                    
+                    let cropRect = CGRect(x: srcX, y: srcY, width: srcW, height: srcH)
+                    if let tileCGImage = cgImage.cropping(to: cropRect) {
+                        tileInputs.append((tileX, tileY, tileCGImage))
+                    }
+                }
+            }
+            
+            // 并行提交所有 tile 处理任务
+            for (tileX, tileY, tileCGImage) in tileInputs {
+                group.addTask { [self] in
+                    let paddedTile = self.padTileToModelSize(tileCGImage)
+                    let upscaledTile = self.processOneTile(paddedTile, model: model)
+                    return (tileX, tileY, upscaledTile)
+                }
+            }
+            
+            // 收集所有结果
+            var results: [TileResult] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
+        
+        let parallelDuration = (CFAbsoluteTimeGetCurrent() - start) * 1000
+        logger.info("⚡ Parallel processing finished: \(String(format: "%.1f", parallelDuration), privacy: .public)ms")
         
         // 创建拼接画布
         guard let canvasContext = createOutputContext(width: canvasWidth, height: canvasHeight) else {
@@ -170,38 +246,20 @@ final class ImageEnhancementService {
             return nil
         }
         
-        // 处理每个 tile
-        for tileY in 0..<tilesY {
-            for tileX in 0..<tilesX {
-                // 计算 tile 在原图中的区域
-                let srcX = tileX * tileSize
-                let srcY = tileY * tileSize
-                let srcW = min(tileSize, inputPixelWidth - srcX)
-                let srcH = min(tileSize, inputPixelHeight - srcY)
-                
-                // 裁剪 tile（可能小于 512）
-                let cropRect = CGRect(x: srcX, y: srcY, width: srcW, height: srcH)
-                guard let tileCGImage = cgImage.cropping(to: cropRect) else { continue }
-                
-                // 填充到 512×512
-                let paddedTile = padTileToModelSize(tileCGImage)
-                
-                // AI 放大到 2048×2048
-                guard let upscaledTile = processOneTile(paddedTile, model: model) else { continue }
-                
-                // 直接放到画布上（坐标 = tileIndex × 2048）
-                let dstX = tileX * tileSize * scaleFactor
-                let dstY = tileY * tileSize * scaleFactor
-                
-                // CGContext Y 轴翻转
-                let drawRect = CGRect(
-                    x: dstX,
-                    y: canvasHeight - dstY - tileSize * scaleFactor,
-                    width: tileSize * scaleFactor,
-                    height: tileSize * scaleFactor
-                )
-                canvasContext.draw(upscaledTile, in: drawRect)
-            }
+        // 绘制所有 tiles 到画布
+        for result in tileResults {
+            guard let upscaledTile = result.image else { continue }
+            
+            let dstX = result.x * tileSize * scaleFactor
+            let dstY = result.y * tileSize * scaleFactor
+            
+            let drawRect = CGRect(
+                x: dstX,
+                y: canvasHeight - dstY - tileSize * scaleFactor,
+                width: tileSize * scaleFactor,
+                height: tileSize * scaleFactor
+            )
+            canvasContext.draw(upscaledTile, in: drawRect)
         }
         
         // 生成拼接后的完整画布
@@ -210,17 +268,31 @@ final class ImageEnhancementService {
             return nil
         }
         
-        // 裁剪掉填充区域，保留原图 ×4 的有效区域
+        // 裁剪掉填充区域
+        let outputPixelWidth = inputPixelWidth * scaleFactor
+        let outputPixelHeight = inputPixelHeight * scaleFactor
         let validRect = CGRect(x: 0, y: 0, width: outputPixelWidth, height: outputPixelHeight)
+        
         guard let croppedResult = canvasImage.cropping(to: validRect) else {
             logger.error("Failed to crop valid region")
             return nil
         }
         
-        logger.info("🔍 enhanceAI: canvas=\(canvasWidth)x\(canvasHeight), cropped=\(croppedResult.width)x\(croppedResult.height), target=\(targetSize.width)x\(targetSize.height)")
+        return croppedResult
+    }
+    
+    /// 懒加载模型（线程安全）
+    private func loadModelIfNeeded(from modelURL: URL) async {
+        if loadedMLModel != nil { return }
         
-        // 最后缩放到 targetSize
-        return scaleCGImage(croppedResult, to: targetSize, backingScale: backingScale)
+        do {
+            let config = MLModelConfiguration()
+            config.computeUnits = .all
+            loadedMLModel = try MLModel(contentsOf: modelURL, configuration: config)
+            logger.info("✅ CoreML model loaded successfully")
+        } catch {
+            logger.error("❌ Failed to load CoreML model: \(error.localizedDescription)")
+        }
     }
     
     /// 处理单个 tile (小于 512x512 的图片直接处理)
@@ -395,7 +467,7 @@ final class ImageEnhancementService {
     ///   - targetSize: 目标点尺寸
     ///   - backingScale: 屏幕缩放因子（Retina=2.0）
     /// - Note: 方案 A - 使用 CGContext 直接绘制，避免 CILanczosScaleTransform 输出尺寸不精确问题
-    private func scaleCGImage(_ cgImage: CGImage, to targetSize: NSSize, backingScale: CGFloat) -> NSImage? {
+    func scaleCGImage(_ cgImage: CGImage, to targetSize: NSSize, backingScale: CGFloat) -> NSImage? {
         // 精确计算目标像素尺寸（整数）
         let targetPixelWidth = Int(targetSize.width * backingScale)
         let targetPixelHeight = Int(targetSize.height * backingScale)
@@ -435,7 +507,7 @@ final class ImageEnhancementService {
     }
     
     /// 兼容旧接口：缩放 NSImage 到目标尺寸
-    private func scaleNSImage(_ image: NSImage, to targetSize: NSSize, backingScale: CGFloat = 2.0) -> NSImage? {
+    func scaleNSImage(_ image: NSImage, to targetSize: NSSize, backingScale: CGFloat = 2.0) -> NSImage? {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             return nil
         }

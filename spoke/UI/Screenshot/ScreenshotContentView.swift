@@ -51,6 +51,16 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     /// AI 增强防抖延迟 (0.3秒 - 快速响应)
     private let enhanceDebounceDelay: TimeInterval = 0.3
     
+    // MARK: - AI 增强缓存 (High Resolution)
+    
+    /// 缓存的 4x AI 增强原图（不缩放）
+    /// 只要原图不变，此缓存一直有效，可缩放到任意目标尺寸
+    private var cachedHighResImage: NSImage?
+    
+    /// 缓存对应的原图 ID (用于验证缓存有效性)
+    /// 这里使用原图内存地址或 hash 来简单判断
+    private weak var cachedOriginalImage: NSImage?
+    
     // MARK: - Live Text (macOS 13+)
     
     /// Live Text 覆盖层，支持图片中文字选择
@@ -119,70 +129,121 @@ extension ScreenshotContentView {
     /// 更新图片质量（响应缩放）
     /// - Parameter targetSize: 目标显示尺寸
     /// 
-    /// 防抖策略：
-    /// 1. 用户操作时取消之前的防抖定时器
-    /// 2. 如果有正在进行的 AI 处理，也取消它
-    /// 3. 等待 1 秒无操作后才启动 AI 处理
-    /// 4. 处理过程中如果用户又操作，立即取消并重新等待
+    /// 策略：
+    /// 1. 检查是否存在 4x HighRes 缓存 ? 直接 Downscale 显示
+    /// 2. 否则 -> 异步生成 Basic 增强（中间态）
+    /// 3. 并行 -> 异步执行 AI 增强 -> 完成后显示并缓存 4x HighRes
     func updateImageQuality(targetSize: CGSize) {
-        // 1. 取消之前的防抖定时器
+        // 1. 取消此前的任务
         enhanceDebounceTask?.cancel()
         enhanceDebounceTask = nil
-        
-        // 2. 取消正在进行的 AI 处理任务
         currentEnhanceTask?.cancel()
         currentEnhanceTask = nil
         
         guard let original = originalImage else { return }
         
-        // 3. 如果缩放比例接近 1x 或更小，直接使用原图
+        // 2. 清理失效缓存
+        if cachedOriginalImage !== original {
+            cachedHighResImage = nil
+            cachedOriginalImage = original
+            logger.debug("🧹 Cache cleared (new image loaded)")
+        }
+        
+        // 3. 计算缩放比例
         let scale = targetSize.width / original.size.width
+        
+        // 4. 如果缩放比例 < 1.1，使用原图
         if scale < 1.1 {
             if imageView.image !== original {
                 imageView.image = original
                 lastEnhancedSize = .zero
-                logger.debug("Image quality reset to original (scale: \(scale))")
+                logger.debug("Restore original (scale < 1.1)")
             }
             return
         }
         
-        // 4. 如果尺寸变化很小 (< 10px)，忽略
-        if abs(targetSize.width - lastEnhancedSize.width) < 10 {
+        // 5. 忽略微小变化 (除非是首次放大)
+        if abs(targetSize.width - lastEnhancedSize.width) < 10 && lastEnhancedSize != .zero {
             return
         }
         
-        // 5. 创建防抖任务 (1秒延迟)
+        // 6. [Case A] 缓存命中 (HighRes 4x 存在)
+        // 直接从 4x 大图 downscale 到 targetSize (非常快)
+        if let highRes = cachedHighResImage {
+            logger.info("⚡ HighRes Cache Hit! Downscaling to \(targetSize.width)x\(targetSize.height)")
+            
+            // 异步执行 downscale 避免卡顿
+            Task {
+                let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
+                if let downscaled = ImageEnhancementService.shared.scaleNSImage(highRes, to: targetSize, backingScale: backingScale) {
+                    await MainActor.run {
+                        self.imageView.image = downscaled
+                        self.lastEnhancedSize = targetSize
+                    }
+                }
+            }
+            return
+        }
+        
+        // 7. [Case B] 无缓存 - 启动增强流程
+        
+        // ======================================================
+        // 🎯 Step 1: 立即执行 Basic 增强（不等 debounce！）
+        // 用户放大的瞬间就能看到锐化后的图片
+        // ======================================================
+        Task { [weak self] in
+            guard let self = self else { return }
+            
+            let basic = await Task.detached(priority: .userInitiated) {
+                ImageEnhancementService.shared.enhanceBasic(original, to: targetSize)
+            }.value
+            
+            if let basic = basic {
+                await MainActor.run {
+                    // 只有当前没有更好的结果时才显示 Basic
+                    // 避免 AI 结果已出来后被 Basic 覆盖
+                    if self.lastEnhancedSize != targetSize {
+                        self.imageView.image = basic
+                        self.logger.info("🎯 Immediate Basic enhancement shown")
+                    }
+                }
+            }
+        }
+        
+        // ======================================================
+        // 🚀 Step 2: Debounce 后执行 AI 增强
+        // 等用户停止缩放操作后再启动 AI，节省资源
+        // ======================================================
         let debounceTask = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
             
-            // 启动可取消的 AI 处理任务
             self.currentEnhanceTask = Task { [weak self] in
                 guard let self = self else { return }
                 
-                // 检查是否被取消
-                if Task.isCancelled { return }
-                
-                self.logger.debug("🎨 Starting AI enhancement: \(targetSize.width)x\(targetSize.height)")
-                let start = CFAbsoluteTimeGetCurrent()
-                
-                // 在后台线程执行增强
-                let enhanced = await Task.detached(priority: .userInitiated) {
-                    ImageEnhancementService.shared.enhance(original, to: targetSize)
-                }.value
-                
-                // 再次检查是否被取消
-                if Task.isCancelled {
-                    self.logger.debug("🛑 AI enhancement cancelled")
-                    return
+                // 启动 AI 增强 (High Res)
+                let aiTask = Task.detached(priority: .userInitiated) {
+                    return await ImageEnhancementService.shared.enhanceAIHighResAsync(original)
                 }
                 
-                if let enhanced = enhanced {
-                    let duration = (CFAbsoluteTimeGetCurrent() - start) * 1000
-                    self.logger.info("✅ Image enhanced in \(String(format: "%.1f", duration))ms")
-                    
-                    await MainActor.run {
-                        self.imageView.image = enhanced
-                        self.lastEnhancedSize = targetSize
+                // 等待 AI 结果
+                if let highResResult = await aiTask.value {
+                    if !Task.isCancelled {
+                        // 缓存 4x 大图
+                        await MainActor.run {
+                            self.cachedHighResImage = highResResult
+                            self.cachedOriginalImage = original
+                            self.logger.info("💾 Cached HighRes AI result")
+                        }
+                        
+                        // Downscale 到当前需要的尺寸
+                        let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
+                        if let finalResult = ImageEnhancementService.shared.scaleNSImage(highResResult, to: targetSize, backingScale: backingScale) {
+                            await MainActor.run {
+                                self.imageView.image = finalResult
+                                self.lastEnhancedSize = targetSize
+                                self.logger.info("✅ Final AI result shown")
+                            }
+                        }
                     }
                 }
             }
