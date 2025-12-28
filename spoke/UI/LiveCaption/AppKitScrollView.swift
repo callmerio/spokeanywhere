@@ -186,6 +186,9 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         /// 上次滚动位置（用于区分用户滚动 vs 内容增加）
         var lastScrollY: CGFloat = 0
         
+        /// 上次的 maxScrollY（用于检测内容是否增加）
+        var lastMaxScrollY: CGFloat = 0
+        
         init(isAtBottom: Binding<Bool>, bottomThreshold: CGFloat) {
             self.isAtBottomBinding = isAtBottom
             self.bottomThreshold = bottomThreshold
@@ -249,20 +252,26 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             // 🔥 关键修复：区分「用户向上滚动」vs「内容增加导致脱离底部」
             if previouslyAtBottom && !atBottom {
                 // 之前在底部，现在不在了
-                // 检查是用户向上滚动（scrollY 减小）还是内容增加（scrollY 不变但 maxScrollY 增大）
-                let userScrolledUp = scrollY < lastScrollY - 10  // 10pt 容差
-                if !userScrolledUp {
-                    // 内容增加导致脱离底部 → 触发追赶滚动，不改变 isAtBottom 状态
-                    scrollLogger.debug("📐 Content grew, triggering catch-up scroll (scrollY=\(scrollY), lastScrollY=\(self.lastScrollY))")
+                // 💡 新策略：通过 maxScrollY 是否增加来判断是否有新内容
+                let contentGrew = maxScrollY > lastMaxScrollY + 5  // 5pt 容差
+                let userScrolledAway = scrollY < lastScrollY - 3   // 用户主动滚动离开（3pt 容差，更灵敏）
+                
+                if contentGrew && !userScrolledAway {
+                    // 内容增加且用户没主动滚动 → 追赶滚动
+                    scrollLogger.debug("📐 Content grew, triggering catch-up scroll (maxScrollY: \(self.lastMaxScrollY) -> \(maxScrollY))")
                     lastScrollY = scrollY
+                    lastMaxScrollY = maxScrollY
                     DispatchQueue.main.async { [weak self] in
                         self?.forceScrollToBottom()
                     }
                     return
                 }
+                // 否则是用户主动滚动，让 isAtBottom 正常更新为 false
+                scrollLogger.debug("👆 User scrolled up, stopping auto-scroll")
             }
             
             lastScrollY = scrollY
+            lastMaxScrollY = maxScrollY
             
             DispatchQueue.main.async {
                 if self.isAtBottomBinding.wrappedValue != atBottom {
