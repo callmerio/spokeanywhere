@@ -587,7 +587,7 @@ final class SelectionMonitorService {
         
         if appResult == .success, let appRef = focusedApp {
             // swiftlint:disable:next force_cast
-            let appElement = appRef as! AXUIElement
+            let appElement = (appRef as! AXUIElement)
             var focusedUIElement: CFTypeRef?
             let focusResult = AXUIElementCopyAttributeValue(
                 appElement,
@@ -597,7 +597,7 @@ final class SelectionMonitorService {
             
             if focusResult == .success, let elementRef = focusedUIElement {
                 // swiftlint:disable:next force_cast
-                focusedElement = elementRef as! AXUIElement
+                focusedElement = (elementRef as! AXUIElement)
             }
         }
         
@@ -608,7 +608,7 @@ final class SelectionMonitorService {
             
             if focusResult == .success, let elementRef = element {
                 // swiftlint:disable:next force_cast
-                focusedElement = elementRef as! AXUIElement
+                focusedElement = (elementRef as! AXUIElement)
             }
         }
         
@@ -631,7 +631,7 @@ final class SelectionMonitorService {
             
             if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
                 // swiftlint:disable:next force_cast
-                let axValue = rangeRef as! AXValue
+                let axValue = (rangeRef as! AXValue)
                 if AXValueGetType(axValue) == .cfRange {
                     var range = CFRange()
                     AXValueGetValue(axValue, .cfRange, &range)
@@ -664,7 +664,7 @@ final class SelectionMonitorService {
                  
                  if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
                      // swiftlint:disable:next force_cast
-                     let axValue = rangeRef as! AXValue
+                     let axValue = (rangeRef as! AXValue)
                      if AXValueGetType(axValue) == .cfRange {
                          var range = CFRange()
                          AXValueGetValue(axValue, .cfRange, &range)
@@ -686,7 +686,7 @@ final class SelectionMonitorService {
             if AXUIElementCopyAttributeValue(axElement, kAXParentAttribute as CFString, &parent) == .success,
                let parentRef = parent {
                 // swiftlint:disable:next force_cast
-                let parentElement = parentRef as! AXUIElement
+                let parentElement = (parentRef as! AXUIElement)
                 var parentSelectedText: CFTypeRef?
                 if AXUIElementCopyAttributeValue(
                     parentElement,
@@ -720,7 +720,7 @@ final class SelectionMonitorService {
                 
                 if boundsResult == .success, let axRef = boundsValue {
                     // swiftlint:disable:next force_cast
-                    let axValue = axRef as! AXValue
+                    let axValue = (axRef as! AXValue)
                     var rect = CGRect.zero
                     if AXValueGetValue(axValue, .cgRect, &rect) {
                         bounds = rect
@@ -780,7 +780,7 @@ final class SelectionMonitorService {
             
             if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
                 // swiftlint:disable:next force_cast
-                let axValue = rangeRef as! AXValue
+                let axValue = (rangeRef as! AXValue)
                 if AXValueGetType(axValue) == .cfRange {
                     var range = CFRange()
                     AXValueGetValue(axValue, .cfRange, &range)
