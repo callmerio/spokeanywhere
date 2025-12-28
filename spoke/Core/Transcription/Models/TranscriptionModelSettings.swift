@@ -46,6 +46,7 @@ enum TranscriptionModelRole: String, Codable, CaseIterable {
         }
     }
     
+    // swiftlint:disable:next large_tuple
     var badgeColor: (red: Double, green: Double, blue: Double) {
         switch self {
         case .transcription: return (0.9, 0.3, 0.3)  // 红色

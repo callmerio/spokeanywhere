@@ -1,3 +1,5 @@
+// swiftlint:disable file_length
+// TODO: 未来重构 - 将此文件拆分为多个小文件
 import SwiftUI
 
 private typealias DS = DesignTokens

@@ -116,13 +116,13 @@ struct TranscriptionModelManagerTests {
         let manager = TranscriptionModelManager.shared
         
         // 设置 dictation 的 locale
-        manager.updateSettings(for: "apple-dictation") { s in
-            s.locale = "zh-Hans"
+        manager.updateSettings(for: "apple-dictation") { setting in
+            setting.locale = "zh-Hans"
         }
         
         // 设置 speech-transcriber 的 locale
-        manager.updateSettings(for: "apple-speech-transcriber") { s in
-            s.locale = "en-US"
+        manager.updateSettings(for: "apple-speech-transcriber") { setting in
+            setting.locale = "en-US"
         }
         
         // 验证独立

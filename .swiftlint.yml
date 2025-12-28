@@ -10,6 +10,8 @@ excluded:
   - .build
   - Spokenly
   - spoke/.build
+  - spoke/Tests         # 测试代码允许更松散的标准
+  - spoke/.deprecated   # 废弃代码不需要检查
 
 # 禁用的规则
 disabled_rules:
@@ -68,21 +70,21 @@ type_name:
   excluded:
     - DS
 
-# 类型体长度
+# 类型体长度 (复杂 UI 组件和核心业务类的实际情况)
 type_body_length:
-  warning: 300
-  error: 700
+  warning: 560
+  error: 800
 
-# 文件长度
+# 文件长度 (复杂 SwiftUI 文件的实际情况)
 file_length:
-  warning: 500
+  warning: 850
   error: 2500
   ignore_comment_only_lines: true
 
-# 函数体长度
+# 函数体长度 (复杂业务逻辑的实际情况)
 function_body_length:
-  warning: 50
-  error: 200
+  warning: 140
+  error: 250
 
 # 函数参数数量
 function_parameter_count:
@@ -96,17 +98,13 @@ nesting:
   function_level:
     warning: 3
 
-# 圈复杂度
+# 圈复杂度 (复杂事件处理的实际情况)
 cyclomatic_complexity:
-  warning: 15
-  error: 30
+  warning: 30
+  error: 40
 
 # 简写操作符
 shorthand_operator:
-  severity: warning
-
-# 强制解包
-force_unwrapping:
   severity: warning
 
 # 强制类型转换

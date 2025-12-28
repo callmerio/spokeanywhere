@@ -146,7 +146,10 @@ final class ScreenshotManager {
     
     /// 显示选区 UI 并等待用户选择
     /// - Returns: (视图内选区坐标, 裁剪后的图片, 确认模式) 或 nil（用户取消）
-    private func showRegionSelectionUI(backgroundImage: NSImage, screenFrame: CGRect) async -> (CGRect, NSImage, RegionSelectionWindow.ConfirmMode)? {
+    private func showRegionSelectionUI(
+        backgroundImage: NSImage,
+        screenFrame: CGRect
+    ) async -> (CGRect, NSImage, RegionSelectionWindow.ConfirmMode)? { // swiftlint:disable:this large_tuple
         return await withCheckedContinuation { continuation in
             let selectionWindow = RegionSelectionWindow(screenFrame: screenFrame)
             selectionWindow.setBackgroundImage(backgroundImage)

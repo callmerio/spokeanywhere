@@ -42,7 +42,9 @@ class HistoryItem {
     var audioPath: String? // Relative path in sandbox/container
     var audioDuration: TimeInterval? // Audio duration in seconds
     var appBundleId: String?
-    var tags: [String] // Requires ValueTransformer if complex, but basic arrays of string are supported in recent SwiftData
+    // Requires ValueTransformer if complex, 
+    // but basic arrays of string are supported in recent SwiftData
+    var tags: [String]
     
     /// 记录类型：normal/todo/done/note
     /// - normal: 受自动清理策略影响
