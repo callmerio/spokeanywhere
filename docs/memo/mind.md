@@ -195,6 +195,8 @@
       - TTS 朗读 [√]
       - LLM 查询 [√]
       - OCR [√]
+    - 词典弹窗 [√] ⭐ 2025-12-29
+      - 动态宽度 -> resizeWindowToFitContent() 避免释义被截断
   - 截图钉图 -> Core/Screenshot/ [√]
     - 触发方式
       - 快捷键 ⌥+A (可配置) [√]

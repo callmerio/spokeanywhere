@@ -305,6 +305,43 @@ final class SelectionToolbarManager {
     
     // MARK: - Private Methods
     
+    /// 重新调整窗口大小以适应内容（用于词典结果等动态内容）
+    private func resizeWindowToFitContent() {
+        guard let window = toolbarWindow, let contentView = window.contentView else { return }
+        
+        // 强制布局以获取正确尺寸
+        contentView.needsLayout = true
+        contentView.layoutSubtreeIfNeeded()
+        let fittingSize = contentView.fittingSize
+        
+        // 确保尺寸合理
+        let newSize = NSSize(
+            width: max(Layout.toolbarMinWidth, min(fittingSize.width, Layout.toolbarMaxWidth)),
+            height: Layout.toolbarHeight
+        )
+        
+        if window.frame.size.width != newSize.width {
+            // 保持窗口中心位置不变
+            let oldFrame = window.frame
+            let newOriginX = oldFrame.midX - newSize.width / 2
+            
+            // 边界检查
+            var newOrigin = CGPoint(x: newOriginX, y: oldFrame.origin.y)
+            if let screen = NSScreen.main {
+                let screenFrame = screen.visibleFrame
+                if newOrigin.x < screenFrame.minX + Layout.screenEdgePadding {
+                    newOrigin.x = screenFrame.minX + Layout.screenEdgePadding
+                }
+                if newOrigin.x + newSize.width > screenFrame.maxX - Layout.screenEdgePadding {
+                    newOrigin.x = screenFrame.maxX - Layout.screenEdgePadding - newSize.width
+                }
+            }
+            
+            window.setFrame(NSRect(origin: newOrigin, size: newSize), display: true, animate: true)
+            logger.info("📋 [ToolbarManager] 🔄 调整窗口宽度: \(oldFrame.width) -> \(newSize.width)")
+        }
+    }
+    
     /// 创建工具栏窗口
     private func createToolbarWindow() {
         let panel = NSPanel(
@@ -403,6 +440,9 @@ final class SelectionToolbarManager {
             logger.info("📋 [ToolbarManager] 🔥 showingDictionary - 启动词典自动隐藏定时器")
             stopAutoHideTimer()
             startDictionaryAutoHideTimer()
+            
+            // 🔥 重新调整窗口大小以适应词典内容
+            resizeWindowToFitContent()
         }
     }
     
