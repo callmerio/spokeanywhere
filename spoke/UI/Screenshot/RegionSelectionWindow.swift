@@ -84,7 +84,10 @@ final class RegionSelectionWindow: NSPanel {
         backgroundColor = .clear
         hasShadow = false
         animationBehavior = .none
-        
+
+        // 禁止此窗口被屏幕截图捕获（解决 Ghost 问题）
+        sharingType = .none
+
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         acceptsMouseMovedEvents = true
         initialFirstResponder = selectionView
@@ -168,7 +171,10 @@ final class RegionSelectionWindow: NSPanel {
     /// 关闭选区窗口
     func dismiss() {
         hideToolbar()
+        selectionView.reset()
         orderOut(nil)
+        // 确保系统光标恢复
+        NSCursor.unhide()
     }
     
     // MARK: - Toolbar Management
@@ -363,7 +369,13 @@ final class RegionSelectionWindow: NSPanel {
             handleConfirm(mode: .copy)
             return
         }
-        
+
+        // C (No modifiers) = Copy Color
+        if !hasCmd && !hasShift && char == "c" {
+            selectionView.copyCurrentColor()
+            return
+        }
+
         // 标注工具快捷键 (无修饰键)
         if !hasCmd && !hasShift {
             switch char {

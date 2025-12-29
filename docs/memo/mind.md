@@ -9,7 +9,7 @@
     - 转录系统：多引擎并存 (DictationTranscriber/SpeechTranscriber/SFSpeech)，统一 TranscriptionProvider 协议
     - 词典体系：双轨注入 (contextualStrings + 预编译 LM) + 后处理纠错 + 热词学习
     - LLM 管线：多 Provider (Gemini/OpenAI Compatible 等)，Prompt = 全局主提示 + App 专属规则
-    - 实时字幕：系统音频捕获 + 双层缓冲区防抖 + 翻译 + 生词高亮
+    - 实时字幕：系统音频捕获 + 双层缓冲区防抖 + 翻译 + 生词高亮 + Layer-Backing + 阻尼滚动
     - Quick Ask：语音/文本/附件混合输入 + Workflow(/keyword) + Answer Panel
     - 划词工具栏：AXObserver 监听 + 选区定位 + 动作执行 (TTS/LLM/OCR)
     - Pipeline 面板：阶段卡片化展示 ASR/LLM/对话 + 标签/状态/附件
@@ -266,6 +266,11 @@
         - 并行处理: TaskGroup 并行处理 tiles -> 6x 加速
         - 4x HighRes缓存: cachedHighResImage 只要原图不变任意缩放无需重跑AI
         - 中间态: 放大瞬间立即显示 Basic (Lanczos+Sharpen) -> AI完成后替换
+    - 截图体验优化 [√] ⭐ NEW (2025-12-30)
+      - 移除放大镜 -> 保留简洁十字准星 (1.5pt)
+      - 光标恢复修复 -> dismiss() 中 NSCursor.unhide()
+      - Toggle 行为 -> 再次按快捷键取消当前截图
+      - Ghost 问题修复 -> sharingType = .none
     - acceptsFirstMouse -> 非活跃窗口直接拖拽 [√] ⭐ NEW
     - 标注系统 [√]
       - 触发 -> 框选后自动进入编辑模式 [√]

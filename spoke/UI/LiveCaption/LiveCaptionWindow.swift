@@ -74,13 +74,14 @@ final class LiveCaptionWindowManager {
         let screenFrame = screen.visibleFrame
         
         // 计算初始位置（屏幕底部居中）
-        // 窗口尺寸参考 Tailwind max-w-2xl ≈ 672px
-        let windowWidth: CGFloat = 672
+        // 窗口尺寸参考 Tailwind max-w-2xl ≈ 672px + 两侧光晕空间
+        let glowPadding = CaptionDesign.glowPadding * 2  // 两侧各 25pt
+        let windowWidth: CGFloat = 672 + glowPadding
         // 折叠状态高度：2行字(44pt) + padding(48pt) + dragIndicator(12pt) ≈ 110pt
-        // 使用较大值确保内容不被裁剪
-        let windowHeight: CGFloat = 400  // 使用较大高度，让 SwiftUI 视图自适应
+        // 使用较大值确保内容不被裁剪，加上光晕空间
+        let windowHeight: CGFloat = 400 + glowPadding
         let x = screenFrame.midX - windowWidth / 2
-        let y = screenFrame.minY + 60  // 距离底部 60pt
+        let y = screenFrame.minY + 60 - CaptionDesign.glowPadding  // 调整位置，保持视觉居中
         
         let frame = NSRect(x: x, y: y, width: windowWidth, height: windowHeight)
         

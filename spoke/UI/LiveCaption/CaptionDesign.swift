@@ -53,4 +53,16 @@ enum CaptionDesign {
     static let contentBottomPadding: CGFloat = 0
     /// 展开模式底部占位
     static let expandedBottomPadding: CGFloat = 8
+    
+    // MARK: - Glow Effect (Hover)
+    /// 光晕预留空间（每侧），用于阴影/光晕扩散
+    static let glowPadding: CGFloat = 25
+    /// Hover 光晕半径（微弱效果）
+    static let glowRadius: CGFloat = 8
+    /// Hover 光晕颜色（白色，微弱）
+    static let glowColor = Color.white.opacity(0.25)
+    /// Hover 边框颜色（白色，微弱）
+    static let glowBorderColor = Color.white.opacity(0.18)
+    /// Hover 边框宽度
+    static let glowBorderWidth: CGFloat = 1
 }

@@ -53,13 +53,25 @@ final class RegionSelectionView: NSView {
     }
     
     // MARK: - Constants
-    
+
     private enum Design {
         static let overlayColor = DesignTokens.Colors.NS.overlayLight
+
+        // Cursor
+        static let crosshairSize: CGFloat = 14
+        static let crosshairColor = NSColor.white
+        static let crosshairThickness: CGFloat = 1.5
+        static let crosshairShadowColor = NSColor.black.withAlphaComponent(0.5)
+
         static let borderColor = DesignTokens.Colors.NS.accentPrimary
-        static let borderWidth: CGFloat = 2
+        static let borderWidth: CGFloat = 1.0
+
+        // Handles
         static let handleSize: CGFloat = 8
-        static let handleHitSize: CGFloat = 14 // 命中检测区域更大
+        static let handleHitSize: CGFloat = 14
+        static let handleColor = NSColor.white
+        static let handleBorderColor = DesignTokens.Colors.NS.accentPrimary
+
         static let sizeTagFont = NSFont.systemFont(ofSize: 12, weight: .medium)
         static let sizeTagPadding: CGFloat = 6
         static let sizeTagCornerRadius: CGFloat = 4
@@ -97,9 +109,24 @@ final class RegionSelectionView: NSView {
         }
     }
     
+    /// 当前鼠标下的颜色
+    private var currentColor: NSColor?
+    /// 缓存的位图数据，用于快速取色
+    private var bitmapRep: NSBitmapImageRep?
+
     /// 背景图片（全屏截图）
     var backgroundImage: NSImage? {
-        didSet { needsDisplay = true }
+        didSet {
+            needsDisplay = true
+            if let image = backgroundImage {
+                // 尝试获取或创建 bitmapRep
+                if let existingRep = image.representations.first(where: { $0 is NSBitmapImageRep }) as? NSBitmapImageRep {
+                    bitmapRep = existingRep
+                } else if let tiff = image.tiffRepresentation {
+                    bitmapRep = NSBitmapImageRep(data: tiff)
+                }
+            }
+        }
     }
     
     // MARK: - Callbacks
@@ -196,7 +223,21 @@ extension RegionSelectionView {
         state = .editing
         needsDisplay = true
     }
-    
+
+    /// 复制当前光标下的颜色到剪贴板
+    func copyCurrentColor() {
+        guard let color = currentColor else { return }
+
+        let r = Int(color.redComponent * 255)
+        let g = Int(color.greenComponent * 255)
+        let b = Int(color.blueComponent * 255)
+        let hex = String(format: "#%02X%02X%02X", r, g, b)
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(hex, forType: .string)
+    }
+
     /// 重置状态
     func reset() {
         state = .idle
@@ -207,6 +248,8 @@ extension RegionSelectionView {
         annotationCanvas?.removeFromSuperview()
         annotationCanvas = nil
         needsDisplay = true
+        // 恢复系统光标
+        NSCursor.unhide()
     }
     
     /// 设置标注工具
@@ -308,23 +351,99 @@ extension RegionSelectionView {
         // 2. 绘制半透明遮罩（选区外部变暗）
         drawOverlay(context: context)
         
-        // 3. 绘制选区边框和控制点
+        // 3. 绘制选区边框、控制点和尺寸标签
         if selectionRect.width > 0 && selectionRect.height > 0 {
             drawSelectionBorder(context: context)
             drawSizeTag(context: context)
-            
-            // 编辑模式下绘制 8 个控制点
+
+            // 编辑模式下绘制控制点
             if state == .editing {
                 drawResizeHandles(context: context)
             }
         }
-        
-        // 4. 绘制十字准星（仅初始状态）
-        if state == .idle && selectionRect.isEmpty {
-            drawCrosshair(context: context)
+
+        // 4. 绘制放大镜和自定义光标
+        // 仅在 Idle 或 Selecting 状态下显示自定义光标
+        // Editing 状态下显示系统光标
+        if state != .editing {
+            drawMagnifierAndCursor(context: context)
         }
     }
-    
+
+    /// 绘制选区边框
+    private func drawSelectionBorder(context: CGContext) {
+        let borderPath = NSBezierPath(rect: selectionRect)
+
+        // 外部阴影/描边以增强对比度
+        NSColor.black.withAlphaComponent(0.3).setStroke()
+        borderPath.lineWidth = Design.borderWidth + 2
+        borderPath.stroke()
+
+        // 主边框
+        Design.borderColor.setStroke()
+        borderPath.lineWidth = Design.borderWidth
+        borderPath.stroke()
+    }
+
+    /// 绘制 8 个控制点
+    private func drawResizeHandles(context: CGContext) {
+        let handleLength: CGFloat = 12
+        let thickness: CGFloat = 3.0
+
+        context.setStrokeColor(Design.handleBorderColor.cgColor)
+        context.setLineWidth(thickness)
+        context.setLineCap(.butt) // 直角端点
+
+        for handle in ResizeHandle.allCases {
+            // 注意：hitRect 返回的是以 handle center 为中心的矩形
+            let rect = handle.hitRect(for: selectionRect, handleSize: Design.handleSize)
+            let path = CGMutablePath()
+
+            // 根据把手位置绘制折线
+            switch handle {
+            case .topLeft:
+                // 左上角：maxY 是上边缘 (如果 isFlipped=false)
+                path.move(to: CGPoint(x: rect.minX, y: rect.maxY - handleLength))
+                path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+                path.addLine(to: CGPoint(x: rect.minX + handleLength, y: rect.maxY))
+
+            case .topCenter:
+                path.move(to: CGPoint(x: rect.midX - handleLength/2, y: rect.maxY))
+                path.addLine(to: CGPoint(x: rect.midX + handleLength/2, y: rect.maxY))
+
+            case .topRight:
+                path.move(to: CGPoint(x: rect.maxX - handleLength, y: rect.maxY))
+                path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+                path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - handleLength))
+
+            case .middleRight:
+                path.move(to: CGPoint(x: rect.maxX, y: rect.midY - handleLength/2))
+                path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY + handleLength/2))
+
+            case .bottomRight:
+                path.move(to: CGPoint(x: rect.maxX, y: rect.minY + handleLength))
+                path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+                path.addLine(to: CGPoint(x: rect.maxX - handleLength, y: rect.minY))
+
+            case .bottomCenter:
+                path.move(to: CGPoint(x: rect.midX - handleLength/2, y: rect.minY))
+                path.addLine(to: CGPoint(x: rect.midX + handleLength/2, y: rect.minY))
+
+            case .bottomLeft:
+                path.move(to: CGPoint(x: rect.minX + handleLength, y: rect.minY))
+                path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+                path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + handleLength))
+
+            case .middleLeft:
+                path.move(to: CGPoint(x: rect.minX, y: rect.midY - handleLength/2))
+                path.addLine(to: CGPoint(x: rect.minX, y: rect.midY + handleLength/2))
+            }
+
+            context.addPath(path)
+            context.strokePath()
+        }
+    }
+
     /// 绘制遮罩层（选区外部变暗）
     private func drawOverlay(context: CGContext) {
         context.saveGState()
@@ -343,36 +462,42 @@ extension RegionSelectionView {
         context.restoreGState()
     }
     
-    /// 绘制选区边框
-    private func drawSelectionBorder(context: CGContext) {
-        let borderPath = NSBezierPath(rect: selectionRect)
-        
-        // 白色外边框
-        DesignTokens.Colors.NS.inkLight.withAlphaComponent(0.5).setStroke()
-        borderPath.lineWidth = Design.borderWidth + 2
-        borderPath.stroke()
-        
-        // 蓝色主边框
-        Design.borderColor.setStroke()
-        borderPath.lineWidth = Design.borderWidth
-        borderPath.stroke()
+    /// 绘制放大镜和自定义光标
+    private func drawMagnifierAndCursor(context: CGContext) {
+        guard let window = window else { return }
+
+        // 获取鼠标位置 (相对于 view)
+        let mouseLoc = window.mouseLocationOutsideOfEventStream
+        let point = convert(mouseLoc, from: nil)
+
+        // 检查鼠标是否在视图内
+        guard bounds.contains(point) else { return }
+
+        context.saveGState()
+
+        // 1. 绘制自定义光标 (十字准星)
+        drawCustomCursor(context: context, at: point)
+
+        context.restoreGState()
     }
-    
-    /// 绘制 8 个控制点
-    private func drawResizeHandles(context: CGContext) {
-        for handle in ResizeHandle.allCases {
-            let rect = handle.hitRect(for: selectionRect, handleSize: Design.handleSize)
-            
-            // 白色填充
-            DesignTokens.Colors.NS.inkLight.setFill()
-            let path = NSBezierPath(ovalIn: rect)
-            path.fill()
-            
-            // 蓝色边框
-            Design.borderColor.setStroke()
-            path.lineWidth = 1.5
-            path.stroke()
-        }
+
+    private func drawCustomCursor(context: CGContext, at point: CGPoint) {
+        context.setStrokeColor(Design.crosshairColor.cgColor)
+        context.setLineWidth(Design.crosshairThickness)
+        context.setShadow(offset: .zero, blur: 1, color: Design.crosshairShadowColor.cgColor)
+
+        let size = Design.crosshairSize
+        let half = size / 2
+
+        // 水平线
+        context.move(to: CGPoint(x: point.x - half, y: point.y))
+        context.addLine(to: CGPoint(x: point.x + half, y: point.y))
+
+        // 垂直线
+        context.move(to: CGPoint(x: point.x, y: point.y - half))
+        context.addLine(to: CGPoint(x: point.x, y: point.y + half))
+
+        context.strokePath()
     }
     
     /// 绘制尺寸标签
@@ -417,33 +542,10 @@ extension RegionSelectionView {
         )
         sizeText.draw(at: textOrigin, withAttributes: attributes)
     }
-    
-    /// 绘制十字准星
-    private func drawCrosshair(context: CGContext) {
-        guard let mouseLocation = window?.mouseLocationOutsideOfEventStream else { return }
-        let point = convert(mouseLocation, from: nil)
-        
-        context.saveGState()
-        
-        context.setStrokeColor(DesignTokens.Colors.NS.inkLight.withAlphaComponent(0.6).cgColor)
-        context.setLineWidth(1)
-        context.setLineDash(phase: 0, lengths: [5, 5])
-        
-        // 水平线
-        context.move(to: CGPoint(x: 0, y: point.y))
-        context.addLine(to: CGPoint(x: bounds.width, y: point.y))
-        
-        // 垂直线
-        context.move(to: CGPoint(x: point.x, y: 0))
-        context.addLine(to: CGPoint(x: point.x, y: bounds.height))
-        
-        context.strokePath()
-        context.restoreGState()
-    }
 }
 
 extension RegionSelectionView {
-    
+
     // MARK: - Hit Testing
     
     /// 检测点击位置对应的控制点
@@ -537,7 +639,8 @@ extension RegionSelectionView {
             if selectionRect.width > Design.minSelectionSize && selectionRect.height > Design.minSelectionSize {
                 // 框选完成，进入编辑模式
                 state = .editing
-                
+                updateCursorVisibility()
+
                 // 创建标注画布
                 setupAnnotationCanvas()
                 
@@ -557,7 +660,8 @@ extension RegionSelectionView {
     }
     
     override func mouseMoved(with event: NSEvent) {
-        if state == .idle {
+        // 重绘以更新自定义光标位置
+        if state == .idle || state == .selecting {
             needsDisplay = true
         }
     }
@@ -658,10 +762,29 @@ extension RegionSelectionView {
         
         let area = NSTrackingArea(
             rect: bounds,
-            options: [.activeAlways, .mouseMoved, .inVisibleRect],
+            options: [.activeAlways, .mouseMoved, .mouseEnteredAndExited, .inVisibleRect],
             owner: self,
             userInfo: nil
         )
         addTrackingArea(area)
     }
+
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        updateCursorVisibility()
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        NSCursor.unhide()
+    }
+
+    private func updateCursorVisibility() {
+        if state == .editing {
+            NSCursor.unhide()
+        } else {
+            NSCursor.hide()
+        }
+    }
 }
+

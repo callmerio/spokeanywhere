@@ -108,18 +108,18 @@ struct DictionaryResultView: View {
     private var backgroundView: some View {
         let shadow = DS.Shadow.far()
 
-        return RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
-            .fill(DS.Colors.captionCardBackground)
-            .background(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
-                    .fill(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
-                    .strokeBorder(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
-            )
-            .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
+        return ZStack {
+            // 毛玻璃效果（与工具栏/字幕卡片一致）
+            VisualEffectBlur(material: .hudWindow, cornerRadius: DS.CornerRadius.lg)
+            // 深色叠加
+            DS.Colors.captionCardBackground
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                .strokeBorder(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
+        )
+        .shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
     }
 }
 

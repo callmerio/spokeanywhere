@@ -115,12 +115,23 @@ struct LiveCaptionView: View {
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius))
         .overlay(cardBorder)
+        // 🔥 Hover 光晕效果（白色光晕）
+        .shadow(
+            color: isHovering ? CaptionDesign.glowColor : Color.clear,
+            radius: isHovering ? CaptionDesign.glowRadius : 0,
+            x: 0,
+            y: 0
+        )
+        // 默认阴影（深色阴影，提升层次感）
         .shadow(
             color: DS.Shadow.caption.color,
             radius: CaptionDesign.shadowRadius,
             x: DS.Shadow.caption.x,
             y: DS.Shadow.caption.y
         )
+        // 🔥 添加 padding 预留光晕渲染空间（避免光晕被裁剪导致尖角）
+        .padding(CaptionDesign.glowPadding)
+        .animation(.easeInOut(duration: 0.15), value: isHovering)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
@@ -631,6 +642,7 @@ struct LiveCaptionView: View {
     // MARK: - Background & Border
     
     /// 卡片背景 - 毛玻璃 + 深色叠加
+    /// 🔥 使用内部 clipShape 确保 VisualEffectBlur (NSViewRepresentable) 被正确裁剪
     private var cardBackground: some View {
         ZStack {
             // 毛玻璃效果
@@ -638,12 +650,16 @@ struct LiveCaptionView: View {
             // 深色叠加
             CaptionDesign.cardBackground
         }
+        .clipShape(RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius))
     }
     
-    /// 卡片边框
+    /// 卡片边框 - hover 时变白色
     private var cardBorder: some View {
         RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
-            .stroke(CaptionDesign.borderColor, lineWidth: 1)
+            .stroke(
+                isHovering ? CaptionDesign.glowBorderColor : CaptionDesign.borderColor,
+                lineWidth: isHovering ? CaptionDesign.glowBorderWidth : 1
+            )
     }
 }
 

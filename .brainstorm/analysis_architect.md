@@ -1,28 +1,49 @@
-# Role Analysis: System Architect
+# Architect Analysis: 无感截图与窗口吸附技术实现
 
 ## Architecture Overview
-System needs to be secure (Sandboxed), robust (Error handling), and performant (Low latency).
+本阶段涉及 UI 渲染层（RegionSelectionWindow）与底层捕获层（ScreenCaptureKit/Accessibility）的深度交互。核心在于“高性能绘制”与“实时元数据获取”。
 
-## Analysis of Questions
+## Component Design
 
-1. **里程碑优先级 (App Sandbox)**:
-   - **观点**: 沙盒化不仅仅是开关，它限制了文件访问（Open/Save Panels, Security Scoped Bookmarks）、IPC（XPC Services）和硬件访问。这是一个**架构级的重构**。必须现在做，因为所有文件 I/O 逻辑可能都需要修改。
-   - **风险**: 现有的自动保存、日志记录、截图保存路径可能全部失效。
-   - **建议**: **立即启动沙盒化迁移**，作为技术债务清偿的第一优先级。
+### 1. 透明选区窗口 (Transparent Overlay)
+- **实现原理**: `NSWindow` 设置 `backgroundColor = .clear`, `isOpaque = false`, `hasShadow = false`。
+- **绘制逻辑**:
+  - 移除所有半透明遮罩 (`drawOverlay` 逻辑)。
+  - 仅绘制 1px 边框与控制点。
+  - **关键点**: 必须确保 `ignoresMouseEvents = false`，但视觉上不可见。
+- **状态指示**: 需增强鼠标光标（Cursor）的视觉反馈，因为没有全局遮罩了。
 
-2. **核心痛点 (翻译截断)**:
-   - **观点**: 截断通常是由于 UI 布局计算（NSTextView/Label）与异步数据流的不匹配，或者是 API 返回数据的处理逻辑问题。这属于 Bug Fix。
-   - **建议**: 分配专门的 Debug 资源解决。
+### 2. 窗口吸附引擎 (Snapping Engine)
+- **技术选型**:
+  - **Plan A (ScreenCaptureKit)**: `SCShareableContent` 提供所有窗口的 Frame 和元数据。
+    - *优点*: 性能极高，无权限焦虑（已授权）。
+    - *缺点*: 只能获取 Window 级别，无法获取 Button/Panel 级别。
+    - *刷新率*: 需测试高频调用 `current` 的开销，可能需要缓存+四叉树检索。
+  - **Plan B (Accessibility API)**: `AXUIElement`。
+    - *优点*: 可获取 DOM 级别的 UI 元素。
+    - *缺点*: 性能差，需开启辅助功能权限（用户门槛高）。
+  - **Plan C (Quartz Window Services)**: `CGWindowListCopyWindowInfo`。
+    - *缺点*: 旧 API，逐渐被 SCK 取代。
+- **推荐方案**: **Plan A (SCK)** 作为主力。因为产品需求是“监控窗口”，SCK 足以覆盖 Top-level Windows。
 
-3. **技术偏好 (本地模型)**:
-   - **观点**: 引入本地模型（CoreML/Whisper.cpp）会引入复杂的依赖管理和性能调优（内存占用、热管理）。
-   - **建议**: 目前架构支持多引擎，可以先保持架构的灵活性，待 App 稳定后再通过插件化或可选下载的方式引入本地模型，避免主包过大。
+## Tech Stack & Data Flow
 
-4. **交互体验 (Onboarding)**:
-   - **观点**: 权限检测逻辑目前分散在各 Service 中。
-   - **架构建议**: 统一 `PermissionManager` 模块，集中管理状态和请求逻辑，为 UI 提供统一的 State。
+### 实时吸附流 (Snapping Flow)
+1. **Init**: 截图开始时，一次性获取 `SCShareableContent`（已在 Phase 1 缓存）。
+2. **Indexing**: 将所有窗口 Frame 构建为 **R-Tree** 或简单的 **Grid Index**，用于 O(1) 命中测试。
+3. **Loop**: `mouseMoved` 事件 -> 查索引 -> 获取高亮 Frame -> 绘制“内发光”层。
+4. **Render**: 使用 `CAShapeLayer` 绘制高亮框，性能优于 `drawRect`。
 
-## Proposal
-1. **Technical Foundation (P0)**: **App Sandbox Migration**. 彻底梳理文件访问权限，引入 `SecurityScopedBookmark` 机制。
-2. **Refactoring**: 统一权限管理模块 `PermissionManager`，支持响应式状态更新。
-3. **Maintenance**: 修复翻译/UI布局的 Bug。
+## Risk Assessment
+
+### 1. 视觉混淆 (Visual Confusion)
+- **风险**: 用户可能分不清“这是桌面上的真窗口”还是“截图工具的高亮框”。
+- **缓解**: 高亮框必须有独特的视觉特征（如呼吸灯效果，或明显的 Tint Color）。
+
+### 2. 性能抖动 (Jank)
+- **风险**: 鼠标快速划过大量窗口时，频繁重绘可能导致掉帧。
+- **缓解**: 添加 `Debounce` (如 16ms) 或仅在鼠标停顿微小阈值后触发高亮。
+
+### 3. 多屏坐标系 (Coordinate Hell)
+- **风险**: SCK 返回的坐标是 Global Space，需准确映射到 `RegionSelectionWindow` 的 Local Space。
+- **缓解**: 统一使用 `CGWindowList` 的坐标系，并在 Window 内部做 convert。

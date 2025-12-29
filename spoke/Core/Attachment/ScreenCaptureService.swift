@@ -16,6 +16,40 @@ final class ScreenCaptureService {
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenCapture")
     
+    // MARK: - Content Cache
+    
+    /// 缓存 SCShareableContent，避免每次截图都重新枚举
+    /// TTL = 10 秒，平衡响应速度和内容新鲜度
+    private var cachedContent: SCShareableContent?
+    private var cacheTime: Date = .distantPast
+    private let cacheTTL: TimeInterval = 10.0
+    
+    /// 获取 SCShareableContent（优先使用缓存）
+    private func getShareableContent() async throws -> SCShareableContent {
+        if let cached = cachedContent,
+           Date().timeIntervalSince(cacheTime) < cacheTTL {
+            logger.debug("📦 Using cached SCShareableContent")
+            return cached
+        }
+        
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let content = try await SCShareableContent.current
+        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+        
+        cachedContent = content
+        cacheTime = Date()
+        logger.info("🔄 SCShareableContent refreshed in \(Int(elapsed))ms")
+        
+        return content
+    }
+    
+    /// 清除缓存（权限变更时调用）
+    func invalidateCache() {
+        cachedContent = nil
+        cacheTime = .distantPast
+        logger.info("🗑️ SCShareableContent cache invalidated")
+    }
+    
     // MARK: - Init
     
     private init() {}
@@ -38,7 +72,7 @@ final class ScreenCaptureService {
     /// 截取指定屏幕
     func captureScreen(_ screen: NSScreen) async -> NSImage? {
         do {
-            let content = try await SCShareableContent.current
+            let content = try await getShareableContent()
             guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
                   let scDisplay = content.displays.first(where: { $0.displayID == displayID }) else {
                 logger.error("❌ Failed to find SCDisplay for screen")

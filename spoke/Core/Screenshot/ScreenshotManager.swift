@@ -24,6 +24,9 @@ final class ScreenshotManager {
     /// 截图窗口映射 (itemId -> window)
     private var windows: [UUID: NSPanel] = [:]
     
+    /// 当前活跃的选区窗口（用于防止重复触发）
+    private weak var activeSelectionWindow: RegionSelectionWindow?
+    
     /// 窗口创建回调（由 UI 层注入）
     var windowFactory: ((ScreenshotItem) -> NSPanel)?
     
@@ -49,30 +52,41 @@ final class ScreenshotManager {
     
     /// 触发区域截图
     /// 使用自建选区 UI，精确获取选区坐标
+    /// 再次触发时取消当前截图（toggle 行为）
     func captureRegion() async {
         logger.info("📸 [ScreenshotManager] captureRegion triggered")
         
+        // 如果已有活跃的选区窗口，取消它（toggle 行为）
+        if let existingWindow = activeSelectionWindow, existingWindow.isVisible {
+            logger.info("📸 [ScreenshotManager] Cancelling existing selection window")
+            existingWindow.dismiss()
+            activeSelectionWindow = nil
+            return
+        }
+
         // 检查屏幕录制权限
         let hasPermission = await checkAndRequestPermission()
         guard hasPermission else {
             logger.warning("🚫 [ScreenshotManager] Screen capture permission not granted")
             return
         }
-        
-        // 1. 截取鼠标所在屏幕
-        guard let (screenImage, screenFrame) = await ScreenCaptureService.shared.captureCurrentScreenWithFrame() else {
-            logger.error("❌ [ScreenshotManager] Failed to capture current screen")
-            return
-        }
-        
-        // 2. 显示选区 UI，等待用户选择
-        let result = await showRegionSelectionUI(backgroundImage: screenImage, screenFrame: screenFrame)
-        
+
+        // 1. 获取目标屏幕（立即返回）
+        let mouseLocation = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) })
+                     ?? NSScreen.main
+                     ?? NSScreen.screens.first!
+        let screenFrame = screen.frame
+
+        // 2. 显示选区 UI (异步获取截图)
+        // 传入 screen 对象以便异步捕获
+        let result = await showRegionSelectionUI(screen: screen, screenFrame: screenFrame)
+
         guard let (viewSelectionRect, croppedImage, confirmMode) = result else {
             logger.info("🚫 [ScreenshotManager] User cancelled region selection")
             return
         }
-        
+
         // 3. 处理不同的确认模式
         switch confirmMode {
         case .copy:
@@ -147,21 +161,41 @@ final class ScreenshotManager {
     /// 显示选区 UI 并等待用户选择
     /// - Returns: (视图内选区坐标, 裁剪后的图片, 确认模式) 或 nil（用户取消）
     private func showRegionSelectionUI(
-        backgroundImage: NSImage,
+        screen: NSScreen,
         screenFrame: CGRect
     ) async -> (CGRect, NSImage, RegionSelectionWindow.ConfirmMode)? { // swiftlint:disable:this large_tuple
+        let logger = self.logger
+
         return await withCheckedContinuation { continuation in
             let selectionWindow = RegionSelectionWindow(screenFrame: screenFrame)
-            selectionWindow.setBackgroundImage(backgroundImage)
-            
-            selectionWindow.onComplete = { rect, croppedImage, confirmMode in
+            // 保存引用以便 toggle 取消
+            self.activeSelectionWindow = selectionWindow
+
+            // 异步获取截图并更新背景
+            Task.detached(priority: .userInitiated) {
+                logger.info("📸 [ScreenshotManager] Starting async screen capture...")
+                if let image = await ScreenCaptureService.shared.captureScreen(screen) {
+                    await MainActor.run {
+                        logger.info("✅ [ScreenshotManager] Async capture complete, updating UI")
+                        if selectionWindow.isVisible {
+                            selectionWindow.setBackgroundImage(image)
+                        }
+                    }
+                } else {
+                     logger.error("❌ [ScreenshotManager] Async capture failed")
+                }
+            }
+
+            selectionWindow.onComplete = { [weak self] rect, croppedImage, confirmMode in
+                self?.activeSelectionWindow = nil
                 continuation.resume(returning: (rect, croppedImage, confirmMode))
             }
-            
-            selectionWindow.onCancel = {
+
+            selectionWindow.onCancel = { [weak self] in
+                self?.activeSelectionWindow = nil
                 continuation.resume(returning: nil)
             }
-            
+
             selectionWindow.show()
         }
     }

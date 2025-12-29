@@ -7,6 +7,7 @@ private typealias DS = DesignTokens
 struct SelectionToolbarView: View {
     @EnvironmentObject var state: SelectionToolbarState
     @ObservedObject private var configService = ToolbarConfigService.shared
+    @State private var isHovered = false
     
     var body: some View {
         let shadowTight = DS.Shadow.tight()
@@ -22,23 +23,44 @@ struct SelectionToolbarView: View {
         }
         .padding(.horizontal, DS.Spacing.md)
         .frame(height: DS.Layout.toolbarHeight)
-        .background(
-            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
-                .fill(DS.Colors.overlayDark)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
-        )
+        .background(toolbarBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.md))
         .overlay(
             RoundedRectangle(cornerRadius: DS.CornerRadius.md)
-                .strokeBorder(DS.Colors.separator, lineWidth: DS.BorderWidth.hairline)
+                .strokeBorder(
+                    isHovered ? DS.Colors.accentInfo.opacity(0.4) : DS.Colors.separator,
+                    lineWidth: isHovered ? 1.5 : DS.BorderWidth.hairline
+                )
+        )
+        // 🔥 Hover 光晕效果
+        .shadow(
+            color: isHovered ? DS.Colors.accentInfo.opacity(0.45) : Color.clear,
+            radius: isHovered ? 10 : 0,
+            x: 0,
+            y: 0
         )
         .shadow(color: shadowTight.color, radius: shadowTight.radius, x: shadowTight.x, y: shadowTight.y)
         .shadow(color: shadowMedium.color, radius: shadowMedium.radius, x: shadowMedium.x, y: shadowMedium.y)
         .shadow(color: shadowFar.color, radius: shadowFar.radius, x: shadowFar.x, y: shadowFar.y)
+        .animation(DS.Animation.fast, value: isHovered)
         .animation(DS.Animation.normal, value: state.phase == .showingDictionary)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+    
+    // MARK: - Background
+    
+    /// 工具栏背景 - 毛玻璃 + 深色叠加（与 LiveCaptionView 一致）
+    /// 🔥 使用内部 clipShape 确保 VisualEffectBlur (NSViewRepresentable) 被正确裁剪
+    private var toolbarBackground: some View {
+        ZStack {
+            // 毛玻璃效果
+            VisualEffectBlur(material: .hudWindow, cornerRadius: DS.CornerRadius.md)
+            // 深色叠加（使用与字幕卡片相同的背景色）
+            DS.Colors.captionCardBackground
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.md))
     }
     
     // MARK: - 工具栏内容

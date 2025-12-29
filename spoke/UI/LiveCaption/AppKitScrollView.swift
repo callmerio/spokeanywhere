@@ -29,24 +29,38 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         scrollView.borderType = .noBorder
         scrollView.drawsBackground = false
         scrollView.scrollerStyle = .overlay
+        // 🔥 确保 scrollView 本身完全透明
+        scrollView.backgroundColor = .clear
         
         // 允许弹性滚动，以便触发 Overscroll
         scrollView.verticalScrollElasticity = .allowed
         
-        // 🔥 启用 Layer-Backing 提升 GPU 渲染效率
+        // 🔥 启用 Layer-Backing 并设置圆角裁剪
+        // 这是确保 NSViewRepresentable 在 SwiftUI 中正确显示圆角的关键
         scrollView.wantsLayer = true
+        scrollView.layer?.backgroundColor = NSColor.clear.cgColor
+        scrollView.layer?.cornerRadius = CaptionDesign.cornerRadius
+        scrollView.layer?.masksToBounds = true
         
         // 🔥 使用带阻尼的 ClipView，增加滚动"质感"
         let dampedClipView = DampedClipView()
         dampedClipView.wantsLayer = true
+        dampedClipView.layer?.backgroundColor = NSColor.clear.cgColor
+        dampedClipView.drawsBackground = false
         dampedClipView.scrollDampingFactor = 0.8  // 80% 原速度
         scrollView.contentView = dampedClipView
         
         let hostingView = NSHostingView(rootView: content)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
+        // 🔥 确保 NSHostingView 也透明
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
         
         let documentView = FlippedView()
         documentView.translatesAutoresizingMaskIntoConstraints = false
+        // 🔥 确保 documentView 透明
+        documentView.wantsLayer = true
+        documentView.layer?.backgroundColor = NSColor.clear.cgColor
         documentView.addSubview(hostingView)
         
         // hostingView 填满 documentView
@@ -369,9 +383,26 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     }
     
     /// 带阻尼的 ClipView - 减缓滚轮滚动速度
+    /// 🔥 确保完全透明，不绘制任何背景
     class DampedClipView: NSClipView {
         /// 滚动速度衰减因子（0.8 = 80% 原速度）
         var scrollDampingFactor: CGFloat = 0.8
+        
+        override init(frame frameRect: NSRect) {
+            super.init(frame: frameRect)
+            self.drawsBackground = false
+        }
+        
+        required init?(coder: NSCoder) {
+            super.init(coder: coder)
+            self.drawsBackground = false
+        }
+        
+        // 🔥 强制不绘制背景
+        override var drawsBackground: Bool {
+            get { false }
+            set { }
+        }
         
         override func scrollWheel(with event: NSEvent) {
             // 对于触控板和鼠标滚轮，减缓滚动速度
