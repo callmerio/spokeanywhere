@@ -290,13 +290,16 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         self.speechTranscriber = transcriber
         
         // Step 3: Ensure assets are installed
+        logger.info("📌 [ST] Step 3: Checking assets...")
         try await ensureAssetsInstalled(for: transcriber)
         
         // Step 4: Get best audio format
+        logger.info("📌 [ST] Step 4: Getting audio format...")
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
             throw TranscriptionError.processingFailed("No compatible audio format")
         }
         self.targetAudioFormat = format
+        logger.info("📌 [ST] Audio format: \(format.sampleRate)Hz, \(format.channelCount)ch")
         
         // Step 5: Create input stream
         let (inputSequence, inputBuilder) = AsyncStream.makeStream(of: AnalyzerInput.self)
@@ -307,10 +310,13 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         self.analyzer = analyzer
         
         // Step 7: Inject contextualStrings (words + training phrases)
+        logger.info("📌 [ST] Step 7: Injecting contextualStrings...")
         try await injectContextualStrings(to: analyzer)
         
         // Step 8: Prepare analyzer
+        logger.info("📌 [ST] Step 8: Preparing analyzer (this may take a while)...")
         try await analyzer.prepareToAnalyze(in: format)
+        logger.info("📌 [ST] Step 8: ✅ Analyzer prepared successfully")
         
         // Step 9: Start listening for results
         resultsTask = Task { [weak self] in
@@ -318,10 +324,12 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         }
         
         // Step 10: Start analysis
+        logger.info("📌 [ST] Step 10: Starting analysis task...")
         analyzeTask = Task { [weak self] in
             do {
                 try await analyzer.start(inputSequence: inputSequence)
             } catch {
+                self?.logger.error("❌ [ST] analyzer.start failed: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run { self?.onError?(error) }
             }
         }
@@ -354,7 +362,10 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         
         let context = AnalysisContext()
         context.contextualStrings[.general] = allStrings
+        
+        logger.info("📌 [词典] Calling setContext with \(allStrings.count) strings...")
         try await analyzer.setContext(context)
+        logger.info("📌 [词典] setContext completed successfully")
         
         // 显示前 5 个词条用于调试（仅 DEBUG 模式显示具体内容）
         #if DEBUG

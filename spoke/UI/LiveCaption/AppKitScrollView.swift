@@ -33,6 +33,15 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         // 允许弹性滚动，以便触发 Overscroll
         scrollView.verticalScrollElasticity = .allowed
         
+        // 🔥 启用 Layer-Backing 提升 GPU 渲染效率
+        scrollView.wantsLayer = true
+        
+        // 🔥 使用带阻尼的 ClipView，增加滚动"质感"
+        let dampedClipView = DampedClipView()
+        dampedClipView.wantsLayer = true
+        dampedClipView.scrollDampingFactor = 0.8  // 80% 原速度
+        scrollView.contentView = dampedClipView
+        
         let hostingView = NSHostingView(rootView: content)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -111,7 +120,6 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         
         // 标记程序正在滚动
         coordinator.isScrollingProgrammatically = true
-        defer { coordinator.isScrollingProgrammatically = false }
         
         // 强制布局更新
         if let hostingView = documentView.subviews.first {
@@ -120,39 +128,52 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
         documentView.layoutSubtreeIfNeeded()
         
-        // 计算并执行滚动
+        // 计算滚动目标
         let contentHeight = documentView.frame.height
         let clipHeight = scrollView.contentView.bounds.height
         let maxScrollY = max(0, contentHeight - clipHeight)
+        let targetY = maxScrollY + CaptionDesign.scrollExtraOffset
         
-        scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
-        scrollView.reflectScrolledClipView(scrollView.contentView)
-        coordinator.isAtBottomBinding.wrappedValue = true
-        coordinator.lastScrollY = maxScrollY + CaptionDesign.scrollExtraOffset
-        
-        // 🔥 追赶检查：100ms 后再次检查是否真的到底部
-        // 解决"一口气输出太多"时布局更新滞后的问题
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak scrollView, weak coordinator] in
+        // 🔥 动画滚动：平滑过渡替代瞬时跳转
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12  // 120ms 短促动画
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            context.allowsImplicitAnimation = true
+            scrollView.contentView.animator().setBoundsOrigin(NSPoint(x: 0, y: targetY))
+        } completionHandler: { [weak scrollView, weak coordinator] in
             guard let scrollView = scrollView, let coordinator = coordinator else { return }
-            guard let documentView = scrollView.documentView else { return }
             
-            // 再次强制布局
-            if let hostingView = documentView.subviews.first {
-                hostingView.layoutSubtreeIfNeeded()
-            }
-            documentView.layoutSubtreeIfNeeded()
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+            coordinator.isAtBottomBinding.wrappedValue = true
+            coordinator.lastScrollY = targetY
+            coordinator.lastMaxScrollY = maxScrollY
             
-            let newContentHeight = documentView.frame.height
-            let newMaxScrollY = max(0, newContentHeight - clipHeight)
-            let currentY = scrollView.contentView.bounds.origin.y
-            
-            // 如果内容高度增加了，追赶滚动
-            if newMaxScrollY > currentY + CaptionDesign.scrollCatchUpThreshold {
-                coordinator.isScrollingProgrammatically = true
-                scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY + CaptionDesign.scrollExtraOffset))
-                scrollView.reflectScrolledClipView(scrollView.contentView)
-                coordinator.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
-                DispatchQueue.main.async {
+            // 🔥 追赶检查：动画完成后 100ms 再次检查
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak scrollView, weak coordinator] in
+                guard let scrollView = scrollView, let coordinator = coordinator else { return }
+                guard let documentView = scrollView.documentView else { return }
+                
+                // 再次强制布局
+                if let hostingView = documentView.subviews.first {
+                    hostingView.layoutSubtreeIfNeeded()
+                }
+                documentView.layoutSubtreeIfNeeded()
+                
+                let newContentHeight = documentView.frame.height
+                let newMaxScrollY = max(0, newContentHeight - clipHeight)
+                let currentY = scrollView.contentView.bounds.origin.y
+                
+                // 如果内容高度增加了，追赶滚动（无动画，快速追上）
+                if newMaxScrollY > currentY + CaptionDesign.scrollCatchUpThreshold {
+                    coordinator.isScrollingProgrammatically = true
+                    scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY + CaptionDesign.scrollExtraOffset))
+                    scrollView.reflectScrolledClipView(scrollView.contentView)
+                    coordinator.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
+                    coordinator.lastMaxScrollY = newMaxScrollY
+                    DispatchQueue.main.async {
+                        coordinator.isScrollingProgrammatically = false
+                    }
+                } else {
                     coordinator.isScrollingProgrammatically = false
                 }
             }
@@ -345,5 +366,33 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     /// Flipped NSView（使坐标系从上到下）
     private class FlippedView: NSView {
         override var isFlipped: Bool { true }
+    }
+    
+    /// 带阻尼的 ClipView - 减缓滚轮滚动速度
+    class DampedClipView: NSClipView {
+        /// 滚动速度衰减因子（0.8 = 80% 原速度）
+        var scrollDampingFactor: CGFloat = 0.8
+        
+        override func scrollWheel(with event: NSEvent) {
+            // 对于触控板和鼠标滚轮，减缓滚动速度
+            // 通过手动计算新位置来实现阻尼效果
+            let deltaY = event.scrollingDeltaY * scrollDampingFactor
+            let deltaX = event.scrollingDeltaX * scrollDampingFactor
+            
+            var newOrigin = bounds.origin
+            newOrigin.y -= deltaY  // 注意：向下滚动 deltaY 为负
+            newOrigin.x -= deltaX
+            
+            // 边界检查
+            if let documentView = documentView {
+                let maxY = max(0, documentView.frame.height - bounds.height)
+                let maxX = max(0, documentView.frame.width - bounds.width)
+                newOrigin.y = min(max(0, newOrigin.y), maxY)
+                newOrigin.x = min(max(0, newOrigin.x), maxX)
+            }
+            
+            scroll(to: newOrigin)
+            enclosingScrollView?.reflectScrolledClipView(self)
+        }
     }
 }

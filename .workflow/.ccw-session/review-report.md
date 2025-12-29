@@ -1,151 +1,151 @@
-# Code Review Report
+# Code Review Report: 实时字幕滚动性能优化研究
 
-**Review Scope**: Dictionary Panel 优化 (本次会话修改)
-**Files Reviewed**: 5 files
-**Reviewer**: Qwen (CCW Critic Role)
-**Date**: 2024-12-24
+**Review Scope**: `.brainstorm/research_summary.md` + 相关源码验证
+**Reviewer**: CCW Critic (Qwen)
+**Date**: 2025-12-29T17:42
 
 ---
 
-## Summary
+## Summary: ⚠️ REQUEST CHANGES
 
-### 🎯 **APPROVE** ✅
-
-代码质量良好，无严重问题。有少量改进建议。
+研究分析大方向正确，但存在**关键遗漏**和**方案优先级问题**。
 
 ---
 
 ## Critical Issues 🚨
 
-**无**
+### 1. 方案 A "动画滚动" 可能导致新 bug
+
+**问题**: `animator().setBoundsOrigin()` 动画期间，`scrollViewDidScroll` 会被连续触发。
+
+**现有代码依赖**:
+```swift
+// AppKitScrollView.swift:239-280
+@objc func scrollViewDidScroll(_ notification: Notification) {
+    guard !isScrollingProgrammatically else { return }  // 只检查这个标志
+    // ... 计算 isAtBottom ...
+}
+```
+
+**风险**: 
+- 动画期间 `isScrollingProgrammatically = true` 但 `defer` 立即重置为 `false`
+- 动画滚动触发多次 `scrollViewDidScroll`，每次都会执行检测逻辑
+- 可能误判 `isAtBottom` 状态 → 触发 `forceScrollToBottom()` 循环
+
+**建议**: 需要新增 `isAnimatingScroll` 状态或延长 `isScrollingProgrammatically` 有效期
 
 ---
 
-## Security Findings 🔒
+### 2. 遗漏关键瓶颈：`invalidateIntrinsicContentSize()`
 
-### ✅ 无安全漏洞
+**代码位置**: `AppKitScrollView.swift:118`
+```swift
+hostingView.invalidateIntrinsicContentSize()  // 🔴 每次 scrollToBottom 都调用
+hostingView.layoutSubtreeIfNeeded()
+```
 
-审查了以下安全模式：
-- **敏感数据**: 无 password/secret/token/api_key 硬编码
-- **代码注入**: 无 eval/exec/innerHTML 使用
-- **URL 处理**: `dict://` URL 构造安全（Line 150 DictionaryPanelState.swift）
-- **文件操作**: 历史记录存储在 Application Support 目录，路径安全
+**问题**:
+- **Memory 条目 193** 明确记录这导致抖动
+- 研究报告只提到"频繁调用可能阻塞"但未作为优化重点
+- 这是**同步阻塞主线程**的操作，比动画问题更严重
+
+**建议**: 移除或条件化 `invalidateIntrinsicContentSize()` 应作为**首选优化**
 
 ---
 
 ## Quality Issues ⚠️
 
-### 1. **[低] 强制解包风险** - `DictionaryPanelWindow.swift:100`
-```swift
-let maxY = max(0, scrollView.documentView!.frame.height - clipView.bounds.height)
-```
-**问题**: `documentView` 强制解包可能崩溃
-**建议**: 使用 guard let 或 optional chaining
+### 3. 方案优先级错误
 
-### 2. **[低] 线程安全** - `LocalDictionaryService.swift:83`
-```swift
-final class LocalDictionaryService: @unchecked Sendable {
-    private var searchHistory: [String] = []
-```
-**问题**: `@unchecked Sendable` 标记但 `searchHistory` 无同步保护
-**风险**: 后台搜索和主线程 `addToHistory` 可能竞态
-**建议**: 
-  - 使用 `NSLock` 保护 `searchHistory`
-  - 或将历史操作限制在主线程
+**现有优先级**:
+1. 动画滚动
+2. Layer-Backing
+3. 减少布局频率
+4. 简化触发机制
 
-### 3. **[信息] 未使用代码** - `DictionaryPanelState.swift:147-153`
+**建议优先级** (基于 ROI 和风险):
+1. **移除 `invalidateIntrinsicContentSize()`** - 零风险，立即见效
+2. **简化触发机制** - 移除 Timer，减少冲突
+3. **Layer-Backing** - 低风险，可能有效
+4. **动画滚动** - 高风险，需要额外状态管理
+
+### 4. 遗漏 `updateNSView` 优化
+
+**代码位置**: `AppKitScrollView.swift:88`
 ```swift
-func openInDictionary() {
-    guard let result = selectedResult else { return }
-    let url = URL(string: "dict://\(result.word)")!
-    NSWorkspace.shared.open(url)
-    ...
-}
+hostingView.rootView = content  // 每次 SwiftUI 更新都重设
 ```
-**问题**: 此方法已从 UI 中移除，但代码仍保留
-**建议**: 删除或标记 `@available(*, deprecated)`
+
+**问题**: 这会触发完整的 SwiftUI diff + layout cycle
+
+**外部研究已提到**: "updateNSView 频繁调用；避免重操作"
+
+**建议**: 添加 `content` 变化检测，避免无意义的 rootView 重设
 
 ---
 
 ## Architecture Concerns 🏗️
 
-### ✅ 架构合理
+### 5. 三重触发机制未简化
 
-1. **状态管理**: `DictionaryPanelState` 使用 `@Observable` + `@MainActor`，符合 SwiftUI 最佳实践
-2. **异步搜索**: `Task.detached` 正确用于后台搜索，避免阻塞主线程
-3. **事件监听**: `NSEvent.addGlobalMonitorForEvents` 正确使用 `[weak self]` 避免循环引用
-4. **单例模式**: `DictionaryPanelManager.shared` 合理使用单例管理窗口生命周期
+研究报告指出问题但未给出具体方案：
+- Timer (2秒轮询)
+- boundsDidChangeNotification
+- frameDidChangeNotification
 
-### 建议改进
+**分析**:
+- Timer 是**遗留补救措施**，当其他机制失效时兜底
+- boundsDidChange 用于用户滚动检测
+- frameDidChange 用于内容高度变化检测
 
-1. **Monitor 清理**: `registerShortcut()` 中的 global/local monitor 未提供移除方法
-   - 当前不影响功能（应用生命周期内有效）
-   - 如需支持动态注销，应保存 monitor 引用
+**建议**: Timer 可以安全移除，因为 frameDidChange 已覆盖其场景
 
 ---
 
 ## Positive Observations ✅
 
-1. **Debounce 实现**: 150ms debounce + Task 取消机制，有效防止快速输入卡顿
-2. **后台搜索**: `Task.detached(priority: .userInitiated)` 正确优先级
-3. **点击外部关闭**: 使用 `NSEvent.mouseLocation` + `windowFrame.contains()` 实现简洁
-4. **键盘导航**: ESC/Tab/上下键处理完整，用户体验好
-5. **滚动实现**: 递归查找 `NSScrollView` 并手动调整 bounds，解决 SwiftUI ScrollView 键盘滚动问题
+1. **Memory 历史充分** - 15+ 条相关记录，学习曲线陡峭问题不会重复
+2. **外部研究全面** - 12 条外部信息，方案有理论支撑
+3. **风险点识别准确** - 动画与手动滚动冲突、兼容性问题都有提及
+4. **根因分析正确** - NSHostingView 异步滞后是核心问题
 
 ---
 
 ## Recommendations
 
-### 优先级 P1（建议修复）
+### 立即执行 (低风险)
 
-1. **修复强制解包**
-   ```swift
-   guard let documentView = scrollView.documentView else { return }
-   let maxY = max(0, documentView.frame.height - clipView.bounds.height)
+1. **移除 `invalidateIntrinsicContentSize()`** @ line 118
+   ```diff
+   - hostingView.invalidateIntrinsicContentSize()
    ```
 
-2. **添加线程同步**
+2. **移除 2秒轮询 Timer** @ startPolling()
+   - 已有 frameDidChange 兜底
+
+### 第二阶段
+
+3. **添加 Layer-Backing**
    ```swift
-   private let historyLock = NSLock()
-   
-   func addToHistory(_ word: String) {
-       historyLock.lock()
-       defer { historyLock.unlock() }
-       // ... existing code
+   scrollView.wantsLayer = true
+   scrollView.contentView.wantsLayer = true
+   ```
+
+4. **优化 `updateNSView`**
+   ```swift
+   if hostingView.rootView != content {  // 需要 Equatable
+       hostingView.rootView = content
    }
    ```
 
-### 优先级 P2（可选）
+### 第三阶段 (需要充分测试)
 
-3. **清理未使用代码** - 删除 `openInDictionary()` 方法
-
----
-
-## Files Reviewed
-
-| File | Lines | Issues |
-|------|-------|--------|
-| `DictionaryPanelState.swift` | 155 | 1 (未使用代码) |
-| `DictionaryPanelWindow.swift` | 259 | 1 (强制解包) |
-| `LocalDictionaryService.swift` | 409 | 1 (线程安全) |
-| `DictionaryPanelView.swift` | 407 | 0 |
-| `FormattedDefinitionView.swift` | ~135 | 0 |
+5. **动画滚动** - 需要新增状态管理机制后再实施
 
 ---
 
-## 审查结论
+## Verdict
 
-| 维度 | 评分 | 说明 |
-|------|------|------|
-| 安全性 | ⭐⭐⭐⭐⭐ | 无漏洞 |
-| 代码质量 | ⭐⭐⭐⭐ | 少量强制解包 |
-| 架构设计 | ⭐⭐⭐⭐⭐ | 异步搜索设计合理 |
-| 可维护性 | ⭐⭐⭐⭐ | 线程安全需加强 |
+🟡 **REQUEST CHANGES**
 
-**综合评分**: ⭐⭐⭐⭐ (4/5)
-
-**最终判定**: ✅ **APPROVE** (批准合并)
-
----
-
-*Generated by CCW Code Review Workflow*
+研究方向正确但执行优先级需调整。建议从**低风险高收益**的修改开始，逐步验证效果后再实施复杂方案。
