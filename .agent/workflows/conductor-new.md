@@ -126,5 +126,54 @@ description: Conductor 新建任务轨道 - 集成 CCW Brainstorm
 
 ---
 
+### Phase 4.5: Issue Extraction (🆕 细粒度验收点)
+
+**目标**: 将 Plan 中的每个 Task 转化为可验证的 Issue，并检索历史经验。
+
+- **Step 4.5.1**: Historical Search.
+- **Tool Call**: 
+  ```bash
+  python3 ~/.gemini/.claude/skills/memory/scripts/memory_db.py issue search "[从 Spec 提取的关键词]"
+  ```
+- **Instruction**:
+  - 如果找到相似历史问题，展示给用户
+  - 将相关 Issue ID 记录到新 Issue 的 `related_issues` 字段
+- **Store**: [HISTORICAL_CONTEXT]
+
+- **Step 4.5.2**: Generate Issues from Plan.
+- **Instruction**: 遍历 Plan 中的每个 Task，提取：
+  - `local_id`: I001, I002...
+  - `type`: feature / ui / logic / bug / refactor
+  - `title`: Task 标题
+  - `description`: 详细描述
+  - `target_files`: 目标文件列表
+  - `acceptance_criteria`: **必须具体可验证** (颜色、尺寸、行为...)
+  - `verification_type`: manual / unit_test / e2e / script
+  - `verification_cmd`: 测试命令（如适用）
+  - `dependencies`: 依赖的其他 Issue
+- **Prompt User**: "确认以下 Issues 的验收标准是否完整？"
+
+- **Step 4.5.3**: Persist Issues.
+- **Tool Call**:
+  ```bash
+  python3 ~/.gemini/.claude/skills/memory/scripts/memory_db.py issue batch \
+    --track [TRACK_ID] \
+    --json '[{"local_id": "I001", "type": "...", "title": "...", ...}]'
+  ```
+- **Automatic**: 
+  - 写入 SQLite `issues` 表
+  - 导出 `conductor/tracks/[TRACK_ID]/issues.json`
+
+---
+
 ### Phase 5: Handoff
-- **Output**: "Track [ID] created. Status: [ ] Pending.\nRun `/conductor-implement` to start."
+- **Output**: 
+  ```
+  Track [ID] created. 
+  Issues: [N] items
+  Status: [ ] Pending.
+  
+  First Issue: [I001] {title}
+  
+  Run `/conductor-implement` to start.
+  ```
