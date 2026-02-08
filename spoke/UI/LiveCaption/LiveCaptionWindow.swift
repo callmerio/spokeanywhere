@@ -68,9 +68,12 @@ final class LiveCaptionWindowManager {
     
     private func createWindowIfNeeded() {
         guard window == nil else { return }
-        
+
         // 获取屏幕信息
-        let screen = NSScreen.main ?? NSScreen.screens.first!
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else {
+            logger.error("No screen available for Live Caption window")
+            return
+        }
         let screenFrame = screen.visibleFrame
 
         // 计算初始位置（屏幕底部居中）
