@@ -186,9 +186,14 @@ final class QuickAskService {
         // 隐藏输入 HUD (不恢复 Policy，因为 AnswerPanel 需要 Key Window)
         hudManager.hide(restorePolicy: false)
         
-        // 显示回答窗口（传递上下文来源）
+        // 分离手动输入和语音转录（用于 UI 区分显示）
+        let userInputText = state.userInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let voiceText = state.voiceTranscription.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // 显示回答窗口（传递上下文来源 + 语音转录）
         let panelId = AnswerPanelManager.shared.show(
-            question: state.userInput.isEmpty ? state.voiceTranscription : state.userInput,
+            question: userInputText,
+            voiceTranscription: voiceText.isEmpty ? nil : voiceText,
             attachments: state.attachments,
             contextSources: contextSources,
             screenshotImage: screenshotImage

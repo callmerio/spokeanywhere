@@ -590,23 +590,12 @@ final class HotKeyService {
         logger.info("🔄 Quick Ask state reset, event tap re-enabled")
     }
     
-    /// 设置 Quick Ask 激活状态（用于控制 event tap）
+    /// 设置 Quick Ask 激活状态
+    /// 注意：不禁用 event tap，而是在 handleEvent 中智能处理
+    /// 这样 Option+T 仍能被拦截用于发送
     func setQuickAskActive(_ active: Bool) {
         isQuickAskActive = active
-        // Quick Ask 激活时禁用 event tap，避免干扰输入法
-        if let tap = eventTap {
-            let shouldEnable = !active
-            print("🔥 Calling CGEvent.tapEnable(enable: \(shouldEnable)) on tap: \(tap)")
-            CGEvent.tapEnable(tap: tap, enable: shouldEnable)
-            // 验证是否生效
-            let actualState = CGEvent.tapIsEnabled(tap: tap)
-            print("🔥 Event tap actual state after toggle: \(actualState ? "ON" : "OFF")")
-            if actualState != shouldEnable {
-                print("⚠️⚠️⚠️ tapEnable FAILED! Expected \(shouldEnable ? "ON" : "OFF") but got \(actualState ? "ON" : "OFF")")
-            }
-        } else {
-            print("⚠️ Event tap is nil, cannot toggle!")
-        }
+        logger.info("🔥 Quick Ask active: \(active)")
     }
     
     // MARK: - Message Panel Handler
