@@ -30,6 +30,12 @@ let package = Package(
                 "cookies.txt"          // 本地调试文件（避免资源告警）
             ],
             sources: ["App", "Core", "Services", "UI"]
+        ),
+        .testTarget(
+            name: "SpokenAnyWhereTests",
+            dependencies: ["SpokenAnyWhere"],
+            path: "Tests",
+            exclude: ["run-tests.sh"]
         )
     ]
 )
