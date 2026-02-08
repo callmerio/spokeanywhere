@@ -3,10 +3,52 @@ import SwiftUI
 
 // MARK: - Answer Panel Window
 
-/// 自定义 Panel 以支持 Key Window 和输入法
+/// 自定义 Panel 以支持 Key Window、输入法和标准编辑命令
 class AnswerPanelWindow: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+    
+    /// 处理标准编辑快捷键 (Cmd+C/V/X/A)
+    /// 确保 WKWebView 和其他视图能正确响应复制/粘贴命令
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // 先尝试让 first responder 处理
+        if let responder = firstResponder, responder !== self {
+            if responder.performKeyEquivalent(with: event) {
+                return true
+            }
+        }
+        
+        // 再让内容视图层级处理
+        if contentView?.performKeyEquivalent(with: event) == true {
+            return true
+        }
+        
+        // 如果是标准编辑命令，尝试通过 sendAction 路由
+        if event.modifierFlags.contains(.command) {
+            switch event.charactersIgnoringModifiers {
+            case "c":
+                if NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: self) {
+                    return true
+                }
+            case "v":
+                if NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: self) {
+                    return true
+                }
+            case "x":
+                if NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self) {
+                    return true
+                }
+            case "a":
+                if NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: self) {
+                    return true
+                }
+            default:
+                break
+            }
+        }
+        
+        return super.performKeyEquivalent(with: event)
+    }
 }
 
 // MARK: - Answer Panel Instance
@@ -59,6 +101,7 @@ final class AnswerPanelManager {
     @discardableResult
     func show(
         question: String,
+        voiceTranscription: String? = nil,
         attachments: [QuickAskAttachment],
         contextSources: [ContextSource] = [],
         screenshotImage: CGImage? = nil,
@@ -66,6 +109,7 @@ final class AnswerPanelManager {
     ) -> UUID {
         let instance = makeInstance(
             question: question,
+            voiceTranscription: voiceTranscription,
             attachments: attachments,
             contextSources: contextSources,
             screenshotImage: screenshotImage
@@ -197,6 +241,7 @@ final class AnswerPanelManager {
 
     private func makeInstance(
         question: String,
+        voiceTranscription: String?,
         attachments: [QuickAskAttachment],
         contextSources: [ContextSource],
         screenshotImage: CGImage?
@@ -209,7 +254,8 @@ final class AnswerPanelManager {
                 content: question,
                 attachments: attachments,
                 contextSources: contextSources,
-                screenshotImage: screenshotImage
+                screenshotImage: screenshotImage,
+                voiceTranscription: voiceTranscription
             )
         ]
         instance.state.isLoading = true

@@ -1,6 +1,72 @@
 import AppKit
 import SwiftUI
 
+// MARK: - Selectable Text View
+
+/// 可选择复制的文本视图（解决 SwiftUI Text 在 NSPanel 中 Cmd+C 不工作的问题）
+struct SelectableTextView: NSViewRepresentable {
+    let text: String
+    let color: NSColor
+    
+    init(_ text: String, color: NSColor = .white) {
+        self.text = text
+        self.color = color
+    }
+    
+    func makeNSView(context: Context) -> SelectableTextLabel {
+        let label = SelectableTextLabel(labelWithString: text)
+        label.isEditable = false
+        label.isSelectable = true
+        label.isBordered = false
+        label.drawsBackground = false
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = color
+        label.lineBreakMode = .byWordWrapping
+        label.maximumNumberOfLines = 0
+        label.setContentHuggingPriority(.required, for: .horizontal)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        return label
+    }
+    
+    func updateNSView(_ nsView: SelectableTextLabel, context: Context) {
+        nsView.stringValue = text
+        nsView.textColor = color
+    }
+}
+
+/// 自定义 NSTextField 支持 Cmd+C 复制
+class SelectableTextLabel: NSTextField {
+    override var acceptsFirstResponder: Bool { true }
+    
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.contains(.command) {
+            switch event.charactersIgnoringModifiers {
+            case "c":
+                // 获取选中的文字范围
+                if let editor = currentEditor() as? NSTextView {
+                    let range = editor.selectedRange()
+                    if range.length > 0 {
+                        let selectedText = (stringValue as NSString).substring(with: range)
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(selectedText, forType: .string)
+                        return true
+                    }
+                }
+                // 如果没有选中，复制全部
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(stringValue, forType: .string)
+                return true
+            case "a":
+                selectText(nil)
+                return true
+            default:
+                break
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+}
+
 // MARK: - Message Bubble View
 
 struct MessageBubbleView: View {
@@ -107,18 +173,23 @@ struct MessageBubbleView: View {
                 }
 
                 // Workflow 标签 + 问题文字
-                if parsed.workflowKeyword != nil || !parsed.text.isEmpty {
-                    HStack(spacing: 8) {
-                        // Workflow 标签（方框样式）
-                        if let keyword = parsed.workflowKeyword {
-                            WorkflowTagBadge(keyword: keyword)
-                        }
+                if parsed.workflowKeyword != nil || !parsed.text.isEmpty || message.voiceTranscription != nil {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        HStack(spacing: 8) {
+                            // Workflow 标签（方框样式）
+                            if let keyword = parsed.workflowKeyword {
+                                WorkflowTagBadge(keyword: keyword)
+                            }
 
-                        // 问题文字
-                        if !parsed.text.isEmpty {
-                            Text(parsed.text)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.white)
+                            // 手动输入文字（使用 SelectableTextView 支持选中和 Cmd+C）
+                            if !parsed.text.isEmpty {
+                                SelectableTextView(parsed.text)
+                            }
+                        }
+                        
+                        // 语音转录（灰色，分行显示）
+                        if let voiceText = message.voiceTranscription, !voiceText.isEmpty {
+                            SelectableTextView(voiceText, color: .white.withAlphaComponent(0.6))
                         }
                     }
                     .padding(12)

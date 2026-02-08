@@ -235,16 +235,22 @@ final class AnswerPanelNSTextView: NSTextView {
         
         if selector == #selector(insertNewline(_:)) {
             if markedRange().length > 0 {
+                // 有 marked text，让输入法确认
                 super.doCommand(by: selector)
             } else if WorkflowState.shared.isPickerVisible {
                 return
+            } else if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+                // Shift+Enter: 换行
+                insertNewlineIgnoringFieldEditor(nil)
             } else {
+                // 普通 Enter: 发送
                 onSend?()
             }
             return
         }
         
         if selector == #selector(insertNewlineIgnoringFieldEditor(_:)) {
+            // Shift+Enter 换行（备用）
             super.doCommand(by: selector)
             return
         }

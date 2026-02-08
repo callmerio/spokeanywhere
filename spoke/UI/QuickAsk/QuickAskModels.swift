@@ -37,6 +37,8 @@ struct ChatMessage: Identifiable, Equatable {
     let contextSources: [ContextSource]
     /// 应用截图（仅 user 消息有效，用于显示缩略图）
     let screenshotImage: CGImage?
+    /// 语音转录内容（仅 user 消息有效，与 content 分开显示）
+    let voiceTranscription: String?
     var timestamp = Date()
 
     init(
@@ -45,7 +47,8 @@ struct ChatMessage: Identifiable, Equatable {
         attachments: [QuickAskAttachment],
         generatedImages: [Data] = [],
         contextSources: [ContextSource] = [],
-        screenshotImage: CGImage? = nil
+        screenshotImage: CGImage? = nil,
+        voiceTranscription: String? = nil
     ) {
         self.role = role
         self.content = content
@@ -53,6 +56,7 @@ struct ChatMessage: Identifiable, Equatable {
         self.generatedImages = generatedImages
         self.contextSources = contextSources
         self.screenshotImage = screenshotImage
+        self.voiceTranscription = voiceTranscription
     }
 
     static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
