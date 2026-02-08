@@ -226,15 +226,33 @@ struct MarkdownWebView: NSViewRepresentable {
             <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/full.render.js"></script>
         </head>
-        <body>
+        <body data-markdown="{{MARKDOWN_ESCAPED}}">
             <div id="content"></div>
             
             <script>
+                // CDN 加载状态检测
+                var cdnLoadErrors = [];
+                window.onerror = function(msg, url) {
+                    if (url && url.includes('cdn.jsdelivr.net')) {
+                        cdnLoadErrors.push(url);
+                    }
+                };
+
                 // Wait for all scripts to load
                 document.addEventListener('DOMContentLoaded', function() {
+                    // 检查必要的库是否加载成功
+                    if (typeof marked === 'undefined') {
+                        document.getElementById('content').innerHTML =
+                            '<p style="color:#ff6b6b;">⚠️ 无法加载 Markdown 渲染库，请检查网络连接</p>' +
+                            '<p style="color:rgba(255,255,255,0.7);font-size:12px;">原始内容：</p>' +
+                            '<pre style="white-space:pre-wrap;color:rgba(255,255,255,0.9);">' +
+                            document.body.getAttribute('data-markdown') + '</pre>';
+                        updateHeight();
+                        return;
+                    }
                     initializeRendering();
                 });
-                
+
                 // Fallback: if DOMContentLoaded already fired
                 if (document.readyState !== 'loading') {
                     setTimeout(initializeRendering, 50);
@@ -371,10 +389,16 @@ struct MarkdownWebView: NSViewRepresentable {
         let escapedMarkdown = markdown
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "`", with: "\\`")
-        
-        return Self.htmlTemplate.replacingOccurrences(
-            of: "{{MARKDOWN}}",
-            with: escapedMarkdown
-        )
+
+        // 为 fallback 显示准备 HTML 转义版本
+        let htmlEscapedMarkdown = markdown
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+
+        return Self.htmlTemplate
+            .replacingOccurrences(of: "{{MARKDOWN}}", with: escapedMarkdown)
+            .replacingOccurrences(of: "{{MARKDOWN_ESCAPED}}", with: htmlEscapedMarkdown)
     }
 }
