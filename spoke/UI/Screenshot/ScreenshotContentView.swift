@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 import os
 import Vision
 import VisionKit

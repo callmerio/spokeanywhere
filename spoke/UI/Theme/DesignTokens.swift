@@ -266,8 +266,8 @@ enum DesignTokens {
         static func far(_ opacity: Double = 0.08) -> Token {
             Token(color: Color.black.opacity(opacity), radius: 20, x: 0, y: 8)
         }
-        /// 字幕卡片阴影
-        static let caption = Token(color: Color.black.opacity(0.4), radius: 25, x: 0, y: 10)
+        /// 字幕卡片阴影（柔和阴影，融入背景）
+        static let caption = Token(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 8)
     }
     
     // MARK: - Layout
