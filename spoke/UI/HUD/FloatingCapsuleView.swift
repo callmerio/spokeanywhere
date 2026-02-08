@@ -11,7 +11,6 @@ struct FloatingCapsuleView: View {
     @State private var isHoveringComplete = false
     @State private var isHoveringCancel = false
     @State private var contentHeight: CGFloat = 0
-    @State private var scrollProxy: ScrollViewProxy?
     @State private var textContentHeight: CGFloat = 0
     
     /// 文字区域最大高度（窗口高度 - controlBar高度 - padding）
@@ -240,9 +239,6 @@ struct FloatingCapsuleView: View {
                 withAnimation(.easeOut(duration: 0.15)) {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
-            }
-            .onAppear {
-                scrollProxy = proxy
             }
         }
         // 🔑 关键：动态高度 - 内容少时自适应，超出时固定在 maxHeight

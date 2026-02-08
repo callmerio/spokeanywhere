@@ -6,15 +6,11 @@ import SwiftUI
 enum QuickAskMode: String, CaseIterable {
     case chat = "Chat"
     case deepResearch = "DeepResearch"
-    case canvas = "Canvas"
-    case mind = "Mind"
 
     var icon: String {
         switch self {
         case .chat: return "bubble.left.and.bubble.right"
         case .deepResearch: return "magnifyingglass"
-        case .canvas: return "paintbrush"
-        case .mind: return "brain.head.profile"
         }
     }
 }

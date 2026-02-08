@@ -684,54 +684,6 @@ struct LiveCaptionView: View {
     }
 }
 
-// MARK: - Caption Segment View
-
-/// 单个字幕段落视图（用于展开模式）
-/// 原文白色 + 译文灰色
-struct CaptionSegmentView: View {
-    
-    let segment: CaptionSegment
-    let showOriginal: Bool
-    
-    /// 主文本色 - #f9fafb
-    private var textPrimary: Color {
-        DS.Colors.textPrimary
-    }
-    /// 次要文本色 - #9ca3af (译文)
-    private var textSecondary: Color {
-        DS.Colors.textSecondary
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // 原文 - 白色
-            if showOriginal {
-                Text(segment.originalText)
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(textPrimary)
-                    .lineSpacing(6)
-                    .textSelection(.enabled)
-            }
-            
-            // 译文 - 灰色（占位符：中文译文）
-            if let translated = segment.translatedText {
-                Text(translated)
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(textSecondary)
-                    .lineSpacing(6)
-                    .textSelection(.enabled)
-            } else if !showOriginal {
-                // 没有译文且不显示原文时，显示原文
-                Text(segment.originalText)
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(textPrimary)
-                    .lineSpacing(6)
-                    .textSelection(.enabled)
-            }
-        }
-    }
-}
-
 // MARK: - Translation Task Modifier
 
 /// 翻译任务修饰符（macOS 15+）
