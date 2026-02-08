@@ -85,3 +85,4 @@ tmp/
 .codex/prompts/plan_to_issues_csv.md
 .codex/prompts/plan.md
 .codex/prompts/plan.md
+.ace-tool/
