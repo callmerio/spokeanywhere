@@ -131,22 +131,26 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     
     private static func scrollToBottom(_ scrollView: NSScrollView, coordinator: Coordinator) {
         guard let documentView = scrollView.documentView else { return }
-        
+
         // 标记程序正在滚动
         coordinator.isScrollingProgrammatically = true
-        
-        // 强制布局更新
+
+        // 🔥 强化布局更新：确保 SwiftUI 内容完全布局
         if let hostingView = documentView.subviews.first {
             hostingView.invalidateIntrinsicContentSize()
+            hostingView.needsLayout = true
             hostingView.layoutSubtreeIfNeeded()
         }
+        documentView.needsLayout = true
         documentView.layoutSubtreeIfNeeded()
-        
+
         // 计算滚动目标
         let contentHeight = documentView.frame.height
         let clipHeight = scrollView.contentView.bounds.height
         let maxScrollY = max(0, contentHeight - clipHeight)
         let targetY = maxScrollY + CaptionDesign.scrollExtraOffset
+
+        scrollLogger.debug("📜 scrollToBottom: contentHeight=\(contentHeight), clipHeight=\(clipHeight), maxScrollY=\(maxScrollY), targetY=\(targetY)")
         
         // 🔥 动画滚动：平滑过渡替代瞬时跳转
         NSAnimationContext.runAnimationGroup { context in
@@ -156,44 +160,17 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             scrollView.contentView.animator().setBoundsOrigin(NSPoint(x: 0, y: targetY))
         } completionHandler: { [weak scrollView, weak coordinator] in
             guard let scrollView = scrollView, let coordinator = coordinator else { return }
-            
+
             scrollView.reflectScrolledClipView(scrollView.contentView)
             coordinator.isAtBottomBinding.wrappedValue = true
             coordinator.lastScrollY = targetY
             coordinator.lastMaxScrollY = maxScrollY
-            
-            // 🔥 追赶检查：动画完成后 100ms 再次检查
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak scrollView, weak coordinator] in
-                guard let scrollView = scrollView, let coordinator = coordinator else { return }
-                guard let documentView = scrollView.documentView else { return }
-                
-                // 再次强制布局
-                if let hostingView = documentView.subviews.first {
-                    hostingView.layoutSubtreeIfNeeded()
-                }
-                documentView.layoutSubtreeIfNeeded()
-                
-                let newContentHeight = documentView.frame.height
-                let newMaxScrollY = max(0, newContentHeight - clipHeight)
-                let currentY = scrollView.contentView.bounds.origin.y
-                
-                // 如果内容高度增加了，追赶滚动（无动画，快速追上）
-                if newMaxScrollY > currentY + CaptionDesign.scrollCatchUpThreshold {
-                    coordinator.isScrollingProgrammatically = true
-                    scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY + CaptionDesign.scrollExtraOffset))
-                    scrollView.reflectScrolledClipView(scrollView.contentView)
-                    coordinator.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
-                    coordinator.lastMaxScrollY = newMaxScrollY
-                    DispatchQueue.main.async {
-                        coordinator.isScrollingProgrammatically = false
-                    }
-                } else {
-                    coordinator.isScrollingProgrammatically = false
-                }
-            }
+
+            // 🔥 追赶检查：动画完成后进行多次延迟检查，确保布局完全更新
+            coordinator.performCatchUpScroll(scrollView: scrollView)
         }
     }
-    
+
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
         coordinator.stopPolling()
         NotificationCenter.default.removeObserver(coordinator)
@@ -339,29 +316,84 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             guard !isScrollingProgrammatically else { return }
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
-            
+
             isScrollingProgrammatically = true
-            defer { 
-                DispatchQueue.main.async {
-                    self.isScrollingProgrammatically = false
-                }
-            }
-            
-            // 强制布局
+
+            // 🔥 强化布局更新
             if let hostingView = documentView.subviews.first {
+                hostingView.needsLayout = true
                 hostingView.layoutSubtreeIfNeeded()
             }
+            documentView.needsLayout = true
             documentView.layoutSubtreeIfNeeded()
-            
+
             let contentHeight = documentView.frame.height
             let clipHeight = scrollView.contentView.bounds.height
             let maxScrollY = max(0, contentHeight - clipHeight)
-            
+
+            scrollLogger.debug("📜 forceScrollToBottom: contentHeight=\(contentHeight), maxScrollY=\(maxScrollY)")
+
             scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
             scrollView.reflectScrolledClipView(scrollView.contentView)
             lastScrollY = maxScrollY + CaptionDesign.scrollExtraOffset
+            lastMaxScrollY = maxScrollY
+
+            // 🔥 使用追赶检查确保滚动到位
+            performCatchUpScroll(scrollView: scrollView, attempts: 2)
         }
-        
+
+        /// 🔥 追赶滚动：多次延迟检查，确保内容完全布局后滚动到底部
+        /// - Parameters:
+        ///   - scrollView: 滚动视图
+        ///   - attempts: 剩余尝试次数
+        private let catchUpInterval: TimeInterval = 0.05  // 50ms
+        private let defaultCatchUpAttempts: Int = 3
+
+        func performCatchUpScroll(scrollView: NSScrollView, attempts: Int? = nil) {
+            let remainingAttempts = attempts ?? defaultCatchUpAttempts
+            guard remainingAttempts > 0 else {
+                isScrollingProgrammatically = false
+                return
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + catchUpInterval) { [weak self, weak scrollView] in
+                guard let self = self, let scrollView = scrollView else { return }
+                guard let documentView = scrollView.documentView else {
+                    self.isScrollingProgrammatically = false
+                    return
+                }
+
+                // 强制布局
+                if let hostingView = documentView.subviews.first {
+                    hostingView.needsLayout = true
+                    hostingView.layoutSubtreeIfNeeded()
+                }
+                documentView.needsLayout = true
+                documentView.layoutSubtreeIfNeeded()
+
+                let newContentHeight = documentView.frame.height
+                // 🔥 修复：重新计算 clipHeight 而不是使用传入参数（可能已过时）
+                let clipHeight = scrollView.contentView.bounds.height
+                let newMaxScrollY = max(0, newContentHeight - clipHeight)
+                let currentY = scrollView.contentView.bounds.origin.y
+
+                scrollLogger.debug("📜 catchUp[\(self.defaultCatchUpAttempts - remainingAttempts + 1)]: contentHeight=\(newContentHeight), maxScrollY=\(newMaxScrollY), currentY=\(currentY)")
+
+                // 如果内容高度增加了，追赶滚动
+                if newMaxScrollY > currentY + CaptionDesign.scrollCatchUpThreshold {
+                    scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY + CaptionDesign.scrollExtraOffset))
+                    scrollView.reflectScrolledClipView(scrollView.contentView)
+                    self.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
+                    self.lastMaxScrollY = newMaxScrollY
+                    // 继续下一次检查
+                    self.performCatchUpScroll(scrollView: scrollView, attempts: remainingAttempts - 1)
+                } else {
+                    // 已到底部，完成
+                    self.isScrollingProgrammatically = false
+                }
+            }
+        }
+
         /// 方案 A 的 frame 观察仍保留作为补充
         /// 🔥 添加 50ms 防抖，防止频繁触发
         private var lastFrameChangeTime: Date = .distantPast

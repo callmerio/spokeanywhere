@@ -11,6 +11,11 @@ struct FloatingCapsuleView: View {
     @State private var isHoveringComplete = false
     @State private var isHoveringCancel = false
     @State private var contentHeight: CGFloat = 0
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var textContentHeight: CGFloat = 0
+    
+    /// 文字区域最大高度（窗口高度 - controlBar高度 - padding）
+    private let maxTextAreaHeight: CGFloat = 220
     
     /// 窗口固定高度（和 FloatingHUDManager 保持一致）
     private let windowHeight: CGFloat = 300
@@ -163,60 +168,102 @@ struct FloatingCapsuleView: View {
     // MARK: - Text Area (上方，向上扩展)
     
     private var textArea: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // 转写文字（最新的在底部，可滚动）
-            if !state.partialText.isEmpty {
-                Text(state.partialText)
-                    .font(.system(size: 14))
-                    .foregroundStyle(DS.Colors.textPrimary)
-                    .lineSpacing(4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true) // 高度自适应
-            } else if state.phase == .processing {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("处理中...")
-                        .font(.system(size: 14))
-                        .foregroundStyle(DS.Colors.textSecondary)
-                }
-            } else if state.phase == .thinking || state.phase == .success {
-                // 思考中状态：文字模糊效果 + 提示
-                // Success 状态下也保持这个布局，但提示语可能会变
-                VStack(alignment: .leading, spacing: 8) {
+        // 使用 ScrollView + 动态高度，当内容超出时可滚动
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 4) {
+                    // 转写文字（最新的在底部，可滚动）
                     if !state.partialText.isEmpty {
                         Text(state.partialText)
                             .font(.system(size: 14))
-                            // 成功后变亮
-                            .foregroundStyle(
-                                state.phase == .success ? DS.Colors.textPrimary : DS.Colors.textSecondary
-                            )
+                            .foregroundStyle(DS.Colors.textPrimary)
                             .lineSpacing(4)
-                            // 思考时模糊，成功后清晰
-                            .blur(radius: state.phase == .thinking ? 2 : 0)
-                            .animation(.easeInOut(duration: 0.3), value: state.phase)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if state.phase == .processing {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("处理中...")
+                                .font(.system(size: 14))
+                                .foregroundStyle(DS.Colors.textSecondary)
+                        }
+                    } else if state.phase == .thinking || state.phase == .success {
+                        // 思考中状态：文字模糊效果 + 提示
+                        VStack(alignment: .leading, spacing: 8) {
+                            if !state.partialText.isEmpty {
+                                Text(state.partialText)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(
+                                        state.phase == .success ? DS.Colors.textPrimary : DS.Colors.textSecondary
+                                    )
+                                    .lineSpacing(4)
+                                    .blur(radius: state.phase == .thinking ? 2 : 0)
+                                    .animation(.easeInOut(duration: 0.3), value: state.phase)
+                            }
+                            
+                            if state.phase == .thinking {
+                                HStack(spacing: 6) {
+                                    ThinkingIndicator()
+                                    Text("AI 思考中...")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(DS.Colors.textPrimary)
+                                }
+                                .transition(.opacity)
+                            }
+                        }
+                    } else {
+                        Text("正在聆听...")
+                            .font(.system(size: 14))
+                            .foregroundStyle(DS.Colors.textSecondary)
                     }
                     
-                    if state.phase == .thinking {
-                        HStack(spacing: 6) {
-                            ThinkingIndicator()
-                            Text("AI 思考中...")
-                                .font(.system(size: 13))
-                                .foregroundStyle(DS.Colors.textPrimary)
-                        }
-                        .transition(.opacity)
-                    }
+                    // 底部锚点，用于自动滚动
+                    Color.clear.frame(height: 1).id("bottom")
                 }
-            } else {
-                Text("正在聆听...")
-                    .font(.system(size: 14))
-                    .foregroundStyle(DS.Colors.textSecondary)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // 测量内容实际高度
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(key: TextContentHeightKey.self, value: geo.size.height)
+                    }
+                )
+            }
+            .onPreferenceChange(TextContentHeightKey.self) { height in
+                textContentHeight = height
+            }
+            .onChange(of: state.partialText) { _, _ in
+                // 内容变化时自动滚动到底部
+                withAnimation(.easeOut(duration: 0.15)) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
+            }
+            .onAppear {
+                scrollProxy = proxy
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // 🔑 关键：动态高度 - 内容少时自适应，超出时固定在 maxHeight
+        .frame(maxHeight: min(textContentHeight, maxTextAreaHeight))
+        // 顶部渐变遮罩：当内容超出可视区域时显示
+        .mask(
+            VStack(spacing: 0) {
+                // 顶部渐变（仅当内容可滚动时生效）
+                if textContentHeight > maxTextAreaHeight {
+                    LinearGradient(
+                        colors: [.clear, .black],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 30)
+                }
+                
+                // 主体区域完全可见
+                Rectangle().fill(.black)
+            }
+        )
     }
     
     // MARK: - Control Bar (下方固定)
@@ -622,6 +669,14 @@ struct RunningLightBorder: View {
 
 /// 用于检测内容高度的 PreferenceKey
 private struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+/// 用于检测文字区域内容高度的 PreferenceKey
+private struct TextContentHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())

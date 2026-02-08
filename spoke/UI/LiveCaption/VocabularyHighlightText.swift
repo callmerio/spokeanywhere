@@ -13,12 +13,12 @@ private let vocabTextLogger = Logger(subsystem: "com.spokeanywhere", category: "
 /// - 右键菜单支持「添加生词」
 /// - 选中文本后显示选择工具栏
 struct VocabularyHighlightText: NSViewRepresentable {
-    
+
     let text: String
     var fontSize: CGFloat = 18
     var textColor: NSColor = DS.Colors.NS.textPrimary
     var opacity: CGFloat = 1.0
-    
+
     /// 当用户开始选择文本时的回调（用于暂停滚动）
     var onSelectionStarted: (() -> Void)?
     /// 当用户结束选择文本时的回调
@@ -27,9 +27,12 @@ struct VocabularyHighlightText: NSViewRepresentable {
     var onTextSelected: ((String, CGPoint) -> Void)?
     /// 当用户点击单词时的回调（用于查词）
     var onWordClicked: ((String, CGPoint) -> Void)?
-    
+
     /// 用于触发刷新的版本号（生词列表变化时更新）
     var refreshTrigger: Int = 0
+
+    /// 🔥 从父视图传入的高亮单词（点击查词时高亮）
+    var highlightedWord: String?
     
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -73,12 +76,15 @@ struct VocabularyHighlightText: NSViewRepresentable {
         context.coordinator.onSelectionEnded = onSelectionEnded
         context.coordinator.onTextSelected = onTextSelected
         context.coordinator.onWordClicked = onWordClicked
-        
-        // 内容变化或生词列表变化时更新
-        let needsUpdate = textView.string != text || textView.lastRefreshTrigger != refreshTrigger
-        
+
+        // 内容变化、生词列表变化、或高亮单词变化时更新
+        let needsUpdate = textView.string != text
+            || textView.lastRefreshTrigger != refreshTrigger
+            || textView.lastHighlightedWord != highlightedWord
+
         if needsUpdate {
             textView.lastRefreshTrigger = refreshTrigger
+            textView.lastHighlightedWord = highlightedWord
             updateTextContent(textView)
             textView.invalidateIntrinsicContentSize()
         }
@@ -93,7 +99,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
     private func updateTextContent(_ textView: NSTextView) {
         let font = NSFont.systemFont(ofSize: fontSize)
         let color = textColor.withAlphaComponent(opacity)
-        
+
         // 基础属性
         let attributedString = NSMutableAttributedString(
             string: text,
@@ -102,19 +108,34 @@ struct VocabularyHighlightText: NSViewRepresentable {
                 .foregroundColor: color
             ]
         )
-        
+
         // 应用生词高亮（橙色文字 + 略微加粗）
         let highlightRanges = VocabularyService.shared.highlightRanges(in: text)
-        
+
         for range in highlightRanges {
             guard range.location + range.length <= text.utf16.count else { continue }
-            
+
             attributedString.addAttributes([
                 .foregroundColor: DS.Colors.NS.warning,
                 .font: NSFont.systemFont(ofSize: fontSize, weight: .medium)
             ], range: range)
         }
-        
+
+        // 应用点击高亮（橙色文字，与生词高亮一致）
+        if let word = highlightedWord, !word.isEmpty {
+            let nsString = text as NSString
+            let searchRange = NSRange(location: 0, length: nsString.length)
+            let pattern = "\\b\(NSRegularExpression.escapedPattern(for: word))\\b"
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                for match in regex.matches(in: text, options: [], range: searchRange) {
+                    attributedString.addAttributes([
+                        .foregroundColor: DS.Colors.NS.warning,
+                        .font: NSFont.systemFont(ofSize: fontSize, weight: .medium)
+                    ], range: match.range)
+                }
+            }
+        }
+
         textView.textStorage?.setAttributedString(attributedString)
     }
     
@@ -438,13 +459,16 @@ struct VocabularyHighlightText: NSViewRepresentable {
 
 /// 自定义 NSTextView，支持 intrinsicContentSize 自适应高度 + mouseUp 触发选择工具栏
 final class VocabularyTextView: NSTextView {
-    
+
     /// 用于检测生词列表是否变化
     var lastRefreshTrigger: Int = 0
-    
+
+    /// 🔥 用于检测高亮单词是否变化
+    var lastHighlightedWord: String?
+
     /// Coordinator 引用，用于在 mouseUp 时触发工具栏
     weak var coordinator: VocabularyHighlightText.Coordinator?
-    
+
     convenience init(usingTextLayoutManager _: Bool) {
         let textStorage = NSTextStorage()
         let layoutManager = NSLayoutManager()  // 使用标准 LayoutManager
@@ -590,7 +614,7 @@ final class VocabularyTextView: NSTextView {
         let point = convert(event.locationInWindow, from: nil)
         mouseDownLocation = point
         mouseDownTime = Date()
-        
+
         vocabTextLogger.info("🖱️ mouseDown at: \(point.x), \(point.y)")
         
         // 🔥 关键：在 super.mouseDown 之前触发查词
@@ -672,18 +696,18 @@ final class VocabularyTextView: NSTextView {
               trimmedWord.unicodeScalars.allSatisfy({ CharacterSet.letters.contains($0) }) else {
             return
         }
-        
+
         // 计算屏幕坐标
         if let window = window {
             let rectInWindow = convert(NSRect(x: point.x, y: point.y, width: 1, height: 1), to: nil)
             let rectOnScreen = window.convertToScreen(rectInWindow)
             let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
-            
+
             vocabTextLogger.info("✅ Calling onWordClicked for '\(trimmedWord)' at \(screenPoint.x), \(screenPoint.y)")
             coordinator.onWordClicked?(trimmedWord, screenPoint)
         }
     }
-    
+
     override func mouseUp(with event: NSEvent) {
         print("🔍 [VocabularyText] 🖱️ mouseUp CALLED")
         super.mouseUp(with: event)

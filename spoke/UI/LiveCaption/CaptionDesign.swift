@@ -65,4 +65,9 @@ enum CaptionDesign {
     static let glowBorderColor = Color.white.opacity(0.18)
     /// Hover 边框宽度
     static let glowBorderWidth: CGFloat = 1
+    /// 阴影/光晕安全留白（保证阴影不被窗口裁剪）
+    static let shadowPadding: CGFloat = max(
+        glowPadding,
+        shadowRadius + max(abs(DS.Shadow.caption.x), abs(DS.Shadow.caption.y))
+    )
 }

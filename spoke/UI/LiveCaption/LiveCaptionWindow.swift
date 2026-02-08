@@ -72,16 +72,16 @@ final class LiveCaptionWindowManager {
         // 获取屏幕信息
         let screen = NSScreen.main ?? NSScreen.screens.first!
         let screenFrame = screen.visibleFrame
-        
+
         // 计算初始位置（屏幕底部居中）
-        // 窗口尺寸参考 Tailwind max-w-2xl ≈ 672px + 两侧光晕空间
-        let glowPadding = CaptionDesign.glowPadding * 2  // 两侧各 25pt
-        let windowWidth: CGFloat = 672 + glowPadding
+        // 窗口尺寸参考 Tailwind max-w-2xl ≈ 672px + 阴影/光晕留白
+        let outerPadding = CaptionDesign.shadowPadding * 2  // 两侧各留白
+        let windowWidth: CGFloat = CaptionDesign.maxWidth + outerPadding
         // 折叠状态高度：2行字(44pt) + padding(48pt) + dragIndicator(12pt) ≈ 110pt
         // 使用较大值确保内容不被裁剪，加上光晕空间
-        let windowHeight: CGFloat = 400 + glowPadding
+        let windowHeight: CGFloat = 400 + outerPadding
         let x = screenFrame.midX - windowWidth / 2
-        let y = screenFrame.minY + 60 - CaptionDesign.glowPadding  // 调整位置，保持视觉居中
+        let y = screenFrame.minY + 60 - CaptionDesign.shadowPadding  // 调整位置，保持视觉居中
         
         let frame = NSRect(x: x, y: y, width: windowWidth, height: windowHeight)
         
@@ -95,7 +95,15 @@ final class LiveCaptionWindowManager {
                 self?.hide()
             }
         )
-        panel.contentView = NSHostingView(rootView: contentView)
+        let hostingView = NSHostingView(rootView: contentView)
+        // 确保 NSHostingView 完全透明（避免 padding 区域出现灰色）
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = .clear
+        // 🔧 关键：设置 layer 为非不透明，允许透明渲染
+        hostingView.layer?.isOpaque = false
+        // 设置视图本身也为非不透明
+        hostingView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+        panel.contentView = hostingView
         
         self.window = panel
         logger.info("📺 Live Caption window created")
@@ -141,8 +149,8 @@ final class LiveCaptionPanel: NSPanel {
         
         // 动画
         animationBehavior = .utilityWindow
-        
-        // 阴影由视图处理
+
+        // 禁用系统阴影（矩形边框很丑），使用 SwiftUI 自定义圆角阴影
         hasShadow = false
     }
 }

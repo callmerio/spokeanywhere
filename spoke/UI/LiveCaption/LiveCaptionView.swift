@@ -33,7 +33,8 @@ struct LiveCaptionView: View {
     @State private var isExpandHovered: Bool = false
     @State private var isCloseHovered: Bool = false
     @State private var isCopied: Bool = false  // 复制成功状态（显示 checkmark）
-    
+    @State private var highlightedWord: String?  // 🔥 当前点击高亮的单词（跨所有 VocabularyHighlightText 共享）
+
     var onClose: () -> Void
     
     var body: some View {
@@ -115,22 +116,8 @@ struct LiveCaptionView: View {
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius))
         .overlay(cardBorder)
-        // 🔥 Hover 光晕效果（白色光晕）
-        .shadow(
-            color: isHovering ? CaptionDesign.glowColor : Color.clear,
-            radius: isHovering ? CaptionDesign.glowRadius : 0,
-            x: 0,
-            y: 0
-        )
-        // 默认阴影（深色阴影，提升层次感）
-        .shadow(
-            color: DS.Shadow.caption.color,
-            radius: CaptionDesign.shadowRadius,
-            x: DS.Shadow.caption.x,
-            y: DS.Shadow.caption.y
-        )
-        // 🔥 添加 padding 预留光晕渲染空间（避免光晕被裁剪导致尖角）
-        .padding(CaptionDesign.glowPadding)
+        .background(shadowAndGlowLayer)
+        .padding(CaptionDesign.shadowPadding)
         .animation(.easeInOut(duration: 0.15), value: isHovering)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -242,25 +229,26 @@ struct LiveCaptionView: View {
                                         .foregroundColor(CaptionDesign.textPrimary.opacity(0))
                                 } else {
                                     VocabularyHighlightText(
-                                        text: displayText,
-                                        fontSize: CaptionDesign.fontSize,
-                                        opacity: 0.7,
-                                        onSelectionStarted: { 
-                                            isUserSelecting = true
-                                            manager.lineBuffer.setUserInteracting(true)
-                                        },
-                                        onSelectionEnded: { 
-                                            isUserSelecting = false
-                                            manager.lineBuffer.setUserInteracting(false)
-                                        },
-                                        onTextSelected: { selectedText, screenPoint in
-                                            handleTextSelected(selectedText, at: screenPoint)
-                                        },
-                                        onWordClicked: { word, screenPoint in
-                                            handleWordClicked(word, at: screenPoint)
-                                        },
-                                        refreshTrigger: vocabularyRefreshTrigger
-                                    )
+                                text: displayText,
+                                fontSize: CaptionDesign.fontSize,
+                                opacity: 0.7,
+                                onSelectionStarted: { 
+                                    isUserSelecting = true
+                                    manager.lineBuffer.setUserInteracting(true)
+                                },
+                                onSelectionEnded: { 
+                                    isUserSelecting = false
+                                    manager.lineBuffer.setUserInteracting(false)
+                                },
+                                onTextSelected: { selectedText, screenPoint in
+                                    handleTextSelected(selectedText, at: screenPoint)
+                                },
+                                onWordClicked: { word, screenPoint in
+                                    handleWordClicked(word, at: screenPoint)
+                                },
+                                refreshTrigger: vocabularyRefreshTrigger,
+                                highlightedWord: highlightedWord
+                            )
                                     .fixedSize(horizontal: false, vertical: true)
                                 }
                                 
@@ -288,7 +276,9 @@ struct LiveCaptionView: View {
                 .mask(LinearGradient(
                     gradient: Gradient(stops: [
                         .init(color: .clear, location: 0),
-                        .init(color: .black, location: 0.1),
+                        .init(color: .black.opacity(0.3), location: 0.08),
+                        .init(color: .black.opacity(0.7), location: 0.15),
+                        .init(color: .black, location: 0.25),
                         .init(color: .black, location: 1.0)
                     ]),
                     startPoint: .top,
@@ -369,7 +359,8 @@ struct LiveCaptionView: View {
                                 onWordClicked: { word, screenPoint in
                                     handleWordClicked(word, at: screenPoint)
                                 },
-                                refreshTrigger: vocabularyRefreshTrigger
+                                refreshTrigger: vocabularyRefreshTrigger,
+                                highlightedWord: highlightedWord
                             )
                             .fixedSize(horizontal: false, vertical: true)
                         }
@@ -402,7 +393,7 @@ struct LiveCaptionView: View {
     }
     
     // MARK: - Components
-    
+
     /// 字幕文本（带生词高亮 + 右键菜单 + 颜色渐变 + 选中工具栏 + 单词点击查词）
     @ViewBuilder
     private func captionText(for original: String, opacity: CGFloat = 1.0) -> some View {
@@ -410,11 +401,11 @@ struct LiveCaptionView: View {
             text: original,
             fontSize: CaptionDesign.fontSize,
             opacity: opacity,
-            onSelectionStarted: { 
+            onSelectionStarted: {
                 isUserSelecting = true
                 manager.lineBuffer.setUserInteracting(true)
             },
-            onSelectionEnded: { 
+            onSelectionEnded: {
                 isUserSelecting = false
                 manager.lineBuffer.setUserInteracting(false)
             },
@@ -424,7 +415,8 @@ struct LiveCaptionView: View {
             onWordClicked: { word, screenPoint in
                 handleWordClicked(word, at: screenPoint)
             },
-            refreshTrigger: vocabularyRefreshTrigger
+            refreshTrigger: vocabularyRefreshTrigger,
+            highlightedWord: highlightedWord  // 🔥 传入高亮单词
         )
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -449,7 +441,10 @@ struct LiveCaptionView: View {
     /// 处理单词点击，调用统一查词服务并在选择工具栏中显示结果
     private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
         print("📖 [LiveCaption] handleWordClicked: '\(word)' at \(screenPoint)")
-        
+
+        // 🔥 设置高亮单词
+        highlightedWord = word
+
         // 🔥 设置用户交互状态，防止 clearPending 时整行消失
         isUserSelecting = true
         manager.lineBuffer.setUserInteracting(true)
@@ -638,9 +633,35 @@ struct LiveCaptionView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(content, forType: .string)
     }
-    
+
     // MARK: - Background & Border
-    
+
+    /// 阴影与 hover 光晕，独立于卡片背景，避免被裁剪
+    private var shadowAndGlowLayer: some View {
+        ZStack {
+            // 默认阴影（始终存在，提供层次感）
+            RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
+                .fill(Color.black.opacity(0.001))
+                .shadow(
+                    color: DS.Shadow.caption.color,
+                    radius: CaptionDesign.shadowRadius,
+                    x: DS.Shadow.caption.x,
+                    y: DS.Shadow.caption.y
+                )
+
+            // Hover 光晕效果（仅 hover 时显示）
+            RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
+                .fill(Color.clear)
+                .shadow(
+                    color: isHovering ? CaptionDesign.glowColor : .clear,
+                    radius: CaptionDesign.glowRadius,
+                    x: 0,
+                    y: 0
+                )
+        }
+        .allowsHitTesting(false)
+    }
+
     /// 卡片背景 - 毛玻璃 + 深色叠加
     /// 🔥 使用内部 clipShape 确保 VisualEffectBlur (NSViewRepresentable) 被正确裁剪
     private var cardBackground: some View {

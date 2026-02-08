@@ -386,14 +386,17 @@ class QuickAskNSTextView: NSTextView {
                 // Picker 可见时，Enter 确认选择（由 keyDown 处理）
                 // 这里不做任何事，避免重复触发
                 return
+            } else if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+                // Shift+Enter: 换行（插入换行符）
+                insertNewlineIgnoringFieldEditor(nil)
             } else {
-                // 没有 marked text，触发发送
+                // 普通 Enter：触发发送
                 onSend?()
             }
             return
         }
         
-        // insertNewlineIgnoringFieldEditor: 是 Shift+Enter 的命令
+        // insertNewlineIgnoringFieldEditor: 是 Shift+Enter 的命令（备用）
         if selector == #selector(insertNewlineIgnoringFieldEditor(_:)) {
             // Shift+Enter 换行
             super.doCommand(by: selector)
