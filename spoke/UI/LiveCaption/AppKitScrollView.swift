@@ -385,7 +385,11 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                     scrollView.reflectScrolledClipView(scrollView.contentView)
                     self.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
                     self.lastMaxScrollY = newMaxScrollY
-                    // 继续下一次检查
+                    // 继续下一次检查（确保 scrollView 仍在窗口中）
+                    guard scrollView.window != nil else {
+                        self.isScrollingProgrammatically = false
+                        return
+                    }
                     self.performCatchUpScroll(scrollView: scrollView, attempts: remainingAttempts - 1)
                 } else {
                     // 已到底部，完成
