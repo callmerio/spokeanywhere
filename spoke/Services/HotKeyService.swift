@@ -278,7 +278,6 @@ final class HotKeyService {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             // 🔥 如果是 Quick Ask 主动禁用的，不要自动重新启用！
             if isQuickAskActive {
-                print("🔥 Event tap disabled event received, but Quick Ask is active - NOT re-enabling")
                 return Unmanaged.passRetained(event)
             }
             logger.warning("⚠️ Event tap was disabled by system, re-enabling...")
@@ -319,7 +318,7 @@ final class HotKeyService {
             _ = self.isRecording
             // 检查 tap 是否应该被禁用
             let tapEnabled = eventTap != nil ? CGEvent.tapIsEnabled(tap: eventTap!) : false
-            print("🔑 \(typeStr) key=\(keyCode)(\(char)) mod=[\(modStr)] qa=\(qaState) tap=\(tapEnabled ? "ON" : "OFF")")
+            logger.debug("🔑 \(typeStr) key=\(keyCode)(\(char)) mod=[\(modStr)] qa=\(qaState) tap=\(tapEnabled ? "ON" : "OFF")")
         }
         
         // 检查是否是录音快捷键

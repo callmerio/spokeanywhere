@@ -497,7 +497,6 @@ final class QuickAskHUDManager {
     // MARK: - Public API
     
     func show(targetApp: TargetAppInfo?) {
-        print("📱 QuickAskService.show() called")
         createPanelIfNeeded()
         
         // 🔥 第一步：禁用 event tap，避免干扰输入法（必须在窗口激活前执行）
@@ -508,7 +507,6 @@ final class QuickAskHUDManager {
         
         // 🔥 第二步：切换到普通应用模式以支持输入法
         NSApp.setActivationPolicy(.regular)
-        print("📱 Activation policy set to .regular")
         
         state.startSession(targetApp: targetApp)
         
@@ -527,8 +525,6 @@ final class QuickAskHUDManager {
             // 让窗口成为 key window 和 main window
             panel.makeKeyAndOrderFront(nil)
             panel.makeMain()
-            
-            print("📱 QuickAskService.show() activated, isKeyWindow: \(panel.isKeyWindow), isMainWindow: \(panel.isMainWindow)")
         }
     }
     

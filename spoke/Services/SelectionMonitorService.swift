@@ -117,40 +117,35 @@ final class SelectionMonitorService {
     /// 开始监听
     func startMonitoring() {
         logger.info("📋 [SelectionMonitor] startMonitoring() 被调用")
-        print("📋 [SelectionMonitor] startMonitoring() 被调用")
-        
+
         guard !isMonitoring else {
             logger.debug("📋 [SelectionMonitor] 已在监听中，跳过")
-            print("📋 [SelectionMonitor] 已在监听中，跳过")
             return
         }
-        
+
         // 检查辅助功能权限
         let hasPermission = isAccessibilityEnabled
         logger.info("📋 [SelectionMonitor] 辅助功能权限: \(hasPermission)")
-        print("📋 [SelectionMonitor] 辅助功能权限: \(hasPermission)")
-        
+
         guard hasPermission else {
             logger.warning("📋 [SelectionMonitor] ❌ 未授权辅助功能权限，请求授权...")
-            print("📋 [SelectionMonitor] ❌ 未授权辅助功能权限! 请在 系统设置 → 隐私与安全性 → 辅助功能 中授权")
             requestAccessibilityPermission()
             return
         }
-        
+
         isMonitoring = true
-        
+
         // 设置鼠标和键盘监听 (作为 fallback)
         setupMouseMonitor()
         setupKeyboardMonitor()
-        
+
         // 设置应用切换监听
         setupAppActivationObserver()
-        
+
         // 为当前前台应用设置 AXObserver
         updateAXObserverForFrontmostApp()
-        
+
         logger.info("📋 [SelectionMonitor] ✅ 开始监听文本选择 (AXObserver + 鼠标/键盘)")
-        print("📋 [SelectionMonitor] ✅ 开始监听文本选择成功!")
     }
     
     /// 停止监听

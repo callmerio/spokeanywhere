@@ -95,17 +95,13 @@ final class SelectionToolbarManager {
     
     /// 启动服务
     func start() {
-        print("📋 [ToolbarManager] start() 被调用")
-        
         // 检查辅助功能权限
         if !selectionMonitor.isAccessibilityEnabled {
-            print("📋 [ToolbarManager] ❌ 未授权辅助功能权限，显示提示")
             showAccessibilityPermissionAlert()
             return
         }
-        
+
         selectionMonitor.startMonitoring()
-        print("📋 [ToolbarManager] ✅ 服务已启动")
         logger.info("📋 [ToolbarManager] 服务已启动")
     }
     
@@ -142,7 +138,6 @@ final class SelectionToolbarManager {
                 
                 if self.selectionMonitor.isAccessibilityEnabled {
                     timer.invalidate()
-                    print("📋 [ToolbarManager] ✅ 权限已授予，自动启动服务")
                     self.selectionMonitor.startMonitoring()
                 }
             }

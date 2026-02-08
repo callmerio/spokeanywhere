@@ -44,10 +44,8 @@ class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
                 stream = SCStream(filter: filter, configuration: config, delegate: nil)
                 try stream?.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoOutputQueue)
                 try await stream?.startCapture()
-                
-                print("🎥 ScreenCapture started")
             } catch {
-                print("❌ Failed to start screen capture: \(error)")
+                // Failed to start screen capture
             }
         }
     }
@@ -56,7 +54,6 @@ class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
         Task {
             try? await stream?.stopCapture()
             stream = nil
-            print("🛑 ScreenCapture stopped")
         }
     }
     

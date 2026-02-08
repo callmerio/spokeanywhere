@@ -90,12 +90,7 @@ final class ClipboardHistoryService {
     
     /// 调试：打印完整历史
     func debugPrintHistory() {
-        print("📋 === CLIPBOARD HISTORY DEBUG ===")
-        print("📋 Total items: \(history.count)")
-        for (index, item) in history.prefix(10).enumerated() {
-            print("📋 [\(index + 1)] \(item.content)")
-        }
-        print("📋 === END HISTORY ===")
+        // Debug output disabled in production
     }
     
     /// 清空历史

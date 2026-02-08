@@ -423,8 +423,6 @@ struct LiveCaptionView: View {
     
     /// 处理文本选中，显示 SelectionToolbar
     private func handleTextSelected(_ text: String, at screenPoint: CGPoint) {
-        print("🔥 [LiveCaption] handleTextSelected 被调用! text=\(text.prefix(20)), point=\(screenPoint)")
-        
         // 创建选择上下文
         let context = SelectionContext(
             selectedText: text,
@@ -440,8 +438,6 @@ struct LiveCaptionView: View {
     
     /// 处理单词点击，调用统一查词服务并在选择工具栏中显示结果
     private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
-        print("📖 [LiveCaption] handleWordClicked: '\(word)' at \(screenPoint)")
-
         // 🔥 设置高亮单词
         highlightedWord = word
 
@@ -456,9 +452,7 @@ struct LiveCaptionView: View {
                 isUserSelecting = false
                 manager.lineBuffer.setUserInteracting(false)
             }
-            
-            print("📖 [LiveCaption] Starting lookup for '\(word)'...")
-            
+
             // 创建选择上下文
             let context = SelectionContext(
                 selectedText: word,
@@ -468,8 +462,6 @@ struct LiveCaptionView: View {
             )
             
             if let result = await UnifiedDictionaryService.shared.lookup(word) {
-                print("📖 [LiveCaption] ✅ Got result: \(result.word), \(result.senses.count) senses")
-                
                 // 转换为 DictionaryData
                 let senses = result.senses.map { sense in
                     DictionarySense(
@@ -498,7 +490,6 @@ struct LiveCaptionView: View {
                 // 显示窗口（此时 phase 已经是 showingDictionary，视图已更新）
                 SelectionToolbarManager.shared.show(at: screenPoint)
             } else {
-                print("📖 [LiveCaption] ❌ No result for '\(word)'")
                 // 查询失败时设置上下文并显示错误
                 SelectionToolbarState.shared.currentContext = context
                 SelectionToolbarState.shared.showDictionaryError(.notFound, word: word)

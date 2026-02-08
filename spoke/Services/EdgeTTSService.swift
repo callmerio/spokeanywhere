@@ -63,9 +63,7 @@ actor EdgeTTSClient {
         guard let url = URL(string: urlString) else {
             throw EdgeTTSError.invalidURL
         }
-        
-        print("[EdgeTTS] Connecting...")
-        
+
         // 创建 WebSocket 请求
         var request = URLRequest(url: url)
         request.setValue("chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold", forHTTPHeaderField: "Origin")
@@ -79,13 +77,11 @@ actor EdgeTTSClient {
         
         // 等待连接建立
         try await delegate.waitForConnection()
-        print("[EdgeTTS] Connected!")
-        
+
         // 发送配置消息
         let configMessage = "Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}"
         try await webSocketTask?.send(.string(configMessage))
-        print("[EdgeTTS] Config sent")
-        
+
         // 构建 SSML
         let rateStr = rate >= 0 ? "+\(rate)%" : "\(rate)%"
         let pitchStr = pitch >= 0 ? "+\(pitch)Hz" : "\(pitch)Hz"
@@ -103,13 +99,10 @@ actor EdgeTTSClient {
         let requestId = UUID().uuidString
         let ssmlMessage = "X-RequestId:\(requestId)\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n\(ssml)"
         try await webSocketTask?.send(.string(ssmlMessage))
-        print("[EdgeTTS] SSML sent, waiting for audio...")
-        
+
         // 接收音频数据
         try await receiveMessages()
-        
-        print("[EdgeTTS] Received \(audioData.count) bytes")
-        
+
         guard !audioData.isEmpty else {
             throw EdgeTTSError.noAudioData
         }
@@ -144,7 +137,6 @@ actor EdgeTTSClient {
                     
                 case .string(let text):
                     if text.contains("Path:turn.end") {
-                        print("[EdgeTTS] Turn ended")
                         return
                     }
                     
@@ -152,7 +144,6 @@ actor EdgeTTSClient {
                     break
                 }
             } catch {
-                print("[EdgeTTS] Error: \(error)")
                 return
             }
         }
@@ -432,7 +423,6 @@ final class TTSService: NSObject, ObservableObject {
             await playAudio(data: audioData)
         } catch {
             self.error = error.localizedDescription
-            print("❌ EdgeTTS Error: \(error)")
             isSynthesizing = false
         }
     }
@@ -456,7 +446,7 @@ final class TTSService: NSObject, ObservableObject {
             // 清理临时文件
             try? FileManager.default.removeItem(at: tempURL)
         } catch {
-            print("❌ Audio playback error: \(error)")
+            // Audio playback error - silently handled
         }
     }
     

@@ -709,112 +709,76 @@ final class VocabularyTextView: NSTextView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        print("🔍 [VocabularyText] 🖱️ mouseUp CALLED")
         super.mouseUp(with: event)
-        
+
         let mouseUpLocation = convert(event.locationInWindow, from: nil)
         let distance = hypot(mouseUpLocation.x - mouseDownLocation.x, mouseUpLocation.y - mouseDownLocation.y)
         let duration = Date().timeIntervalSince(mouseDownTime)
         let hasSelection = selectedRange().length > 0
-        
+
         // 判断是否为点击（距离 < 5px 且时间 < 300ms）
         let isClick = distance < 5 && duration < 0.3
-        
-        print("🔍 [VocabularyText] mouseUp: distance=\(distance), duration=\(duration), hasSelection=\(hasSelection), isClick=\(isClick)")
-        
+
         // 🔥 修改逻辑：优先判断是否为短点击
         // 即使有选中文本，如果是短点击且选中长度 <= 1（可能是光标），也视为单词点击
         if isClick && selectedRange().length <= 1 {
             // 单击单词 → 触发查词
-            print("🔍 [VocabularyText] Detected click, calling handleWordClick")
             handleWordClick(at: mouseUpLocation, event: event)
         } else if hasSelection {
             // 有选中文本 → 触发选择工具栏
-            print("🔍 [VocabularyText] Has selection, calling handleSelectionCompleted")
             coordinator?.handleSelectionCompleted(in: self)
         }
     }
     
     /// 处理单词点击
     private func handleWordClick(at point: NSPoint, event: NSEvent) {
-        print("🔍 [VocabularyText] handleWordClick called at: \(point)")
-        
-        guard let coordinator = coordinator else {
-            print("🔍 [VocabularyText] ❌ coordinator is nil")
-            return
-        }
-        
-        guard coordinator.onWordClicked != nil else {
-            print("🔍 [VocabularyText] ❌ onWordClicked callback is nil")
-            return
-        }
-        
+        guard let coordinator = coordinator else { return }
+        guard coordinator.onWordClicked != nil else { return }
         guard let layoutManager = layoutManager,
-              let textContainer = textContainer else {
-            print("🔍 [VocabularyText] ❌ layoutManager or textContainer is nil")
-            return
-        }
-        
+              let textContainer = textContainer else { return }
+
         // 转换为文本容器坐标
         let textContainerOrigin = textContainerOrigin
         let locationInTextContainer = NSPoint(
             x: point.x - textContainerOrigin.x,
             y: point.y - textContainerOrigin.y
         )
-        
+
         // 获取字符索引
         let characterIndex = layoutManager.characterIndex(
             for: locationInTextContainer,
             in: textContainer,
             fractionOfDistanceBetweenInsertionPoints: nil
         )
-        
-        print("🔍 [VocabularyText] characterIndex: \(characterIndex), string.count: \(string.count)")
-        
-        guard characterIndex < string.count else {
-            print("🔍 [VocabularyText] ❌ characterIndex out of bounds")
-            return
-        }
-        
+
+        guard characterIndex < string.count else { return }
+
         // 找到单词边界
         let nsString = string as NSString
         let wordRange = nsString.rangeOfWord(at: characterIndex)
-        
-        guard wordRange.location != NSNotFound else {
-            print("🔍 [VocabularyText] ❌ wordRange not found")
-            return
-        }
-        
+
+        guard wordRange.location != NSNotFound else { return }
+
         let word = nsString.substring(with: wordRange)
         let trimmedWord = word.trimmingCharacters(in: .punctuationCharacters)
-        
-        print("🔍 [VocabularyText] word: '\(word)', trimmed: '\(trimmedWord)'")
-        
+
         // 过滤太短的单词
-        guard trimmedWord.count >= 2 else {
-            print("🔍 [VocabularyText] ❌ word too short")
-            return
-        }
-        
+        guard trimmedWord.count >= 2 else { return }
+
         // 检查是否是纯英文单词
-        let isEnglishWord = trimmedWord.unicodeScalars.allSatisfy { 
+        let isEnglishWord = trimmedWord.unicodeScalars.allSatisfy {
             CharacterSet.letters.contains($0)
         }
-        guard isEnglishWord else {
-            print("🔍 [VocabularyText] ❌ not an English word")
-            return
-        }
-        
+        guard isEnglishWord else { return }
+
         // 计算屏幕坐标
         if let window = window {
             let rectInWindow = convert(NSRect(x: point.x, y: point.y, width: 1, height: 1), to: nil)
             let rectOnScreen = window.convertToScreen(rectInWindow)
             let screenPoint = CGPoint(x: rectOnScreen.midX, y: rectOnScreen.minY - 8)
-            
-            print("🔍 [VocabularyText] ✅ Calling onWordClicked for '\(trimmedWord)' at \(screenPoint)")
+
+            vocabTextLogger.info("✅ Calling onWordClicked for '\(trimmedWord)' at \(screenPoint.x), \(screenPoint.y)")
             coordinator.onWordClicked?(trimmedWord, screenPoint)
-        } else {
-            print("🔍 [VocabularyText] ❌ window is nil")
         }
     }
     
