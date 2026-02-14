@@ -16,3 +16,9 @@
 
 - Add explicit tests that verify isolated instances do not share persisted data.
 - Keep cleanup local to the test instance; never mutate shared singletons for stateful test assertions.
+
+## Concurrency Diagnostics Entry
+
+- Dedicated command: `./Tests/run-concurrency-check.sh`
+- Integrated command path: `./Tests/run-tests.sh --strict-concurrency`
+- Purpose: enable gradual strict-concurrency diagnostics (`-warn-concurrency`, `-strict-concurrency=complete`) without blocking default test workflow.
