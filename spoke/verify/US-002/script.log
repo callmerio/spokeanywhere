@@ -1,0 +1,22 @@
+warning: 'spoke': found 7 file(s) which are unhandled; explicitly declare them as resources or exclude from the target
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-002/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/tasks/prd-quality-stability-optimization.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/progress.txt
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/CLAUDE.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/prd.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-001/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-001/script.log
+[0/1] Planning build
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/8] Emitting module SpokenAnyWhere
+[4/8] Compiling SpokenAnyWhere AudioCallbackRouter.swift
+[5/8] Compiling SpokenAnyWhere AudioRecorderService.swift
+[6/11] Compiling SpokenAnyWhere ServiceContainer.swift
+[7/11] Compiling SpokenAnyWhere RecordingController.swift
+[8/11] Compiling SpokenAnyWhere QuickAskService.swift
+[8/11] Write Objects.LinkFileList
+[9/11] Linking SpokenAnyWhere
+[10/11] Applying SpokenAnyWhere
+Build complete! (5.21s)

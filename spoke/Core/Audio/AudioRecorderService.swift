@@ -49,11 +49,42 @@ final class AudioRecorderService: NSObject {
     /// 配置变更 debounce
     private var configurationChangeWorkItem: DispatchWorkItem?
     
-    /// 回调
-    var onAudioLevelUpdate: ((Float) -> Void)?
-    var onPartialResult: ((TranscriptionResult) -> Void)?  // 传递完整结果，包含 finalized/volatile 分离
-    var onFinalResult: ((String) -> Void)?
-    var onError: ((Error) -> Void)?
+    /// 会话级回调路由器（US-002：先接入骨架，后续 Story 再迁移各入口）
+    private let callbackRouter = AudioCallbackRouter()
+    private let legacyCallbackSessionID = UUID()
+
+    /// 兼容旧接口：映射到 legacy session 回调
+    var onAudioLevelUpdate: ((Float) -> Void)? {
+        get { callbackRouter.callbacks(for: legacyCallbackSessionID).onAudioLevelUpdate }
+        set {
+            callbackRouter.updateCallbacks(for: legacyCallbackSessionID) { $0.onAudioLevelUpdate = newValue }
+            callbackRouter.setActiveSession(legacyCallbackSessionID)
+        }
+    }
+
+    var onPartialResult: ((TranscriptionResult) -> Void)? {
+        get { callbackRouter.callbacks(for: legacyCallbackSessionID).onPartialResult }
+        set {
+            callbackRouter.updateCallbacks(for: legacyCallbackSessionID) { $0.onPartialResult = newValue }
+            callbackRouter.setActiveSession(legacyCallbackSessionID)
+        }
+    }
+
+    var onFinalResult: ((String) -> Void)? {
+        get { callbackRouter.callbacks(for: legacyCallbackSessionID).onFinalResult }
+        set {
+            callbackRouter.updateCallbacks(for: legacyCallbackSessionID) { $0.onFinalResult = newValue }
+            callbackRouter.setActiveSession(legacyCallbackSessionID)
+        }
+    }
+
+    var onError: ((Error) -> Void)? {
+        get { callbackRouter.callbacks(for: legacyCallbackSessionID).onError }
+        set {
+            callbackRouter.updateCallbacks(for: legacyCallbackSessionID) { $0.onError = newValue }
+            callbackRouter.setActiveSession(legacyCallbackSessionID)
+        }
+    }
     
     /// 当前使用的引擎类型（用于 UI 展示）
     var currentEngineType: TranscriptionEngineType? {
@@ -67,14 +98,26 @@ final class AudioRecorderService: NSObject {
         
         // 打印调试信息
         transcriptionManager.printDebugInfo()
+
+        // legacy session 保持旧行为；后续迁移到独立 session
+        callbackRouter.ensureSession(legacyCallbackSessionID)
+        callbackRouter.setActiveSession(legacyCallbackSessionID)
         
-        // 🔧 预热 AVAudioEngine，触发 CoreAudio 初始化
-        // 避免首次录音时出现 -10877 错误
-        warmupAudioEngine()
+        // 仅在存在输入设备时预热，避免无麦克风环境触发 CoreAudio 错误噪音
+        if AudioDeviceManager.hasAvailableInputDevice() {
+            warmupAudioEngine()
+        } else {
+            logger.warning("⚠️ No input device detected at startup, skipping audio engine warmup")
+        }
     }
     
     /// 预热音频引擎，在启动时触发 CoreAudio 初始化
     private func warmupAudioEngine() {
+        guard AudioDeviceManager.hasAvailableInputDevice() else {
+            logger.info("ℹ️ Skip audio engine warmup because no input device is available")
+            return
+        }
+
         // 访问 inputNode 会触发 CoreAudio 设备枚举和初始化
         // 这个过程可能产生 -10877，但在启动时触发比录音时更好
         _ = audioEngine.inputNode.outputFormat(forBus: 0)
@@ -86,6 +129,8 @@ final class AudioRecorderService: NSObject {
     
     /// 注册音频配置变更通知
     private func setupConfigurationChangeObserver() {
+        guard configurationChangeObserver == nil else { return }
+
         configurationChangeObserver = NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange,
             object: audioEngine,
@@ -97,47 +142,66 @@ final class AudioRecorderService: NSObject {
         }
         logger.info("🔔 Audio configuration change observer registered")
     }
+
+    /// 移除音频配置变更通知
+    private func teardownConfigurationChangeObserver() {
+        configurationChangeWorkItem?.cancel()
+        configurationChangeWorkItem = nil
+
+        guard let observer = configurationChangeObserver else { return }
+        NotificationCenter.default.removeObserver(observer)
+        configurationChangeObserver = nil
+        logger.info("🔕 Audio configuration change observer removed")
+    }
     
     /// 处理音频配置变更 (设备切换/拔出)
     private func handleConfigurationChange() {
         // Debounce: 避免高频切换导致连续重启
         configurationChangeWorkItem?.cancel()
-        
+
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
-            
+
             Task { @MainActor in
                 self.logger.warning("⚠️ Audio configuration changed")
-                
+
                 guard self.isRecording else {
                     self.logger.info("ℹ️ Not recording, ignoring configuration change")
                     return
                 }
-                
+
                 // 正在录音时，尝试恢复
                 self.logger.info("🔄 Attempting to recover recording after configuration change...")
-                
+
                 do {
                     // 1. 停止引擎
                     self.resetAudioEngine()
-                    
+
                     // 2. 重新配置并启动
                     try self.reconfigureAndRestartEngine()
-                    
+
                     self.logger.info("✅ Recording recovered after configuration change")
                 } catch {
                     self.logger.error("❌ Failed to recover recording: \(error.localizedDescription)")
-                    self.onError?(error)
+                    self.callbackRouter.dispatchError(error)
                 }
             }
         }
-        
+
         configurationChangeWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+        // 使用 async/await 替代 DispatchQueue.main.asyncAfter
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+            workItem.perform()
+        }
     }
     
     /// 重新配置并启动引擎 (配置变更后恢复)
     private func reconfigureAndRestartEngine() throws {
+        guard AudioDeviceManager.hasAvailableInputDevice() else {
+            throw AudioRecorderError.noInputDevice
+        }
+
         // 尝试绑定用户选择的设备
         bindSelectedInputDevice()
         
@@ -162,8 +226,8 @@ final class AudioRecorderService: NSObject {
     
     /// 绑定用户选择的输入设备
     private func bindSelectedInputDevice() {
-        guard let deviceID = AudioDeviceManager.getSelectedAudioDeviceID() else {
-            logger.info("ℹ️ No selected device or device not found, using system default")
+        guard let deviceID = AudioDeviceManager.getPreferredAudioDeviceID() else {
+            logger.warning("⚠️ No usable input device found; cannot bind microphone")
             return
         }
         
@@ -196,13 +260,48 @@ final class AudioRecorderService: NSObject {
     func requestPermissions() async -> Bool {
         await transcriptionManager.requestPermissions()
     }
+
+    /// 创建独立回调会话（用于后续入口隔离改造）
+    @discardableResult
+    func createCallbackSession(activate: Bool = false) -> UUID {
+        let sessionID = UUID()
+        callbackRouter.ensureSession(sessionID)
+        if activate {
+            callbackRouter.setActiveSession(sessionID)
+        }
+        return sessionID
+    }
+
+    /// 更新指定回调会话
+    func updateCallbackSession(_ sessionID: UUID, _ update: (inout AudioCallbacks) -> Void) {
+        callbackRouter.updateCallbacks(for: sessionID, update)
+    }
+
+    /// 激活指定回调会话
+    func activateCallbackSession(_ sessionID: UUID?) {
+        callbackRouter.setActiveSession(sessionID)
+    }
+
+    /// 移除回调会话（legacy session 仅清空不删除）
+    func removeCallbackSession(_ sessionID: UUID) {
+        if sessionID == legacyCallbackSessionID {
+            callbackRouter.resetCallbacks(for: legacyCallbackSessionID)
+            callbackRouter.setActiveSession(legacyCallbackSessionID)
+            return
+        }
+        callbackRouter.removeSession(sessionID)
+    }
     
     /// 开始录音
     func startRecording() throws {
         guard !isRecording else { return }
+        guard AudioDeviceManager.hasAvailableInputDevice() else {
+            throw AudioRecorderError.noInputDevice
+        }
         
         // 🔧 停止并重置引擎状态（复用实例，避免 CoreAudio -10877）
         resetAudioEngine()
+        setupConfigurationChangeObserver()
         
         // 重置状态
         isEngineReady = false
@@ -302,13 +401,13 @@ final class AudioRecorderService: NSObject {
                     // 标记引擎已准备好
                     self.isEngineReady = true
                 }
-            } catch {
-                await MainActor.run {
-                    self.logger.error("❌ Engine prepare failed: \(error)")
-                    self.onError?(error)
+                } catch {
+                    await MainActor.run {
+                        self.logger.error("❌ Engine prepare failed: \(error)")
+                        self.callbackRouter.dispatchError(error)
+                    }
                 }
             }
-        }
     }
     
     /// 设置 Provider 回调
@@ -321,9 +420,9 @@ final class AudioRecorderService: NSObject {
                 switch processedResult.type {
                 case .partial:
                     // 传递完整的 TranscriptionResult
-                    self?.onPartialResult?(processedResult)
+                    self?.callbackRouter.dispatchPartialResult(processedResult)
                 case .final:
-                    self?.onFinalResult?(processedResult.text)
+                    self?.callbackRouter.dispatchFinalResult(processedResult.text)
                     self?.isProcessing = false
                 }
             }
@@ -331,7 +430,7 @@ final class AudioRecorderService: NSObject {
         
         provider.onError = { [weak self] error in
             Task { @MainActor in
-                self?.onError?(error)
+                self?.callbackRouter.dispatchError(error)
                 self?.isProcessing = false
             }
         }
@@ -344,6 +443,7 @@ final class AudioRecorderService: NSObject {
         isProcessing = true
         isRecording = false
         logger.info("⏹️ Recording stopped")
+        teardownConfigurationChangeObserver()
         
         // 🔧 停止引擎但保留实例（复用，避免 CoreAudio -10877）
         resetAudioEngine()
@@ -380,6 +480,7 @@ final class AudioRecorderService: NSObject {
         
         // 🔧 停止引擎但保留实例（复用，避免 CoreAudio -10877）
         resetAudioEngine()
+        teardownConfigurationChangeObserver()
         
         // 取消转录
         transcriptionProvider?.cancel()
@@ -458,7 +559,7 @@ final class AudioRecorderService: NSObject {
         let finalLevel = min(max(level, 0.02), 1.0)
         
         Task { @MainActor in
-            onAudioLevelUpdate?(finalLevel)
+            callbackRouter.dispatchAudioLevel(finalLevel)
         }
     }
 }
@@ -470,6 +571,7 @@ enum AudioRecorderError: LocalizedError {
     case engineCreationFailed
     case requestCreationFailed
     case permissionDenied
+    case noInputDevice
     
     var errorDescription: String? {
         switch self {
@@ -481,6 +583,8 @@ enum AudioRecorderError: LocalizedError {
             return "识别请求创建失败"
         case .permissionDenied:
             return "权限被拒绝"
+        case .noInputDevice:
+            return "未检测到可用麦克风设备"
         }
     }
 }
