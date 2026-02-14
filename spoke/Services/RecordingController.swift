@@ -39,10 +39,12 @@ final class RecordingController {
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
     private var lastTranscription: String = ""
+    private let recordingCallbackSessionID: UUID
     
     // MARK: - Init
     
     private init() {
+        recordingCallbackSessionID = audioService.createCallbackSession()
         setupAudioCallbacks()
         setupHUDCallbacks()
         setupQuickAskCallbacks()
@@ -114,41 +116,43 @@ final class RecordingController {
     }
     
     private func setupAudioCallbacks() {
-        audioService.onAudioLevelUpdate = { [weak self] level in
-            Task { @MainActor in
-                self?.hudManager.updateAudioLevel(level)
-            }
-        }
-        
-        audioService.onPartialResult = { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                // 保存完整文本
-                self.lastTranscription = result.text
-                
-                // HUD 始终显示完整文本（finalized + volatile）
-                self.hudManager.updatePartialText(result.text)
-                
-                // 边说边打字模式：使用稳定性检测输入
-                if self.settings.realtimeTypingEnabled {
-                    // 基于前缀稳定性检测，更快地输入稳定内容
-                    self.inputService.typeWithStabilityDetection(
-                        finalizedText: result.finalizedText,
-                        volatileText: result.volatileText
-                    )
+        audioService.updateCallbackSession(recordingCallbackSessionID) { [weak self] callbacks in
+            callbacks.onAudioLevelUpdate = { [weak self] level in
+                Task { @MainActor in
+                    self?.hudManager.updateAudioLevel(level)
                 }
             }
-        }
-        
-        audioService.onFinalResult = { [weak self] text in
-            Task { @MainActor in
-                self?.lastTranscription = text
+
+            callbacks.onPartialResult = { [weak self] result in
+                Task { @MainActor in
+                    guard let self = self else { return }
+
+                    // 保存完整文本
+                    self.lastTranscription = result.text
+
+                    // HUD 始终显示完整文本（finalized + volatile）
+                    self.hudManager.updatePartialText(result.text)
+
+                    // 边说边打字模式：使用稳定性检测输入
+                    if self.settings.realtimeTypingEnabled {
+                        // 基于前缀稳定性检测，更快地输入稳定内容
+                        self.inputService.typeWithStabilityDetection(
+                            finalizedText: result.finalizedText,
+                            volatileText: result.volatileText
+                        )
+                    }
+                }
             }
-        }
-        
-        audioService.onError = { [weak self] error in
-            self?.logger.error("❌ Audio error: \(error.localizedDescription, privacy: .public)")
+
+            callbacks.onFinalResult = { [weak self] text in
+                Task { @MainActor in
+                    self?.lastTranscription = text
+                }
+            }
+
+            callbacks.onError = { [weak self] error in
+                self?.logger.error("❌ Audio error: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
     
@@ -197,8 +201,9 @@ final class RecordingController {
         // 重置输入服务（边说边打字）
         inputService.reset()
         
-        // ⚠️ 重新设置音频回调（Quick Ask 可能覆盖了）
+        // 录音入口使用独立回调会话，避免与 Quick Ask 串线
         setupAudioCallbacks()
+        audioService.activateCallbackSession(recordingCallbackSessionID)
         
         // 🔍 预取 OCR（与录音并行，不阻塞）
         if LLMSettings.shared.includeActiveApp {
