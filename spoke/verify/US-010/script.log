@@ -1,0 +1,34 @@
+warning: 'spoke': found 2 file(s) which are unhandled; explicitly declare them as resources or exclude from the target
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Tests/TEST_ISOLATION.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Tests/run-concurrency-check.sh
+warning: 'spoke': found 23 file(s) which are unhandled; explicitly declare them as resources or exclude from the target
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-007/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-002/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-010/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-004/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-009/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-001/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-008/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-003/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/CLAUDE.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/prd.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-003/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-002/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/progress.txt
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/tasks/prd-quality-stability-optimization.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-005/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-004/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-006/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-001/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-005/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-007/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-008/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-006/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-009/script.log
+[0/1] Planning build
+Building for debugging...
+[0/4] Write swift-version--58304C5D6DBC2206.txt
+[2/5] Emitting module SpokenAnyWhere
+[2/4] Linking SpokenAnyWhere
+[3/4] Applying SpokenAnyWhere
+Build complete! (7.10s)
