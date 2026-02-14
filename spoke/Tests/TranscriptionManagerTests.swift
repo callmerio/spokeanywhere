@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - TranscriptionModelManager Tests
 
-@Suite("TranscriptionModelManager 测试")
+@Suite("TranscriptionModelManager 测试", .serialized)
 @MainActor
 struct TranscriptionModelManagerTests {
     

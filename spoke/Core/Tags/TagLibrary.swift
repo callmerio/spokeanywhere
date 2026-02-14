@@ -24,21 +24,30 @@ final class TagLibrary: ObservableObject {
     
     // MARK: - Storage
     
-    private var storageURL: URL {
+    private let storageURL: URL
+    private let recentTagIdsURL: URL
+
+    nonisolated private static func defaultStorageURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
         return spokeDir.appendingPathComponent("tag_library.json")
     }
     
-    private var recentTagIdsURL: URL {
-        storageURL.deletingLastPathComponent().appendingPathComponent("recent_tags.json")
-    }
-    
     // MARK: - Init
     
-    private init() {
-        loadTags()
-        loadRecentTags()
+    init(
+        storageURL: URL = TagLibrary.defaultStorageURL(),
+        recentTagIdsURL: URL? = nil,
+        loadPersistedData: Bool = true
+    ) {
+        self.storageURL = storageURL
+        self.recentTagIdsURL = recentTagIdsURL
+            ?? storageURL.deletingLastPathComponent().appendingPathComponent("recent_tags.json")
+
+        if loadPersistedData {
+            loadTags()
+            loadRecentTags()
+        }
     }
     
     // MARK: - Query
