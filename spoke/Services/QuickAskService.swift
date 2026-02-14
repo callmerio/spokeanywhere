@@ -48,6 +48,7 @@ final class QuickAskService {
     
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
+    private var quickAskCallbackSessionID: UUID?
     
     /// 当前状态
     var state: QuickAskState {
@@ -63,7 +64,6 @@ final class QuickAskService {
     
     private init() {
         setupHUDCallbacks()
-        setupAudioCallbacks()
     }
     
     // MARK: - Setup
@@ -101,9 +101,38 @@ final class QuickAskService {
         }
     }
     
-    private func setupAudioCallbacks() {
-        // 注意：这里需要区分是 Quick Ask 还是普通录音
-        // 暂时先复用 audioService 的回调
+    private func registerAudioCallbacks() {
+        if quickAskCallbackSessionID == nil {
+            quickAskCallbackSessionID = audioService.createCallbackSession()
+        }
+
+        guard let sessionID = quickAskCallbackSessionID else { return }
+        audioService.updateCallbackSession(sessionID) { [weak self] callbacks in
+            callbacks.onAudioLevelUpdate = { [weak self] level in
+                Task { @MainActor in
+                    self?.state.updateAudioLevel(level)
+                }
+            }
+
+            callbacks.onPartialResult = { [weak self] result in
+                Task { @MainActor in
+                    self?.state.updateVoiceTranscription(result.text)
+                }
+            }
+
+            callbacks.onFinalResult = nil
+            callbacks.onError = { [weak self] error in
+                self?.logger.error("❌ Quick Ask audio error: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+
+        audioService.activateCallbackSession(sessionID)
+    }
+
+    private func unregisterAudioCallbacks() {
+        guard let sessionID = quickAskCallbackSessionID else { return }
+        audioService.removeCallbackSession(sessionID)
+        quickAskCallbackSessionID = nil
     }
     
     // MARK: - Public API
@@ -235,6 +264,7 @@ final class QuickAskService {
     func restartRecording() {
         // 停止当前录音
         audioService.cancelRecording()
+        unregisterAudioCallbacks()
         
         // 重置录音相关状态
         state.restartRecording()
@@ -305,21 +335,15 @@ final class QuickAskService {
     // MARK: - Private
     
     private func startQuickAskRecording() throws {
-        // 设置音频回调（Quick Ask 专用）
-        audioService.onAudioLevelUpdate = { [weak self] level in
-            Task { @MainActor in
-                self?.state.updateAudioLevel(level)
-            }
+        // Quick Ask 使用独立会话回调，避免覆盖普通录音
+        registerAudioCallbacks()
+
+        do {
+            try audioService.startRecording()
+        } catch {
+            unregisterAudioCallbacks()
+            throw error
         }
-        
-        audioService.onPartialResult = { [weak self] result in
-            Task { @MainActor in
-                self?.state.updateVoiceTranscription(result.text)
-            }
-        }
-        
-        // 启动录音
-        try audioService.startRecording()
     }
     
     private func stopRecording() {
@@ -328,6 +352,7 @@ final class QuickAskService {
         recordingStartTime = nil
         
         _ = audioService.stopRecording()
+        unregisterAudioCallbacks()
     }
     
     private func updateRecordingDuration() {
@@ -516,12 +541,12 @@ final class QuickAskHUDManager {
         panel?.orderFront(nil)
         
         // 🔥 第四步：延迟一帧再激活（等待窗口完全显示）
-        DispatchQueue.main.async { [weak self] in
+        Task { @MainActor [weak self] in
             guard let panel = self?.panel else { return }
-            
+
             // 激活应用（强制激活，忽略其他应用）
             NSApp.activate(ignoringOtherApps: true)
-            
+
             // 让窗口成为 key window 和 main window
             panel.makeKeyAndOrderFront(nil)
             panel.makeMain()
@@ -552,7 +577,8 @@ final class QuickAskHUDManager {
     
     func fail(with message: String) {
         state.fail(with: message)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
             self?.hide()
             self?.state.reset()
         }

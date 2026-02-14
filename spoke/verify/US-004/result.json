@@ -1,0 +1,12 @@
+{
+  "story_id": "US-004",
+  "status": "passed",
+  "verify_type": "script",
+  "timestamp": "2026-02-14T18:39:20+08:00",
+  "commit": "f33d74a",
+  "evidence_paths": [
+    
+    "script.log"
+  ],
+  "notes": ""
+}
