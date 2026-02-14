@@ -11,7 +11,14 @@ env:
   SCHEME: SpokenAnyWhere
 
 jobs:
+  # 发布前强制执行 Sanitizer 通道，未通过则阻断发布产物构建。
+  pre-release-sanitizer:
+    name: Pre-release Sanitizer Gate (Mandatory)
+    uses: ./.github/workflows/sanitizer.yml
+    secrets: inherit
+
   build:
+    needs: pre-release-sanitizer
     runs-on: macos-14 # Apple Silicon runner
 
     steps:

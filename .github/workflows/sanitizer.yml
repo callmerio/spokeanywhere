@@ -1,0 +1,108 @@
+name: Sanitizer Gate
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # nightly UTC
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  sanitizer-thread:
+    name: Sanitizer Thread
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.4"
+
+      - name: Resolve Dependencies
+        working-directory: spoke
+        run: |
+          swift package resolve
+
+      - name: Run Thread Sanitizer
+        working-directory: spoke
+        run: |
+          set -o pipefail
+          mkdir -p ci-logs
+          if ! swift test --sanitize=thread --parallel 2>&1 | tee ci-logs/sanitizer-thread.log; then
+            echo "::group::Thread Sanitizer Failure (tail -200)"
+            tail -n 200 ci-logs/sanitizer-thread.log || true
+            echo "::endgroup::"
+            {
+              echo "### ❌ Thread Sanitizer Failed"
+              echo ""
+              echo "- Command: \`swift test --sanitize=thread --parallel\`"
+              echo "- Policy: pre-release is blocked until this lane passes"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo "### ✅ Thread Sanitizer Passed"
+            echo ""
+            echo "- Command: \`swift test --sanitize=thread --parallel\`"
+            echo "- Policy: mandatory for pre-release/release workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Thread Sanitizer Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-thread-logs
+          path: spoke/ci-logs/sanitizer-thread.log
+          retention-days: 7
+
+  sanitizer-address:
+    name: Sanitizer Address
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.4"
+
+      - name: Resolve Dependencies
+        working-directory: spoke
+        run: |
+          swift package resolve
+
+      - name: Run Address Sanitizer
+        working-directory: spoke
+        run: |
+          set -o pipefail
+          mkdir -p ci-logs
+          if ! swift test --sanitize=address --parallel 2>&1 | tee ci-logs/sanitizer-address.log; then
+            echo "::group::Address Sanitizer Failure (tail -200)"
+            tail -n 200 ci-logs/sanitizer-address.log || true
+            echo "::endgroup::"
+            {
+              echo "### ❌ Address Sanitizer Failed"
+              echo ""
+              echo "- Command: \`swift test --sanitize=address --parallel\`"
+              echo "- Policy: pre-release is blocked until this lane passes"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo "### ✅ Address Sanitizer Passed"
+            echo ""
+            echo "- Command: \`swift test --sanitize=address --parallel\`"
+            echo "- Policy: mandatory for pre-release/release workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Address Sanitizer Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-address-logs
+          path: spoke/ci-logs/sanitizer-address.log
+          retention-days: 7

@@ -173,7 +173,7 @@
       "verifyType": "manual",
       "verifyScript": "",
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
