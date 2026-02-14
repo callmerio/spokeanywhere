@@ -18,6 +18,7 @@ final class AudioRecorderService: NSObject {
     // MARK: - Dependencies
     
     private let transcriptionManager = TranscriptionManager.shared
+    private let recoveryPolicy = AudioRecoveryPolicy()
     
     // MARK: - Properties
     
@@ -170,9 +171,22 @@ final class AudioRecorderService: NSObject {
             Task { @MainActor in
                 self.logger.warning("⚠️ Audio configuration changed")
 
-                guard self.isRecording else {
+                let decision = self.recoveryPolicy.configurationChangeDecision(
+                    isRecording: self.isRecording,
+                    permissionStatus: AVCaptureDevice.authorizationStatus(for: .audio),
+                    hasInputDevice: AudioDeviceManager.hasAvailableInputDevice()
+                )
+
+                switch decision {
+                case .ignore:
                     self.logger.info("ℹ️ Not recording, ignoring configuration change")
                     return
+                case .fail(let error):
+                    self.logger.error("❌ Configuration change entered non-recoverable state: \(error.localizedDescription)")
+                    self.handleRecoveryFailure(error, context: "configuration-policy")
+                    return
+                case .attemptRecovery:
+                    break
                 }
 
                 // 正在录音时，尝试恢复
@@ -511,23 +525,20 @@ final class AudioRecorderService: NSObject {
     /// 录音前置条件：权限和设备都必须可用
     private func validateRecordingPreconditions() throws {
         let permissionStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-        switch permissionStatus {
-        case .authorized:
-            break
-        case .notDetermined:
-            logger.warning("⚠️ Microphone permission not determined")
-            throw AudioRecorderError.permissionDenied
-        case .denied, .restricted:
-            logger.warning("⚠️ Microphone permission denied or restricted")
-            throw AudioRecorderError.permissionDenied
-        @unknown default:
-            logger.warning("⚠️ Microphone permission status unknown")
-            throw AudioRecorderError.permissionDenied
-        }
-
-        guard AudioDeviceManager.hasAvailableInputDevice() else {
-            logger.warning("⚠️ No available input device")
-            throw AudioRecorderError.noInputDevice
+        let hasInputDevice = AudioDeviceManager.hasAvailableInputDevice()
+        if let error = recoveryPolicy.startRecordingPreconditionError(
+            permissionStatus: permissionStatus,
+            hasInputDevice: hasInputDevice
+        ) {
+            switch error {
+            case .permissionDenied:
+                logger.warning("⚠️ Microphone permission unavailable for recording")
+            case .noInputDevice:
+                logger.warning("⚠️ No available input device")
+            default:
+                break
+            }
+            throw error
         }
     }
 
@@ -627,7 +638,7 @@ final class AudioRecorderService: NSObject {
 
 // MARK: - Errors
 
-enum AudioRecorderError: LocalizedError {
+enum AudioRecorderError: LocalizedError, Equatable {
     case recognizerNotAvailable
     case engineCreationFailed
     case requestCreationFailed
