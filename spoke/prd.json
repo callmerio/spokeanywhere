@@ -188,7 +188,7 @@
       "verifyType": "manual",
       "verifyScript": "",
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
