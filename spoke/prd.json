@@ -80,7 +80,7 @@
       "verifyType": "script",
       "verifyScript": "swift build && swift test",
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

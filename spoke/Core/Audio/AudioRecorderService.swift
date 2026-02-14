@@ -48,6 +48,11 @@ final class AudioRecorderService: NSObject {
     
     /// 配置变更 debounce
     private var configurationChangeWorkItem: DispatchWorkItem?
+
+    /// 错误上报节流，避免不可恢复场景下日志与回调风暴
+    private var lastErrorSignature: String?
+    private var lastErrorReportedAt: Date = .distantPast
+    private let errorReportThrottleInterval: TimeInterval = 1.0
     
     /// 会话级回调路由器（US-002：先接入骨架，后续 Story 再迁移各入口）
     private let callbackRouter = AudioCallbackRouter()
@@ -183,7 +188,7 @@ final class AudioRecorderService: NSObject {
                     self.logger.info("✅ Recording recovered after configuration change")
                 } catch {
                     self.logger.error("❌ Failed to recover recording: \(error.localizedDescription)")
-                    self.callbackRouter.dispatchError(error)
+                    self.handleRecoveryFailure(error, context: "configuration-change")
                 }
             }
         }
@@ -198,9 +203,7 @@ final class AudioRecorderService: NSObject {
     
     /// 重新配置并启动引擎 (配置变更后恢复)
     private func reconfigureAndRestartEngine() throws {
-        guard AudioDeviceManager.hasAvailableInputDevice() else {
-            throw AudioRecorderError.noInputDevice
-        }
+        try validateRecordingPreconditions()
 
         // 尝试绑定用户选择的设备
         bindSelectedInputDevice()
@@ -295,9 +298,7 @@ final class AudioRecorderService: NSObject {
     /// 开始录音
     func startRecording() throws {
         guard !isRecording else { return }
-        guard AudioDeviceManager.hasAvailableInputDevice() else {
-            throw AudioRecorderError.noInputDevice
-        }
+        try validateRecordingPreconditions()
         
         // 🔧 停止并重置引擎状态（复用实例，避免 CoreAudio -10877）
         resetAudioEngine()
@@ -401,13 +402,13 @@ final class AudioRecorderService: NSObject {
                     // 标记引擎已准备好
                     self.isEngineReady = true
                 }
-                } catch {
-                    await MainActor.run {
-                        self.logger.error("❌ Engine prepare failed: \(error)")
-                        self.callbackRouter.dispatchError(error)
-                    }
+            } catch {
+                await MainActor.run {
+                    self.logger.error("❌ Engine prepare failed: \(error)")
+                    self.handleRecoveryFailure(error, context: "engine-prepare")
                 }
             }
+        }
     }
     
     /// 设置 Provider 回调
@@ -430,7 +431,7 @@ final class AudioRecorderService: NSObject {
         
         provider.onError = { [weak self] error in
             Task { @MainActor in
-                self?.callbackRouter.dispatchError(error)
+                self?.dispatchErrorThrottled(error, context: "provider")
                 self?.isProcessing = false
             }
         }
@@ -506,6 +507,66 @@ final class AudioRecorderService: NSObject {
     }
     
     // MARK: - Private
+
+    /// 录音前置条件：权限和设备都必须可用
+    private func validateRecordingPreconditions() throws {
+        let permissionStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch permissionStatus {
+        case .authorized:
+            break
+        case .notDetermined:
+            logger.warning("⚠️ Microphone permission not determined")
+            throw AudioRecorderError.permissionDenied
+        case .denied, .restricted:
+            logger.warning("⚠️ Microphone permission denied or restricted")
+            throw AudioRecorderError.permissionDenied
+        @unknown default:
+            logger.warning("⚠️ Microphone permission status unknown")
+            throw AudioRecorderError.permissionDenied
+        }
+
+        guard AudioDeviceManager.hasAvailableInputDevice() else {
+            logger.warning("⚠️ No available input device")
+            throw AudioRecorderError.noInputDevice
+        }
+    }
+
+    /// 配置变化恢复失败后，立即进入可解释失败状态，避免反复重试风暴
+    private func handleRecoveryFailure(_ error: Error, context: String) {
+        resetAudioEngine()
+        teardownConfigurationChangeObserver()
+
+        transcriptionProvider?.cancel()
+        transcriptionProvider = nil
+        audioFile = nil
+
+        isRecording = false
+        isProcessing = false
+        isEngineReady = false
+
+        bufferLock.lock()
+        audioBuffer.removeAll()
+        bufferLock.unlock()
+
+        dispatchErrorThrottled(error, context: context)
+    }
+
+    /// 节流重复错误，避免无设备或不可恢复状态下持续刷屏
+    private func dispatchErrorThrottled(_ error: Error, context: String) {
+        let nsError = error as NSError
+        let signature = "\(context)|\(nsError.domain)|\(nsError.code)|\(error.localizedDescription)"
+        let now = Date()
+
+        if signature == lastErrorSignature,
+           now.timeIntervalSince(lastErrorReportedAt) < errorReportThrottleInterval {
+            logger.debug("🔇 Suppressed duplicate audio error [\(context, privacy: .public)]")
+            return
+        }
+
+        lastErrorSignature = signature
+        lastErrorReportedAt = now
+        callbackRouter.dispatchError(error)
+    }
     
     /// 重置音频引擎状态（复用实例，避免频繁创建销毁导致 CoreAudio -10877）
     private func resetAudioEngine() {
