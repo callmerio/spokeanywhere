@@ -1,0 +1,230 @@
+Building for debugging...
+[0/4] Write sources
+[1/4] Write swift-version--58304C5D6DBC2206.txt
+[3/6] Emitting module SpokenAnyWhere
+[4/6] Compiling SpokenAnyWhere ServiceContainer.swift
+[5/136] Compiling SpokenAnyWhere SpeechAnalyzerProvider.swift
+[6/136] Compiling SpokenAnyWhere TranscriptionManager.swift
+[7/136] Compiling SpokenAnyWhere TranslationService.swift
+[8/136] Compiling SpokenAnyWhere WorkflowAction.swift
+[9/136] Compiling SpokenAnyWhere WorkflowConfigService.swift
+[10/136] Compiling SpokenAnyWhere WorkflowExecutor.swift
+[11/136] Compiling SpokenAnyWhere AppSettings.swift
+[12/136] Compiling SpokenAnyWhere AudioDeviceManager.swift
+[13/136] Compiling SpokenAnyWhere ClipboardHistoryService.swift
+[14/136] Compiling SpokenAnyWhere ContextService.swift
+[15/136] Compiling SpokenAnyWhere FloatingHUDManager.swift
+[16/136] Compiling SpokenAnyWhere HistoryManager.swift
+[17/136] Compiling SpokenAnyWhere CaptionHandler.swift
+[18/136] Compiling SpokenAnyWhere QuickAskHandler.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[19/136] Compiling SpokenAnyWhere ScreenshotHandler.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[20/136] Compiling SpokenAnyWhere VoiceHandler.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[21/136] Compiling SpokenAnyWhere HotKeyListener.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[22/136] Compiling SpokenAnyWhere HotKeyRegistry.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[23/136] Compiling SpokenAnyWhere HotKeyService.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[24/136] Compiling SpokenAnyWhere MessagePanelManager.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[25/136] Compiling SpokenAnyWhere QuickAskService.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[26/136] Compiling SpokenAnyWhere RecordingController.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[27/136] Compiling SpokenAnyWhere ScreenOCRService.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[28/136] Compiling SpokenAnyWhere SelectionActionService.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[29/136] Compiling SpokenAnyWhere SelectionMonitorService.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[30/136] Compiling SpokenAnyWhere SelectionToolbarManager.swift
+/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/Services/HotKey/Handlers/ScreenshotHandler.swift:94:13: warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 92 | 
+ 93 |     init() {
+ 94 |         let settings = AppSettings.shared
+    |             `- warning: initialization of immutable value 'settings' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+ 95 |         // Clipboard Pipeline 暂时没有专门的设置，使用默认值
+ 96 |         self.binding = HotKeyBinding(
+[31/136] Compiling SpokenAnyWhere ToolbarConfigService.swift
+[32/136] Compiling SpokenAnyWhere AddToDictionaryHandler.swift
+[33/136] Compiling SpokenAnyWhere AttachmentDropOverlay.swift
+[34/136] Compiling SpokenAnyWhere AttachmentPickerMenu.swift
+[35/136] Compiling SpokenAnyWhere AttachmentThumbnailView.swift
+[36/136] Compiling SpokenAnyWhere CardAttachmentView.swift
+[37/136] Compiling SpokenAnyWhere DictionarySelectableText.swift
+[38/136] Compiling SpokenAnyWhere HighlightedContentText.swift
+[39/136] Compiling SpokenAnyWhere HoverButtons.swift
+[40/136] Compiling SpokenAnyWhere ScreenCaptureBlurBackground.swift
+[41/136] Compiling SpokenAnyWhere TagBubbleView.swift
+[42/136] Compiling SpokenAnyWhere DictionaryPanelState.swift
+[43/136] Compiling SpokenAnyWhere DictionaryPanelView.swift
+[44/136] Compiling SpokenAnyWhere AnswerPanelView+Workflow.swift
+[45/136] Compiling SpokenAnyWhere AnswerPanelView.swift
+[46/136] Compiling SpokenAnyWhere MarkdownWebView.swift
+[47/136] Compiling SpokenAnyWhere MessageBubbleView.swift
+[48/136] Compiling SpokenAnyWhere QuickAskModels.swift
+[49/136] Compiling SpokenAnyWhere ActionBarView.swift
+[50/136] Compiling SpokenAnyWhere ActionStripView.swift
+[51/136] Compiling SpokenAnyWhere AnnotationCanvasView.swift
+[52/136] Compiling SpokenAnyWhere RegionSelectionView.swift
+[53/136] Compiling SpokenAnyWhere RegionSelectionWindow.swift
+[54/136] Compiling SpokenAnyWhere ScreenshotContentView+Actions.swift
+[55/136] Compiling SpokenAnyWhere ScreenshotContentView.swift
+[56/136] Compiling SpokenAnyWhere ScreenshotView.swift
+[57/136] Compiling SpokenAnyWhere DictionaryPanelWindow.swift
+[58/136] Compiling SpokenAnyWhere DictionaryResultManager.swift
+[59/136] Compiling SpokenAnyWhere FormattedDefinitionView.swift
+[60/136] Compiling SpokenAnyWhere FloatingCapsuleView.swift
+[61/136] Compiling SpokenAnyWhere FloatingPanel.swift
+[62/136] Compiling SpokenAnyWhere HUDTheme.swift
+[63/136] Compiling SpokenAnyWhere QuickAskCapsuleView.swift
+[64/136] Compiling SpokenAnyWhere QuickAskInputView.swift
+[65/136] Compiling SpokenAnyWhere AppKitScrollView.swift
+[66/136] Compiling SpokenAnyWhere CaptionDesign.swift
+[67/136] Compiling SpokenAnyWhere CaptionItemView.swift
+[68/136] Compiling SpokenAnyWhere LiveCaptionToolbar.swift
+[69/136] Compiling SpokenAnyWhere LiveCaptionView.swift
+[70/136] Compiling SpokenAnyWhere LiveCaptionWindow.swift
+[71/136] Compiling SpokenAnyWhere VocabularyHighlightText.swift
+[72/136] Compiling SpokenAnyWhere FilterChip.swift
+[73/136] Compiling SpokenAnyWhere MessageCardView.swift
+[74/136] Compiling SpokenAnyWhere MessagePanelView.swift
+[75/136] Compiling SpokenAnyWhere SelectableText.swift
+[76/136] Compiling SpokenAnyWhere SessionHistoryListView.swift
+[77/136] Compiling SpokenAnyWhere SourceAppIconView.swift
+[78/136] Compiling SpokenAnyWhere AnswerPanelManager.swift
+[79/136] Compiling SpokenAnyWhere AnswerPanelTextEditor.swift
+[80/136] Compiling SpokenAnyWhere AnswerPanelView+Input.swift
+[81/136] Compiling SpokenAnyWhere AnswerPanelView+Recording.swift
+[82/136] Compiling SpokenAnyWhere AnswerPanelView+Toolbar.swift
+[83/136] Compiling SpokenAnyWhere AppDelegate.swift
+[84/136] Compiling SpokenAnyWhere SpokenlyApp.swift
+[85/136] Compiling SpokenAnyWhere AttachmentManager.swift
+[86/136] Compiling SpokenAnyWhere ScreenCaptureService.swift
+[87/136] Compiling SpokenAnyWhere AudioRecorderService.swift
+[88/136] Compiling SpokenAnyWhere ResourceMonitor.swift
+[89/136] Compiling SpokenAnyWhere DictionaryService.swift
+[90/136] Compiling SpokenAnyWhere SessionHistoryService.swift
+[91/136] Compiling SpokenAnyWhere LLMPipeline.swift
+[92/136] Compiling SpokenAnyWhere LLMSettings.swift
+[93/136] Compiling SpokenAnyWhere AppAudioCaptureService.swift
+[94/136] Compiling SpokenAnyWhere CaptionLineBuffer.swift
+[95/136] Compiling SpokenAnyWhere LiveCaptionTranscriber.swift
+[96/136] Compiling SpokenAnyWhere SystemAudioCaptureService.swift
+[97/136] Compiling SpokenAnyWhere MessagePanelState.swift
+[98/136] Compiling SpokenAnyWhere QuickAskState.swift
+[99/136] Compiling SpokenAnyWhere ImageUpscalerModelManager.swift
+[100/136] Compiling SpokenAnyWhere ScreenshotManager.swift
+[101/136] Compiling SpokenAnyWhere SelectionToolbarAction.swift
+[102/136] Compiling SpokenAnyWhere SelectionToolbarState.swift
+[103/136] Compiling SpokenAnyWhere ToolbarAction.swift
+[104/136] Compiling SpokenAnyWhere CardTag.swift
+[105/136] Compiling SpokenAnyWhere TagLibrary.swift
+[106/136] Compiling SpokenAnyWhere TranscriptionModelDefinition.swift
+[107/136] Compiling SpokenAnyWhere TranscriptionModelManager.swift
+[108/136] Compiling SpokenAnyWhere SFSpeechProvider.swift
+[109/136] Compiling SpokenAnyWhere ScreenshotWindow.swift
+[110/136] Compiling SpokenAnyWhere DictionaryResultView.swift
+[111/136] Compiling SpokenAnyWhere SelectionToolbarView.swift
+[112/136] Compiling SpokenAnyWhere AISettingsCards.swift
+[113/136] Compiling SpokenAnyWhere AISettingsComponents.swift
+[114/136] Compiling SpokenAnyWhere AISettingsContent.swift
+[115/136] Compiling SpokenAnyWhere AISettingsServiceCardRow.swift
+[116/136] Compiling SpokenAnyWhere AddDictionaryEntrySheet.swift
+[117/136] Compiling SpokenAnyWhere BatchImportSheet.swift
+[118/136] Compiling SpokenAnyWhere EditDictionaryEntrySheet.swift
+[119/136] Compiling SpokenAnyWhere VocabularyListSheet.swift
+[120/136] Compiling SpokenAnyWhere DictionarySettingsView.swift
+[121/136] Compiling SpokenAnyWhere GeneralSettingsContent.swift
+[122/136] Compiling SpokenAnyWhere HistorySettingsContent.swift
+[123/136] Compiling SpokenAnyWhere ModelsSettingsContent.swift
+[124/136] Compiling SpokenAnyWhere ScreenshotSettingsView.swift
+[125/136] Compiling SpokenAnyWhere SettingsComponents.swift
+[126/136] Compiling SpokenAnyWhere SettingsExtensions.swift
+[127/136] Compiling SpokenAnyWhere SettingsView.swift
+[128/136] Compiling SpokenAnyWhere ShortcutsSettingsContent.swift
+[129/136] Compiling SpokenAnyWhere TTSSettingsContent.swift
+[130/136] Compiling SpokenAnyWhere ToolbarSettingsView.swift
+[131/136] Compiling SpokenAnyWhere TranscriptionModelSettingsView.swift
+[132/136] Compiling SpokenAnyWhere DesignTokens.swift
+[133/136] Compiling SpokenAnyWhere WorkflowPickerView.swift
+[134/136] Compiling SpokenAnyWhere WorkflowTagView.swift
+[134/137] Write Objects.LinkFileList
+[135/137] Linking SpokenAnyWhere
+[136/137] Applying SpokenAnyWhere
+Build complete! (10.62s)
