@@ -1,0 +1,288 @@
+warning: 'spoke': found 15 file(s) which are unhandled; explicitly declare them as resources or exclude from the target
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-001/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-004/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-003/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-005/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/progress.txt
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/prd.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/CLAUDE.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-003/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-006/script.log
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-001/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/tasks/prd-quality-stability-optimization.md
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-002/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-005/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-004/result.json
+    /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke/verify/US-002/script.log
+[0/1] Planning build
+Building for debugging...
+[0/6] Write sources
+[1/6] Write swift-version--58304C5D6DBC2206.txt
+[3/6] Emitting module SpokenAnyWhereTests
+[4/6] Compiling SpokenAnyWhereTests AudioCallbackRouterTests.swift
+[4/6] Write Objects.LinkFileList
+[5/6] Linking SpokenAnyWherePackageTests
+Build complete! (2.67s)
+Test Suite 'All tests' started at 2026-02-14 18:43:32.994.
+Test Suite 'All tests' passed at 2026-02-14 18:43:32.995.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1501
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Suite "TranscriptionModelRole 测试" started.
+􀟈  Suite "TranscriptionModelDefinition 测试" started.
+􀟈  Suite "TranscriptionRating 测试" started.
+􀟈  Suite "AppSettings 通知测试" started.
+􀟈  Suite "TranscriptionModelUserSettings 测试" started.
+􀟈  Suite "TagLibrary 通知测试" started.
+􀟈  Suite "ModelDownloadState 测试" started.
+􀟈  Suite "KeyComboFormatter 测试" started.
+􀟈  Suite "TagLibrary 测试" started.
+􀟈  Suite "VocabularyService 通知测试" started.
+􀟈  Suite "VocabularyService 测试" started.
+􀟈  Suite "CardTag 测试" started.
+􀟈  Suite "TranscriptionProviderConfig 测试" started.
+􀟈  Suite "AppSettings 测试" started.
+􀟈  Suite "TranscriptionModelManager 测试" started.
+􀟈  Suite "AudioCallbackRouter 回调隔离测试" started.
+􀟈  Suite "Transcription 通知测试" started.
+􀟈  Suite "VocabularyItem 测试" started.
+􀟈  Test "allCases 应包含所有角色" started.
+􀟈  Test "find(by:) 应正确查找模型" started.
+􀟈  Test "默认模型 ID 应存在于模型列表中" started.
+􀟈  Test "UI 属性应返回有效值" started.
+􀟈  Test "sizeString 应正确格式化大小" started.
+􀟈  Test "所有模型定义应有唯一 ID" started.
+􀟈  Test "screenshotShortcutDidChangeNotification 应正确定义" started.
+􀟈  Test "默认设置应使用默认模型 ID" started.
+􀟈  Test "needsLanguageSelection 应正确判断" started.
+􀟈  Test "settings(for:) 应为未知模型返回默认值" started.
+􀟈  Test "rawValue 应正确映射" started.
+􀟈  Test "shortcutDidChangeNotification 应正确定义" started.
+􀟈  Test "liveCaptionShortcutDidChangeNotification 应正确定义" started.
+􀟈  Test "keyCodeToString 应正确转换字母键" started.
+􀟈  Test "评级 rawValue 应正确映射" started.
+􀟈  Test "format 应正确格式化 Control 键" started.
+􀟈  Test "messagePanelShortcutDidChangeNotification 应正确定义" started.
+􀟈  Test "keyCodeToString 应正确转换特殊键" started.
+􀟈  Test "format 应正确格式化单个修饰键" started.
+􀟈  Test "settings(for:) 应为已知模型返回正确默认值" started.
+􀟈  Test "quickAskShortcutDidChangeNotification 应正确定义" started.
+􀟈  Test "isReady 应正确判断就绪状态" started.
+􀟈  Test "keyCodeToString 对未知 keyCode 应返回 nil" started.
+􀟈  Test "keyCodeToString 应正确转换功能键" started.
+􀟈  Test "search 空字符串应返回所有标签" started.
+􀟈  Test "tag(for:) 应根据 ID 返回标签" started.
+􀟈  Test "创建标签应返回新标签" started.
+􀟈  Test "shared 单例应存在且始终一致" started.
+􀟈  Test "tags(for:) 应根据 ID 列表返回标签（保持顺序）" started.
+􀟈  Test "vocabularyChanged 通知名称应正确定义" started.
+􀟈  Test "keyCodeToString 应正确转换方向键" started.
+􀟈  Test "updateTagColor 应更新标签颜色" started.
+􀟈  Test "创建重复名称标签应返回已存在的标签" started.
+􀟈  Test "markAsRecentlyUsed 应将标签移到最前面" started.
+􀟈  Test "deleteTag 对不存在的 ID 应无副作用" started.
+􀟈  Test "tagDeleted 通知名称应正确定义" started.
+􀟈  Test "创建标签时可以指定颜色" started.
+􀟈  Test "search 应支持前缀匹配" started.
+􀟈  Test "deleteTag 应删除标签" started.
+􀟈  Test "删除不存在的 ID 应无副作用" started.
+􀟈  Test "keyCodeToString 应正确转换数字键" started.
+􀟈  Test "创建空名称标签应返回默认名称" started.
+􀟈  Test "format 应正确格式化多个修饰键" started.
+􀟈  Test "markAsRecentlyUsed 应将标签添加到最近使用" started.
+􀟈  Test "新添加的生词应在列表最前面" started.
+􀟈  Test "markVocabulary 应支持自定义模板" started.
+􀟈  Test "highlightRanges 应找到生词的位置" started.
+􀟈  Test "shared 单例应存在且始终一致" started.
+􀟈  Test "tag(for:) 对不存在的 ID 应返回 nil" started.
+􀟈  Test "contains 对不存在的词应返回 false" started.
+􀟈  Test "创建标签时应自动去除首尾空白" started.
+􀟈  Test "添加重复生词应返回 nil（忽略大小写）" started.
+􀟈  Test "删除存在的生词应成功" started.
+􀟈  Test "clearAll 应清空所有生词" started.
+􀟈  Test "添加空字符串应返回 nil" started.
+􀟈  Test "markVocabulary 应用默认模板标记生词" started.
+􀟈  Test "初始化时应设置默认颜色" started.
+􀟈  Test "highlightRanges 无匹配时应返回空数组" started.
+􀟈  Test "updateTagName 应更新标签名称" started.
+􀟈  Test "tag(named:) 应根据名称返回标签（忽略大小写）" started.
+􀟈  Test "添加纯空白字符串应返回 nil" started.
+􀟈  Test "初始化时可以指定颜色" started.
+􀟈  Test "contains 应忽略大小写" started.
+􀟈  Test "配置应正确初始化" started.
+􀟈  Test "clipboardHistoryLimit 默认应为 30" started.
+􀟈  Test "updateQuickAskShortcut 应更新 Quick Ask 快捷键" started.
+􀟈  Test "添加有效生词应返回新条目" started.
+􀟈  Test "初始化时应生成唯一 ID" started.
+􀟈  Test "historyKeepDays 默认应为 30" started.
+􀟈  Test "updateShortcut 应更新快捷键设置" started.
+􀟈  Test "shared 单例应存在且始终一致" started.
+􀟈  Test "messagePanelShortcutDisplayString 应返回可读字符串" started.
+􀟈  Test "RecordingMode 应有正确的 rawValue" started.
+􀟈  Test "historyMaxCount 默认应为 500" started.
+􀟈  Test "getAllWords 应返回所有词的小写版本" started.
+􀟈  Test "playSoundEffect 默认应为 true" started.
+􀟈  Test "liveCaptionShortcutDisplayString 应返回可读字符串" started.
+􀟈  Test "pressEscToCancel 默认应为 true" started.
+􀟈  Test "shortcutDisplayString 应返回可读字符串" started.
+􀟈  Test "setLocale 应更新当前模型的语言设置" started.
+􀟈  Test "realtimeTypingEnabled 默认应为 false" started.
+􀟈  Test "quickAskShortcutDisplayString 应返回可读字符串" started.
+􀟈  Test "RecordingMode.allCases 应包含所有模式" started.
+􀟈  Test "isModelReady 未知模型应返回 false" started.
+􀟈  Test "roles(for:) 应返回模型的所有角色" started.
+􀟈  Test "availableModels 应只返回可用模型" started.
+􀟈  Test "RecordingMode 应有正确的 displayName" started.
+􀟈  Test "downloadState 内置模型应为 notNeeded" started.
+􀟈  Test "updateSettings 不同模型设置应独立" started.
+􀟈  Test "canSetRole 应检查流式支持" started.
+􀟈  Test "screenshotShortcutDisplayString 应返回可读字符串" started.
+􀟈  Test "getProviderConfiguration 应根据模型能力调整" started.
+􀟈  Test "RecordingMode.id 应返回 rawValue" started.
+􀟈  Test "selectModel 应忽略未知模型 ID" started.
+􀟈  Test "selectedModel 应返回当前选中模型定义" started.
+􀟈  Test "setModelRole 应正确设置转录角色" started.
+􀟈  Test "allModels 应返回所有已定义模型" started.
+􀟈  Test "快速切换入口不会产生回调污染" started.
+􀟈  Test "selectModel 应更新 selectedModelId" started.
+􀟈  Test "getProviderConfiguration 应返回正确配置" started.
+􀟈  Test "setModelRole 应正确设置实时字幕角色" started.
+􀟈  Test "setPrecompiledLMEnabled 应更新预编译 LM 开关" started.
+􀟈  Test "isModelReady 内置模型应始终就绪" started.
+􀟈  Test "shared 单例应存在且始终一致" started.
+􀟈  Test "Recording 与 QuickAsk 会话回调应隔离" started.
+􀟈  Test "通知名称应正确定义" started.
+􀟈  Test "初始化时应生成唯一 ID" started.
+􀟈  Test "初始化时应自动去除首尾空白" started.
+􀟈  Test "初始化时应设置创建时间" started.
+􀟈  Test "相同内容的 VocabularyItem 应该相等" started.
+􁁛  Test "默认设置应使用默认模型 ID" passed after 0.002 seconds.
+􁁛  Test "allCases 应包含所有角色" passed after 0.002 seconds.
+􁁛  Test "UI 属性应返回有效值" passed after 0.002 seconds.
+􁁛  Test "settings(for:) 应为未知模型返回默认值" passed after 0.002 seconds.
+􁁛  Test "默认模型 ID 应存在于模型列表中" passed after 0.002 seconds.
+􁁛  Test "rawValue 应正确映射" passed after 0.002 seconds.
+􁁛  Test "needsLanguageSelection 应正确判断" passed after 0.002 seconds.
+􁁛  Test "sizeString 应正确格式化大小" passed after 0.002 seconds.
+􁁛  Test "评级 rawValue 应正确映射" passed after 0.002 seconds.
+􁁛  Test "find(by:) 应正确查找模型" passed after 0.002 seconds.
+􁁛  Test "liveCaptionShortcutDidChangeNotification 应正确定义" passed after 0.002 seconds.
+􁁛  Test "screenshotShortcutDidChangeNotification 应正确定义" passed after 0.002 seconds.
+􁁛  Test "settings(for:) 应为已知模型返回正确默认值" passed after 0.002 seconds.
+􁁛  Test "isReady 应正确判断就绪状态" passed after 0.002 seconds.
+􁁛  Test "format 应正确格式化 Control 键" passed after 0.002 seconds.
+􁁛  Test "所有模型定义应有唯一 ID" passed after 0.002 seconds.
+􁁛  Test "shortcutDidChangeNotification 应正确定义" passed after 0.002 seconds.
+􁁛  Test "keyCodeToString 应正确转换特殊键" passed after 0.002 seconds.
+􁁛  Test "format 应正确格式化单个修饰键" passed after 0.002 seconds.
+􁁛  Test "keyCodeToString 应正确转换功能键" passed after 0.002 seconds.
+􁁛  Test "vocabularyChanged 通知名称应正确定义" passed after 0.002 seconds.
+􁁛  Test "tagDeleted 通知名称应正确定义" passed after 0.002 seconds.
+􁁛  Test "keyCodeToString 应正确转换数字键" passed after 0.002 seconds.
+􁁛  Test "messagePanelShortcutDidChangeNotification 应正确定义" passed after 0.002 seconds.
+􁁛  Test "keyCodeToString 对未知 keyCode 应返回 nil" passed after 0.002 seconds.
+􁁛  Test "keyCodeToString 应正确转换字母键" passed after 0.002 seconds.
+􁁛  Test "quickAskShortcutDidChangeNotification 应正确定义" passed after 0.002 seconds.
+􁁛  Test "初始化时应设置默认颜色" passed after 0.002 seconds.
+􁁛  Test "keyCodeToString 应正确转换方向键" passed after 0.002 seconds.
+􁁛  Test "初始化时应生成唯一 ID" passed after 0.002 seconds.
+􁁛  Test "配置应正确初始化" passed after 0.002 seconds.
+􁁛  Test "format 应正确格式化多个修饰键" passed after 0.002 seconds.
+􁁛  Test "初始化时可以指定颜色" passed after 0.002 seconds.
+􁁛  Test "通知名称应正确定义" passed after 0.001 seconds.
+􁁛  Test "相同内容的 VocabularyItem 应该相等" passed after 0.001 seconds.
+􁁛  Test "初始化时应设置创建时间" passed after 0.001 seconds.
+􁁛  Suite "TranscriptionModelDefinition 测试" passed after 0.003 seconds.
+􁁛  Suite "TranscriptionModelUserSettings 测试" passed after 0.003 seconds.
+􁁛  Suite "TranscriptionRating 测试" passed after 0.003 seconds.
+􁁛  Suite "AppSettings 通知测试" passed after 0.003 seconds.
+􁁛  Suite "ModelDownloadState 测试" passed after 0.003 seconds.
+􁁛  Suite "TagLibrary 通知测试" passed after 0.003 seconds.
+􁁛  Suite "TranscriptionProviderConfig 测试" passed after 0.003 seconds.
+􁁛  Suite "KeyComboFormatter 测试" passed after 0.003 seconds.
+􁁛  Suite "Transcription 通知测试" passed after 0.003 seconds.
+􁁛  Suite "TranscriptionModelRole 测试" passed after 0.004 seconds.
+􁁛  Suite "CardTag 测试" passed after 0.003 seconds.
+􁁛  Suite "VocabularyService 通知测试" passed after 0.003 seconds.
+􁁛  Test "初始化时应自动去除首尾空白" passed after 0.001 seconds.
+􁁛  Test "初始化时应生成唯一 ID" passed after 0.001 seconds.
+􁁛  Suite "VocabularyItem 测试" passed after 0.003 seconds.
+􁁛  Test "updateTagColor 应更新标签颜色" passed after 0.075 seconds.
+􁁛  Test "tags(for:) 应根据 ID 列表返回标签（保持顺序）" passed after 0.075 seconds.
+􁁛  Test "deleteTag 对不存在的 ID 应无副作用" passed after 0.075 seconds.
+􁁛  Test "创建重复名称标签应返回已存在的标签" passed after 0.075 seconds.
+􁁛  Test "创建标签应返回新标签" passed after 0.075 seconds.
+􁁛  Test "search 空字符串应返回所有标签" passed after 0.075 seconds.
+􁁛  Test "markAsRecentlyUsed 应将标签移到最前面" passed after 0.075 seconds.
+􁁛  Test "删除不存在的 ID 应无副作用" passed after 0.075 seconds.
+􁁛  Test "新添加的生词应在列表最前面" passed after 0.075 seconds.
+􁁛  Test "markAsRecentlyUsed 应将标签添加到最近使用" passed after 0.075 seconds.
+􁁛  Test "markVocabulary 应支持自定义模板" passed after 0.075 seconds.
+􁁛  Test "创建空名称标签应返回默认名称" passed after 0.075 seconds.
+􁁛  Test "tag(for:) 对不存在的 ID 应返回 nil" passed after 0.075 seconds.
+􁁛  Test "创建标签时应自动去除首尾空白" passed after 0.075 seconds.
+􁁛  Test "添加重复生词应返回 nil（忽略大小写）" passed after 0.075 seconds.
+􁁛  Test "shared 单例应存在且始终一致" passed after 0.075 seconds.
+􁁛  Test "contains 对不存在的词应返回 false" passed after 0.075 seconds.
+􁁛  Test "markVocabulary 应用默认模板标记生词" passed after 0.075 seconds.
+􁁛  Test "shared 单例应存在且始终一致" passed after 0.075 seconds.
+􁁛  Test "updateTagName 应更新标签名称" passed after 0.075 seconds.
+􁁛  Test "clearAll 应清空所有生词" passed after 0.075 seconds.
+􁁛  Test "tag(for:) 应根据 ID 返回标签" passed after 0.075 seconds.
+􁁛  Test "search 应支持前缀匹配" passed after 0.075 seconds.
+􁁛  Test "historyKeepDays 默认应为 30" passed after 0.075 seconds.
+􁁛  Test "deleteTag 应删除标签" passed after 0.075 seconds.
+􁁛  Test "tag(named:) 应根据名称返回标签（忽略大小写）" passed after 0.075 seconds.
+􁁛  Test "updateShortcut 应更新快捷键设置" passed after 0.075 seconds.
+􁁛  Test "shared 单例应存在且始终一致" passed after 0.075 seconds.
+􁁛  Test "updateQuickAskShortcut 应更新 Quick Ask 快捷键" passed after 0.075 seconds.
+􁁛  Test "添加纯空白字符串应返回 nil" passed after 0.075 seconds.
+􁁛  Test "添加有效生词应返回新条目" passed after 0.075 seconds.
+􁁛  Test "创建标签时可以指定颜色" passed after 0.075 seconds.
+􁁛  Test "getAllWords 应返回所有词的小写版本" passed after 0.075 seconds.
+􁁛  Test "playSoundEffect 默认应为 true" passed after 0.075 seconds.
+􁁛  Test "highlightRanges 应找到生词的位置" passed after 0.075 seconds.
+􁁛  Test "pressEscToCancel 默认应为 true" passed after 0.075 seconds.
+􁁛  Test "highlightRanges 无匹配时应返回空数组" passed after 0.075 seconds.
+􁁛  Test "contains 应忽略大小写" passed after 0.075 seconds.
+􁁛  Test "messagePanelShortcutDisplayString 应返回可读字符串" passed after 0.075 seconds.
+􁁛  Test "realtimeTypingEnabled 默认应为 false" passed after 0.075 seconds.
+􁁛  Test "RecordingMode.allCases 应包含所有模式" passed after 0.075 seconds.
+􁁛  Test "RecordingMode 应有正确的 rawValue" passed after 0.075 seconds.
+􁁛  Test "historyMaxCount 默认应为 500" passed after 0.075 seconds.
+􁁛  Test "roles(for:) 应返回模型的所有角色" passed after 0.075 seconds.
+􁁛  Test "clipboardHistoryLimit 默认应为 30" passed after 0.075 seconds.
+􁁛  Test "updateSettings 不同模型设置应独立" passed after 0.075 seconds.
+􁁛  Test "shortcutDisplayString 应返回可读字符串" passed after 0.075 seconds.
+􁁛  Test "liveCaptionShortcutDisplayString 应返回可读字符串" passed after 0.075 seconds.
+􁁛  Test "getProviderConfiguration 应根据模型能力调整" passed after 0.075 seconds.
+􁁛  Test "isModelReady 未知模型应返回 false" passed after 0.075 seconds.
+􁁛  Test "downloadState 内置模型应为 notNeeded" passed after 0.075 seconds.
+􁁛  Test "RecordingMode.id 应返回 rawValue" passed after 0.075 seconds.
+􁁛  Test "screenshotShortcutDisplayString 应返回可读字符串" passed after 0.075 seconds.
+􁁛  Test "canSetRole 应检查流式支持" passed after 0.075 seconds.
+􁁛  Test "allModels 应返回所有已定义模型" passed after 0.075 seconds.
+􁁛  Test "快速切换入口不会产生回调污染" passed after 0.075 seconds.
+􁁛  Test "getProviderConfiguration 应返回正确配置" passed after 0.075 seconds.
+􁁛  Test "selectModel 应更新 selectedModelId" passed after 0.075 seconds.
+􁁛  Test "RecordingMode 应有正确的 displayName" passed after 0.075 seconds.
+􁁛  Test "setModelRole 应正确设置转录角色" passed after 0.075 seconds.
+􁁛  Test "shared 单例应存在且始终一致" passed after 0.074 seconds.
+􁁛  Test "isModelReady 内置模型应始终就绪" passed after 0.075 seconds.
+􁁛  Test "Recording 与 QuickAsk 会话回调应隔离" passed after 0.074 seconds.
+􁁛  Test "quickAskShortcutDisplayString 应返回可读字符串" passed after 0.075 seconds.
+􁁛  Test "setModelRole 应正确设置实时字幕角色" passed after 0.075 seconds.
+􁁛  Test "添加空字符串应返回 nil" passed after 0.075 seconds.
+􁁛  Suite "AudioCallbackRouter 回调隔离测试" passed after 0.076 seconds.
+􁁛  Test "setLocale 应更新当前模型的语言设置" passed after 0.075 seconds.
+􁁛  Suite "TagLibrary 测试" passed after 0.076 seconds.
+􁁛  Test "selectModel 应忽略未知模型 ID" passed after 0.075 seconds.
+􁁛  Suite "AppSettings 测试" passed after 0.076 seconds.
+􁁛  Test "删除存在的生词应成功" passed after 0.076 seconds.
+􁁛  Test "availableModels 应只返回可用模型" passed after 0.076 seconds.
+􁁛  Test "setPrecompiledLMEnabled 应更新预编译 LM 开关" passed after 0.076 seconds.
+􁁛  Test "selectedModel 应返回当前选中模型定义" passed after 0.076 seconds.
+􁁛  Suite "VocabularyService 测试" passed after 0.078 seconds.
+􁁛  Suite "TranscriptionModelManager 测试" passed after 0.077 seconds.
+􁁛  Test run with 110 tests in 18 suites passed after 0.078 seconds.

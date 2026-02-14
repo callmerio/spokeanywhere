@@ -96,7 +96,7 @@
       "verifyType": "script",
       "verifyScript": "swift test",
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
