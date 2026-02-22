@@ -46,10 +46,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let logger = Logger(subsystem: "com.spokeanywhere", category: "Launch")
         
         func logStep(_ name: String) {
-            #if DEBUG
-            let totalTime = (CFAbsoluteTimeGetCurrent() - launchStart) * 1000
-            logger.debug("\(name) [\(String(format: "%.0f", totalTime))ms]")
-            #endif
+            // 运行时开关：环境变量 SPOKE_STARTUP_LOG=1 或 AppSettings 开关
+            let envEnabled = ProcessInfo.processInfo.environment["SPOKE_STARTUP_LOG"] == "1"
+            let settingsEnabled = AppSettings.shared.startupDiagnosticsEnabled
+
+            if envEnabled || settingsEnabled {
+                let totalTime = (CFAbsoluteTimeGetCurrent() - launchStart) * 1000
+                logger.info("🚀 \(name) [\(String(format: "%.0f", totalTime))ms]")
+            }
         }
         
         logStep("Step 0: Installing crash logger...")
@@ -126,6 +130,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupDictionaryPanel()
         
         logStep("Step 12: Application launch complete! ✅")
+
+        if ProcessInfo.processInfo.environment["SPOKE_PERF_LOG"] == "1" {
+            let launchTotalMs = Int((CFAbsoluteTimeGetCurrent() - launchStart) * 1000)
+            print("PERF launch_total_ms=\(launchTotalMs)")
+        }
     }
     
     private func setupScreenshotService() {
@@ -145,8 +154,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return window
         }
         
-        // 恢复之前 Pinned 的截图
-        ScreenshotManager.shared.restoreAll()
+        // 异步恢复之前 Pinned 的截图，避免启动阶段主线程阻塞
+        Task(priority: .utility) { @MainActor [weak self] in
+            await ScreenshotManager.shared.restoreAll()
+            self?.logger.info("📸 [AppDelegate] Pinned screenshot restore finished")
+        }
         
         logger.info("📸 [AppDelegate] ✅ Screenshot service setup complete")
     }
@@ -280,9 +292,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Private
     
     private func checkAccessibilityPermission() {
-        let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true]
-        let trusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
-        
+        let trusted = MainActor.assumeIsolated {
+            AccessibilityHelper.requestAccessibilityPermission()
+        }
+
         if trusted {
             print("✅ Accessibility permission granted")
         } else {

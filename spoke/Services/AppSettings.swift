@@ -50,8 +50,9 @@ enum KeyComboFormatter {
     }
 }
 
+@MainActor
 class AppSettings: ObservableObject {
-    static let shared = AppSettings()
+    @MainActor static let shared = AppSettings()
     
     @AppStorage("StartAtLogin") var startAtLogin: Bool = false {
         didSet {
@@ -87,13 +88,19 @@ class AppSettings: ObservableObject {
     @AppStorage("RealtimeTypingEnabled") var realtimeTypingEnabled: Bool = false
     
     // MARK: - Clipboard History
-    
+
     /// 剪贴板历史作为 LLM 上下文（替代之前的「包含剪贴板内容」）
     @AppStorage("ClipboardHistoryEnabled") var clipboardHistoryEnabled: Bool = false
-    
+
     /// 剪贴板历史保存条数
     @AppStorage("ClipboardHistoryLimit") var clipboardHistoryLimit: Int = 30
-    
+
+    // MARK: - Diagnostics
+
+    /// 启动诊断日志开关（运行时控制）
+    /// 开启后会输出详细的启动步骤耗时和依赖初始化信息
+    @AppStorage("StartupDiagnosticsEnabled") var startupDiagnosticsEnabled: Bool = false
+
     // MARK: - History Cleanup
     
     /// 是否启用历史记录自动清理
