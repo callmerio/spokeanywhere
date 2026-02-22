@@ -87,6 +87,12 @@ final class FloatingHUDManager {
     }
     
     /// 处理失败
+    func fail(with error: Error) {
+        state.fail(with: error)
+        scheduleHide(after: 5.0) // 错误信息多留一会儿
+    }
+    
+    /// 处理失败 (兼容旧调用)
     func fail(with message: String) {
         state.fail(with: message)
         scheduleHide(after: 3.0)

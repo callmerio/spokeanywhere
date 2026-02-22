@@ -64,7 +64,7 @@ final class AttachmentManager: ObservableObject {
     /// - Parameters:
     ///   - providers: 拖拽的数据提供者
     ///   - onAdd: 添加附件的回调
-    func handleDrop(providers: [NSItemProvider], onAdd: @escaping (Attachment) -> Void) {
+    func handleDrop(providers: [NSItemProvider], onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         for provider in providers {
             logger.info("📥 Processing drop provider: \(provider.registeredTypeIdentifiers)")
             
@@ -121,7 +121,7 @@ final class AttachmentManager: ObservableObject {
     }
     
     /// 处理文件 URL（自动识别类型）
-    func handleFileURL(_ url: URL, source: AttachmentSource, onAdd: @escaping (Attachment) -> Void) async {
+    func handleFileURL(_ url: URL, source: AttachmentSource, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) async {
         // 确保是文件 URL
         let fileURL = url.isFileURL ? url : URL(fileURLWithPath: url.path)
         logger.info("🔍 Processing URL: \(fileURL.path)")
@@ -172,7 +172,7 @@ final class AttachmentManager: ObservableObject {
     // MARK: - Image Handling
     
     /// 添加图片附件（异步生成缩略图）
-    func addImage(_ image: NSImage, source: AttachmentSource, onAdd: @escaping (Attachment) -> Void) {
+    func addImage(_ image: NSImage, source: AttachmentSource, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         let id = UUID()
         let attachmentType: Attachment = source == .screenshot
             ? .screenshot(image, nil, id)
@@ -200,14 +200,14 @@ final class AttachmentManager: ObservableObject {
     }
     
     /// 添加截图
-    func addScreenshot(_ image: NSImage, onAdd: @escaping (Attachment) -> Void) {
+    func addScreenshot(_ image: NSImage, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         addImage(image, source: .screenshot, onAdd: onAdd)
     }
     
     // MARK: - File Handling
     
     /// 添加普通文件
-    func addFile(_ url: URL, onAdd: @escaping (Attachment) -> Void) {
+    func addFile(_ url: URL, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         let attachment = Attachment.file(url, UUID())
         onAdd(attachment)
     }
@@ -215,18 +215,20 @@ final class AttachmentManager: ObservableObject {
     // MARK: - Folder Handling
     
     /// 处理文件夹（提取文本）
-    func handleFolder(_ url: URL, onAdd: @escaping (Attachment) -> Void) async {
+    func handleFolder(_ url: URL, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) async {
         logger.info("📂 Processing folder: \(url.lastPathComponent)")
         
         // 显示初始状态
         processingState = .processing(current: 0, total: 1, fileName: url.lastPathComponent)
         
         let result = await textExtractor.extractFromFolder(url) { [weak self] progress in
-            self?.processingState = .processing(
-                current: progress.current,
-                total: progress.total,
-                fileName: progress.currentFile
-            )
+            Task { @MainActor in
+                self?.processingState = .processing(
+                    current: progress.current,
+                    total: progress.total,
+                    fileName: progress.currentFile
+                )
+            }
         }
         
         // 恢复空闲状态
@@ -251,7 +253,7 @@ final class AttachmentManager: ObservableObject {
     // MARK: - ZIP Handling
     
     /// 处理 ZIP 文件（解压并提取文本）
-    func handleZIP(_ url: URL, onAdd: @escaping (Attachment) -> Void) async {
+    func handleZIP(_ url: URL, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) async {
         logger.info("📦 Processing ZIP: \(url.lastPathComponent)")
         
         // 显示解压状态
@@ -281,7 +283,7 @@ final class AttachmentManager: ObservableObject {
     // MARK: - Picker Actions
     
     /// 打开文件选择器（从设备上传）
-    func pickFiles(onAdd: @escaping (Attachment) -> Void) {
+    func pickFiles(onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
@@ -298,7 +300,7 @@ final class AttachmentManager: ObservableObject {
     }
     
     /// 打开文件夹选择器
-    func pickFolder(onAdd: @escaping (Attachment) -> Void) {
+    func pickFolder(onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = true
@@ -313,7 +315,7 @@ final class AttachmentManager: ObservableObject {
     }
     
     /// 打开 ZIP 选择器
-    func pickZIP(onAdd: @escaping (Attachment) -> Void) {
+    func pickZIP(onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -331,7 +333,7 @@ final class AttachmentManager: ObservableObject {
     // MARK: - Screenshot
     
     /// 截取当前屏幕
-    func captureScreen(onAdd: @escaping (Attachment) -> Void) {
+    func captureScreen(onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         Task {
             if let image = await screenCapture.captureCurrentScreen() {
                 addScreenshot(image, onAdd: onAdd)
@@ -342,7 +344,7 @@ final class AttachmentManager: ObservableObject {
     // MARK: - Photos Library
     
     /// 打开图库选择器
-    func pickFromPhotos(onAdd: @escaping (Attachment) -> Void) {
+    func pickFromPhotos(onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         // 使用 NSOpenPanel 打开 Pictures 目录作为临时方案
         // 后续可以集成 PHPickerViewController
         let panel = NSOpenPanel()

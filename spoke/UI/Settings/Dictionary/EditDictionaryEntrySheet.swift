@@ -334,19 +334,24 @@ struct TrainingPhraseCard: View {
     private func buildHighlightedText() -> Text {
         var result = Text("")
         let components = splitByTargetWord()
-        
+
         for component in components {
             if component.isTarget {
-                // 目标词：金黄色背景
-                var attributed = AttributedString(component.text)
-                attributed.backgroundColor = highlightColor
-                attributed.foregroundColor = DS.Colors.textPrimary
-                result = result + Text(attributed)  // swiftlint:disable:this shorthand_operator
+                // 目标词：金黄色背景 - 使用 AppKit 路径避免 SwiftUI keypath 警告
+                let nsAttributed = NSMutableAttributedString(string: component.text)
+                let range = NSRange(location: 0, length: nsAttributed.length)
+                nsAttributed.addAttribute(.backgroundColor, value: NSColor(highlightColor), range: range)
+                nsAttributed.addAttribute(.foregroundColor, value: NSColor(DS.Colors.textPrimary), range: range)
+
+                // 桥接回 AttributedString
+                if let attributed = try? AttributedString(nsAttributed, including: \.appKit) {
+                    result = result + Text(attributed)  // swiftlint:disable:this shorthand_operator
+                }
             } else {
                 result = result + Text(component.text)  // swiftlint:disable:this shorthand_operator
             }
         }
-        
+
         return result
     }
     

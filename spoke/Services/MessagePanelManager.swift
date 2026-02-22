@@ -47,12 +47,13 @@ final class MessagePanelManager {
     /// 隐藏面板
     func hide() {
         state.hide()
-        
-        // 动画结束后隐藏窗口
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+
+        // 动画结束后隐藏窗口 (使用 async/await 替代 DispatchQueue)
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
             self?.panel?.orderOut(nil)
         }
-        
+
         logger.info("📋 Message Panel hidden")
     }
     

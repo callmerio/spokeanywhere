@@ -113,3 +113,56 @@ jobs:
           name: test-logs
           path: spoke/ci-logs/test.log
           retention-days: 7
+
+  concurrency-gate:
+    name: Concurrency Gate
+    runs-on: macos-14
+    needs: [build-gate, test-gate]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.4"
+
+      - name: Resolve Dependencies
+        working-directory: spoke
+        run: |
+          swift package resolve
+
+      - name: Run Strict Concurrency Check
+        working-directory: spoke
+        run: |
+          set -o pipefail
+          mkdir -p ci-logs
+          if ! ./Tests/run-concurrency-check.sh 2>&1 | tee ci-logs/concurrency.log; then
+            echo "::group::Concurrency Check Failure (tail -200)"
+            tail -n 200 ci-logs/concurrency.log || true
+            echo "::endgroup::"
+            {
+              echo "### ❌ Concurrency Gate Failed"
+              echo ""
+              echo "- Category: \`concurrency\`"
+              echo "- Command: \`./Tests/run-concurrency-check.sh\`"
+              echo "- Action: review strict concurrency warnings in \`ci-logs/concurrency.log\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo "### ✅ Concurrency Gate Passed"
+            echo ""
+            echo "- Category: \`concurrency\`"
+            echo "- Command: \`./Tests/run-concurrency-check.sh\`"
+            echo "- Details: Zero strict concurrency warnings detected"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Concurrency Check Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: concurrency-logs
+          path: spoke/ci-logs/concurrency.log
+          retention-days: 7

@@ -12,8 +12,8 @@ final class MessagePanelHoverState: ObservableObject {
     /// 鼠标是否在 Panel 区域内
     @Published var isMouseInPanel: Bool = false
     
-    private var localMonitor: Any?
-    private var globalMonitor: Any?
+    nonisolated(unsafe) private var localMonitor: Any?
+    nonisolated(unsafe) private var globalMonitor: Any?
     
     private init() {
         setupKeyboardMonitor()

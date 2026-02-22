@@ -17,10 +17,10 @@ enum UpscalingMode: String, CaseIterable, Codable {
     }
 }
 
+@MainActor
 final class ScreenshotSettings: ObservableObject {
     
-    static let shared = ScreenshotSettings()
-    
+    @MainActor static let shared = ScreenshotSettings()
     @Published var upscalingMode: UpscalingMode {
         didSet {
             UserDefaults.standard.set(upscalingMode.rawValue, forKey: "Screenshot.UpscalingMode")

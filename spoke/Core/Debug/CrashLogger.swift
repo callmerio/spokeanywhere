@@ -3,29 +3,35 @@ import os
 
 /// 崩溃日志记录器
 /// 捕获未处理的异常和信号，写入日志文件
+@MainActor
 final class CrashLogger {
-    static let shared = CrashLogger()
-    
+    @MainActor static let shared = CrashLogger()
+
+    /// 信号专用引用（用于 C signal handler 访问）
+    nonisolated(unsafe) fileprivate static var signalLogger: CrashLogger?
+
     private let logger = Logger(subsystem: "app.spokenly", category: "CrashLogger")
     private var logFileHandle: FileHandle?
-    
+
     /// 日志文件路径
-    private var logFileURL: URL {
+    nonisolated private var logFileURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
         let crashDir = spokeDir.appendingPathComponent("crashes", isDirectory: true)
-        
+
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         let timestamp = formatter.string(from: Date())
-        
+
         return crashDir.appendingPathComponent("crash-\(timestamp).log")
     }
-    
+
     private init() {}
-    
+
     /// 安装崩溃处理器
     func install() {
+        // 设置信号专用引用
+        CrashLogger.signalLogger = self
         // 1. 捕获 NSException
         NSSetUncaughtExceptionHandler { exception in
             CrashLogger.shared.logException(exception)
@@ -65,7 +71,7 @@ final class CrashLogger {
     }
     
     /// 记录信号
-    fileprivate func logSignal(_ signal: Int32, name: String) {
+    nonisolated fileprivate func logSignal(_ signal: Int32, name: String) {
         let crashInfo = """
         ========================================
         SIGNAL CRASH
@@ -83,7 +89,7 @@ final class CrashLogger {
     }
     
     /// 写入文件
-    private func writeToFile(_ content: String) {
+    nonisolated private func writeToFile(_ content: String) {
         do {
             // 确保目录存在
             let dir = logFileURL.deletingLastPathComponent()
@@ -121,9 +127,9 @@ private func handleSignal(_ signal: Int32) {
     case SIGTRAP: signalName = "SIGTRAP (Trace/Breakpoint)"
     default: signalName = "UNKNOWN"
     }
-    
-    CrashLogger.shared.logSignal(signal, name: signalName)
-    
+
+    CrashLogger.signalLogger?.logSignal(signal, name: signalName)
+
     // 恢复默认处理器并重新触发信号
     Darwin.signal(signal, SIG_DFL)
     raise(signal)

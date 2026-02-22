@@ -128,17 +128,15 @@ final class SelectionToolbarManager {
     
     /// 开始轮询检查权限状态
     private func startPermissionPolling() {
-        // 每秒检查一次权限，授权后自动启动
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            Task { @MainActor in
-                guard let self = self else {
-                    timer.invalidate()
-                    return
-                }
+        // 使用 Task 轮询检查权限，授权后自动启动
+        Task {
+            while !Task.isCancelled {
+                // 每秒检查一次
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 
                 if self.selectionMonitor.isAccessibilityEnabled {
-                    timer.invalidate()
                     self.selectionMonitor.startMonitoring()
+                    break
                 }
             }
         }

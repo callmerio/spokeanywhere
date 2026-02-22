@@ -8,7 +8,7 @@ import SwiftUI
 /// 使用 class + ObservableObject 实现独立的状态发布
 /// 当 translation 更新时，只有订阅该 item 的视图会收到通知
 /// 而不会触发整个 ForEach 列表的重新布局
-final class CaptionItem: ObservableObject, Identifiable, Equatable {
+final class CaptionItem: ObservableObject, Identifiable, Equatable, @unchecked Sendable {
     let id: UUID
     let original: String
     

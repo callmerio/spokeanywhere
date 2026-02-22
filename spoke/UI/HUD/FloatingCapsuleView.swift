@@ -12,6 +12,7 @@ struct FloatingCapsuleView: View {
     @State private var isHoveringCancel = false
     @State private var contentHeight: CGFloat = 0
     @State private var textContentHeight: CGFloat = 0
+    @State private var pendingAutoScrollWorkItem: DispatchWorkItem?
     
     /// 文字区域最大高度（窗口高度 - controlBar高度 - padding）
     private let maxTextAreaHeight: CGFloat = 220
@@ -172,7 +173,60 @@ struct FloatingCapsuleView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 4) {
                     // 转写文字（最新的在底部，可滚动）
-                    if !state.partialText.isEmpty {
+                    if case .failure(let message, let reason, let suggestion) = state.phase {
+                        VStack(alignment: .leading, spacing: 12) {
+                            // 即使 AI 失败，如果已经有转写文本，也显示出来
+                            if !state.partialText.isEmpty {
+                                Text(state.partialText)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(DS.Colors.textSecondary)
+                                    .lineSpacing(4)
+                                    .italic()
+                                
+                                Divider()
+                                    .background(DS.Colors.borderPrimary.opacity(0.2))
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(alignment: .top, spacing: 8) {
+                                                                    Image(systemName: "exclamationmark.triangle.fill")
+                                                                        .foregroundStyle(DS.Colors.error)
+                                                                        .font(.system(size: 14))
+                                                                        VStack(alignment: .leading, spacing: 4) {
+                                        Text(message)
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundStyle(DS.Colors.textPrimary)
+                                        
+                                        if let reason = reason {
+                                            Text(reason)
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(DS.Colors.textSecondary)
+                                        }
+                                    }
+                                }
+                                
+                                                            if let suggestion = suggestion {
+                                
+                                                                Text(suggestion)
+                                
+                                                                    .font(.system(size: 12))
+                                
+                                                                    .padding(.vertical, 4)
+                                
+                                                                    .padding(.horizontal, 8)
+                                
+                                                                    .background(DS.Colors.accentInfo.opacity(0.1))
+                                
+                                                                    .foregroundStyle(DS.Colors.accentInfo)
+                                
+                                                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                
+                                                            }
+                                
+                                
+                            }
+                        }
+                    } else if !state.partialText.isEmpty {
                         Text(state.partialText)
                             .font(.system(size: 14))
                             .foregroundStyle(DS.Colors.textPrimary)
@@ -235,10 +289,17 @@ struct FloatingCapsuleView: View {
                 textContentHeight = height
             }
             .onChange(of: state.partialText) { _, _ in
-                // 内容变化时自动滚动到底部
-                withAnimation(.easeOut(duration: 0.15)) {
+                // 高频流式文本更新时做短防抖，避免同帧触发多次滚动导致 SwiftUI 警告
+                pendingAutoScrollWorkItem?.cancel()
+                let workItem = DispatchWorkItem {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
+                pendingAutoScrollWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: workItem)
+            }
+            .onDisappear {
+                pendingAutoScrollWorkItem?.cancel()
+                pendingAutoScrollWorkItem = nil
             }
         }
         // 🔑 关键：动态高度 - 内容少时自适应，超出时固定在 maxHeight
@@ -278,6 +339,11 @@ struct FloatingCapsuleView: View {
                 // 思考中/成功：显示状态指示器 (Spinner -> Checkmark)
                 StatusIndicator(isThinking: state.phase == .thinking)
                     .frame(width: 20, height: 20)
+            } else if case .failure = state.phase {
+                // 失败：显示红色警告图标
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundStyle(DS.Colors.error)
+                    .font(.system(size: 16))
             }
             
             Spacer()
@@ -665,7 +731,7 @@ struct RunningLightBorder: View {
 
 /// 用于检测内容高度的 PreferenceKey
 private struct ContentHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+    static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
     }
@@ -673,7 +739,7 @@ private struct ContentHeightKey: PreferenceKey {
 
 /// 用于检测文字区域内容高度的 PreferenceKey
 private struct TextContentHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+    static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
     }

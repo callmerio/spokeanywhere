@@ -172,8 +172,9 @@ final class InputService {
     
     /// 请求辅助功能权限
     static func requestAccessibilityPermission() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
+        MainActor.assumeIsolated {
+            _ = AccessibilityHelper.requestAccessibilityPermission()
+        }
     }
     
     // MARK: - Private

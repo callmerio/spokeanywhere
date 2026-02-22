@@ -45,10 +45,10 @@ struct DefinitionExample: Identifiable {
 
 // MARK: - Dictionary Definition Parser
 
-final class DictionaryDefinitionParser {
-    
+final class DictionaryDefinitionParser: Sendable {
+
     static let shared = DictionaryDefinitionParser()
-    
+
     private init() {}
     
     /// 解析词典定义

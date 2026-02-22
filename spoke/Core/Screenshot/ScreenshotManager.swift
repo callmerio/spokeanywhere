@@ -15,9 +15,26 @@ final class ScreenshotManager {
     static let shared = ScreenshotManager()
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenshotManager")
-    
+
+    // MARK: - Diagnostic Counters (R2-2)
+
+    /// 截图捕获开始时间（用于计算端到端延迟）
+    private var captureStartTime: CFAbsoluteTime = 0
+
+    /// 最近一次截图的增强路径（none/basic/ai-fallback）
+    private var lastEnhancementPath: String = "none"
+
+    /// saveAll 写入耗时累积（用于计算 P95）
+    private var saveAllWriteTimes: [Double] = []
+
+    /// 覆盖标志：是否触发过 saveAll 路径
+    private var coverageSaveAll: Bool = false
+
+    /// 覆盖标志：是否触发过 blur 路径（由 ScreenCaptureBlurService 设置）
+    private var coverageBlur: Bool = false
+
     // MARK: - Properties
-    
+
     /// 所有截图项
     private(set) var items: [ScreenshotItem] = []
     
@@ -31,17 +48,26 @@ final class ScreenshotManager {
     var windowFactory: ((ScreenshotItem) -> NSPanel)?
     
     // MARK: - Storage
+
+    private var screenshotRootDirectory: URL {
+        if let override = ProcessInfo.processInfo.environment["SPOKE_SCREENSHOT_BASE_DIR"], !override.isEmpty {
+            return URL(fileURLWithPath: override, isDirectory: true)
+        }
+
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        return appSupport.appendingPathComponent("Spoke", isDirectory: true)
+    }
     
     private var screenshotsDirectory: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("Spoke/Screenshots", isDirectory: true)
+        let dir = screenshotRootDirectory.appendingPathComponent("Screenshots", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
     
     private var storageURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return appSupport.appendingPathComponent("Spoke/screenshot_items.json")
+        let dir = screenshotRootDirectory
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("screenshot_items.json")
     }
     
     // MARK: - Init
@@ -54,6 +80,29 @@ final class ScreenshotManager {
     /// 使用自建选区 UI，精确获取选区坐标
     /// 再次触发时取消当前截图（toggle 行为）
     func captureRegion() async {
+        // R2-2: 重置本轮诊断状态
+        captureStartTime = CFAbsoluteTimeGetCurrent()
+        saveAllWriteTimes.removeAll()
+        coverageSaveAll = false
+        coverageBlur = false
+
+        // R2-2: 记录增强路径（基于当前设置）
+        let upscalingMode = ScreenshotSettings.shared.upscalingMode
+        switch upscalingMode {
+        case .none:
+            lastEnhancementPath = "none"
+        case .basic:
+            lastEnhancementPath = "basic"
+        case .ai:
+            // AI 当前应急禁用，会回退到 basic
+            lastEnhancementPath = "ai-fallback"
+        }
+
+        // 重置 blur service 诊断计数器
+        if #available(macOS 12.3, *) {
+            ScreenCaptureBlurService.shared.resetDiagnostics()
+        }
+
         logger.info("📸 [ScreenshotManager] captureRegion triggered")
         
         // 如果已有活跃的选区窗口，取消它（toggle 行为）
@@ -105,7 +154,7 @@ final class ScreenshotManager {
         let itemId = UUID()
         let imagePath = screenshotsDirectory.appendingPathComponent("\(itemId.uuidString).png")
         
-        guard saveImage(croppedImage, to: imagePath) else {
+        guard await saveImage(croppedImage, to: imagePath) else {
             logger.error("❌ [ScreenshotManager] Failed to save image")
             return
         }
@@ -154,8 +203,38 @@ final class ScreenshotManager {
         if confirmMode == .pin {
             saveAll()
         }
-        
-        logger.info("✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode)): \(itemId)")
+
+        // R2-2: 计算并记录所有诊断指标
+        let captureLatencyMs = (CFAbsoluteTimeGetCurrent() - self.captureStartTime) * 1000
+
+        // 收集 saveAll 写入耗时 (P95)
+        let saveAllWriteP95: Double
+        if !self.saveAllWriteTimes.isEmpty {
+            let sorted = self.saveAllWriteTimes.sorted()
+            let p95Index = Int(Double(sorted.count) * 0.95)
+            saveAllWriteP95 = sorted[min(p95Index, sorted.count - 1)]
+        } else {
+            saveAllWriteP95 = 0
+        }
+
+        // 收集 blur 主线程派发耗时 (P95)
+        let blurMainDispatchP95: Double
+        if #available(macOS 12.3, *) {
+            blurMainDispatchP95 = ScreenCaptureBlurService.shared.getBlurMainDispatchP95()
+            self.coverageBlur = ScreenCaptureBlurService.shared.coverageBlur
+        } else {
+            blurMainDispatchP95 = 0
+        }
+
+        logger.info("""
+            ✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode)): \(itemId) \
+            [capture_latency: \(String(format: "%.0f", captureLatencyMs))ms, \
+            enhancement_path: \(self.lastEnhancementPath), \
+            save_all_write_p95: \(String(format: "%.1f", saveAllWriteP95))ms, \
+            blur_main_dispatch_p95: \(String(format: "%.1f", blurMainDispatchP95))ms, \
+            coverage_saveall: \(self.coverageSaveAll ? 1 : 0), \
+            coverage_blur: \(self.coverageBlur ? 1 : 0)]
+            """)
     }
     
     /// 显示选区 UI 并等待用户选择
@@ -172,14 +251,12 @@ final class ScreenshotManager {
             self.activeSelectionWindow = selectionWindow
 
             // 异步获取截图并更新背景
-            Task.detached(priority: .userInitiated) {
+            Task(priority: .userInitiated) {
                 logger.info("📸 [ScreenshotManager] Starting async screen capture...")
                 if let image = await ScreenCaptureService.shared.captureScreen(screen) {
-                    await MainActor.run {
-                        logger.info("✅ [ScreenshotManager] Async capture complete, updating UI")
-                        if selectionWindow.isVisible {
-                            selectionWindow.setBackgroundImage(image)
-                        }
+                    logger.info("✅ [ScreenshotManager] Async capture complete, updating UI")
+                    if selectionWindow.isVisible {
+                        selectionWindow.setBackgroundImage(image)
                     }
                 } else {
                      logger.error("❌ [ScreenshotManager] Async capture failed")
@@ -334,44 +411,78 @@ final class ScreenshotManager {
     /// 保存所有 Pinned 截图
     func saveAll() {
         let pinnedItems = items.filter { $0.isPinned }
-        
+
+        // R2-2: 测量写入耗时
+        let writeStart = CFAbsoluteTimeGetCurrent()
+
         do {
             let data = try JSONEncoder().encode(pinnedItems)
             try data.write(to: storageURL)
-            logger.info("💾 [ScreenshotManager] Saved \(pinnedItems.count) pinned items")
+
+            // R2-2: 记录写入耗时
+            let writeMs = (CFAbsoluteTimeGetCurrent() - writeStart) * 1000
+            self.saveAllWriteTimes.append(writeMs)
+            self.coverageSaveAll = true
+
+            logger.info("💾 [ScreenshotManager] Saved \(pinnedItems.count) pinned items [write_ms: \(String(format: "%.1f", writeMs))]")
         } catch {
             logger.error("❌ [ScreenshotManager] Save failed: \(error.localizedDescription)")
         }
     }
     
     /// 恢复所有 Pinned 截图（App 启动时调用）
-    func restoreAll() {
+    func restoreAll() async {
+        let restoreStart = CFAbsoluteTimeGetCurrent()
+        var decodeDurationMs = 0
+        var uiDurationMs = 0
+
         guard FileManager.default.fileExists(atPath: storageURL.path) else {
             logger.info("📂 [ScreenshotManager] No saved items to restore")
             return
         }
-        
+
+        // 后台读取和解码，避免阻塞主线程
+        let savedItems: [ScreenshotItem]
         do {
-            let data = try Data(contentsOf: storageURL)
-            let savedItems = try JSONDecoder().decode([ScreenshotItem].self, from: data)
-            
-            for item in savedItems {
-                // 验证图片文件存在
-                guard FileManager.default.fileExists(atPath: item.imagePath) else {
-                    logger.warning("⚠️ [ScreenshotManager] Image not found: \(item.imagePath)")
-                    continue
-                }
-                
-                // 恢复到正确的显示器
-                adjustFrameToScreen(for: item)
-                
-                items.append(item)
-                showWindow(for: item)
-            }
-            
-            logger.info("✅ [ScreenshotManager] Restored \(savedItems.count) items")
+            let restoreURL = storageURL
+            let decodeStart = CFAbsoluteTimeGetCurrent()
+            savedItems = try await Task.detached(priority: .utility) {
+                let data = try Data(contentsOf: restoreURL)
+                return try JSONDecoder().decode([ScreenshotItem].self, from: data)
+            }.value
+            decodeDurationMs = Int((CFAbsoluteTimeGetCurrent() - decodeStart) * 1000)
         } catch {
             logger.error("❌ [ScreenshotManager] Restore failed: \(error.localizedDescription)")
+            return
+        }
+
+        // 回到主线程创建窗口
+        var restoredCount = 0
+        let uiStart = CFAbsoluteTimeGetCurrent()
+        for item in savedItems {
+            // 验证图片文件存在
+            guard FileManager.default.fileExists(atPath: item.imagePath) else {
+                logger.warning("⚠️ [ScreenshotManager] Image not found: \(item.imagePath)")
+                continue
+            }
+
+            // 恢复到正确的显示器
+            adjustFrameToScreen(for: item)
+
+            items.append(item)
+            showWindow(for: item)
+            restoredCount += 1
+
+            // 分帧恢复，避免一次性恢复多个窗口造成短时卡顿
+            await Task.yield()
+        }
+        uiDurationMs = Int((CFAbsoluteTimeGetCurrent() - uiStart) * 1000)
+
+        let restoreDurationMs = Int((CFAbsoluteTimeGetCurrent() - restoreStart) * 1000)
+        logger.info("✅ [ScreenshotManager] Restored \(restoredCount)/\(savedItems.count) items in \(restoreDurationMs, privacy: .public)ms")
+
+        if ProcessInfo.processInfo.environment["SPOKE_PERF_LOG"] == "1" {
+            print("PERF restore_decode_ms=\(decodeDurationMs) restore_ui_ms=\(uiDurationMs) restore_total_ms=\(restoreDurationMs) restored_count=\(restoredCount) decoded_count=\(savedItems.count)")
         }
     }
     
@@ -486,20 +597,24 @@ final class ScreenshotManager {
         return newFrame
     }
     
-    private func saveImage(_ image: NSImage, to url: URL) -> Bool {
-        guard let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+    private func saveImage(_ image: NSImage, to url: URL) async -> Bool {
+        guard let tiffData = image.tiffRepresentation else {
             return false
         }
-        
-        do {
-            try pngData.write(to: url)
-            return true
-        } catch {
-            logger.error("❌ [ScreenshotManager] Failed to write image: \(error.localizedDescription)")
-            return false
-        }
+
+        return await Task.detached(priority: .userInitiated) {
+            guard let bitmap = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                return false
+            }
+
+            do {
+                try pngData.write(to: url, options: .atomic)
+                return true
+            } catch {
+                return false
+            }
+        }.value
     }
     
     // MARK: - Permission

@@ -106,7 +106,9 @@ final class ScreenshotWindow: NSPanel {
             context.duration = 0.15
             flash.animator().alphaValue = 0
         } completionHandler: {
-            flash.removeFromSuperview()
+            MainActor.assumeIsolated {
+                flash.removeFromSuperview()
+            }
         }
     }
     

@@ -1,6 +1,6 @@
 import Foundation
 import os
-import Speech
+@preconcurrency import Speech
 
 // MARK: - Dictionary Injector Protocol
 
@@ -372,7 +372,7 @@ enum DictionaryInjectionError: LocalizedError {
     case unsupportedRequestType
     case preparationFailed(String)
     case injectionFailed(String)
-    
+
     var errorDescription: String? {
         switch self {
         case .unsupportedRequestType:
@@ -381,6 +381,28 @@ enum DictionaryInjectionError: LocalizedError {
             return "词典准备失败: \(reason)"
         case .injectionFailed(let reason):
             return "词典注入失败: \(reason)"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .unsupportedRequestType:
+            return "当前请求类型不支持字典注入功能"
+        case .preparationFailed(let reason):
+            return "字典数据准备阶段失败: \(reason)"
+        case .injectionFailed(let reason):
+            return "字典内容注入到目标应用失败: \(reason)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .unsupportedRequestType:
+            return "请检查请求类型是否为支持的字典查询类型"
+        case .preparationFailed:
+            return "请检查字典数据源是否可用，或稍后重试"
+        case .injectionFailed:
+            return "请检查目标应用是否支持文本注入，或尝试手动复制粘贴"
         }
     }
 }

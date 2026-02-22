@@ -63,14 +63,13 @@ extension AnswerPanelView {
     }
     
     func startWaveformAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            if !isRecording {
-                timer.invalidate()
-                return
-            }
-            
-            withAnimation(.easeInOut(duration: 0.1)) {
-                audioLevels = audioLevels.map { _ in Float.random(in: 0.1...1.0) }
+        // 使用 Task 替代 Timer 以支持 Swift 6 并发安全
+        Task { @MainActor in
+            while isRecording {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    self.audioLevels = self.audioLevels.map { _ in Float.random(in: 0.1...1.0) }
+                }
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
             }
         }
     }

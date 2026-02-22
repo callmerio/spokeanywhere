@@ -68,7 +68,7 @@ enum LLMError: LocalizedError {
     case timeout
     case rateLimited
     case serverError(Int, String?)
-    
+
     var errorDescription: String? {
         switch self {
         case .notConfigured:
@@ -87,6 +87,52 @@ enum LLMError: LocalizedError {
             return "请求频率受限"
         case .serverError(let code, let message):
             return "服务器错误 (\(code)): \(message ?? "未知")"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .notConfigured:
+            return "未选择或配置 LLM Provider"
+        case .invalidAPIKey:
+            return "提供的 API Key 格式错误或已失效"
+        case .networkError(let error):
+            return "网络连接失败: \(error.localizedDescription)"
+        case .invalidResponse:
+            return "服务器返回的数据格式不符合预期"
+        case .emptyResponse:
+            return "服务器返回了空内容"
+        case .timeout:
+            return "请求在规定时间内未完成"
+        case .rateLimited:
+            return "超过了 API 调用频率限制"
+        case .serverError(let code, _):
+            return "服务器返回错误状态码 \(code)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .notConfigured:
+            return "请在设置中配置 LLM Provider 和 API Key"
+        case .invalidAPIKey:
+            return "请检查 API Key 是否正确，或重新生成新的 Key"
+        case .networkError:
+            return "请检查网络连接，或稍后重试"
+        case .invalidResponse:
+            return "请稍后重试，如果问题持续请联系支持"
+        case .emptyResponse:
+            return "请尝试重新发送请求，或调整输入内容"
+        case .timeout:
+            return "请检查网络连接，或稍后重试"
+        case .rateLimited:
+            return "请稍后再试，或升级 API 套餐以获得更高限额"
+        case .serverError(let code, _):
+            if code >= 500 {
+                return "服务器暂时不可用，请稍后重试"
+            } else {
+                return "请检查请求参数，或联系支持"
+            }
         }
     }
 }
@@ -323,7 +369,7 @@ enum ReasoningEffort: String, Codable, CaseIterable {
 
 /// LLM Provider 协议
 /// 所有 LLM 后端必须实现此协议
-protocol LLMProvider {
+protocol LLMProvider: Sendable {
     /// Provider 类型
     var providerType: LLMProviderType { get }
     

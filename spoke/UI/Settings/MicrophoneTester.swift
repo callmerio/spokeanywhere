@@ -1,6 +1,7 @@
 import AVFoundation
 import Combine
 
+@MainActor
 class MicrophoneTester: ObservableObject {
     @Published var level: Float = 0
     @Published var isRunning = false

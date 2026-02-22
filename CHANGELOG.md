@@ -4,6 +4,58 @@ macOS 语音助手应用变更日志，记录每次发布的新功能、改进�
 
 ---
 
+## 2026-02-09 - P2 技术债务清理 + 文档完善
+
+### 📝 Documentation
+
+- **架构文档** - 新增 `docs/architecture/OVERVIEW.md`（现迁移至 `spoke/docs/architecture/overview.md`），包含 Mermaid 服务依赖图
+- **贡献指南** - 新增 `CONTRIBUTING.md`，包含开发环境搭建、代码规范、PR 流程
+
+### 🐛 P0 Fixes (Critical)
+
+- **LiveCaptionWindow** - 移除 force unwrap 崩溃风险 (fcfd07e)
+- **AppKitScrollView** - 修复递归滚动内存泄漏 (f37c8ce)
+- **MarkdownWebView** - 添加 CDN 加载失败回退机制 (a3f213e)
+
+### 🔧 P1 Fixes (High Priority)
+
+- **Refactor** - 移除 ~60 行死代码 (c3e000b)
+- **Logging** - debug print 语句迁移到 os.Logger (34320e1)
+- **Package** - 添加 testTarget 到 Package.swift (d198be1)
+
+---
+
+## 2026-02-08 - 截图优化 + 实时字幕增强
+
+### ✨ New
+
+- **截图体验优化** - 统一 UI 风格 (203c471)
+- **Markdown 渲染增强** - QuickAsk 面板 (d4f58d6)
+- **字幕单词点击查词** - Live Caption + SCStream 自动恢复 (8361a1b)
+
+### 🎨 Improvements
+
+- 实时字幕滚动体验优化 (e8a722d)
+- Screenshot AI 增强性能 + UX 优化 (993a894)
+
+### 🐛 Fixes
+
+- SelectionToolbar 词典弹窗释义被截断 (9406007)
+- LiveCaption 滚动方向检测导致无法往上滑 (70ae200)
+- 双击选中英文单词工具栏不显示 (3547ea3)
+
+---
+
+## 2026-02-01 - SwiftLint 清理
+
+### 🔧 Refactor
+
+- **SwiftLint 完全清理** - 273→0 violations (933f203)
+- 拆分大 UI 文件消除 file_length 警告 (70b8750)
+- CoreFoundation cast 括号修复编译器警告 (3286cca)
+
+---
+
 ## 2025-12-10 - 划词工具栏完善
 
 ### ✨ New

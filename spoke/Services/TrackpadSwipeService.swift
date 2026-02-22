@@ -9,17 +9,18 @@ import os
 /// 检测双指长距离水平滑动来打开/关闭 Panel
 /// 
 /// ⚠️ 注意: 需要 Accessibility 权限才能全局监听
-/// 
+///
 /// 与私有 API 版本的区别:
 /// - ✅ 使用 NSEvent.addGlobalMonitorForEvents (公开 API)
 /// - ✅ 可以上架 App Store
 /// - ❌ 无法检测"从边缘开始" (scrollWheel 只有 delta，没有绝对位置)
 /// - ❌ 无法精确知道手指数量 (但可以推断 - 触控板滚动默认是双指)
+@MainActor
 final class TrackpadSwipeService {
     
     // MARK: - Singleton
     
-    static let shared = TrackpadSwipeService()
+    @MainActor static let shared = TrackpadSwipeService()
     
     // MARK: - Configuration
     
@@ -92,8 +93,9 @@ final class TrackpadSwipeService {
         if !trusted {
             logger.warning("⚠️ 需要辅助功能权限才能全局监听触控板")
             // 提示用户开启权限
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            AXIsProcessTrustedWithOptions(options)
+            MainActor.assumeIsolated {
+                _ = AccessibilityHelper.requestAccessibilityPermission()
+            }
             return
         }
         

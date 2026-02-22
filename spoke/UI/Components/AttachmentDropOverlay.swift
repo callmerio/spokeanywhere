@@ -55,7 +55,7 @@ struct AttachmentDropOverlay: View {
 /// 通用拖拽处理修饰符
 struct AttachmentDropHandler: ViewModifier {
     /// 添加附件的回调
-    let onAdd: (Attachment) -> Void
+    let onAdd: @MainActor @Sendable (Attachment) -> Void
     
     /// 圆角半径（用于蒙版）
     var cornerRadius: CGFloat = 16
@@ -84,7 +84,9 @@ struct AttachmentDropHandler: ViewModifier {
     }
     
     private func handleDrop(providers: [NSItemProvider]) {
-        attachmentManager.handleDrop(providers: providers, onAdd: onAdd)
+        attachmentManager.handleDrop(providers: providers) { [onAdd] attachment in
+            onAdd(attachment)
+        }
     }
 }
 
@@ -94,7 +96,7 @@ extension View {
     /// 添加通用拖拽处理
     func attachmentDropHandler(
         cornerRadius: CGFloat = 16,
-        onAdd: @escaping (Attachment) -> Void
+        onAdd: @escaping @MainActor @Sendable (Attachment) -> Void
     ) -> some View {
         modifier(AttachmentDropHandler(onAdd: onAdd, cornerRadius: cornerRadius))
     }

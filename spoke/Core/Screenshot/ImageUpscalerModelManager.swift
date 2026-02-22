@@ -20,6 +20,7 @@ enum ImageUpscalerDownloadState: Equatable {
 
 // MARK: - Image Upscaler Model Manager
 
+@MainActor
 final class ImageUpscalerModelManager: NSObject, ObservableObject {
     
     static let shared = ImageUpscalerModelManager()
@@ -108,13 +109,16 @@ final class ImageUpscalerModelManager: NSObject, ObservableObject {
         self.state = .unziping
         logger.info("📦 Unzipping model...")
         
+        let zipPath = self.zipFileURL.path
+        let destPath = self.modelsDirectory.path
+        
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             
             // 1. Unzip
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
-            process.arguments = ["-o", self.zipFileURL.path, "-d", self.modelsDirectory.path]
+            process.arguments = ["-o", zipPath, "-d", destPath]
             
             do {
                 try process.run()
@@ -123,17 +127,19 @@ final class ImageUpscalerModelManager: NSObject, ObservableObject {
                 if process.terminationStatus == 0 {
                     self.logger.info("✅ Unzip successful")
                     // Remove zip to save space
-                    try? FileManager.default.removeItem(at: self.zipFileURL)
+                    try? FileManager.default.removeItem(at: URL(fileURLWithPath: zipPath))
                     
                     // 2. Compile
-                    self.compileModel()
+                    Task { @MainActor in
+                        self.compileModel()
+                    }
                 } else {
-                    DispatchQueue.main.async {
+                    Task { @MainActor in
                         self.state = .failed(error: "Unzip failed with code \(process.terminationStatus)")
                     }
                 }
             } catch {
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self.state = .failed(error: "Unzip error: \(error.localizedDescription)")
                 }
             }
@@ -143,31 +149,29 @@ final class ImageUpscalerModelManager: NSObject, ObservableObject {
     private func compileModel() {
         logger.info("🔨 Compiling CoreML model...")
         
-        // Ensure running on background if called directly, or continuing from unzip
-        // Note: compileModel is called from background thread in unzipAndCompile,
-        // but if called from checkState (main), we should dispatch.
-        // Let's assume we are on background or dispatch.
+        let sourceURL = self.sourceModelURL
+        let targetURL = self.compiledModelURL
         
-        let work = { [weak self] in
+        let work: @Sendable () -> Void = { [weak self] in
             guard let self = self else { return }
             do {
                 // compileModel(at:) returns a temporary URL
-                let tempCompiledURL = try MLModel.compileModel(at: self.sourceModelURL)
+                let tempCompiledURL = try MLModel.compileModel(at: sourceURL)
                 
                 // Remove existing
-                if FileManager.default.fileExists(atPath: self.compiledModelURL.path) {
-                    try FileManager.default.removeItem(at: self.compiledModelURL)
+                if FileManager.default.fileExists(atPath: targetURL.path) {
+                    try FileManager.default.removeItem(at: targetURL)
                 }
                 
                 // Move to permanent location
-                try FileManager.default.moveItem(at: tempCompiledURL, to: self.compiledModelURL)
+                try FileManager.default.moveItem(at: tempCompiledURL, to: targetURL)
                 
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self.state = .compiled
                     self.logger.info("✅ Model compiled and ready")
                 }
             } catch {
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self.state = .failed(error: "Compilation failed: \(error.localizedDescription)")
                     self.logger.error("❌ Compilation error: \(error.localizedDescription)")
                 }
@@ -186,35 +190,33 @@ final class ImageUpscalerModelManager: NSObject, ObservableObject {
 
 extension ImageUpscalerModelManager: URLSessionDownloadDelegate {
     
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+    nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         // Move file to destination (ZIP)
-        do {
-            if FileManager.default.fileExists(atPath: zipFileURL.path) {
-                try FileManager.default.removeItem(at: zipFileURL)
-            }
-            try FileManager.default.moveItem(at: location, to: zipFileURL)
-            
-            DispatchQueue.main.async {
+        Task { @MainActor in
+            do {
+                if FileManager.default.fileExists(atPath: zipFileURL.path) {
+                    try FileManager.default.removeItem(at: zipFileURL)
+                }
+                try FileManager.default.moveItem(at: location, to: zipFileURL)
+                
                 self.logger.info("✅ Download complete, starting unzip...")
                 self.unzipAndCompile()
-            }
-        } catch {
-            DispatchQueue.main.async {
+            } catch {
                 self.state = .failed(error: "Move file failed: \(error.localizedDescription)")
             }
         }
     }
     
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.state = .downloading(progress: progress)
         }
     }
     
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.state = .failed(error: error.localizedDescription)
             }
         }

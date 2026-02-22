@@ -2,6 +2,7 @@ import AppKit
 
 // MARK: - Annotation Canvas Protocol
 
+@MainActor
 protocol AnnotationCanvas: AnyObject {
     func addAnnotation(_ annotation: Annotation, recordCommand: Bool)
     func removeAnnotation(_ annotation: Annotation, recordCommand: Bool)

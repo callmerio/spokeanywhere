@@ -15,7 +15,7 @@ final class AddToDictionaryHandler: ObservableObject {
     @Published var pendingWord = ""
     @Published var pendingFullText = ""  // 完整句子，用于训练短语
     
-    private var observer: NSObjectProtocol?
+    nonisolated(unsafe) private var observer: NSObjectProtocol?
     
     private init() {
         setupObserver()
@@ -27,19 +27,23 @@ final class AddToDictionaryHandler: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
-                self?.handleNotification(notification)
+            // Extract data outside assumeIsolated to avoid sending non-Sendable Notification
+            let userInfo = notification.userInfo
+            let word = userInfo?["word"] as? String
+            let mode = userInfo?["mode"] as? String
+            let fullText = userInfo?["fullText"] as? String
+            
+            MainActor.assumeIsolated {
+                self?.handleRequest(word: word, mode: mode, fullText: fullText)
             }
         }
     }
     
-    private func handleNotification(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let word = userInfo["word"] as? String,
-              let mode = userInfo["mode"] as? String else { return }
+    private func handleRequest(word: String?, mode: String?, fullText: String?) {
+        guard let word = word, let mode = mode else { return }
         
         pendingWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
-        pendingFullText = (userInfo["fullText"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        pendingFullText = (fullText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
         switch mode {
         case "new":
@@ -63,7 +67,7 @@ final class AddToDictionaryHandler: ObservableObject {
         }
     }
     
-    deinit {
+deinit {
         if let observer = observer {
             NotificationCenter.default.removeObserver(observer)
         }

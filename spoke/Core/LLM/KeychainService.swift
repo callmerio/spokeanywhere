@@ -11,16 +11,18 @@ final class KeychainService {
     
     /// 服务名称前缀
     private static let servicePrefix = "com.spokeanywhere.llm"
-    
+
     /// 内存缓存（减少 Keychain 访问）
-    private static var cache: [String: String] = [:]
+    /// 注意：使用 cacheQueue 手动同步，标记为 nonisolated(unsafe) 以满足 Swift 6 并发检查
+    nonisolated(unsafe) private static var cache: [String: String] = [:]
     private static let cacheQueue = DispatchQueue(label: "com.spokeanywhere.keychain.cache")
-    
+
     // MARK: - Debug Mode
-    
+
     /// ⚠️ 测试模式：使用 UserDefaults 代替 Keychain（避免每次启动输入密码）
     /// 正式发布时请设为 false
-    static var useSimpleStorage: Bool = true
+    /// 注意：标记为 nonisolated(unsafe)，应在应用启动时设置一次
+    nonisolated(unsafe) static var useSimpleStorage: Bool = true
     
     /// UserDefaults 存储前缀（测试模式用）
     private static let simpleStoragePrefix = "debug.apikey."
@@ -176,7 +178,7 @@ enum KeychainError: LocalizedError {
     case encodingFailed
     case saveFailed(OSStatus)
     case deleteFailed(OSStatus)
-    
+
     var errorDescription: String? {
         switch self {
         case .encodingFailed:
@@ -185,6 +187,38 @@ enum KeychainError: LocalizedError {
             return "Keychain 保存失败: \(status)"
         case .deleteFailed(let status):
             return "Keychain 删除失败: \(status)"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .encodingFailed:
+            return "无法将数据编码为 UTF-8 格式"
+        case .saveFailed(let status):
+            return "Keychain API 返回错误状态码 \(status)"
+        case .deleteFailed(let status):
+            return "Keychain API 删除操作返回错误状态码 \(status)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .encodingFailed:
+            return "请检查数据内容是否包含无效字符"
+        case .saveFailed(let status):
+            if status == errSecDuplicateItem {
+                return "该项已存在，请先删除后重试"
+            } else if status == errSecAuthFailed {
+                return "Keychain 访问被拒绝，请检查应用权限"
+            } else {
+                return "请检查 Keychain 访问权限，或重启应用后重试"
+            }
+        case .deleteFailed(let status):
+            if status == errSecItemNotFound {
+                return "该项不存在，无需删除"
+            } else {
+                return "请检查 Keychain 访问权限"
+            }
         }
     }
 }

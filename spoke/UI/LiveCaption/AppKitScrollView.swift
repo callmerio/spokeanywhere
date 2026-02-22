@@ -129,6 +129,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
     }
     
+    @MainActor
     private static func scrollToBottom(_ scrollView: NSScrollView, coordinator: Coordinator) {
         guard let documentView = scrollView.documentView else { return }
 
@@ -151,14 +152,17 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         let targetY = maxScrollY + CaptionDesign.scrollExtraOffset
 
         scrollLogger.debug("📜 scrollToBottom: contentHeight=\(contentHeight), clipHeight=\(clipHeight), maxScrollY=\(maxScrollY), targetY=\(targetY)")
-        
+
         // 🔥 动画滚动：平滑过渡替代瞬时跳转
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.12  // 120ms 短促动画
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             context.allowsImplicitAnimation = true
             scrollView.contentView.animator().setBoundsOrigin(NSPoint(x: 0, y: targetY))
-        } completionHandler: { [weak scrollView, weak coordinator] in
+        }
+
+        // 🔥 避免 Sendable closure 捕获泛型 Coordinator：使用 asyncAfter 替代 completion handler
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) { [weak scrollView, weak coordinator] in
             guard let scrollView = scrollView, let coordinator = coordinator else { return }
 
             scrollView.reflectScrolledClipView(scrollView.contentView)
@@ -180,12 +184,13 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         Coordinator(isAtBottom: $isAtBottom, bottomThreshold: bottomThreshold)
     }
     
+    @MainActor
     class Coordinator: NSObject {
         var isAtBottomBinding: Binding<Bool>
         var bottomThreshold: CGFloat
         weak var scrollView: NSScrollView?
         var lastScrollTrigger: Int = 0
-        
+
         /// 防止程序滚动触发循环
         var isScrollingProgrammatically: Bool = false
         
@@ -210,7 +215,10 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         
         func startPolling() {
             scrollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-                self?.checkAndScrollToBottom()
+                // 🔥 Timer 在主 runloop 执行，使用 assumeIsolated 避免 Sendable closure 捕获问题
+                MainActor.assumeIsolated {
+                    self?.checkAndScrollToBottom()
+                }
             }
         }
         
@@ -409,7 +417,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
         
         deinit {
-            stopPolling()
+            // 🔥 不在 deinit 创建逃逸闭包：清理逻辑已在 dismantleNSView 完成
         }
     }
     

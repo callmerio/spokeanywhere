@@ -1,7 +1,10 @@
-import AVFoundation
+@preconcurrency import AVFoundation
+@preconcurrency import CoreMedia
 import Foundation
 import OSLog
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
+// M2 战术豁免：Apple 框架类型（SCContentFilter, CMSampleBuffer, AVAudioPCMBuffer）尚未标记 Sendable
+// 后续跟进 Apple SDK Sendable 状态，届时移除此抑制
 
 // MARK: - App Audio Capture Service
 
@@ -235,52 +238,44 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
 
 @available(macOS 14.0, *)
 extension AppAudioCaptureService: SCStreamOutput {
-    
+
     nonisolated func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .audio else { return }
-        
-        Task { @MainActor in
-            if self.onPCMBuffer != nil, let pcmBuffer = self.convertToPCMBuffer(sampleBuffer) {
-                self.onPCMBuffer?(pcmBuffer)
-            }
-        }
-    }
-    
-    @MainActor
-    private func convertToPCMBuffer(_ sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
+
+        // 内联转换 CMSampleBuffer，避免跨函数传递非 Sendable 类型
         guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer) else {
-            return nil
+            return
         }
-        
+
         guard let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)?.pointee else {
-            return nil
+            return
         }
-        
+
         let numSamples = CMSampleBufferGetNumSamples(sampleBuffer)
-        guard numSamples > 0 else { return nil }
-        
+        guard numSamples > 0 else { return }
+
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: asbd.mSampleRate,
             channels: AVAudioChannelCount(asbd.mChannelsPerFrame),
             interleaved: false
         ) else {
-            return nil
+            return
         }
-        
+
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(numSamples)) else {
-            return nil
+            return
         }
         outputBuffer.frameLength = AVAudioFrameCount(numSamples)
-        
+
         guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
-            return nil
+            return
         }
-        
+
         var lengthAtOffset: Int = 0
         var totalLength: Int = 0
         var dataPointer: UnsafeMutablePointer<Int8>?
-        
+
         let status = CMBlockBufferGetDataPointer(
             blockBuffer,
             atOffset: 0,
@@ -288,20 +283,20 @@ extension AppAudioCaptureService: SCStreamOutput {
             totalLengthOut: &totalLength,
             dataPointerOut: &dataPointer
         )
-        
+
         guard status == kCMBlockBufferNoErr, let data = dataPointer else {
-            return nil
+            return
         }
-        
+
         guard let outputData = outputBuffer.floatChannelData?[0] else {
-            return nil
+            return
         }
-        
+
         let formatFlags = asbd.mFormatFlags
         let isFloat = (formatFlags & kAudioFormatFlagIsFloat) != 0
         let isSignedInt = (formatFlags & kAudioFormatFlagIsSignedInteger) != 0
         let bitsPerChannel = asbd.mBitsPerChannel
-        
+
         if isFloat && bitsPerChannel == 32 {
             let floatData = UnsafeRawPointer(data).assumingMemoryBound(to: Float.self)
             memcpy(outputData, floatData, numSamples * MemoryLayout<Float>.size)
@@ -316,11 +311,18 @@ extension AppAudioCaptureService: SCStreamOutput {
                 outputData[i] = Float(int32Data[i]) / Float(Int32.max)
             }
         } else {
-            return nil
+            return
         }
-        
-        return outputBuffer
+
+        // M2 战术豁免：使用显式 unsafe transfer box 封装单次转移所有权语义
+        // AVAudioPCMBuffer 在此路径下仅用于读取并立即处理，逻辑上安全
+        let transferred = UnsafeTransferBox(value: outputBuffer)
+        Task { @MainActor [transferred] in
+            self.onPCMBuffer?(transferred.value)
+        }
     }
+
+    /// 显式 unsafe transfer box：封装单次跨隔离边界转移所有权的语义
 }
 
 // MARK: - SCStreamDelegate

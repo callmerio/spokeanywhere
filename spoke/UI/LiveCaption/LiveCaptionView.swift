@@ -1,7 +1,7 @@
 import AppKit
 import os
 import SwiftUI
-import Translation
+@preconcurrency import Translation
 
 private typealias DS = DesignTokens
 private let scrollLogger = Logger(subsystem: "app.spokenly", category: "LiveCaptionScroll")
@@ -713,18 +713,22 @@ struct TranslationTaskModifier15: ViewModifier {
     }
     
     private func performTranslation(session: TranslationSession) async {
-        // 找到最后一个未翻译的 item
-        guard let item = await MainActor.run(body: {
-            manager.lineBuffer.items.last(where: { $0.translation == nil })
+        // 找到最后一个未翻译的 item，只提取必要的 Sendable 数据
+        guard let itemData = await MainActor.run(body: { () -> (UUID, String)? in
+            if let item = manager.lineBuffer.items.last(where: { $0.translation == nil }) {
+                return (item.id, item.original)
+            }
+            return nil
         }) else { return }
         
-        let textToTranslate = item.original
+        let itemId = itemData.0
+        let textToTranslate = itemData.1
         guard !textToTranslate.isEmpty else { return }
         
         do {
             let response = try await session.translate(textToTranslate)
             await MainActor.run {
-                manager.lineBuffer.updateTranslation(id: item.id, translation: response.targetText)
+                manager.lineBuffer.updateTranslation(id: itemId, translation: response.targetText)
             }
         } catch {
             // 翻译失败，静默处理

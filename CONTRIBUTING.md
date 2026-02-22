@@ -25,7 +25,7 @@ Thank you for your interest in contributing to SpokenAnyWhere! This guide will h
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/spokeanywhere.git
+   git clone https://github.com/callmerio/spokeanywhere.git
    cd spokeanywhere
    ```
 
@@ -67,6 +67,8 @@ tail -f spoke/.tmp_frames/dev-*.log
 grep -E 'error|Error|❌' spoke/.tmp_frames/dev-*.log
 ```
 
+Note: `spoke/.tmp_frames/` is created after the first successful run of `cd spoke && ./dev.sh`.
+
 ## Project Structure
 
 ```
@@ -90,7 +92,8 @@ spokeanywhere/
 └── CLAUDE.md                 # AI assistant guidelines
 ```
 
-See [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md) for detailed architecture.
+See `spoke/docs/architecture/overview.md` for system architecture and
+`spoke/docs/architecture/quick-reference.md` for feature-to-code navigation.
 
 ## Code Standards
 

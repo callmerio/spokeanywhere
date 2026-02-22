@@ -1,6 +1,6 @@
 import Foundation
 import OSLog
-import Translation
+@preconcurrency import Translation
 
 // MARK: - Translation Service
 
@@ -132,16 +132,14 @@ final class TranslationService: ObservableObject {
         guard !toTranslate.isEmpty else { return results }
         
         do {
-            let requests = toTranslate.map { TranslationSession.Request(sourceText: $0) }
-            let responses = try await session.translations(from: requests)
-            
-            for (index, response) in responses.enumerated() {
-                let original = toTranslate[index]
+            // Use individual translate calls to avoid passing non-Sendable Request array
+            for text in toTranslate {
+                let response = try await session.translate(text)
                 let translated = response.targetText
-                results[original] = translated
-                cacheTranslation(original: original, translated: translated)
+                results[text] = translated
+                cacheTranslation(original: text, translated: translated)
             }
-            
+
             logger.info("✅ Batch translated \(toTranslate.count) texts")
         } catch {
             #if DEBUG

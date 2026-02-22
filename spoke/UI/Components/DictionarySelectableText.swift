@@ -62,6 +62,7 @@ struct DictionarySelectableText: NSViewRepresentable {
     
     // MARK: - Coordinator
     
+    @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
         
         func textView(_ textView: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
@@ -155,98 +156,93 @@ struct DictionarySelectableText: NSViewRepresentable {
 
 // MARK: - Custom Layout Manager（自定义选中颜色）
 
+// 文件级常量：选中样式配置（避免 MainActor 隔离问题）
+private let kSelectionColor = DS.Colors.NS.highlightGold
+private let kSelectedTextColor = DS.Colors.NS.textPrimary
+private let kSelectedTextShadow: NSShadow = {
+    let shadow = NSShadow()
+    shadow.shadowColor = DS.Colors.NS.selectionShadow
+    shadow.shadowOffset = NSSize(width: 0, height: 0)
+    shadow.shadowBlurRadius = 1.5
+    return shadow
+}()
+
 /// 自定义 NSLayoutManager，覆盖选中区域的背景颜色绘制
-final class SelectionColorLayoutManager: NSLayoutManager {
-    
-    /// 金黄色选中背景 #D79C00
-    var selectionColor = DS.Colors.NS.highlightGold
-    /// 选中文字颜色
-    var selectedTextColor = DS.Colors.NS.textPrimary
-    /// 选中文字外描边阴影
-    var selectedTextShadow: NSShadow = {
-        let shadow = NSShadow()
-        shadow.shadowColor = DS.Colors.NS.selectionShadow
-        shadow.shadowOffset = NSSize(width: 0, height: 0)  // 居中阴影
-        shadow.shadowBlurRadius = 1.5  // 模糊半径模拟描边
-        return shadow
-    }()
-    
+/// @unchecked Sendable: NSLayoutManager 方法由 AppKit 在主线程调用，标记为 Sendable 消除 capture 警告
+@MainActor
+final class SelectionColorLayoutManager: NSLayoutManager, @unchecked Sendable {
+
     /// 覆盖背景绘制方法，自定义选中区域的背景颜色
-    override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
-        // 先调用父类绘制其他背景（不包括选中，因为我们禁用了系统选中样式）
+    /// NSLayoutManager 的绘制方法由 AppKit 在主线程调用
+    /// 使用 nonisolated override 匹配父类签名，点状 hop 仅用于 selectedRanges 提取
+    nonisolated override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
+        // 先调用父类绘制其他背景
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
-        
+
         // 手动绘制选中区域的背景
         guard let textView = self.firstTextView,
               let textContainer = self.textContainers.first else { return }
-        
-        for rangeValue in textView.selectedRanges {
-            let selectedRange = rangeValue.rangeValue
-            guard selectedRange.length > 0 else { continue }
-            
-            // 转换为 glyph range
+
+        // 点状 MainActor hop：提取 NSRange（Sendable）而非 NSValue（非 Sendable）
+        let selectedCharRanges = MainActor.assumeIsolated {
+            textView.selectedRanges.map { $0.rangeValue }.filter { $0.length > 0 }
+        }
+
+        for selectedRange in selectedCharRanges {
             let glyphRange = self.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
-            
-            // 只绘制与当前请求的 glyphsToShow 有交集的部分
             let intersection = NSIntersectionRange(glyphRange, glyphsToShow)
             guard intersection.length > 0 else { continue }
-            
-            // 枚举每一行片段并绘制
+
             self.enumerateLineFragments(forGlyphRange: intersection) { _, _, _, lineGlyphRange, _ in
-                // 计算这一行中选中部分的边界
                 let lineIntersection = NSIntersectionRange(lineGlyphRange, intersection)
                 guard lineIntersection.length > 0 else { return }
-                
+
                 var selectionRect = self.boundingRect(forGlyphRange: lineIntersection, in: textContainer)
                 selectionRect.origin.x += origin.x
                 selectionRect.origin.y += origin.y
-                
-                // 绘制金黄色背景（带小圆角）
-                self.selectionColor.setFill()
+
+                // 使用文件级常量（非 MainActor-isolated）
+                kSelectionColor.setFill()
                 let path = NSBezierPath(roundedRect: selectionRect, xRadius: 3, yRadius: 3)
                 path.fill()
             }
         }
     }
-    
+
     /// 覆盖文字绘制方法，为选中文字添加描边效果
-    override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
+    /// NSLayoutManager 的绘制方法由 AppKit 在主线程调用
+    /// 使用 nonisolated override 匹配父类签名，点状 hop 仅用于 selectedRanges 提取
+    nonisolated override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         guard let textView = self.firstTextView else {
             super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
             return
         }
-        
-        // 收集选中的字符范围
-        var selectedCharRanges: [NSRange] = []
-        for rangeValue in textView.selectedRanges {
-            let selectedRange = rangeValue.rangeValue
-            if selectedRange.length > 0 {
-                selectedCharRanges.append(selectedRange)
-            }
+
+        // 点状 MainActor hop：提取 NSRange（Sendable）而非 NSValue（非 Sendable）
+        let selectedCharRanges = MainActor.assumeIsolated {
+            textView.selectedRanges.map { $0.rangeValue }.filter { $0.length > 0 }
         }
-        
+
         // 如果没有选中，直接调用父类
         guard !selectedCharRanges.isEmpty else {
             super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
             return
         }
-        
-        // 为选中区域添加临时属性（白色文字 + 阴影外描边）
+
+        // 为选中区域添加临时属性（使用文件级常量）
         for selectedRange in selectedCharRanges {
             let glyphRange = self.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
             let intersection = NSIntersectionRange(glyphRange, glyphsToShow)
             if intersection.length > 0 {
                 let charRange = self.characterRange(forGlyphRange: intersection, actualGlyphRange: nil)
-                // 添加白色前景色
-                self.addTemporaryAttribute(.foregroundColor, value: selectedTextColor, forCharacterRange: charRange)
-                // 添加阴影（模拟外描边效果）
-                self.addTemporaryAttribute(.shadow, value: selectedTextShadow, forCharacterRange: charRange)
+                self.addTemporaryAttribute(.foregroundColor, value: kSelectedTextColor, forCharacterRange: charRange)
+                self.addTemporaryAttribute(.shadow, value: kSelectedTextShadow, forCharacterRange: charRange)
             }
         }
-        
+
         // 调用父类绘制
         super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
-        
+
         // 移除临时属性
         for selectedRange in selectedCharRanges {
             let glyphRange = self.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
@@ -263,6 +259,7 @@ final class SelectionColorLayoutManager: NSLayoutManager {
 // MARK: - Dictionary Text View
 
 /// 自定义 NSTextView，支持 intrinsicContentSize 自适应高度 + 自定义选中颜色
+@MainActor
 final class DictionaryTextView: NSTextView {
     
     /// 使用自定义 LayoutManager 创建
@@ -319,12 +316,3 @@ final class DictionaryTextView: NSTextView {
         invalidateIntrinsicContentSize()
     }
 }
-
-// MARK: - AddToDictionaryHandler
-// 已移至: spoke/UI/Components/AddToDictionaryHandler.swift
-
-// MARK: - QuickAddToDictionarySheet
-// 已移至: spoke/UI/Components/AddToDictionaryHandler.swift
-
-// MARK: - CorrectToSheet
-// 已移至: spoke/UI/Components/AddToDictionaryHandler.swift

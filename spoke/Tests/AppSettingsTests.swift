@@ -261,30 +261,35 @@ struct AppSettingsTests {
 struct AppSettingsNotificationTests {
 
     @Test("shortcutDidChangeNotification 应正确定义")
+    @MainActor
     func shortcutNotificationExists() {
         let name = AppSettings.shortcutDidChangeNotification
         #expect(name.rawValue == "ShortcutDidChange")
     }
 
     @Test("quickAskShortcutDidChangeNotification 应正确定义")
+    @MainActor
     func quickAskShortcutNotificationExists() {
         let name = AppSettings.quickAskShortcutDidChangeNotification
         #expect(name.rawValue == "QuickAskShortcutDidChange")
     }
 
     @Test("messagePanelShortcutDidChangeNotification 应正确定义")
+    @MainActor
     func messagePanelShortcutNotificationExists() {
         let name = AppSettings.messagePanelShortcutDidChangeNotification
         #expect(name.rawValue == "MessagePanelShortcutDidChange")
     }
 
     @Test("liveCaptionShortcutDidChangeNotification 应正确定义")
+    @MainActor
     func liveCaptionShortcutNotificationExists() {
         let name = AppSettings.liveCaptionShortcutDidChangeNotification
         #expect(name.rawValue == "LiveCaptionShortcutDidChange")
     }
 
     @Test("screenshotShortcutDidChangeNotification 应正确定义")
+    @MainActor
     func screenshotShortcutNotificationExists() {
         let name = AppSettings.screenshotShortcutDidChangeNotification
         #expect(name.rawValue == "ScreenshotShortcutDidChange")

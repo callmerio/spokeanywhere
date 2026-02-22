@@ -89,4 +89,34 @@ class AudioDeviceManager: ObservableObject {
         }
         return getAudioDeviceID(fromUID: uid)
     }
+
+    /// 获取第一个可用输入设备的 AudioDeviceID
+    static func getFirstAvailableAudioDeviceID() -> AudioDeviceID? {
+        let discoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.microphone, .external],
+            mediaType: .audio,
+            position: .unspecified
+        )
+
+        for device in discoverySession.devices {
+            if let deviceID = getAudioDeviceID(fromUID: device.uniqueID) {
+                return deviceID
+            }
+        }
+
+        return nil
+    }
+
+    /// 获取优先输入设备（用户选择优先，否则回退首个可用设备）
+    static func getPreferredAudioDeviceID() -> AudioDeviceID? {
+        if let selected = getSelectedAudioDeviceID() {
+            return selected
+        }
+        return getFirstAvailableAudioDeviceID()
+    }
+
+    /// 是否存在可用输入设备
+    static func hasAvailableInputDevice() -> Bool {
+        getFirstAvailableAudioDeviceID() != nil
+    }
 }

@@ -192,7 +192,7 @@ enum DictionaryAPIError: LocalizedError {
     case networkError(String)
     case apiError(String)
     case decodingError(String)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidWord:
@@ -207,6 +207,40 @@ enum DictionaryAPIError: LocalizedError {
             return "API 错误: \(msg)"
         case .decodingError(let msg):
             return "解析错误: \(msg)"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .invalidWord:
+            return "输入的单词格式无效或包含非法字符"
+        case .invalidURL:
+            return "字典 API URL 构建失败"
+        case .notFound:
+            return "字典 API 中没有该单词的释义"
+        case .networkError(let msg):
+            return "网络请求失败: \(msg)"
+        case .apiError(let msg):
+            return "字典 API 返回错误: \(msg)"
+        case .decodingError(let msg):
+            return "API 响应数据解析失败: \(msg)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .invalidWord:
+            return "请检查单词拼写，确保只包含字母和连字符"
+        case .invalidURL:
+            return "请检查字典 API 配置是否正确"
+        case .notFound:
+            return "请尝试其他单词，或使用本地字典"
+        case .networkError:
+            return "请检查网络连接，或稍后重试"
+        case .apiError:
+            return "请稍后重试，或切换到其他字典源"
+        case .decodingError:
+            return "请稍后重试，如果问题持续请联系支持"
         }
     }
 }

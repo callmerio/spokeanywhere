@@ -141,6 +141,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
     
     // MARK: - Coordinator
     
+    @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
         
         var onSelectionStarted: (() -> Void)?
@@ -240,8 +241,10 @@ struct VocabularyHighlightText: NSViewRepresentable {
             if hasSelection {
                 lastTextView = textView
                 selectionDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
-                    guard let self = self, let textView = self.lastTextView else { return }
-                    self.handleSelectionCompleted(in: textView)
+                    Task { @MainActor in
+                        guard let self = self, let textView = self.lastTextView else { return }
+                        self.handleSelectionCompleted(in: textView)
+                    }
                 }
             }
         }

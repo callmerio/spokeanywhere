@@ -344,7 +344,7 @@ final class RecordingController {
             if transcribedText.isEmpty {
                 // 仅在没有新录音时显示失败
                 if !hotKeyService.isRecording {
-                    hudManager.fail(with: "未检测到语音")
+                    hudManager.fail(with: TranscriptionError.emptySpeech)
                 }
                 return
             }
@@ -409,8 +409,12 @@ final class RecordingController {
             case .failure(let error):
                 // LLM 失败，保留原始文本
                 logger.error("❌ LLM failed: \(error.localizedDescription, privacy: .public)")
+                
+                // 根据 PRD，AI 失败时如果 ASR 成功，显示 AI 失败提示但保留文本
+                // 这里我们可以先调用 fail 再调用 complete，或者修改 complete 以支持带 warning 的状态
+                // 目前先按 PRD 简单实现：AI 失败显示错误，延迟一段时间后消失（或用户可以看到原始文本已转录）
                 if !hotKeyService.isRecording {
-                    hudManager.complete(with: transcribedText)
+                    hudManager.fail(with: error)
                 }
                 logger.info("⚠️ Fallback to transcribed text")
             }

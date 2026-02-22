@@ -34,13 +34,39 @@ enum EdgeTTSError: Error, LocalizedError {
     case connectionFailed
     case noAudioData
     case synthesizeFailed(String)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidURL: return "无效的 URL"
         case .connectionFailed: return "连接失败"
         case .noAudioData: return "没有音频数据"
         case .synthesizeFailed(let msg): return "合成失败: \(msg)"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .invalidURL:
+            return "Edge TTS WebSocket URL 构建失败"
+        case .connectionFailed:
+            return "无法连接到 Edge TTS 服务器"
+        case .noAudioData:
+            return "语音合成完成但未返回音频数据"
+        case .synthesizeFailed(let msg):
+            return "Edge TTS 合成过程失败: \(msg)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .invalidURL:
+            return "请检查 Edge TTS 配置参数是否正确"
+        case .connectionFailed:
+            return "请检查网络连接，或稍后重试"
+        case .noAudioData:
+            return "请尝试重新合成，或检查输入文本是否有效"
+        case .synthesizeFailed:
+            return "请检查输入文本格式，或稍后重试"
         }
     }
 }
@@ -167,7 +193,7 @@ actor EdgeTTSClient {
 
 // MARK: - WebSocket Delegate
 
-private class WebSocketDelegate: NSObject, URLSessionWebSocketDelegate {
+private final class WebSocketDelegate: NSObject, URLSessionWebSocketDelegate, @unchecked Sendable {
     private var continuation: CheckedContinuation<Void, Error>?
     
     func waitForConnection() async throws {

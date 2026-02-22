@@ -19,3 +19,19 @@
 *   **AI Processing**: Clean up text, summarize, format, or apply custom prompts.
 *   **UI**: Minimalist HUD, floating capsule, and quick-ask panel.
 *   **Platform**: Native macOS application (macOS 14+).
+
+## Documentation Entry Points
+*   **Project Constitution**: `PROJECT.md` (current goals, constraints, DoD, verification commands).
+*   **Architecture Overview**: `spoke/docs/architecture/overview.md` (system layers and major modules).
+*   **Code Navigation Index**: `spoke/docs/architecture/quick-reference.md` (feature -> file -> type mapping).
+*   **Quality Gate Playbook**: `docs/quality-playbook.md` (build/test/concurrency/sanitizer workflow).
+*   **Contribution Workflow**: `CONTRIBUTING.md` (setup, standards, PR checks).
+
+## Logic Location Quick Map
+| Capability | Entry File | Core Implementation |
+|---|---|---|
+| Voice input | `spoke/Services/RecordingController.swift` | `spoke/Core/Audio/AudioRecorderService.swift`, `spoke/Core/Transcription/TranscriptionManager.swift` |
+| Quick Ask | `spoke/Services/QuickAskService.swift` | `spoke/Core/LLM/LLMPipeline.swift`, `spoke/Core/LLM/OpenAICompatibleProvider.swift` |
+| Screenshot OCR | `spoke/Core/Screenshot/ScreenshotManager.swift` | `spoke/Core/Attachment/ScreenCaptureService.swift`, `spoke/Services/ImageEnhancementService.swift` |
+| Live Caption | `spoke/Core/LiveCaption/LiveCaptionManager.swift` | `spoke/Core/LiveCaption/SystemAudioCaptureService.swift`, `spoke/Core/LiveCaption/LiveCaptionTranscriber.swift` |
+| Hotkey routing | `spoke/Services/HotKeyService.swift` | `spoke/Services/HotKey/Handlers/VoiceHandler.swift`, `spoke/Services/HotKey/Handlers/QuickAskHandler.swift` |

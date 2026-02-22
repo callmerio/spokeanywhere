@@ -420,15 +420,17 @@ Quick Ask 模式下的 Hover 操作：
 
 ### A. 录音状态 HUD
 
-![Recording HUD](./image-quick-ask-recording.png)
+> 图示资源暂缺：`./image-quick-ask-recording.png`（待补齐）
 
 - 语音波形显示
 - 输入框用于补充/修正
+- 相关实现：`spoke/UI/HUD/QuickAskInputView.swift`
 
 ### B. AI 回答窗口
 
-![Answer Window](./image-quick-ask-answer.png)
+> 图示资源暂缺：`./image-quick-ask-answer.png`（待补齐）
 
 - 显示截图 + 问题
 - AI 回答（Markdown 格式）
 - 底部继续追问输入框
+- 相关实现：`spoke/UI/QuickAsk/AnswerPanelView.swift`

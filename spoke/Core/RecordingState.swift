@@ -9,7 +9,18 @@ enum RecordingPhase: Equatable {
     case processing   // 转写处理中
     case thinking     // LLM 思考中
     case success
-    case failure(String)
+    case failure(message: String, reason: String? = nil, suggestion: String? = nil)
+    
+    static func == (lhs: RecordingPhase, rhs: RecordingPhase) -> Bool {
+        switch (lhs, rhs) {
+        case (.idle, .idle), (.recording, .recording), (.processing, .processing), (.thinking, .thinking), (.success, .success):
+            return true
+        case (.failure(let m1, let r1, let s1), .failure(let m2, let r2, let s2)):
+            return m1 == m2 && r1 == r2 && s1 == s2
+        default:
+            return false
+        }
+    }
 }
 
 /// 录音会话状态模型
@@ -75,8 +86,16 @@ final class RecordingState {
         self.phase = .success
     }
     
+    func fail(with error: Error) {
+        let message = error.localizedDescription
+        let reason = (error as? LocalizedError)?.failureReason
+        let suggestion = (error as? LocalizedError)?.recoverySuggestion
+        
+        self.phase = .failure(message: message, reason: reason, suggestion: suggestion)
+    }
+    
     func fail(with message: String) {
-        self.phase = .failure(message)
+        self.phase = .failure(message: message)
     }
     
     func reset() {

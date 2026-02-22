@@ -10,7 +10,7 @@ private typealias DS = DesignTokens
 /// - 处理文件夹/ZIP 时显示进度条
 struct AttachmentPickerMenu: View {
     /// 添加附件的回调
-    let onAdd: (Attachment) -> Void
+    let onAdd: @MainActor @Sendable (Attachment) -> Void
     
     /// 按钮大小
     var buttonSize: CGFloat = 24
@@ -129,25 +129,35 @@ struct AttachmentPickerMenu: View {
     }
     
     // MARK: - Actions
-    
+
     private func pickFiles() {
-        attachmentManager.pickFiles(onAdd: onAdd)
+        attachmentManager.pickFiles { [onAdd] attachment in
+            onAdd(attachment)
+        }
     }
-    
+
     private func pickFolder() {
-        attachmentManager.pickFolder(onAdd: onAdd)
+        attachmentManager.pickFolder { [onAdd] attachment in
+            onAdd(attachment)
+        }
     }
-    
+
     private func pickZIP() {
-        attachmentManager.pickZIP(onAdd: onAdd)
+        attachmentManager.pickZIP { [onAdd] attachment in
+            onAdd(attachment)
+        }
     }
-    
+
     private func pickFromPhotos() {
-        attachmentManager.pickFromPhotos(onAdd: onAdd)
+        attachmentManager.pickFromPhotos { [onAdd] attachment in
+            onAdd(attachment)
+        }
     }
-    
+
     private func captureScreen() {
-        attachmentManager.captureScreen(onAdd: onAdd)
+        attachmentManager.captureScreen { [onAdd] attachment in
+            onAdd(attachment)
+        }
     }
 }
 

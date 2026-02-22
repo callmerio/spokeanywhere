@@ -6,6 +6,7 @@ private typealias DS = DesignTokens
 // MARK: - Simple Markdown Parser
 
 /// 轻量级 Markdown 解析器，支持 **粗体**、*斜体*、`代码`
+@MainActor
 enum SimpleMarkdownParser {
     
     // MARK: - 字体缓存（避免重复调用 NSFontManager.convert）

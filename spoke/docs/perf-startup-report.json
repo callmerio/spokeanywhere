@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-02-22T17:05:31Z",
+  "config": {
+    "runs": 1,
+    "item_counts": [10],
+    "timeout_seconds": 20,
+    "build_config": "release"
+  },
+  "run_errors": 0,
+  "cases": [
+    {"item_count":10,"runs":1,"restore_count_all_match":true,"launch_total_ms":{"samples":1,"p50":412,"p95":412,"max":412,"mean":412.00},"restore_decode_ms":{"samples":1,"p50":2,"p95":2,"max":2,"mean":2.00},"restore_ui_ms":{"samples":1,"p50":1520,"p95":1520,"max":1520,"mean":1520.00}}
+
+  ]
+}

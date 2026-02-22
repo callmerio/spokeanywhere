@@ -17,7 +17,7 @@ struct TextBundle {
 }
 
 /// 提取进度回调
-struct ExtractionProgress {
+struct ExtractionProgress: Sendable {
     let current: Int
     let total: Int
     let currentFile: String
@@ -35,7 +35,7 @@ enum TextExtractionError: LocalizedError {
     case zipExtractionFailed(String)
     case noTextFilesFound
     case accessDenied
-    
+
     var errorDescription: String? {
         switch self {
         case .folderNotFound:
@@ -46,6 +46,32 @@ enum TextExtractionError: LocalizedError {
             return "未找到文本文件"
         case .accessDenied:
             return "没有访问权限"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .folderNotFound:
+            return "指定的文件夹路径不存在或已被删除"
+        case .zipExtractionFailed(let reason):
+            return "ZIP 文件解压过程失败: \(reason)"
+        case .noTextFilesFound:
+            return "目标文件夹或 ZIP 文件中没有可提取的文本文件"
+        case .accessDenied:
+            return "应用没有访问该文件夹或文件的权限"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .folderNotFound:
+            return "请检查文件夹路径是否正确，或选择其他文件夹"
+        case .zipExtractionFailed:
+            return "请检查 ZIP 文件是否损坏，或尝试手动解压后重试"
+        case .noTextFilesFound:
+            return "请确认文件夹中包含文本文件（.txt, .md 等），或选择其他文件夹"
+        case .accessDenied:
+            return "请在系统设置 > 隐私与安全性中授予应用文件访问权限"
         }
     }
 }
@@ -135,7 +161,7 @@ actor TextExtractionService {
     }
     
     /// 从文件夹提取所有文本内容（带进度回调）
-    func extractFromFolder(_ folderURL: URL, onProgress: ((ExtractionProgress) -> Void)?) async -> Result<TextBundle, TextExtractionError> {
+    func extractFromFolder(_ folderURL: URL, onProgress: (@MainActor @Sendable (ExtractionProgress) -> Void)?) async -> Result<TextBundle, TextExtractionError> {
         logger.info("📂 Starting folder extraction: \(folderURL.path)")
         let startTime = CFAbsoluteTimeGetCurrent()
         
@@ -281,7 +307,7 @@ actor TextExtractionService {
     }
     
     /// 并行读取并合并文件内容
-    private func mergeFilesParallel(_ files: [URL], basePath: URL, onProgress: ((ExtractionProgress) -> Void)?) async throws -> String {
+    private func mergeFilesParallel(_ files: [URL], basePath: URL, onProgress: (@MainActor @Sendable (ExtractionProgress) -> Void)?) async throws -> String {
         // 目录结构（快速生成）
         var header = "# 目录结构\n```\n"
         for file in files {

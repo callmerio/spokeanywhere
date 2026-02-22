@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import os
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 
 // MARK: - Screen Capture Service
 

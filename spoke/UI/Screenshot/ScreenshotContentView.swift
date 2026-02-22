@@ -196,7 +196,7 @@ extension ScreenshotContentView {
             guard let self = self else { return }
             
             let basic = await Task.detached(priority: .userInitiated) {
-                ImageEnhancementService.shared.enhanceBasic(original, to: targetSize)
+                await ImageEnhancementService.shared.enhanceBasic(original, to: targetSize)
             }.value
             
             if let basic = basic {
@@ -643,7 +643,9 @@ extension ScreenshotContentView {
                     context.duration = 0.15
                     bar.animator().alphaValue = shouldShow ? 1 : 0
                 } completionHandler: {
-                    bar.isHidden = !shouldShow
+                    MainActor.assumeIsolated {
+                        bar.isHidden = !shouldShow
+                    }
                 }
             } else {
                 bar.alphaValue = shouldShow ? 1 : 0

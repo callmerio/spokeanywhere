@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Annotation Command Protocol
 
 /// 标注命令协议（Command Pattern）
+@MainActor
 protocol AnnotationCommand {
     func execute()
     func undo()
@@ -20,10 +21,12 @@ final class AddAnnotationCommand: AnnotationCommand {
         self.canvas = canvas
     }
     
+    @MainActor
     func execute() {
         canvas?.addAnnotation(annotation, recordCommand: false)
     }
     
+    @MainActor
     func undo() {
         canvas?.removeAnnotation(annotation, recordCommand: false)
     }
@@ -41,10 +44,12 @@ final class RemoveAnnotationCommand: AnnotationCommand {
         self.canvas = canvas
     }
     
+    @MainActor
     func execute() {
         canvas?.removeAnnotation(annotation, recordCommand: false)
     }
     
+    @MainActor
     func undo() {
         canvas?.addAnnotation(annotation, recordCommand: false)
     }
@@ -53,6 +58,7 @@ final class RemoveAnnotationCommand: AnnotationCommand {
 // MARK: - Annotation History Manager
 
 /// 标注历史管理器
+@MainActor
 final class AnnotationHistoryManager {
     private var undoStack: [AnnotationCommand] = []
     private var redoStack: [AnnotationCommand] = []

@@ -1,0 +1,195 @@
+{
+  "project": "SpokenAnyWhere",
+  "branchName": "ralph/quality-stability-optimization",
+  "description": "质量与稳定性优化（允许必要重构）：优先收敛录音链路风险、并发隔离告警与回归测试覆盖。",
+  "config": {
+    "rpeMaxWarning": 3,
+    "rpeMaxForceStop": 5,
+    "verifyDirInGit": false
+  },
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "修复 ServiceContainer 并发隔离告警",
+      "description": "As a maintainer, I want to fix the EnvironmentKey/MainActor isolation warning so that Swift 6 migration risk is reduced.",
+      "acceptanceCriteria": [
+        "Resolve the actor isolation warning around ServiceContainerKey defaultValue",
+        "No new high-priority concurrency diagnostics are introduced in this module",
+        "Typecheck passes"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift build",
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "引入音频回调路由层骨架",
+      "description": "As a developer, I want a callback routing abstraction for audio sessions so that Recording and QuickAsk callbacks cannot overwrite each other.",
+      "acceptanceCriteria": [
+        "Add a session-scoped callback routing abstraction in audio orchestration layer",
+        "Keep current behavior parity for existing callback events",
+        "Typecheck passes"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift build",
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "迁移 RecordingController 到回调路由层",
+      "description": "As a user, I want normal recording flow to remain stable after refactor so that session state is not polluted by other entrypoints.",
+      "acceptanceCriteria": [
+        "RecordingController uses session-scoped callback registration instead of shared mutable closures",
+        "Start/stop recording flow remains functional with no callback cross-talk",
+        "Typecheck passes"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift build && swift test",
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "迁移 QuickAskService 到回调路由层",
+      "description": "As a user, I want Quick Ask voice flow to be isolated so that it no longer interferes with normal recording callbacks.",
+      "acceptanceCriteria": [
+        "QuickAskService registers and unregisters callbacks through the routing layer",
+        "Switching between QuickAsk and normal recording does not overwrite active callbacks",
+        "Typecheck passes"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift build && swift test",
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "完善音频错误恢复策略（设备缺失/配置变化）",
+      "description": "As a user, I want predictable recovery or graceful failure when audio devices change so that recording does not enter an error storm.",
+      "acceptanceCriteria": [
+        "Define and implement explicit policy for no-input-device, route-change, and permission-edge cases",
+        "Avoid retry loops and noisy repeated failures under non-recoverable states",
+        "Typecheck passes"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift build && swift test",
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "补齐回调隔离回归测试",
+      "description": "As a maintainer, I want regression tests for callback isolation so that future changes cannot reintroduce cross-session callback bugs.",
+      "acceptanceCriteria": [
+        "Add tests covering Recording and QuickAsk callback isolation",
+        "Add tests for rapid entrypoint switching without callback contamination",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift test",
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "补齐音频恢复与失败边界测试",
+      "description": "As a maintainer, I want deterministic tests around audio failure/recovery boundaries so that regressions are caught before manual QA.",
+      "acceptanceCriteria": [
+        "Add tests for no-input-device failure path and recoverable configuration change path",
+        "Ensure tests validate graceful fallback behavior instead of crash/retry storm",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift test",
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "统一测试隔离策略（持久化与共享状态）",
+      "description": "As a developer, I want tests to use isolated storage and controlled dependencies so that test runs are reproducible across machines.",
+      "acceptanceCriteria": [
+        "Apply isolated temp storage pattern to stateful tests that depend on persisted data",
+        "Document and enforce no-shared-state test rule for affected modules",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift test",
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "新增并发检查入口（渐进式）",
+      "description": "As a maintainer, I want a gradual strict-concurrency check entry so that concurrency issues are discovered earlier without blocking all delivery.",
+      "acceptanceCriteria": [
+        "Add a dedicated build/test command path for strict concurrency diagnostics",
+        "Integrate the command into team workflow docs or scripts",
+        "Typecheck passes"
+      ],
+      "verifyType": "script",
+      "verifyScript": "swift build",
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "建立基础 CI 质量门禁",
+      "description": "As a team member, I want CI to fail fast on core quality checks so that broken changes are blocked early.",
+      "acceptanceCriteria": [
+        "CI includes baseline jobs for build and tests",
+        "Failure output is categorized for faster triage",
+        "Typecheck passes"
+      ],
+      "verifyType": "manual",
+      "verifyScript": "",
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "建立增强诊断通道（Sanitizer）",
+      "description": "As a team member, I want an optional or scheduled sanitizer lane so that hidden race/memory defects can be detected pre-release.",
+      "acceptanceCriteria": [
+        "Add a sanitizer-oriented CI lane as nightly or manual trigger",
+        "Define when this lane is mandatory (for example pre-release)",
+        "Typecheck passes"
+      ],
+      "verifyType": "manual",
+      "verifyScript": "",
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "补充质量与排障文档",
+      "description": "As a developer, I want a documented quality playbook so that I can reproduce failures and follow a standard troubleshooting path.",
+      "acceptanceCriteria": [
+        "Document local verification commands and CI mapping",
+        "Document troubleshooting flow for build/test/concurrency/sanitizer failures",
+        "Typecheck passes"
+      ],
+      "verifyType": "manual",
+      "verifyScript": "",
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

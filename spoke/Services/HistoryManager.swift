@@ -168,27 +168,28 @@ final class HistoryManager {
             return
         }
         
-        let descriptor = FetchDescriptor<HistoryItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        
         do {
-            let allItems = try context.fetch(descriptor)
+            // Fetch all and sort in memory to avoid ReferenceWritableKeyPath Sendable issue in Swift 6
+            let allItems = try context.fetch(FetchDescriptor<HistoryItem>())
+            let sortedItems = allItems.sorted(by: { $0.createdAt > $1.createdAt })
+            
             var itemsToDelete: [HistoryItem] = []
             
             switch policy {
             case .keepDays(let days):
                 let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-                itemsToDelete = allItems.filter { $0.createdAt < cutoffDate }
+                itemsToDelete = sortedItems.filter { $0.createdAt < cutoffDate }
                 
             case .keepCount(let count):
-                if allItems.count > count {
-                    itemsToDelete = Array(allItems.dropFirst(count))
+                if sortedItems.count > count {
+                    itemsToDelete = Array(sortedItems.dropFirst(count))
                 }
                 
             case .keepSize(let megabytes):
                 let maxBytes = megabytes * 1024 * 1024
                 var totalSize = 0
                 
-                for item in allItems {
+                for item in sortedItems {
                     if let audioPath = item.audioPath {
                         let url = audioStorageURL.appendingPathComponent(audioPath)
                         if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
@@ -220,10 +221,8 @@ final class HistoryManager {
     func getStorageStats() async -> (count: Int, totalSize: Int64) {
         guard let context = modelContext else { return (0, 0) }
         
-        let descriptor = FetchDescriptor<HistoryItem>()
-        
         do {
-            let items = try context.fetch(descriptor)
+            let items = try context.fetch(FetchDescriptor<HistoryItem>())
             var totalSize: Int64 = 0
             
             for item in items {
@@ -253,10 +252,9 @@ final class HistoryManager {
         }
         
         // 获取数据库中所有音频路径
-        let descriptor = FetchDescriptor<HistoryItem>()
         let validPaths: Set<String>
         do {
-            let items = try context.fetch(descriptor)
+            let items = try context.fetch(FetchDescriptor<HistoryItem>())
             validPaths = Set(items.compactMap { $0.audioPath })
         } catch {
             logger.error("❌ Failed to fetch audio paths: \(error.localizedDescription, privacy: .public)")
@@ -294,16 +292,16 @@ final class HistoryManager {
     func enforceAudioSizeLimit(maxSizeMB: Int = 2048) async {
         guard let context = modelContext else { return }
         
-        // 只删除普通记录，按时间排序最旧在前
-        let descriptor = FetchDescriptor<HistoryItem>(sortBy: [SortDescriptor(\.createdAt, order: .forward)])
-        
         do {
-            let items = try context.fetch(descriptor)
+            // Fetch all and sort in memory (forward: oldest first)
+            let items = try context.fetch(FetchDescriptor<HistoryItem>())
+            let sortedItems = items.sorted(by: { $0.createdAt < $1.createdAt })
+            
             var totalSize: Int64 = 0
             let maxBytes = Int64(maxSizeMB) * 1024 * 1024
             
             // 计算当前总大小
-            for item in items {
+            for item in sortedItems {
                 if let audioPath = item.audioPath {
                     let url = audioStorageURL.appendingPathComponent(audioPath)
                     if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
@@ -315,7 +313,7 @@ final class HistoryManager {
             
             // 超出限制时，从最旧的普通记录开始删除
             var deletedCount = 0
-            for item in items {
+            for item in sortedItems {
                 guard totalSize > maxBytes else { break }
                 
                 // 跳过 todo/done/note 记录
@@ -346,14 +344,13 @@ final class HistoryManager {
     func enforceNormalRecordLimit(maxCount: Int = 50) async {
         guard let context = modelContext else { return }
         
-        // 获取所有普通记录，按时间倒序（最新在前）
-        let descriptor = FetchDescriptor<HistoryItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        
         do {
-            let allItems = try context.fetch(descriptor)
+            // Fetch all and sort in memory (reverse: newest first)
+            let allItems = try context.fetch(FetchDescriptor<HistoryItem>())
+            let sortedItems = allItems.sorted(by: { $0.createdAt > $1.createdAt })
             
             // 过滤出普通记录
-            let normalItems = allItems.filter { !$0.recordType.isPinned }
+            let normalItems = sortedItems.filter { !$0.recordType.isPinned }
             
             // 超出限制的部分需要删除
             if normalItems.count > maxCount {
@@ -374,10 +371,8 @@ final class HistoryManager {
     func migrateLegacyTodayRecords() async {
         guard let context = modelContext else { return }
         
-        let descriptor = FetchDescriptor<HistoryItem>()
-        
         do {
-            let items = try context.fetch(descriptor)
+            let items = try context.fetch(FetchDescriptor<HistoryItem>())
             var migratedCount = 0
             
             // 检查是否有 recordTypeRaw == "today" 的旧记录

@@ -243,7 +243,7 @@ enum SummaryError: LocalizedError {
     case noProvider
     case fetchFailed
     case emptyResult
-    
+
     var errorDescription: String? {
         switch self {
         case .noProvider:
@@ -252,6 +252,28 @@ enum SummaryError: LocalizedError {
             return "网页内容抓取失败"
         case .emptyResult:
             return "总结结果为空"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .noProvider:
+            return "未配置或选择用于总结的 LLM Provider"
+        case .fetchFailed:
+            return "无法从目标 URL 获取网页内容"
+        case .emptyResult:
+            return "LLM 返回了空的总结结果"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .noProvider:
+            return "请在设置中配置总结专用的 LLM Profile"
+        case .fetchFailed:
+            return "请检查网络连接和 URL 是否有效，或稍后重试"
+        case .emptyResult:
+            return "请尝试重新总结，或检查输入内容是否有效"
         }
     }
 }

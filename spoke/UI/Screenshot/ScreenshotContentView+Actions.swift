@@ -61,7 +61,7 @@ extension ScreenshotContentView {
 
         Task {
             let enhanced = await Task.detached(priority: .userInitiated) {
-                ImageEnhancementService.shared.enhance(original, to: targetSize)
+                await ImageEnhancementService.shared.enhance(original, to: targetSize)
             }.value
 
             await MainActor.run {

@@ -1,7 +1,8 @@
 import AVFoundation
+@preconcurrency import CoreMedia
 import Foundation
 import OSLog
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 
 // MARK: - System Audio Capture Service
 
@@ -143,12 +144,16 @@ extension SystemAudioCaptureService: SCStreamOutput {
     nonisolated func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .audio else { return }
         
+        // M2 战术豁免：使用显式 unsafe transfer box 封装单次转移所有权语义
+        // CMSampleBuffer 在此路径下仅用于读取并立即转换，逻辑上安全
+        let transferred = UnsafeTransferBox(value: sampleBuffer)
+        
         // 转发到主线程处理
-        Task { @MainActor in
-            self.onAudioBuffer?(sampleBuffer)
+        Task { @MainActor [transferred] in
+            self.onAudioBuffer?(transferred.value)
             
             // 转换为 PCM 并回调（用于 SpeechAnalyzerProvider）
-            if self.onPCMBuffer != nil, let pcmBuffer = self.convertToPCMBuffer(sampleBuffer) {
+            if self.onPCMBuffer != nil, let pcmBuffer = self.convertToPCMBuffer(transferred.value) {
                 self.onPCMBuffer?(pcmBuffer)
             }
         }
@@ -247,7 +252,8 @@ extension SystemAudioCaptureService: SCStreamDelegate {
     
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
         Task { @MainActor in
-            self.logger.error("❌ Stream stopped with error: \(error.localizedDescription)")
+            let nsError = error as NSError
+            self.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
             self.isCapturing = false
             self.onError?(error)
         }

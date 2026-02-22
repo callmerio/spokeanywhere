@@ -170,7 +170,7 @@ enum WorkflowError: LocalizedError {
     case profileNotConfigured(String)
     case llmError(LLMError)
     case cancelled
-    
+
     var errorDescription: String? {
         switch self {
         case .profileNotConfigured(let hint):
@@ -179,6 +179,28 @@ enum WorkflowError: LocalizedError {
             return error.localizedDescription
         case .cancelled:
             return "已取消"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .profileNotConfigured(let hint):
+            return "\(hint)功能需要专用的 LLM Profile，但当前未配置"
+        case .llmError(let error):
+            return error.failureReason
+        case .cancelled:
+            return "用户主动取消了工作流执行"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .profileNotConfigured(let hint):
+            return "请在设置 > LLM > Profiles 中为\(hint)创建专用配置"
+        case .llmError(let error):
+            return error.recoverySuggestion
+        case .cancelled:
+            return nil
         }
     }
 }

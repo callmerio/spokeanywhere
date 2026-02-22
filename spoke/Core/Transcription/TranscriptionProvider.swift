@@ -75,7 +75,7 @@ struct TranscriptionCapability: OptionSet {
 /// 转录引擎协议
 /// 所有语音转文字引擎必须实现此协议
 @MainActor
-protocol TranscriptionProvider: AnyObject {
+protocol TranscriptionProvider: AnyObject, Sendable {
     
     /// 引擎唯一标识符
     var identifier: String { get }
@@ -145,8 +145,9 @@ enum TranscriptionError: LocalizedError {
     case processingFailed(String)
     case unsupportedLocale(Locale)
     case modelNotInstalled
+    case emptySpeech
     case cancelled
-    
+
     var errorDescription: String? {
         switch self {
         case .notAvailable:
@@ -161,8 +162,52 @@ enum TranscriptionError: LocalizedError {
             return "不支持的语言: \(locale.identifier)"
         case .modelNotInstalled:
             return "语言模型未安装"
+        case .emptySpeech:
+            return "未检测到语音"
         case .cancelled:
             return "已取消"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .notAvailable:
+            return "系统不支持语音识别，或转录引擎初始化失败"
+        case .notAuthorized:
+            return "应用未获得麦克风或语音识别权限"
+        case .engineNotReady:
+            return "转录引擎正在初始化或资源未加载完成"
+        case .processingFailed(let reason):
+            return "音频处理过程中发生错误: \(reason)"
+        case .unsupportedLocale(let locale):
+            return "当前语言 \(locale.identifier) 不被转录引擎支持"
+        case .modelNotInstalled:
+            return "所需的语言模型文件未下载或安装"
+        case .emptySpeech:
+            return "录音中没有检测到有效的人声内容"
+        case .cancelled:
+            return "用户主动取消了转录操作"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .notAvailable:
+            return "请检查系统版本是否支持语音识别（需要 macOS 14+），或尝试重启应用"
+        case .notAuthorized:
+            return "请在系统设置 > 隐私与安全性 > 麦克风/语音识别 中授予权限"
+        case .engineNotReady:
+            return "请稍等片刻让引擎完成初始化，或尝试重新开始录音"
+        case .processingFailed:
+            return "请检查音频输入设备是否正常，或尝试重新录音"
+        case .unsupportedLocale(let locale):
+            return "请在设置中切换到支持的语言，或使用系统默认语言（\(locale.identifier) 不支持）"
+        case .modelNotInstalled:
+            return "请在系统设置中下载对应语言的听写模型，或切换到已安装的语言"
+        case .emptySpeech:
+            return "请检查麦克风设置，或尝试离麦克风更近一点说话"
+        case .cancelled:
+            return nil  // 用户主动取消，无需恢复建议
         }
     }
 }

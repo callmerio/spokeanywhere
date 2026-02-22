@@ -54,6 +54,7 @@ final class RegionSelectionView: NSView {
     
     // MARK: - Constants
 
+    @MainActor
     private enum Design {
         static let overlayColor = DesignTokens.Colors.NS.overlayLight
 

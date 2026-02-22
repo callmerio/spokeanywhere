@@ -1,0 +1,70 @@
+name: Perf Startup Gate (Draft)
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Benchmark runs per case"
+        required: false
+        default: "10"
+      item_counts:
+        description: "Fixture sizes, space-separated"
+        required: false
+        default: "10 20 50"
+      build_config:
+        description: "Swift build config"
+        required: false
+        default: "release"
+
+jobs:
+  startup-perf:
+    name: Startup Perf Benchmark
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "15.4"
+
+      - name: Resolve Dependencies
+        working-directory: spoke
+        run: swift package resolve
+
+      - name: Run Startup Benchmark
+        working-directory: spoke
+        run: |
+          chmod +x scripts/perf/run_startup_bench.sh scripts/perf/check_startup_regression.sh
+          RUNS="${{ github.event.inputs.runs || '10' }}" \
+          ITEM_COUNTS="${{ github.event.inputs.item_counts || '10 20 50' }}" \
+          BUILD_CONFIG="${{ github.event.inputs.build_config || 'release' }}" \
+          REPORT_PATH="docs/perf-startup-report.json" \
+          scripts/perf/run_startup_bench.sh
+
+      - name: Check Regression Gate
+        working-directory: spoke
+        run: |
+          scripts/perf/check_startup_regression.sh \
+            docs/perf-startup-report.json \
+            perf/baseline-startup.json
+
+      - name: Collect Perf Logs
+        if: always()
+        run: |
+          mkdir -p spoke/docs/perf-logs
+          if [[ -d /tmp/spoke-perf-startup/logs ]]; then
+            cp -R /tmp/spoke-perf-startup/logs/. spoke/docs/perf-logs/
+          fi
+
+      - name: Upload Perf Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-perf-artifacts
+          path: |
+            spoke/docs/perf-startup-report.json
+            spoke/docs/perf-logs
+          retention-days: 14

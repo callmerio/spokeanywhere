@@ -1,5 +1,10 @@
 name: Sanitizer Gate
 
+# CI-only workflow: Thread/Address Sanitizers cannot run locally due to macOS dyld platform policy.
+# Local execution fails with: "Sanitizer load violates platform policy"
+# This is an environment constraint (SIP/Hardened Runtime), not a code issue.
+# See docs/quality-playbook.md for details.
+
 on:
   schedule:
     - cron: "0 3 * * *" # nightly UTC

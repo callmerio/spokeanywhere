@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "notes": "Initial startup performance thresholds. Tune with measured baseline on dedicated perf host.",
+  "thresholds": [
+    {
+      "item_count": 10,
+      "launch_p95_max_ms": 1500,
+      "restore_decode_p95_max_ms": 400,
+      "restore_ui_p95_max_ms": 2200,
+      "require_restore_count_match": true
+    },
+    {
+      "item_count": 20,
+      "launch_p95_max_ms": 2200,
+      "restore_decode_p95_max_ms": 700,
+      "restore_ui_p95_max_ms": 4200,
+      "require_restore_count_match": true
+    },
+    {
+      "item_count": 50,
+      "launch_p95_max_ms": 4500,
+      "restore_decode_p95_max_ms": 1500,
+      "restore_ui_p95_max_ms": 9000,
+      "require_restore_count_match": true
+    }
+  ]
+}

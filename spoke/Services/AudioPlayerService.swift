@@ -176,13 +176,31 @@ extension AudioPlayerService: AVAudioPlayerDelegate {
 enum AudioPlayerError: LocalizedError {
     case playerCreationFailed
     case fileNotFound
-    
+
     var errorDescription: String? {
         switch self {
         case .playerCreationFailed:
             return "无法创建音频播放器"
         case .fileNotFound:
             return "音频文件不存在"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .playerCreationFailed:
+            return "AVAudioPlayer 初始化失败，可能是音频格式不支持或文件损坏"
+        case .fileNotFound:
+            return "指定的音频文件路径不存在或已被删除"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .playerCreationFailed:
+            return "请检查音频文件格式是否支持（支持 MP3、WAV、M4A 等），或尝试重新录制"
+        case .fileNotFound:
+            return "请检查文件路径是否正确，或从历史记录中重新选择音频"
         }
     }
 }

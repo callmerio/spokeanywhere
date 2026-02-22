@@ -43,10 +43,12 @@ final class VocabularyService: ObservableObject {
     private var matchRegex: NSRegularExpression?
     
     /// 生词数量上限（防止正则性能问题）
-    private let maxVocabularySize = 200
+    private let maxVocabularySize: Int
     
     /// 存储路径
-    private var storageURL: URL {
+    private let storageURL: URL
+
+    nonisolated private static func defaultStorageURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
         return spokeDir.appendingPathComponent("vocabulary.json")
@@ -54,8 +56,18 @@ final class VocabularyService: ObservableObject {
     
     // MARK: - Init
     
-    private init() {
-        loadItems()
+    init(
+        storageURL: URL = VocabularyService.defaultStorageURL(),
+        maxVocabularySize: Int = 200,
+        loadPersistedItems: Bool = true
+    ) {
+        self.storageURL = storageURL
+        self.maxVocabularySize = max(1, maxVocabularySize)
+
+        if loadPersistedItems {
+            loadItems()
+        }
+
         rebuildRegex()
     }
     

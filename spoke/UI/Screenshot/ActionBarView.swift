@@ -359,7 +359,9 @@ final class ActionBarButton: NSView {
             context.duration = animationDuration
             iconView.animator().contentTintColor = activeColor
         } completionHandler: {
-            self.updateHoverState(animated: true)
+            MainActor.assumeIsolated {
+                self.updateHoverState(animated: true)
+            }
         }
     }
     

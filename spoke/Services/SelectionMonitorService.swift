@@ -199,9 +199,10 @@ final class SelectionMonitorService {
     
     /// 请求辅助功能权限
     func requestAccessibilityPermission() {
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        _ = AXIsProcessTrustedWithOptions(options)
-        
+        MainActor.assumeIsolated {
+            _ = AccessibilityHelper.requestAccessibilityPermission()
+        }
+
         logger.info("📋 [SelectionMonitor] 已请求辅助功能权限")
     }
     
@@ -264,13 +265,6 @@ final class SelectionMonitorService {
             return
         }
         
-        // 🔥 忽略自身应用（Dictionary Panel 打字会触发 AX 通知）
-        if bundleId == selfBundleId {
-            logger.debug("📋 [SelectionMonitor] 跳过自身应用的 AXObserver 设置")
-            removeCurrentAXObserver()
-            return
-        }
-        
         logger.info("📋 [SelectionMonitor] 切换到应用: \(frontApp.localizedName ?? "unknown") (pid: \(pid))")
         
         // 移除旧的观察者
@@ -282,6 +276,7 @@ final class SelectionMonitorService {
         
         guard error == .success, let observer = observer else {
             logger.warning("📋 [SelectionMonitor] AXObserverCreate 失败: \(error.rawValue)")
+            // 某些应用可能不支持此通知，继续使用鼠标/键盘监听
             return
         }
         
@@ -499,7 +494,7 @@ final class SelectionMonitorService {
             return
         }
         
-        // 🔥 修复: 将耗时的 AX 遍历移到后台线程，避免卡死主线程
+        // 🔥 方案 C: 耗时的 AX 遍历移到后台线程，避免卡死主线程
         // AXUIElementCopyAttributeValue 是同步 IPC 调用，复杂 UI 应用（Chrome/Electron）会很慢
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
@@ -552,7 +547,7 @@ final class SelectionMonitorService {
     }
     
     /// 使用 Accessibility API 获取选中文本和位置
-    /// 🔥 nonisolated: 允许在后台线程调用，避免主线程卡死
+    /// 🔥 nonisolated: 允许在后台线程调用
     nonisolated private func getSelectedTextAndBounds(for app: NSRunningApplication) -> (String, CGRect)? {
         var bounds = CGRect.zero
         var selectedText: String?
