@@ -62,9 +62,13 @@ if pgrep -x "${APP_NAME}" > /dev/null; then
     log_info "采样进程（5秒）..."
     sample "${APP_PID}" 5 -file "${EVIDENCE_PACKAGE}/sample.txt" 2>&1 || log_warn "采样失败"
 
-    # 堆栈快照
+    # 堆栈快照（非交互模式，避免阻塞）
     log_info "获取堆栈快照..."
-    sudo spindump "${APP_PID}" -file "${EVIDENCE_PACKAGE}/spindump.txt" 2>&1 || log_warn "spindump 失败（需要 sudo）"
+    if sudo -n spindump "${APP_PID}" -file "${EVIDENCE_PACKAGE}/spindump.txt" 2>&1; then
+        log_info "spindump 成功"
+    else
+        log_warn "spindump 失败（需要 sudo 权限或使用 sudo -v 预授权）"
+    fi
 else
     log_warn "未找到运行中的 ${APP_NAME} 进程"
     echo "Process not running at collection time" > "${EVIDENCE_PACKAGE}/process-info.txt"
@@ -87,9 +91,14 @@ fi
 
 # 6. 开发日志（如果存在）
 log_info "检查开发日志..."
-DEV_LOG_DIR="/Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/.tmp_frames"
+# 基于脚本目录推导 repo 根路径
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+DEV_LOG_DIR="${DEV_LOG_DIR:-${REPO_ROOT}/.tmp_frames}"
 if [ -d "${DEV_LOG_DIR}" ]; then
     find "${DEV_LOG_DIR}" -name "dev-*.log" -mtime -1 -exec cp {} "${EVIDENCE_PACKAGE}/" \; 2>&1 || log_warn "无法复制开发日志"
+else
+    log_warn "开发日志目录不存在: ${DEV_LOG_DIR}"
 fi
 
 # 7. 资源使用情况

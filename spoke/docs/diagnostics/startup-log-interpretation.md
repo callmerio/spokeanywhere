@@ -12,12 +12,23 @@
 
 **方式一：环境变量（推荐用于临时诊断）**
 ```bash
+# SwiftPM 构建路径
+SPOKE_STARTUP_LOG=1 ./.build/debug/SpokenAnyWhere
+
+# Xcode/App Bundle 路径
 SPOKE_STARTUP_LOG=1 ./spoke/build/SpokenAnyWhere.app/Contents/MacOS/SpokenAnyWhere
 ```
 
-**方式二：AppSettings 开关（推荐用于持续观测）**
-- 打开设置 → 高级 → 启动诊断日志
-- 重启应用生效
+**方式二：AppSettings 开关（持久化，需通过 defaults 命令设置）**
+```bash
+# 启用启动诊断日志
+defaults write com.spokeanywhere StartupDiagnosticsEnabled -bool true
+
+# 禁用启动诊断日志
+defaults write com.spokeanywhere StartupDiagnosticsEnabled -bool false
+```
+
+注：设置 UI 集成计划中，当前通过命令行控制。
 
 ### 1.2 日志输出位置
 
