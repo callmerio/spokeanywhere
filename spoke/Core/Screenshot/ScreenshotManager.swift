@@ -227,13 +227,13 @@ final class ScreenshotManager {
         }
 
         logger.info("""
-            ✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode)): \(itemId) \
-            [capture_latency: \(String(format: "%.0f", captureLatencyMs))ms, \
-            enhancement_path: \(self.lastEnhancementPath), \
-            save_all_write_p95: \(String(format: "%.1f", saveAllWriteP95))ms, \
-            blur_main_dispatch_p95: \(String(format: "%.1f", blurMainDispatchP95))ms, \
-            coverage_saveall: \(self.coverageSaveAll ? 1 : 0), \
-            coverage_blur: \(self.coverageBlur ? 1 : 0)]
+            ✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode, privacy: .public)): \(itemId, privacy: .public) \
+            [capture_latency: \(String(format: "%.0f", captureLatencyMs), privacy: .public)ms, \
+            enhancement_path: \(self.lastEnhancementPath, privacy: .public), \
+            save_all_write_p95: \(String(format: "%.1f", saveAllWriteP95), privacy: .public)ms, \
+            blur_main_dispatch_p95: \(String(format: "%.1f", blurMainDispatchP95), privacy: .public)ms, \
+            coverage_saveall: \(self.coverageSaveAll ? 1 : 0, privacy: .public), \
+            coverage_blur: \(self.coverageBlur ? 1 : 0, privacy: .public)]
             """)
     }
     

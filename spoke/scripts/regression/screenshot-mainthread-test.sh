@@ -86,6 +86,7 @@ wait "${RESOURCE_PID}" 2>/dev/null || true
 log_info "采集测试窗口日志..."
 log show --predicate 'subsystem == "com.spokeanywhere" AND category == "ScreenshotManager"' \
     --style syslog \
+    --info \
     --start "${TEST_START_TIME}" \
     > "${TEST_PACKAGE}/screenshot-log.txt" 2>&1
 
