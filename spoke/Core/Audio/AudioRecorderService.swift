@@ -43,6 +43,14 @@ final class AudioRecorderService: NSObject {
     /// 音频缓冲区（引擎准备好之前暂存）
     private var audioBuffer: [AVAudioPCMBuffer] = []
     private let bufferLock = NSLock()
+    private let maxBufferedChunksBeforeEngineReady = 128
+    private let maxPendingCrashRecoveryWrites = 8
+
+    /// 背压诊断计数器（R2-1: 音频链路背压策略验证）
+    private var preReadyBufferPeak: Int = 0          // 引擎准备前缓冲区峰值
+    private var preReadyDropCount: Int = 0           // 引擎准备前丢帧次数
+    private var recoveryWriteDropCount: Int = 0      // 崩溃恢复写入丢弃次数
+    private var enginePrepareStartTime: CFAbsoluteTime = 0  // 引擎准备开始时间
     
     /// 配置变更通知观察者
     private var configurationChangeObserver: NSObjectProtocol?
@@ -323,6 +331,12 @@ final class AudioRecorderService: NSObject {
         bufferLock.lock()
         audioBuffer.removeAll()
         bufferLock.unlock()
+
+        // 重置背压诊断计数器
+        preReadyBufferPeak = 0
+        preReadyDropCount = 0
+        recoveryWriteDropCount = 0
+        enginePrepareStartTime = 0
         
         // 创建最佳转录引擎
         let provider = transcriptionManager.createBestProvider()
@@ -350,13 +364,33 @@ final class AudioRecorderService: NSObject {
         if let url = tempAudioFileURL {
             audioFile = try? AVAudioFile(forWriting: url, settings: recordingFormat.settings)
         }
+        let crashRecoveryFileBox = audioFile.map { UnsafeTransferBox(value: $0) }
+        let crashRecoveryWriteQueue = DispatchQueue(
+            label: "com.spokeanywhere.audio.crash-recovery-write",
+            qos: .utility
+        )
+        let crashRecoveryWriteSlots = DispatchSemaphore(value: maxPendingCrashRecoveryWrites)
         
         // 安装 Tap 节点 - 立即开始录音
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
             
-            // 写入磁盘（崩溃恢复）
-            try? self.audioFile?.write(from: buffer)
+            // 写入磁盘（崩溃恢复）：音频回调不做同步 I/O，避免回调线程被阻塞
+            if let crashRecoveryFileBox,
+               let copiedBuffer = Self.copyPCMBuffer(buffer) {
+                if crashRecoveryWriteSlots.wait(timeout: .now()) == .success {
+                    let transferredBuffer = UnsafeTransferBox(value: copiedBuffer)
+                    crashRecoveryWriteQueue.async {
+                        defer { crashRecoveryWriteSlots.signal() }
+                        try? crashRecoveryFileBox.value.write(from: transferredBuffer.value)
+                    }
+                } else {
+                    // 背压：写入槽位已满，丢弃此次写入（需加锁保护计数器）
+                    self.bufferLock.lock()
+                    self.recoveryWriteDropCount += 1
+                    self.bufferLock.unlock()
+                }
+            }
             
             // 计算音频电平
             self.processAudioLevel(buffer: buffer)
@@ -368,7 +402,16 @@ final class AudioRecorderService: NSObject {
             } else {
                 // 引擎未准备好，缓存音频
                 self.bufferLock.lock()
+                if self.audioBuffer.count >= self.maxBufferedChunksBeforeEngineReady {
+                    let overflow = self.audioBuffer.count - self.maxBufferedChunksBeforeEngineReady + 1
+                    self.audioBuffer.removeFirst(overflow)
+                    self.preReadyDropCount += overflow  // 记录丢帧次数
+                }
                 self.audioBuffer.append(buffer)
+                // 更新缓冲区峰值
+                if self.audioBuffer.count > self.preReadyBufferPeak {
+                    self.preReadyBufferPeak = self.audioBuffer.count
+                }
                 self.bufferLock.unlock()
             }
         }
@@ -384,8 +427,9 @@ final class AudioRecorderService: NSObject {
         // 异步准备转录引擎
         Task { [weak self] in
             guard let self = self else { return }
-            
+
             do {
+                self.enginePrepareStartTime = CFAbsoluteTimeGetCurrent()
                 logger.info("⏳ Preparing transcription engine...")
                 try await provider.prepare()
                 
@@ -393,10 +437,18 @@ final class AudioRecorderService: NSObject {
                     // 发送缓存的音频
                     self.bufferLock.lock()
                     let bufferedAudio = self.audioBuffer
+                    // 快照计数器（避免日志读取与写入并发）
+                    let peak = self.preReadyBufferPeak
+                    let drops = self.preReadyDropCount
+                    let recoveryDrops = self.recoveryWriteDropCount
+
                     self.audioBuffer.removeAll()
                     self.bufferLock.unlock()
-                    
-                    self.logger.info("✅ Engine ready, sending \(bufferedAudio.count) buffered chunks")
+
+                    // 计算引擎准备时间
+                    let enginePrepareMs = (CFAbsoluteTimeGetCurrent() - self.enginePrepareStartTime) * 1000
+
+                    self.logger.info("✅ Engine ready, sending \(bufferedAudio.count) buffered chunks [prepare: \(String(format: "%.0f", enginePrepareMs))ms, peak: \(peak), drops: \(drops), recovery_drops: \(recoveryDrops)]")
                     
                     var successCount = 0
                     var failCount = 0
@@ -600,6 +652,28 @@ final class AudioRecorderService: NSObject {
         let fileName = "spoke_\(UUID().uuidString).caf"
         return tempDir.appendingPathComponent(fileName)
     }
+
+    nonisolated private static func copyPCMBuffer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let copy = AVAudioPCMBuffer(pcmFormat: buffer.format, frameCapacity: buffer.frameLength) else {
+            return nil
+        }
+        copy.frameLength = buffer.frameLength
+
+        let srcListPointer = UnsafeMutablePointer(mutating: buffer.audioBufferList)
+        let srcBuffers = UnsafeMutableAudioBufferListPointer(srcListPointer)
+        let dstBuffers = UnsafeMutableAudioBufferListPointer(copy.mutableAudioBufferList)
+        guard srcBuffers.count == dstBuffers.count else { return nil }
+
+        for index in 0..<srcBuffers.count {
+            let src = srcBuffers[index]
+            let dst = dstBuffers[index]
+            guard let srcData = src.mData, let dstData = dst.mData else { continue }
+            let bytes = min(Int(src.mDataByteSize), Int(dst.mDataByteSize))
+            memcpy(dstData, srcData, bytes)
+        }
+
+        return copy
+    }
     
     private func processAudioLevel(buffer: AVAudioPCMBuffer) {
         guard let channelData = buffer.floatChannelData?[0] else { return }
@@ -644,7 +718,7 @@ enum AudioRecorderError: LocalizedError, Equatable {
     case requestCreationFailed
     case permissionDenied
     case noInputDevice
-    
+
     var errorDescription: String? {
         switch self {
         case .recognizerNotAvailable:
@@ -657,6 +731,36 @@ enum AudioRecorderError: LocalizedError, Equatable {
             return "权限被拒绝"
         case .noInputDevice:
             return "未检测到可用麦克风设备"
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .recognizerNotAvailable:
+            return "系统语音识别服务不可用或未初始化"
+        case .engineCreationFailed:
+            return "AVAudioEngine 初始化失败，可能是音频系统资源不足"
+        case .requestCreationFailed:
+            return "SFSpeechAudioBufferRecognitionRequest 创建失败"
+        case .permissionDenied:
+            return "应用未获得麦克风或语音识别权限"
+        case .noInputDevice:
+            return "系统未检测到可用的音频输入设备"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .recognizerNotAvailable:
+            return "请检查系统版本是否支持语音识别（需要 macOS 14+），或尝试重启应用"
+        case .engineCreationFailed:
+            return "请关闭其他占用音频的应用，或重启系统后重试"
+        case .requestCreationFailed:
+            return "请稍后重试，或重启应用"
+        case .permissionDenied:
+            return "请在系统设置 > 隐私与安全性 > 麦克风 中授予权限"
+        case .noInputDevice:
+            return "请连接麦克风设备，或检查系统音频设置"
         }
     }
 }
