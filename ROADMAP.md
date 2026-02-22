@@ -77,16 +77,21 @@
 ### Phase R2（2026-03-02 ~ 2026-03-08）P0 路径稳态化
 
 **目标**
-- 将“已止血”升级为“可长期运行的稳态方案”。
+- 将”已止血”升级为”可长期运行的稳态方案”。
 
 **工作包**
-1. 持续验证音频链路背压策略（避免写入积压引发卡顿/丢数据）。
-2. 持续验证截图/图像增强链路的主线程占用上限。
+1. ✅ R2-1: 音频链路背压验证（已完成，见 `docs/roadmap/r2-1-audio-backpressure-interpretation.md`）
+2. ⏳ R2-2: 截图/图像增强链路主线程占用验证（**Conditional GO** - 代码修复已验证，运行时证据待用户交互）
+   - 状态: `R2-2: Conditional GO — code-level fixes validated; runtime screenshot interaction evidence pending user pin action.`
+   - 文档: `docs/roadmap/r2-2-screenshot-mainthread-interpretation.md`
+   - Commit: b0ba0c1f7186db77e29cb056ce390edca8d0c16c
+   - 转正条件: 1 次用户手动 pin 交互 + 6 字段可解析日志 + coverage 命中
 3. 建立回归脚本：典型录音 + OCR + LLM 联动场景压测。
 
 **阶段 DoD**
 - 连续多轮压测无卡死、无新增高优先级并发告警。
 - 关键链路（录音、截图、字幕）均有可复现回归日志。
+- R2-2 转正为 Full GO（待用户交互补证）。
 
 ---
 
