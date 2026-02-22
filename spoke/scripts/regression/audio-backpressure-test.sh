@@ -119,8 +119,8 @@ log_info "提取背压指标..."
     echo "=== Backpressure Metrics Extraction ==="
     echo ""
 
-    # 提取引擎准备日志行
-    ENGINE_READY_LINE=$(grep "Engine ready, sending.*buffered chunks" "${TEST_PACKAGE}/audio-log.txt" 2>/dev/null | tail -1)
+    # 提取引擎准备日志行（|| true 避免 grep 无匹配时触发 errexit）
+    ENGINE_READY_LINE=$(grep "Engine ready, sending.*buffered chunks" "${TEST_PACKAGE}/audio-log.txt" 2>/dev/null | tail -1 || true)
 
     if [ -n "${ENGINE_READY_LINE}" ]; then
         # 提取指标：prepare: Xms, peak: X, drops: X, recovery_drops: X
