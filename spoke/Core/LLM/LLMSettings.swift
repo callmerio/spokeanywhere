@@ -562,19 +562,19 @@ final class LLMSettings {
         guard let profile = selectedProfile else { return nil }
         // 直接注入 API Key，避免 Provider 再次访问 Keychain
         let apiKey = getAPIKey(for: profile.id)
-        return OpenAICompatibleProvider(profile: profile, apiKey: apiKey)
+        return OpenAICompatibleProvider(profile: profile, apiKey: apiKey, timeout: timeout)
     }
-    
+
     /// 根据指定 Profile 创建 Provider
     func createProvider(for profile: ProviderProfile) -> (any LLMProvider)? {
         let apiKey = getAPIKey(for: profile.id)
-        return OpenAICompatibleProvider(profile: profile, apiKey: apiKey)
+        return OpenAICompatibleProvider(profile: profile, apiKey: apiKey, timeout: timeout)
     }
-    
+
     /// 获取 Profile 对应的可用模型列表
     func fetchModels(for profile: ProviderProfile) async -> [String] {
         let apiKey = getAPIKey(for: profile.id)
-        let provider = OpenAICompatibleProvider(profile: profile, apiKey: apiKey)
+        let provider = OpenAICompatibleProvider(profile: profile, apiKey: apiKey, timeout: timeout)
         return await provider.fetchModels()
     }
     

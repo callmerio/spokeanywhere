@@ -9,33 +9,32 @@ actor OpenAICompatibleProvider: LLMProvider {
     // MARK: - Properties
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LLM")
-    
+
     let providerType: LLMProviderType
     private let config: ProviderConfig
     private let profile: ProviderProfile?
     private let providedAPIKey: String? // 直接传入的 API Key
     private let session: URLSession
-    
+
     /// 请求超时时间（秒）
-    private let timeout: TimeInterval = 30
-    
+    private let timeout: TimeInterval
+
+    /// Temperature 参数
+    private let temperature: Double
+
     // MARK: - Computed (从 Profile 或 Config 获取)
-    
+
     private var baseURL: String {
         profile?.baseURL ?? config.baseURL
     }
-    
+
     private var modelName: String {
         profile?.modelName ?? config.modelName
     }
-    
+
     // 这里的 apiKeyRef 仅用于旧版兼容
     private var apiKeyRef: String? {
         profile?.apiKeyRef ?? config.apiKeyRef
-    }
-    
-    private var temperature: Double {
-        profile?.temperature ?? 0.3
     }
     
     private var maxTokens: Int {
@@ -55,27 +54,32 @@ actor OpenAICompatibleProvider: LLMProvider {
     // MARK: - Init
     
     /// 旧版初始化 (从 ProviderConfig)
-    init(providerType: LLMProviderType, config: ProviderConfig) {
+    init(providerType: LLMProviderType, config: ProviderConfig, timeout: TimeInterval = 30, temperature: Double = 0.3) {
         self.providerType = providerType
         self.config = config
         self.profile = nil
         self.providedAPIKey = nil
-        
+        self.timeout = timeout
+        self.temperature = temperature
+
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = timeout
         configuration.timeoutIntervalForResource = timeout
         self.session = URLSession(configuration: configuration)
     }
-    
+
     /// 新版初始化 (从 ProviderProfile)
     /// - apiKey: 可选，直接传入 API Key，避免 Provider 内部访问 Keychain
-    init(profile: ProviderProfile, apiKey: String? = nil) {
+    init(profile: ProviderProfile, apiKey: String? = nil, timeout: TimeInterval = 30) {
         self.providerType = profile.providerType
         self.profile = profile
         self.providedAPIKey = apiKey
+        self.timeout = timeout
+        // 直接使用 profile 的 temperature（profile.temperature 是非可选的）
+        self.temperature = profile.temperature
         // 创建一个空的 config 作为 fallback
         self.config = ProviderConfig(baseURL: profile.baseURL, modelName: profile.modelName, apiKeyRef: profile.apiKeyRef)
-        
+
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = timeout
         configuration.timeoutIntervalForResource = timeout

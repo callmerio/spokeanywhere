@@ -308,15 +308,21 @@ final class SelectionToolbarState: ObservableObject {
     }
     
     // MARK: - Configuration
-    
+
     /// 加载配置
     private func loadConfig() {
-        // TODO: 从 UserDefaults 加载配置
+        let settings = AppSettings.shared
+        config.autoHideDelay = settings.selectionToolbarAutoHideDelay
+        config.showButtonText = settings.selectionToolbarShowText
+        config.enableOCRContext = settings.selectionToolbarOCRContext
     }
-    
+
     /// 保存配置
     func saveConfig() {
-        // TODO: 保存配置到 UserDefaults
+        let settings = AppSettings.shared
+        settings.selectionToolbarAutoHideDelay = config.autoHideDelay
+        settings.selectionToolbarShowText = config.showButtonText
+        settings.selectionToolbarOCRContext = config.enableOCRContext
     }
     
     /// 设置启用的按钮

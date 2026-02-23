@@ -138,11 +138,18 @@ final class LLMPipeline {
             logger.info("⏭️ LLM not configured, skipping")
             return .success(text)
         }
-        
-        guard let provider = settings.createCurrentProvider() else {
+
+        // 优先使用 transcriptionProfile，回退到 selectedProfile
+        let profile = settings.transcriptionProfile ?? settings.selectedProfile
+        guard let profile = profile,
+              let provider = settings.createProvider(for: profile) else {
             logger.error("❌ Failed to create LLM provider")
             return .failure(.notConfigured)
         }
+
+        // 记录实际使用的 profile（用于验证 transcriptionProfileId 消费链）
+        let profileSource = settings.transcriptionProfile != nil ? "transcription" : "selected"
+        logger.info("🤖 Using \(profileSource) profile: \(profile.name) (id: \(profile.id))")
         
         isProcessing = true
         defer { isProcessing = false }

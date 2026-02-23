@@ -32,9 +32,9 @@
 
 | setting_key | owner | read-path | write-path | 生效语义 | dependencies | side_effects |
 |-------------|-------|-----------|------------|----------|--------------|--------------|
-| `historyAutoCleanupEnabled` | AppSettings.swift | HistoryManager.swift | **UI 未实现** | 即时 | 无 | 自动清理任务启动/停止 |
-| `historyKeepDays` | AppSettings.swift | HistoryManager.swift | **UI 未实现** | 即时 | historyAutoCleanupEnabled | 清理保留天数 |
-| `historyMaxCount` | AppSettings.swift | HistoryManager.swift | **UI 未实现** | 即时 | historyAutoCleanupEnabled | 清理最大数量 |
+| `historyAutoCleanupEnabled` | AppSettings.swift:107 | AppDelegate.swift:233 | **UI 未实现** | 启动时 | 无 | 自动清理任务启动/停止 |
+| `historyKeepDays` | AppSettings.swift:110 | AppDelegate.swift:238 | **UI 未实现** | 启动时 | historyAutoCleanupEnabled | 清理保留天数 |
+| `historyMaxCount` | AppSettings.swift:113 | AppDelegate.swift:243 | **UI 未实现** | 启动时 | historyAutoCleanupEnabled | 清理最大数量 |
 
 **配置位置**: `spoke/Services/AppSettings.swift`
 **详细文档**: [历史清理详细文档](./config-history.md)
@@ -99,11 +99,11 @@
 | `systemPrompt` | LLMSettings.swift | LLMProvider.swift | AISettingsContent.swift | 即时 | isEnabled | 系统提示词 |
 | `includeClipboard` | LLMSettings.swift | LLMProvider.swift | AISettingsContent.swift | 即时 | isEnabled | 上下文收集 |
 | `includeActiveApp` | LLMSettings.swift | LLMProvider.swift | AISettingsContent.swift | 即时 | isEnabled | 上下文收集 |
-| `temperature` | LLMSettings.swift:137 | N/A (运行时用 profile.temperature) | N/A (UI 未暴露/未接线) | 配置已定义 | 无 | 全局键（运行时未接线） |
-| `timeout` | LLMSettings.swift:142 | N/A (硬编码 30 秒) | N/A (UI 未暴露/未接线) | 配置已定义 | 无 | 全局键（运行时未接线） |
+| `temperature` | LLMSettings.swift:137 | Profile-only (profile.temperature) | N/A (UI 未暴露) | 架构决策 | 无 | Profile 自带温度，全局配置保留但运行时不消费 |
+| `timeout` | LLMSettings.swift:142 | OpenAICompatibleProvider.swift:20,84-85 | LLMSettings.swift:565/571/577 | 即时 | 无 | 参数化注入（URLSession 配置） |
 | `aiGeneratedTitleEnabled` | LLMSettings.swift:147 | LLMSettings.swift:693 | AISettingsCards.swift:83-84 | 即时 | isEnabled | 标题生成开关 |
 | `summaryAutoEnabled` | LLMSettings.swift:169 | MessagePanelState.swift:728 | AISettingsCards.swift:95-98 | 即时 | isEnabled | 自动摘要开关 |
-| `transcriptionProfileId` | LLMSettings.swift:154 | N/A (当前未消费) | AISettingsContent.swift:84 | 配置已定义 | profiles | 转录专用 Profile（配置链路断裂） |
+| `transcriptionProfileId` | LLMSettings.swift:154 | LLMPipeline.swift:143,151-152 | AISettingsContent.swift:84 | 即时 | profiles | 转录专用 Profile（优先 transcriptionProfile → 回退 selectedProfile） |
 | `chatProfileId` | LLMSettings.swift:159 | WorkflowExecutor.swift:86-87, LLMSettings.swift:693 | AISettingsContent.swift:87 | 即时 | profiles | Workflow fast + AI 标题 |
 | `summaryProfileId` | LLMSettings.swift | SummaryService.swift | AISettingsContent.swift | 即时 | profiles | 摘要专用 Profile |
 
