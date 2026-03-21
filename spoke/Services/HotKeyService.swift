@@ -2,6 +2,20 @@ import AppKit
 import Carbon.HIToolbox
 import os
 
+@MainActor
+struct HotKeyServiceDependencies {
+    let appSettings: AppSettings
+    let notificationCenter: NotificationCenter
+}
+
+@MainActor
+extension HotKeyServiceDependencies {
+    static let live = HotKeyServiceDependencies(
+        appSettings: .shared,
+        notificationCenter: .default
+    )
+}
+
 /// 全局快捷键服务
 /// 管理录音快捷键的注册和触发
 @MainActor
@@ -9,9 +23,10 @@ final class HotKeyService {
     
     // MARK: - Singleton
     
-    static let shared = HotKeyService()
+    static let shared = HotKeyService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "HotKey")
+    private let dependencies: HotKeyServiceDependencies
     
     // MARK: - Properties
     
@@ -71,7 +86,7 @@ final class HotKeyService {
     private var runLoopSource: CFRunLoopSource?
     
     /// 快捷键变更观察者
-    private var shortcutObserver: NSObjectProtocol?
+    private var shortcutObservers: [NSObjectProtocol] = []
     
     /// flagsChanged 防抖工作项（用于多屏切换时的二次确认）
     private var flagsDebounceWorkItem: DispatchWorkItem?
@@ -104,110 +119,111 @@ final class HotKeyService {
     
     /// 打开设置回调
     var onOpenSettings: (() -> Void)?
+
+    private struct EventMatchContext {
+        let keyCode: UInt32
+        let flags: CGEventFlags
+        let isRecordingModifiersPressed: Bool
+        let isRecordingKey: Bool
+        let isQuickAskModifiersPressed: Bool
+        let isQuickAskKey: Bool
+        let isMessagePanelModifiersPressed: Bool
+        let isMessagePanelKey: Bool
+        let isLiveCaptionModifiersPressed: Bool
+        let isLiveCaptionKey: Bool
+        let isClipboardPipelineModifiersPressed: Bool
+        let isClipboardPipelineKey: Bool
+        let isScreenshotModifiersPressed: Bool
+        let isScreenshotKey: Bool
+        let isCommandPressed: Bool
+        let isCommaKey: Bool
+    }
     
     // MARK: - Init
     
-    private init() {
+    private init(
+        dependencies: HotKeyServiceDependencies
+    ) {
+        self.dependencies = dependencies
         loadShortcutFromSettings()
         setupShortcutObserver()
     }
+
+    deinit {
+        shortcutObservers.forEach { dependencies.notificationCenter.removeObserver($0) }
+    }
     
     private func loadShortcutFromSettings() {
-        let settings = AppSettings.shared
-        currentKeyCode = UInt32(settings.shortcutKeyCode)
-        currentModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers))
-        quickAskKeyCode = UInt32(settings.quickAskKeyCode)
-        quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
-        messagePanelKeyCode = UInt32(settings.messagePanelKeyCode)
-        messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
-        liveCaptionKeyCode = UInt32(settings.liveCaptionKeyCode)
-        liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
-        screenshotKeyCode = UInt32(settings.screenshotKeyCode)
-        screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.screenshotModifiers))
+        currentKeyCode = UInt32(dependencies.appSettings.shortcutKeyCode)
+        currentModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.shortcutModifiers))
+        quickAskKeyCode = UInt32(dependencies.appSettings.quickAskKeyCode)
+        quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.quickAskModifiers))
+        messagePanelKeyCode = UInt32(dependencies.appSettings.messagePanelKeyCode)
+        messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.messagePanelModifiers))
+        liveCaptionKeyCode = UInt32(dependencies.appSettings.liveCaptionKeyCode)
+        liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.liveCaptionModifiers))
+        screenshotKeyCode = UInt32(dependencies.appSettings.screenshotKeyCode)
+        screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.screenshotModifiers))
     }
     
     private func setupShortcutObserver() {
-        shortcutObserver = NotificationCenter.default.addObserver(
-            forName: AppSettings.shortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.reloadShortcut()
-            }
+        observeShortcutChange(AppSettings.shortcutDidChangeNotification) { service in
+            service.reloadShortcut()
         }
-        
-        // Quick Ask 快捷键变更观察
-        NotificationCenter.default.addObserver(
-            forName: AppSettings.quickAskShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.reloadQuickAskShortcut()
-            }
+        observeShortcutChange(AppSettings.quickAskShortcutDidChangeNotification) { service in
+            service.reloadQuickAskShortcut()
         }
-        
-        // Message Panel 快捷键变更观察
-        NotificationCenter.default.addObserver(
-            forName: AppSettings.messagePanelShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.reloadMessagePanelShortcut()
-            }
+        observeShortcutChange(AppSettings.messagePanelShortcutDidChangeNotification) { service in
+            service.reloadMessagePanelShortcut()
         }
-        
-        // Live Caption 快捷键变更观察
-        NotificationCenter.default.addObserver(
-            forName: AppSettings.liveCaptionShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.reloadLiveCaptionShortcut()
-            }
+        observeShortcutChange(AppSettings.liveCaptionShortcutDidChangeNotification) { service in
+            service.reloadLiveCaptionShortcut()
         }
-        
-        // Screenshot 快捷键变更观察
-        NotificationCenter.default.addObserver(
-            forName: AppSettings.screenshotShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.reloadScreenshotShortcut()
-            }
+        observeShortcutChange(AppSettings.screenshotShortcutDidChangeNotification) { service in
+            service.reloadScreenshotShortcut()
         }
+    }
+
+    private func observeShortcutChange(
+        _ name: Notification.Name,
+        action: @escaping @MainActor @Sendable (HotKeyService) -> Void
+    ) {
+        shortcutObservers.append(
+            dependencies.notificationCenter.addObserver(
+                forName: name,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    action(self)
+                }
+            }
+        )
     }
     
     private func reloadScreenshotShortcut() {
-        let settings = AppSettings.shared
-        screenshotKeyCode = UInt32(settings.screenshotKeyCode)
-        screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.screenshotModifiers))
-        logger.info("🔄 Screenshot shortcut reloaded: \(settings.screenshotShortcutDisplayString)")
+        screenshotKeyCode = UInt32(self.dependencies.appSettings.screenshotKeyCode)
+        screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(self.dependencies.appSettings.screenshotModifiers))
+        logger.info("🔄 Screenshot shortcut reloaded: \(self.dependencies.appSettings.screenshotShortcutDisplayString)")
     }
     
     private func reloadLiveCaptionShortcut() {
-        let settings = AppSettings.shared
-        liveCaptionKeyCode = UInt32(settings.liveCaptionKeyCode)
-        liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
-        logger.info("🔄 Live Caption shortcut reloaded: \(settings.liveCaptionShortcutDisplayString)")
+        liveCaptionKeyCode = UInt32(self.dependencies.appSettings.liveCaptionKeyCode)
+        liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(self.dependencies.appSettings.liveCaptionModifiers))
+        logger.info("🔄 Live Caption shortcut reloaded: \(self.dependencies.appSettings.liveCaptionShortcutDisplayString)")
     }
     
     private func reloadMessagePanelShortcut() {
-        let settings = AppSettings.shared
-        messagePanelKeyCode = UInt32(settings.messagePanelKeyCode)
-        messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
-        logger.info("🔄 Message Panel shortcut reloaded: \(settings.messagePanelShortcutDisplayString)")
+        messagePanelKeyCode = UInt32(self.dependencies.appSettings.messagePanelKeyCode)
+        messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(self.dependencies.appSettings.messagePanelModifiers))
+        logger.info("🔄 Message Panel shortcut reloaded: \(self.dependencies.appSettings.messagePanelShortcutDisplayString)")
     }
     
     private func reloadQuickAskShortcut() {
-        let settings = AppSettings.shared
-        quickAskKeyCode = UInt32(settings.quickAskKeyCode)
-        quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
-        logger.info("🔄 Quick Ask shortcut reloaded: \(settings.quickAskShortcutDisplayString)")
+        quickAskKeyCode = UInt32(self.dependencies.appSettings.quickAskKeyCode)
+        quickAskModifiers = NSEvent.ModifierFlags(rawValue: UInt(self.dependencies.appSettings.quickAskModifiers))
+        logger.info("🔄 Quick Ask shortcut reloaded: \(self.dependencies.appSettings.quickAskShortcutDisplayString)")
     }
     
     /// 重新加载快捷键配置并重新注册
@@ -220,7 +236,7 @@ final class HotKeyService {
             register()
         }
         
-        logger.info("🔄 Shortcut reloaded: \(AppSettings.shared.shortcutDisplayString)")
+        logger.info("🔄 Shortcut reloaded: \(self.dependencies.appSettings.shortcutDisplayString)")
     }
     
     // MARK: - Public API
@@ -252,7 +268,7 @@ final class HotKeyService {
         if let source = runLoopSource {
             CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
             CGEvent.tapEnable(tap: tap, enable: true)
-            logger.info("✅ HotKey registered: \(AppSettings.shared.shortcutDisplayString)")
+            logger.info("✅ HotKey registered: \(self.dependencies.appSettings.shortcutDisplayString)")
         }
     }
     
@@ -274,172 +290,181 @@ final class HotKeyService {
     var debugKeyEvents = false
     
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        // 处理 tap 被系统禁用的情况（超时或其他原因）
-        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            // 🔥 如果是 Quick Ask 主动禁用的，不要自动重新启用！
-            if isQuickAskActive {
-                return Unmanaged.passRetained(event)
-            }
-            logger.warning("⚠️ Event tap was disabled by system, re-enabling...")
-            if let tap = eventTap {
-                CGEvent.tapEnable(tap: tap, enable: true)
-            }
-            return Unmanaged.passRetained(event)
+        if let tapResult = handleTapDisabledEvent(type: type, event: event) {
+            return tapResult
         }
-        
-        // 🔥🔥🔥 Quick Ask 激活时，完全不处理任何键盘事件（除了 Quick Ask 快捷键本身）
-        // 这是解决输入法问题的关键：让事件完全绕过 event tap
-        if isQuickAskActive {
-            let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
-            let flags = event.flags
-            
-            // 只处理 Quick Ask 快捷键（用于再次按下发送）
-            let isQuickAskModifiersPressed = checkModifiersMatch(flags: flags, target: quickAskModifiers)
-            let isQuickAskKey = keyCode == quickAskKeyCode
-            
-            if type == .keyDown && isQuickAskKey && isQuickAskModifiersPressed {
-                handleQuickAskKeyDown()
-                return nil
-            }
-            
-            // 其他所有事件都直接放行，不做任何处理
-            return Unmanaged.passRetained(event)
+
+        let context = makeEventMatchContext(for: event)
+        if let quickAskBypassResult = handleQuickAskBypassIfNeeded(type: type, context: context, event: event) {
+            return quickAskBypassResult
         }
-        
-        let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
-        let flags = event.flags
-        
-        // 调试日志（直接 print 到终端，方便调试）
-        if debugKeyEvents && (type == .keyDown || type == .keyUp) {
-            let typeStr = type == .keyDown ? "↓" : "↑"
-            let char = keyCodeToChar(keyCode)
-            let modStr = flagsToString(flags)
-            let qaState = self.isQuickAskActive
-            _ = self.isRecording
-            // 检查 tap 是否应该被禁用
-            let tapEnabled = eventTap != nil ? CGEvent.tapIsEnabled(tap: eventTap!) : false
-            logger.debug("🔑 \(typeStr) key=\(keyCode)(\(char)) mod=[\(modStr)] qa=\(qaState) tap=\(tapEnabled ? "ON" : "OFF")")
-        }
-        
-        // 检查是否是录音快捷键
-        let isRecordingModifiersPressed = checkModifiersMatch(flags: flags, target: currentModifiers)
-        let isRecordingKey = keyCode == currentKeyCode
-        
-        // 检查是否是 Quick Ask 快捷键
-        let isQuickAskModifiersPressed = checkModifiersMatch(flags: flags, target: quickAskModifiers)
-        let isQuickAskKey = keyCode == quickAskKeyCode
-        
-        // 检查是否是 Message Panel 快捷键
-        let isMessagePanelModifiersPressed = checkModifiersMatch(flags: flags, target: messagePanelModifiers)
-        let isMessagePanelKey = keyCode == messagePanelKeyCode
-        
-        // 检查是否是 Live Caption 快捷键
-        let isLiveCaptionModifiersPressed = checkModifiersMatch(flags: flags, target: liveCaptionModifiers)
-        let isLiveCaptionKey = keyCode == liveCaptionKeyCode
-        
-        // 检查是否是 Clipboard Pipeline 快捷键
-        let isClipboardPipelineModifiersPressed = checkModifiersMatch(flags: flags, target: clipboardPipelineModifiers)
-        let isClipboardPipelineKey = keyCode == clipboardPipelineKeyCode
-        
-        // 检查是否是 Screenshot 快捷键
-        let isScreenshotModifiersPressed = checkModifiersMatch(flags: flags, target: screenshotModifiers)
-        let isScreenshotKey = keyCode == screenshotKeyCode
-        
-        // 检查是否是 Cmd+逗号 (打开设置)
-        let isCommandPressed = checkModifiersMatch(flags: flags, target: .command)
-        let isCommaKey = keyCode == UInt32(kVK_ANSI_Comma)
-        
+
+        logDebugKeyEventIfNeeded(type: type, context: context)
+
         switch type {
         case .keyDown:
-            // Cmd+逗号 打开设置（仅当应用在前台时响应）
-            if isCommaKey && isCommandPressed {
-                if NSApp.isActive {
-                    handleOpenSettings()
-                    return nil
-                }
-                // 应用不在前台，放行给其他应用
-                return Unmanaged.passRetained(event)
-            }
-            
-            // Quick Ask 快捷键
-            if isQuickAskKey && isQuickAskModifiersPressed {
-                handleQuickAskKeyDown()
-                return nil
-            }
-            
-            // Message Panel 快捷键
-            if isMessagePanelKey && isMessagePanelModifiersPressed {
-                handleMessagePanelToggle()
-                return nil
-            }
-            
-            // Live Caption 快捷键
-            if isLiveCaptionKey && isLiveCaptionModifiersPressed {
-                handleLiveCaptionToggle()
-                return nil
-            }
-            
-            // Clipboard Pipeline 快捷键
-            if isClipboardPipelineKey && isClipboardPipelineModifiersPressed {
-                handleClipboardPipelineTrigger()
-                return nil
-            }
-            
-            // Screenshot 快捷键
-            if isScreenshotKey && isScreenshotModifiersPressed {
-                handleScreenshotTrigger()
-                return nil
-            }
-            
-            // 录音快捷键
-            if isRecordingKey && isRecordingModifiersPressed {
-                handleKeyDown()
-                return nil
-            }
-            
-            return Unmanaged.passRetained(event)
-            
+            return routeKeyDown(context, event: event)
         case .keyUp:
-            // Quick Ask keyUp - 必须同时检查修饰键，否则会吞掉普通输入的 keyUp 事件
-            if isQuickAskKey && isQuickAskModifiersPressed && isQuickAskActive {
-                // Quick Ask 不响应 keyUp（只用 keyDown 触发发送）
-                return nil
-            }
-            
-            // 录音 keyUp - 只检查 R 键和录音状态，不要求修饰键仍按下
-            // ⚠️ 用户习惯：可能先松开 Option 再松开 R，此时修饰键已不再按下
-            // 如果还要求 isRecordingModifiersPressed，keyUp 会被忽略，导致 Toggle 模式无法正确触发
-            if isRecordingKey && isRecording {
-                logger.info("⬆️ [keyUp] R键松开，触发 handleKeyUp")
-                handleKeyUp()
-                return nil
-            }
-            
-            return Unmanaged.passRetained(event)
-            
+            return routeKeyUp(context, event: event)
         case .flagsChanged:
-            // 监听修饰键松开（仅针对录音模式）
-            // 多显示器/Space切换时 macOS 会发送虚假的 flagsChanged 事件
-            // 使用延迟二次确认机制：等待 100ms 后再次检查修饰键状态
-            // 注意：CGEvent 回调不在主线程，需要在主线程检查状态
-            let modifiersReleased = !isRecordingModifiersPressed
-            if modifiersReleased {
-                logger.info("🚩 [flagsChanged] 修饰键松开检测 | modifiersReleased=true")
-            }
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                if modifiersReleased && self.isRecording && !self.isQuickAskActive {
-                    self.logger.info("🚩 [flagsChanged] 调度 scheduleModifierReleaseCheck")
-                    self.scheduleModifierReleaseCheck()
-                }
-            }
-            return Unmanaged.passRetained(event)
-            
+            return routeFlagsChanged(context, event: event)
         default:
-            break
+            return passThrough(event)
         }
-        
-        return Unmanaged.passRetained(event)
+    }
+
+    private func handleTapDisabledEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        guard type == .tapDisabledByTimeout || type == .tapDisabledByUserInput else {
+            return nil
+        }
+        guard !isQuickAskActive else {
+            return passThrough(event)
+        }
+
+        logger.warning("⚠️ Event tap was disabled by system, re-enabling...")
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: true)
+        }
+        return passThrough(event)
+    }
+
+    private func makeEventMatchContext(for event: CGEvent) -> EventMatchContext {
+        let keyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+        let flags = event.flags
+
+        return EventMatchContext(
+            keyCode: keyCode,
+            flags: flags,
+            isRecordingModifiersPressed: checkModifiersMatch(flags: flags, target: currentModifiers),
+            isRecordingKey: keyCode == currentKeyCode,
+            isQuickAskModifiersPressed: checkModifiersMatch(flags: flags, target: quickAskModifiers),
+            isQuickAskKey: keyCode == quickAskKeyCode,
+            isMessagePanelModifiersPressed: checkModifiersMatch(flags: flags, target: messagePanelModifiers),
+            isMessagePanelKey: keyCode == messagePanelKeyCode,
+            isLiveCaptionModifiersPressed: checkModifiersMatch(flags: flags, target: liveCaptionModifiers),
+            isLiveCaptionKey: keyCode == liveCaptionKeyCode,
+            isClipboardPipelineModifiersPressed: checkModifiersMatch(flags: flags, target: clipboardPipelineModifiers),
+            isClipboardPipelineKey: keyCode == clipboardPipelineKeyCode,
+            isScreenshotModifiersPressed: checkModifiersMatch(flags: flags, target: screenshotModifiers),
+            isScreenshotKey: keyCode == screenshotKeyCode,
+            isCommandPressed: checkModifiersMatch(flags: flags, target: .command),
+            isCommaKey: keyCode == UInt32(kVK_ANSI_Comma)
+        )
+    }
+
+    private func handleQuickAskBypassIfNeeded(
+        type: CGEventType,
+        context: EventMatchContext,
+        event: CGEvent
+    ) -> Unmanaged<CGEvent>? {
+        guard isQuickAskActive else { return nil }
+
+        if type == .keyDown && context.isQuickAskKey && context.isQuickAskModifiersPressed {
+            handleQuickAskKeyDown()
+            return nil
+        }
+
+        return passThrough(event)
+    }
+
+    private func logDebugKeyEventIfNeeded(type: CGEventType, context: EventMatchContext) {
+        guard debugKeyEvents, type == .keyDown || type == .keyUp else { return }
+
+        let typeStr = type == .keyDown ? "↓" : "↑"
+        let char = keyCodeToChar(context.keyCode)
+        let modStr = flagsToString(context.flags)
+        let qaState = isQuickAskActive
+        let tapEnabled = eventTap != nil ? CGEvent.tapIsEnabled(tap: eventTap!) : false
+        logger.debug("🔑 \(typeStr) key=\(context.keyCode)(\(char)) mod=[\(modStr)] qa=\(qaState) tap=\(tapEnabled ? "ON" : "OFF")")
+    }
+
+    private func routeKeyDown(_ context: EventMatchContext, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if context.isCommaKey && context.isCommandPressed {
+            guard NSApp.isActive else {
+                return passThrough(event)
+            }
+            handleOpenSettings()
+            return nil
+        }
+
+        if context.isQuickAskKey && context.isQuickAskModifiersPressed {
+            handleQuickAskKeyDown()
+            return nil
+        }
+
+        if context.isMessagePanelKey && context.isMessagePanelModifiersPressed {
+            handleMessagePanelToggle()
+            return nil
+        }
+
+        if context.isLiveCaptionKey && context.isLiveCaptionModifiersPressed {
+            handleLiveCaptionToggle()
+            return nil
+        }
+
+        if context.isClipboardPipelineKey && context.isClipboardPipelineModifiersPressed {
+            handleClipboardPipelineTrigger()
+            return nil
+        }
+
+        if context.isScreenshotKey && context.isScreenshotModifiersPressed {
+            handleScreenshotTrigger()
+            return nil
+        }
+
+        if context.isRecordingKey && context.isRecordingModifiersPressed {
+            handleKeyDown()
+            return nil
+        }
+
+        return passThrough(event)
+    }
+
+    private func routeKeyUp(_ context: EventMatchContext, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if context.isQuickAskKey && context.isQuickAskModifiersPressed && isQuickAskActive {
+            return nil
+        }
+
+        if context.isRecordingKey && isRecording {
+            logger.info("⬆️ [keyUp] R键松开，触发 handleKeyUp")
+            handleKeyUp()
+            return nil
+        }
+
+        return passThrough(event)
+    }
+
+    private func routeFlagsChanged(_ context: EventMatchContext, event: CGEvent) -> Unmanaged<CGEvent>? {
+        let modifiersReleased = !context.isRecordingModifiersPressed
+        if modifiersReleased {
+            logger.info("🚩 [flagsChanged] 修饰键松开检测 | modifiersReleased=true")
+        }
+
+        dispatchOnMain { service in
+            if modifiersReleased && service.isRecording && !service.isQuickAskActive {
+                service.logger.info("🚩 [flagsChanged] 调度 scheduleModifierReleaseCheck")
+                service.scheduleModifierReleaseCheck()
+            }
+        }
+
+        return passThrough(event)
+    }
+
+    private func passThrough(_ event: CGEvent) -> Unmanaged<CGEvent>? {
+        Unmanaged.passRetained(event)
+    }
+
+    private func dispatchOnMain(_ work: @escaping (HotKeyService) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            work(self)
+        }
+    }
+
+    private func invokeCallbackOnMain(_ callback: @escaping (HotKeyService) -> (() -> Void)?) {
+        dispatchOnMain { service in
+            callback(service)?()
+        }
     }
     
     /// 检查当前按下的修饰键是否匹配目标配置（严格匹配）
@@ -544,10 +569,7 @@ final class HotKeyService {
     // MARK: - Settings Handler
     
     private func handleOpenSettings() {
-        // 使用 DispatchQueue.main 而不是 Task，因为 CGEvent 回调不在主线程
-        DispatchQueue.main.async { [weak self] in
-            self?.onOpenSettings?()
-        }
+        invokeCallbackOnMain { $0.onOpenSettings }
     }
     
     // MARK: - Quick Ask Handlers
@@ -563,18 +585,17 @@ final class HotKeyService {
     }
     
     private func startQuickAsk() {
-        // 使用 DispatchQueue.main 而不是 Task，因为 CGEvent 回调不在主线程
-        DispatchQueue.main.async { [weak self] in
-            self?.isQuickAskActive = true
-            self?.onQuickAskStart?()
+        dispatchOnMain { service in
+            service.isQuickAskActive = true
+            service.onQuickAskStart?()
         }
         logger.info("🚀 Quick Ask started")
     }
     
     private func sendQuickAsk() {
-        DispatchQueue.main.async { [weak self] in
-            self?.isQuickAskActive = false
-            self?.onQuickAskSend?()
+        dispatchOnMain { service in
+            service.isQuickAskActive = false
+            service.onQuickAskSend?()
         }
         logger.info("📤 Quick Ask sending")
     }
@@ -600,122 +621,111 @@ final class HotKeyService {
     // MARK: - Message Panel Handler
     
     private func handleMessagePanelToggle() {
-        DispatchQueue.main.async { [weak self] in
-            self?.onMessagePanelToggle?()
-        }
+        invokeCallbackOnMain { $0.onMessagePanelToggle }
         logger.info("📋 Message Panel toggle triggered")
     }
     
     // MARK: - Live Caption Handler
     
     private func handleLiveCaptionToggle() {
-        DispatchQueue.main.async { [weak self] in
-            self?.onLiveCaptionToggle?()
-        }
+        invokeCallbackOnMain { $0.onLiveCaptionToggle }
         logger.info("🎬 Live Caption toggle triggered")
     }
     
     // MARK: - Clipboard Pipeline Handler
     
     private func handleClipboardPipelineTrigger() {
-        DispatchQueue.main.async { [weak self] in
-            self?.onClipboardPipelineTrigger?()
-        }
+        invokeCallbackOnMain { $0.onClipboardPipelineTrigger }
         logger.info("📋 Clipboard Pipeline triggered")
     }
     
     // MARK: - Screenshot Handler
     
     private func handleScreenshotTrigger() {
-        DispatchQueue.main.async { [weak self] in
-            self?.onScreenshotTrigger?()
-        }
+        invokeCallbackOnMain { $0.onScreenshotTrigger }
     }
     
     // MARK: - Recording Handlers
     
     private func handleKeyDown() {
-        // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
+        dispatchOnMain { service in
             // 诊断日志：记录当前状态
-            let taskStatus = self.delayedStopTask != nil ? "SET" : "nil"
-            self.logger.info("⬇️ [keyDown] isRecording=\(self.isRecording), isToggleSession=\(self.isToggleSession), delayedStopTask=\(taskStatus, privacy: .public)")
+            let taskStatus = service.delayedStopTask != nil ? "SET" : "nil"
+            service.logger.info("⬇️ [keyDown] isRecording=\(service.isRecording), isToggleSession=\(service.isToggleSession), delayedStopTask=\(taskStatus, privacy: .public)")
             
-            if !self.isRecording {
+            if !service.isRecording {
                 // 开始新录音
                 // 1. 先取消之前的延迟停止（如果有）
-                self.delayedStopTask?.cancel()
-                self.delayedStopTask = nil
+                service.delayedStopTask?.cancel()
+                service.delayedStopTask = nil
                 
                 // 2. 创建新的会话 ID
-                self.currentSessionId = UUID()
+                service.currentSessionId = UUID()
                 
                 // 3. 开始录音
-                self.isRecording = true
-                self.recordingStartTime = Date()
-                self.isToggleSession = false
-                self.onRecordingStart?()
+                service.isRecording = true
+                service.recordingStartTime = Date()
+                service.isToggleSession = false
+                service.onRecordingStart?()
                 
-                self.logger.info("🎙️ New recording session started: \(self.currentSessionId?.uuidString.prefix(8) ?? "nil") | startTime=\(self.recordingStartTime?.timeIntervalSince1970 ?? 0)")
+                service.logger.info("🎙️ New recording session started: \(service.currentSessionId?.uuidString.prefix(8) ?? "nil") | startTime=\(service.recordingStartTime?.timeIntervalSince1970 ?? 0)")
             } else {
                 // 正在录音中
-                self.logger.debug("⬇️ [keyDown] 已在录音中, isToggleSession=\(self.isToggleSession), delayedStopTask=\(self.delayedStopTask != nil ? "SET" : "nil")")
+                service.logger.debug("⬇️ [keyDown] 已在录音中, isToggleSession=\(service.isToggleSession), delayedStopTask=\(service.delayedStopTask != nil ? "SET" : "nil")")
                 
-                if self.isToggleSession {
+                if service.isToggleSession {
                     // 如果已经是 Toggle 模式（之前短按触发），再次按下则延迟停止
-                    self.logger.info("🔄 Toggle mode: 第二次按下，Stopping in 0.8s...")
-                    self.isToggleSession = false  // 标记为停止中，防止重复触发
+                    service.logger.info("🔄 Toggle mode: 第二次按下，Stopping in 0.8s...")
+                    service.isToggleSession = false  // 标记为停止中，防止重复触发
                     
                     // 捕获当前会话 ID
-                    let sessionToStop = self.currentSessionId
+                    let sessionToStop = service.currentSessionId
                     
                     // 取消之前的延迟停止 Task（如果有）
-                    self.delayedStopTask?.cancel()
+                    service.delayedStopTask?.cancel()
                     
                     // 延迟 0.8 秒再停止录音，让语音识别处理尾音
-                    self.delayedStopTask = Task {
+                    service.delayedStopTask = Task {
                         try? await Task.sleep(for: .milliseconds(800))
                         await MainActor.run {
                             // Task 完成后清空引用
-                            self.delayedStopTask = nil
+                            service.delayedStopTask = nil
                             
                             // 确保是同一个会话，且仍在录音中
-                            guard self.isRecording,
-                                  self.currentSessionId == sessionToStop else {
-                                self.logger.debug("🔍 Delayed stop skipped: session changed or not recording")
+                            guard service.isRecording,
+                                  service.currentSessionId == sessionToStop else {
+                                service.logger.debug("🔍 Delayed stop skipped: session changed or not recording")
                                 return
                             }
                             
-                            self.isRecording = false
-                            self.recordingStartTime = nil
-                            self.currentSessionId = nil
-                            self.onRecordingStop?()
+                            service.isRecording = false
+                            service.recordingStartTime = nil
+                            service.currentSessionId = nil
+                            service.onRecordingStop?()
                         }
                     }
-                } else if self.delayedStopTask != nil {
+                } else if service.delayedStopTask != nil {
                     // ⚠️ 在延迟停止期间再次按下：用户想开始新录音
                     // 取消延迟停止，停止当前录音，然后开始新录音
-                    self.logger.info("🔄 [keyDown] 延迟停止期间按下，取消延迟并开始新录音")
-                    self.delayedStopTask?.cancel()
-                    self.delayedStopTask = nil
+                    service.logger.info("🔄 [keyDown] 延迟停止期间按下，取消延迟并开始新录音")
+                    service.delayedStopTask?.cancel()
+                    service.delayedStopTask = nil
                     
                     // 先停止当前录音
-                    self.isRecording = false
-                    self.recordingStartTime = nil
-                    let oldSessionId = self.currentSessionId
-                    self.currentSessionId = nil
-                    self.onRecordingStop?()
+                    service.isRecording = false
+                    service.recordingStartTime = nil
+                    let oldSessionId = service.currentSessionId
+                    service.currentSessionId = nil
+                    service.onRecordingStop?()
                     
                     // 立即开始新录音
-                    self.currentSessionId = UUID()
-                    self.isRecording = true
-                    self.recordingStartTime = Date()
-                    self.isToggleSession = false
-                    self.onRecordingStart?()
+                    service.currentSessionId = UUID()
+                    service.isRecording = true
+                    service.recordingStartTime = Date()
+                    service.isToggleSession = false
+                    service.onRecordingStart?()
                     
-                    self.logger.info("🎙️ New recording session started (interrupted delayed stop): old=\(oldSessionId?.uuidString.prefix(8) ?? "nil") → new=\(self.currentSessionId?.uuidString.prefix(8) ?? "nil")")
+                    service.logger.info("🎙️ New recording session started (interrupted delayed stop): old=\(oldSessionId?.uuidString.prefix(8) ?? "nil") → new=\(service.currentSessionId?.uuidString.prefix(8) ?? "nil")")
                 }
                 // 如果是 Hold 模式（正在按住），忽略重复的 KeyDown
             }
@@ -723,94 +733,88 @@ final class HotKeyService {
     }
     
     private func handleKeyUp() {
-        // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
+        dispatchOnMain { service in
             // keyUp 是明确的结束信号，取消任何待执行的防抖检查
             // 必须在主线程执行 cancel，否则与 scheduleModifierReleaseCheck 的 workItem 存在竞态条件
-            self.flagsDebounceWorkItem?.cancel()
-            self.flagsDebounceWorkItem = nil
+            service.flagsDebounceWorkItem?.cancel()
+            service.flagsDebounceWorkItem = nil
             
-            self.logger.debug("⬆️ [keyUp] 已取消 flagsDebounceWorkItem，调用 handleRelease")
-            self.handleRelease(fromKeyUp: true)
+            service.logger.debug("⬆️ [keyUp] 已取消 flagsDebounceWorkItem，调用 handleRelease")
+            service.handleRelease(fromKeyUp: true)
         }
     }
     
     /// 处理按键释放
     /// - Parameter fromKeyUp: true 表示来自 keyUp 事件，false 表示来自 flagsChanged 事件
     private func handleRelease(fromKeyUp: Bool) {
-        // CGEvent 回调不在主线程，所有状态访问需要在主线程进行
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
+        dispatchOnMain { service in
             // 调试日志：当前状态
-            self.logger.debug("🔍 handleRelease: isRecording=\(self.isRecording), isToggleSession=\(self.isToggleSession), fromKeyUp=\(fromKeyUp)")
+            service.logger.debug("🔍 handleRelease: isRecording=\(service.isRecording), isToggleSession=\(service.isToggleSession), fromKeyUp=\(fromKeyUp)")
             
-            guard self.isRecording else {
-                self.logger.debug("🔍 handleRelease: not recording, skip")
+            guard service.isRecording else {
+                service.logger.debug("🔍 handleRelease: not recording, skip")
                 return
             }
             
-            if self.isToggleSession {
+            if service.isToggleSession {
                 // Toggle 模式下，松开键不停止录音（等待第二次按下）
-                self.logger.debug("🔍 handleRelease: Toggle mode, skip")
+                service.logger.debug("🔍 handleRelease: Toggle mode, skip")
                 return
             }
             
             // 检查按压时长
-            guard let startTime = self.recordingStartTime else {
-                self.logger.debug("🔍 handleRelease: no startTime, skip")
+            guard let startTime = service.recordingStartTime else {
+                service.logger.debug("🔍 handleRelease: no startTime, skip")
                 return
             }
             let duration = Date().timeIntervalSince(startTime)
-            self.logger.info("🔍 handleRelease: duration=\(String(format: "%.3f", duration))s, threshold=\(self.holdThreshold)s, fromKeyUp=\(fromKeyUp)")
+            service.logger.info("🔍 handleRelease: duration=\(String(format: "%.3f", duration))s, threshold=\(service.holdThreshold)s, fromKeyUp=\(fromKeyUp)")
             
-            if duration < self.holdThreshold && fromKeyUp {
+            if duration < service.holdThreshold && fromKeyUp {
                 // 短按：切换到 Toggle 模式，继续录音
                 // ⚠️ 只有 keyUp 事件才能触发 Toggle 模式，避免 flagsChanged 误判
-                self.isToggleSession = true
-                self.logger.info("👆 Short press (\(String(format: "%.2f", duration))s) detected. Switched to Toggle mode.")
-            } else if duration < self.holdThreshold && !fromKeyUp {
+                service.isToggleSession = true
+                service.logger.info("👆 Short press (\(String(format: "%.2f", duration))s) detected. Switched to Toggle mode.")
+            } else if duration < service.holdThreshold && !fromKeyUp {
                 // flagsChanged 触发但 duration < holdThreshold，跳过（等待 keyUp 来决定是否进入 Toggle 模式）
-                self.logger.debug("🔍 handleRelease: flagsChanged with short duration, waiting for keyUp")
+                service.logger.debug("🔍 handleRelease: flagsChanged with short duration, waiting for keyUp")
                 return
             } else {
                 // 长按：松手后延迟停止，以捕获尾音
                 // 检查是否已经设置了延迟停止任务，避免重复触发
-                if self.delayedStopTask != nil {
-                    self.logger.debug("🔍 handleRelease: delayedStopTask already set, skip")
+                if service.delayedStopTask != nil {
+                    service.logger.debug("🔍 handleRelease: delayedStopTask already set, skip")
                     return
                 }
                 
-                self.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping in 0.8s...")
+                service.logger.info("✋ Long press (\(String(format: "%.2f", duration))s) released. Stopping in 0.8s...")
                 
                 // 取消任何待执行的修饰键检查，防止 flagsChanged 的 async 块后执行导致重复触发
-                self.flagsDebounceWorkItem?.cancel()
-                self.flagsDebounceWorkItem = nil
+                service.flagsDebounceWorkItem?.cancel()
+                service.flagsDebounceWorkItem = nil
                 
                 // 捕获当前会话 ID
-                let sessionToStop = self.currentSessionId
+                let sessionToStop = service.currentSessionId
                 
                 // 延迟 0.8 秒再停止录音，让语音识别处理尾音
-                self.delayedStopTask = Task {
+                service.delayedStopTask = Task {
                     try? await Task.sleep(for: .milliseconds(800))
                     await MainActor.run {
                         // Task 完成后清空引用
-                        self.delayedStopTask = nil
+                        service.delayedStopTask = nil
                         
                         // 确保是同一个会话，且仍在录音中，且不是 Toggle 模式
-                        guard self.isRecording,
-                              self.currentSessionId == sessionToStop,
-                              !self.isToggleSession else {
-                            self.logger.debug("🔍 Long press delayed stop skipped: session changed or state invalid")
+                        guard service.isRecording,
+                              service.currentSessionId == sessionToStop,
+                              !service.isToggleSession else {
+                            service.logger.debug("🔍 Long press delayed stop skipped: session changed or state invalid")
                             return
                         }
                         
-                        self.isRecording = false
-                        self.recordingStartTime = nil
-                        self.currentSessionId = nil
-                        self.onRecordingStop?()
+                        service.isRecording = false
+                        service.recordingStartTime = nil
+                        service.currentSessionId = nil
+                        service.onRecordingStop?()
                     }
                 }
             }

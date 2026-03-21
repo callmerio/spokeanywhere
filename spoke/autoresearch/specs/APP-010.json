@@ -1,0 +1,28 @@
+{
+  "issue_id": "APP-010",
+  "title": "启动级联与服务生命周期协议",
+  "mode": "exec",
+  "goal": "为 AppDelegate 与 RecordingController 相关顶层服务建立显式生命周期合同，降低启动级联与终止清理的隐式行为。",
+  "scope": [
+    "App/AppDelegate.swift",
+    "Services/RecordingController.swift",
+    "docs/architecture/app-layer-risk-assessment.md",
+    "docs/architecture/current-state-audit.md"
+  ],
+  "metric": "missing_lifecycle_contract_items",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue APP-010",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 10,
+  "run_tag": "APP-010",
+  "depends_on": [
+    "AG-010"
+  ],
+  "worktree_name": "app-010-lifecycle-contract",
+  "artifacts_dir": "autoresearch/runs/APP-010",
+  "stop_condition": "metric=0 且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "优先推动显式 contract 与可审计生命周期边界，不要求一次性去单例化。"
+}

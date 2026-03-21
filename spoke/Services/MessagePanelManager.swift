@@ -2,6 +2,19 @@ import AppKit
 import os
 import SwiftUI
 
+@MainActor
+struct MessagePanelManagerDependencies {
+    let state: MessagePanelState
+    let historyService: SessionHistoryService
+    let dictionaryHandler: AddToDictionaryHandler
+    let hoverState: MessagePanelHoverState
+    let hotKeyService: HotKeyService
+    let tagLibrary: TagLibrary
+    let summaryService: SummaryService
+    let answerPanelManager: AnswerPanelManager
+    let clipboardPipelineService: ClipboardPipelineService
+}
+
 /// 消息面板管理器
 /// 负责面板窗口的生命周期和交互
 @MainActor
@@ -9,11 +22,24 @@ final class MessagePanelManager {
     
     // MARK: - Singleton
     
-    static let shared = MessagePanelManager()
+    static let shared = MessagePanelManager(
+        dependencies: MessagePanelManagerDependencies(
+            state: .shared,
+            historyService: .shared,
+            dictionaryHandler: .shared,
+            hoverState: .shared,
+            hotKeyService: .shared,
+            tagLibrary: .shared,
+            summaryService: .shared,
+            answerPanelManager: .shared,
+            clipboardPipelineService: .shared
+        )
+    )
     
     // MARK: - Properties
     
     private var panel: MessagePanelWindow?
+    private let dependencies: MessagePanelManagerDependencies
     private let state: MessagePanelState
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "MessagePanel")
     
@@ -22,10 +48,23 @@ final class MessagePanelManager {
     
     // MARK: - Init
     
-    private init() {
-        self.state = MessagePanelState.shared
+    private init(
+        dependencies: MessagePanelManagerDependencies
+    ) {
+        self.dependencies = dependencies
+        self.state = dependencies.state
         // 初始化键盘监听（用于 Cmd+V 粘贴图片）
-        _ = MessagePanelHoverState.shared
+        dependencies.hoverState.configure(
+            dependencies: MessagePanelHoverStateDependencies(
+                isPanelVisible: { [weak self] in self?.isVisible ?? false },
+                addAttachmentToCard: { [weak self] image, id in
+                    self?.state.addAttachment(image, to: id)
+                },
+                triggerClipboardPipeline: { [clipboardPipelineService = dependencies.clipboardPipelineService] in
+                    clipboardPipelineService.trigger()
+                }
+            )
+        )
     }
     
     // MARK: - Public API
@@ -96,7 +135,55 @@ final class MessagePanelManager {
     private func createPanelIfNeeded() {
         guard panel == nil else { return }
         
-        let contentView = MessagePanelView(state: state)
+        let contentView = MessagePanelView(
+            state: state,
+            historyService: dependencies.historyService,
+            dictionaryHandler: dependencies.dictionaryHandler,
+            hoverState: dependencies.hoverState,
+            hidePanel: { [weak self] in self?.hide() },
+            startQuickAsk: { [weak self] in
+                Task { @MainActor [weak self] in
+                    self?.hide()
+                    try? await Task.sleep(for: .milliseconds(100))
+                    self?.dependencies.hotKeyService.isQuickAskActive = true
+                    self?.dependencies.hotKeyService.onQuickAskStart?()
+                }
+            },
+            dependencies: MessagePanelViewDependencies(
+                restoreConversation: { record in
+                    let chatMessages = record.messages.map { msg in
+                        ChatMessage(
+                            role: msg.role == .user ? .user : .assistant,
+                            content: msg.content,
+                            attachments: []
+                        )
+                    }
+
+                    let panelId = self.dependencies.answerPanelManager.show(
+                        question: record.title,
+                        attachments: []
+                    )
+
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
+                        if let state = self.dependencies.answerPanelManager.state(for: panelId) {
+                            state.messages = chatMessages
+                            state.isLoading = false
+                        }
+                    }
+                }
+            ),
+            cardDependencies: MessageCardViewDependencies(
+                hoverState: dependencies.hoverState,
+                resolveTags: { [tagLibrary = dependencies.tagLibrary] in tagLibrary.tags(for: $0) },
+                setRecordType: { self.state.setRecordType($0, type: $1) },
+                pasteImageFromClipboard: { self.state.pasteImageFromClipboard(to: $0) },
+                addAttachment: { image, id in self.state.addAttachment(image, to: id) },
+                generateSummary: { [summaryService = dependencies.summaryService] id, regenerate in
+                    Task { await summaryService.generateSummary(for: id, regenerate: regenerate) }
+                }
+            )
+        )
         let hostingView = NSHostingView(rootView: contentView)
         
         // 获取屏幕尺寸

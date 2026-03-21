@@ -12,18 +12,42 @@ private let commonIcons: [[String]] = [
     ["folder.fill", "tray.fill", "archivebox.fill", "trash.fill", "gear"]
 ]
 
+@MainActor
+struct ToolbarSettingsDependencies {
+    let configService: ToolbarConfigService
+    let llmSettings: LLMSettings
+}
+
+@MainActor
+extension ToolbarSettingsDependencies {
+    static let live = ToolbarSettingsDependencies(
+        configService: .shared,
+        llmSettings: .shared
+    )
+}
+
 // MARK: - 工具栏设置视图
 
 struct ToolbarSettingsView: View {
-    @ObservedObject private var configService = ToolbarConfigService.shared
+    @ObservedObject private var configService: ToolbarConfigService
+    private let dependencies: ToolbarSettingsDependencies
     @State private var showAddSheet = false
     @State private var editingAction: ToolbarAction?
     @State private var editingAIAction: ToolbarAction?
+
+    init(dependencies: ToolbarSettingsDependencies) {
+        self.dependencies = dependencies
+        self.configService = dependencies.configService
+    }
+
+    init() {
+        self.init(dependencies: .live)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
             // 预览区
-            ToolbarPreviewSection()
+            ToolbarPreviewSection(configService: dependencies.configService)
             
             Divider()
             
@@ -86,13 +110,17 @@ struct ToolbarSettingsView: View {
         }
         .padding(DS.Spacing.xl)
         .sheet(isPresented: $showAddSheet) {
-            AddActionSheet()
+            AddActionSheet(configService: dependencies.configService)
         }
         .sheet(item: $editingAction) { action in
-            EditActionSheet(action: action)
+            EditActionSheet(action: action, configService: dependencies.configService)
         }
         .sheet(item: $editingAIAction) { action in
-            AIActionEditSheet(action: action)
+            AIActionEditSheet(
+                action: action,
+                configService: dependencies.configService,
+                llmSettings: dependencies.llmSettings
+            )
         }
     }
 }
@@ -100,7 +128,11 @@ struct ToolbarSettingsView: View {
 // MARK: - 预览区
 
 private struct ToolbarPreviewSection: View {
-    @ObservedObject private var configService = ToolbarConfigService.shared
+    @ObservedObject private var configService: ToolbarConfigService
+
+    init(configService: ToolbarConfigService) {
+        self.configService = configService
+    }
     
     var body: some View {
         let previewShadow = DS.Shadow.medium()
@@ -298,7 +330,7 @@ private struct ActionRowView: View {
 
 struct AddActionSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var configService = ToolbarConfigService.shared
+    @ObservedObject private var configService: ToolbarConfigService
     
     @State private var name = ""
     @State private var icon = "sparkles"
@@ -306,6 +338,10 @@ struct AddActionSheet: View {
     @State private var prompt = ""
     @State private var validationError: String?
     @State private var showIconPicker = false
+
+    init(configService: ToolbarConfigService) {
+        self.configService = configService
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -458,7 +494,7 @@ struct EditActionSheet: View {
     let action: ToolbarAction
     
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var configService = ToolbarConfigService.shared
+    @ObservedObject private var configService: ToolbarConfigService
     
     @State private var name: String
     @State private var icon: String
@@ -466,8 +502,9 @@ struct EditActionSheet: View {
     @State private var validationError: String?
     @State private var showIconPicker = false
     
-    init(action: ToolbarAction) {
+    init(action: ToolbarAction, configService: ToolbarConfigService) {
         self.action = action
+        self.configService = configService
         _name = State(initialValue: action.name)
         _icon = State(initialValue: action.icon)
         if case .custom(let promptText) = action.kind {
@@ -595,15 +632,17 @@ struct AIActionEditSheet: View {
     let action: ToolbarAction
     
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var configService = ToolbarConfigService.shared
-    @State private var llmSettings = LLMSettings.shared
+    @ObservedObject private var configService: ToolbarConfigService
+    @State private var llmSettings: LLMSettings
     
     @State private var editingPrompt: String
     @State private var editingProfileId: UUID?
     @State private var editingEnableSearch: Bool
     
-    init(action: ToolbarAction) {
+    init(action: ToolbarAction, configService: ToolbarConfigService, llmSettings: LLMSettings) {
         self.action = action
+        self.configService = configService
+        self._llmSettings = State(initialValue: llmSettings)
         _editingPrompt = State(initialValue: action.customPrompt ?? action.effectivePrompt ?? "")
         _editingProfileId = State(initialValue: action.profileId)
         _editingEnableSearch = State(initialValue: action.enableSearch)

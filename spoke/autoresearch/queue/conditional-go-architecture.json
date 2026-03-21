@@ -1,0 +1,91 @@
+{
+  "queue_id": "conditional-go-architecture",
+  "description": "Sequential autoresearch queue for closing Conditional Go architecture issues one by one.",
+  "csv_path": "issues/2026-03-19_20-55-00-conditional-go-architecture.csv",
+  "status_path": "autoresearch/status/conditional-go-architecture.json",
+  "worktree_root": "../spoke-ar",
+  "artifacts_root": "autoresearch/runs",
+  "base_ref": "HEAD",
+  "issues": [
+    {
+      "id": "AG-010",
+      "spec": "autoresearch/specs/AG-010.json",
+      "depends_on": [],
+      "enabled": true
+    },
+    {
+      "id": "QG-010",
+      "spec": "autoresearch/specs/QG-010.json",
+      "depends_on": [],
+      "enabled": true
+    },
+    {
+      "id": "APP-010",
+      "spec": "autoresearch/specs/APP-010.json",
+      "depends_on": [
+        "AG-010"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "APP-020",
+      "spec": "autoresearch/specs/APP-020.json",
+      "depends_on": [
+        "APP-010"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "ARCH-010",
+      "spec": "autoresearch/specs/ARCH-010.json",
+      "depends_on": [
+        "APP-010",
+        "APP-020"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "ARCH-020",
+      "spec": "autoresearch/specs/ARCH-020.json",
+      "depends_on": [
+        "APP-010",
+        "APP-020"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "ARCH-030",
+      "spec": "autoresearch/specs/ARCH-030.json",
+      "depends_on": [
+        "APP-010",
+        "APP-020"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "GOV-010",
+      "spec": "autoresearch/specs/GOV-010.json",
+      "depends_on": [
+        "ARCH-010",
+        "ARCH-020",
+        "ARCH-030"
+      ],
+      "enabled": true
+    },
+    {
+      "id": "TEST-010",
+      "spec": "autoresearch/specs/TEST-010.json",
+      "depends_on": [
+        "AG-010",
+        "QG-010",
+        "APP-010",
+        "APP-020",
+        "ARCH-010",
+        "ARCH-020",
+        "ARCH-030",
+        "GOV-010"
+      ],
+      "enabled": true
+    }
+  ]
+}

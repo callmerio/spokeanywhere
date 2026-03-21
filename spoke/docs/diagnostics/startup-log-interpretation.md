@@ -210,6 +210,7 @@ grep -E "Step.*\[[5-9][0-9]{2,}ms\]" dev-*.log
 
 ## 6. 相关文档
 
+- [本地稳定调试运行指南](../development-debug-run.md)
 - [Freeze/Hang 证据采集](./freeze-hang-evidence-collection.md)
 - [启动序列分析](../architecture/app-layer-startup-sequence.md)
 - [启动风险评估](../architecture/app-layer-risk-assessment.md)

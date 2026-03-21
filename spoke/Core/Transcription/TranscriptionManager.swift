@@ -1,6 +1,22 @@
 import AVFoundation
 import os
 
+@MainActor
+struct TranscriptionManagerDependencies {
+    let modelManager: TranscriptionModelManager
+    let dictionaryService: DictionaryService
+    let notificationCenter: NotificationCenter
+}
+
+@MainActor
+extension TranscriptionManagerDependencies {
+    static let live = TranscriptionManagerDependencies(
+        modelManager: .shared,
+        dictionaryService: .shared,
+        notificationCenter: .default
+    )
+}
+
 /// 转录引擎类型
 enum TranscriptionEngineType: String, CaseIterable {
     case speechAnalyzer = "speech_analyzer"     // macOS 26+ (优先)
@@ -31,11 +47,13 @@ final class TranscriptionManager {
     
     // MARK: - Singleton
     
-    static let shared = TranscriptionManager()
+    static let shared = TranscriptionManager(dependencies: .live)
     
     // MARK: - Properties
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "TranscriptionManager")
+    private let dependencies: TranscriptionManagerDependencies
+    private var notificationObservers: [NSObjectProtocol] = []
     
     /// 当前活跃的引擎
     private(set) var currentProvider: TranscriptionProvider?
@@ -53,7 +71,7 @@ final class TranscriptionManager {
     /// 首选语言 (now derived from TranscriptionModelManager)
     var preferredLocale: Locale {
         if #available(macOS 26.0, *) {
-            let config = TranscriptionModelManager.shared.getProviderConfiguration()
+            let config = dependencies.modelManager.getProviderConfiguration()
             return config.locale
         }
         return Locale(identifier: "zh-CN")
@@ -70,9 +88,12 @@ final class TranscriptionManager {
     
     // MARK: - Init
     
-    private init() {
+    private init(
+        dependencies: TranscriptionManagerDependencies
+    ) {
+        self.dependencies = dependencies
         // 监听词典变化，标记需要重新准备
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(dependencies.notificationCenter.addObserver(
             forName: .dictionaryDidChange,
             object: nil,
             queue: .main
@@ -81,30 +102,31 @@ final class TranscriptionManager {
                 self?.isDictionaryPrepared = false
                 self?.logger.info("📚 Dictionary changed, will re-prepare on next use")
             }
-        }
+        })
         
         // 监听训练数据变更，后台触发预编译（仅当模型支持时）
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(dependencies.notificationCenter.addObserver(
             forName: .dictionaryTrainingDataChanged,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
+                guard let self else { return }
                 // 检查当前模型是否支持预编译 LM
                 if #available(macOS 26.0, *) {
-                    let config = TranscriptionModelManager.shared.getProviderConfiguration()
+                    let config = self.dependencies.modelManager.getProviderConfiguration()
                     guard config.enablePrecompiledLM else {
-                        self?.logger.info("📚 训练数据变更，但当前模型不支持预编译 LM，跳过")
+                        self.logger.info("📚 训练数据变更，但当前模型不支持预编译 LM，跳过")
                         return
                     }
                 }
-                self?.logger.notice("📚 训练数据变更，后台预编译 LM...")
-                await self?.prepareDictionary()
+                self.logger.notice("📚 训练数据变更，后台预编译 LM...")
+                await self.prepareDictionary()
             }
-        }
+        })
         
         // 监听模型切换，释放当前 provider
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(dependencies.notificationCenter.addObserver(
             forName: .transcriptionModelChanged,
             object: nil,
             queue: .main
@@ -113,6 +135,12 @@ final class TranscriptionManager {
                 self?.logger.notice("🔄 Transcription model changed, releasing provider")
                 self?.releaseProvider()
             }
+        })
+    }
+
+    deinit {
+        for observer in notificationObservers {
+            dependencies.notificationCenter.removeObserver(observer)
         }
     }
     
@@ -156,7 +184,7 @@ final class TranscriptionManager {
         case .speechAnalyzer:
             if #available(macOS 26.0, *) {
                 // Use TranscriptionModelManager configuration
-                let config = TranscriptionModelManager.shared.getProviderConfiguration()
+                let config = dependencies.modelManager.getProviderConfiguration()
                 let provider = SpeechAnalyzerProvider(config: config)
                 logger.info("📍 Created SpeechAnalyzerProvider with model: \(config.modelType.rawValue, privacy: .public), locale: \(config.locale.identifier, privacy: .public), precompiledLM: \(config.enablePrecompiledLM, privacy: .public)")
                 return provider
@@ -189,7 +217,7 @@ final class TranscriptionManager {
             
             // 根据模型类型显示不同的词典状态
             if #available(macOS 26.0, *) {
-                let config = TranscriptionModelManager.shared.getProviderConfiguration()
+                let config = dependencies.modelManager.getProviderConfiguration()
                 if config.modelType == .dictation {
                     // DictationTranscriber: 预编译 LM + contextualStrings
                     logger.info("✅ Using engine: \(engineType.displayName) [预编译LM=\(self.isDictionaryPrepared ? "✓" : "✗"), contextualStrings=✓]")
@@ -223,7 +251,7 @@ final class TranscriptionManager {
     func prepareDictionary() async {
         // 检查当前模型是否支持预编译 LM
         if #available(macOS 26.0, *) {
-            let config = TranscriptionModelManager.shared.getProviderConfiguration()
+            let config = dependencies.modelManager.getProviderConfiguration()
             guard config.enablePrecompiledLM else {
                 logger.info("📚 [预编译 LM] 当前模型 \(config.modelType.rawValue, privacy: .public) 不支持预编译 LM，跳过")
                 return
@@ -255,7 +283,7 @@ final class TranscriptionManager {
     
     private func prepareInjector(_ injector: DictionaryInjector) async {
         // 在主线程获取词典条目
-        let entries = await MainActor.run { DictionaryService.shared.activeEntries }
+        let entries = await MainActor.run { dependencies.dictionaryService.activeEntries }
         
         logger.info("📚 [预编译 LM] 获取到词典条目数: \(entries.count)")
         

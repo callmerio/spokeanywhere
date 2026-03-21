@@ -2,12 +2,44 @@ import SwiftUI
 
 private typealias DS = DesignTokens
 
+@MainActor
+struct SelectionToolbarViewDependencies {
+    let configService: ToolbarConfigService
+    let resetAutoHideTimer: () -> Void
+    let menuScreenPoint: () -> NSPoint?
+    let openSettings: (Bool) -> Void
+    let disableToolbar: () -> Void
+}
+
+@MainActor
+extension SelectionToolbarViewDependencies {
+    static let preview = SelectionToolbarViewDependencies.preview(configService: .shared)
+
+    static func preview(
+        configService: ToolbarConfigService
+    ) -> SelectionToolbarViewDependencies {
+        SelectionToolbarViewDependencies(
+            configService: configService,
+            resetAutoHideTimer: {},
+            menuScreenPoint: { nil },
+            openSettings: { _ in },
+            disableToolbar: {}
+        )
+    }
+}
+
 // MARK: - 工具栏视图
 
 struct SelectionToolbarView: View {
     @EnvironmentObject var state: SelectionToolbarState
-    @ObservedObject private var configService = ToolbarConfigService.shared
+    @ObservedObject private var configService: ToolbarConfigService
+    private let dependencies: SelectionToolbarViewDependencies
     @State private var isHovered = false
+
+    init(dependencies: SelectionToolbarViewDependencies) {
+        self.dependencies = dependencies
+        self.configService = dependencies.configService
+    }
     
     var body: some View {
         let shadowTight = DS.Shadow.tight()
@@ -67,7 +99,7 @@ struct SelectionToolbarView: View {
     
     private var toolbarContent: some View {
         HStack(spacing: DS.Spacing.xxs) {
-            ToolbarLogoMenu {
+            ToolbarLogoMenu(dependencies: dependencies) {
                 executeAction($0)
             }
             
@@ -75,7 +107,7 @@ struct SelectionToolbarView: View {
             
             HStack(spacing: DS.Spacing.xxs) {
                 ForEach(Array(configService.visibleActions.enumerated()), id: \.element.id) { _, action in
-                    ToolbarActionButton(action: action) {
+                    ToolbarActionButton(action: action, dependencies: dependencies) {
                         executeAction(action)
                     }
                 }
@@ -145,10 +177,21 @@ private struct ToolbarDivider: View {
 // 使用 Button + NSMenu 替代 SwiftUI Menu，解决 onHover 不可靠问题
 
 private struct ToolbarLogoMenu: View {
+    let dependencies: SelectionToolbarViewDependencies
     let onAction: (ToolbarAction) -> Void
     
-    @ObservedObject private var configService = ToolbarConfigService.shared
+    @ObservedObject private var configService: ToolbarConfigService
     @State private var isHovered = false
+    @State private var menuActionHandler: ToolbarMenuActionHandler?
+
+    init(
+        dependencies: SelectionToolbarViewDependencies,
+        onAction: @escaping (ToolbarAction) -> Void
+    ) {
+        self.dependencies = dependencies
+        self.onAction = onAction
+        self.configService = dependencies.configService
+    }
     
     var body: some View {
         Button {
@@ -187,12 +230,19 @@ private struct ToolbarLogoMenu: View {
     
     private func showMenu() {
         let menu = NSMenu()
+        let actionHandler = ToolbarMenuActionHandler(
+            onAction: onAction,
+            openSettingsAction: { dependencies.openSettings(false) },
+            discoverMoreSkillsAction: { dependencies.openSettings(true) },
+            disableToolbarAction: dependencies.disableToolbar
+        )
+        menuActionHandler = actionHandler
         
         // 溢出的动作
         for action in configService.menuActions {
             let item = NSMenuItem(title: action.name, action: #selector(ToolbarMenuActionHandler.handleMenuAction(_:)), keyEquivalent: "")
             item.image = NSImage(systemSymbolName: action.icon, accessibilityDescription: nil)
-            item.target = ToolbarMenuActionHandler.shared
+            item.target = actionHandler
             item.representedObject = action
             menu.addItem(item)
         }
@@ -202,37 +252,30 @@ private struct ToolbarLogoMenu: View {
         }
         
         // 发现更多技能
-        let discoverItem = NSMenuItem(title: "发现更多技能", action: #selector(ToolbarMenuActionHandler.shared.discoverMoreSkills), keyEquivalent: "")
+        let discoverItem = NSMenuItem(title: "发现更多技能", action: #selector(ToolbarMenuActionHandler.discoverMoreSkills), keyEquivalent: "")
         discoverItem.image = NSImage(systemSymbolName: "plus.magnifyingglass", accessibilityDescription: nil)
-        discoverItem.target = ToolbarMenuActionHandler.shared
+        discoverItem.target = actionHandler
         menu.addItem(discoverItem)
         
         // 自定义设置
-        let settingsItem = NSMenuItem(title: "自定义设置", action: #selector(ToolbarMenuActionHandler.shared.openSettings), keyEquivalent: "")
+        let settingsItem = NSMenuItem(title: "自定义设置", action: #selector(ToolbarMenuActionHandler.openSettings), keyEquivalent: "")
         settingsItem.image = NSImage(systemSymbolName: "slider.horizontal.3", accessibilityDescription: nil)
-        settingsItem.target = ToolbarMenuActionHandler.shared
+        settingsItem.target = actionHandler
         menu.addItem(settingsItem)
         
         menu.addItem(.separator())
         
         // 禁用
-        let disableItem = NSMenuItem(title: "禁用", action: #selector(ToolbarMenuActionHandler.shared.disableToolbar), keyEquivalent: "")
+        let disableItem = NSMenuItem(title: "禁用", action: #selector(ToolbarMenuActionHandler.disableToolbar), keyEquivalent: "")
         disableItem.image = NSImage(systemSymbolName: "eye.slash", accessibilityDescription: nil)
-        disableItem.target = ToolbarMenuActionHandler.shared
+        disableItem.target = actionHandler
         menu.addItem(disableItem)
         
         // 显示菜单 - 紧贴工具栏下方
-        // 获取工具栏窗口位置，计算菜单显示的屏幕坐标
-        if let window = SelectionToolbarManager.shared.toolbarWindow {
-            let windowFrame = window.frame
-            // 菜单显示在窗口左下角下方 (AppKit 坐标系 y 向上)
-            let screenPoint = NSPoint(
-                x: windowFrame.origin.x + 8,
-                y: windowFrame.origin.y - 4  // 窗口底部再往下 4pt
-            )
-            // 使用 popUp 在屏幕坐标显示，positioning=nil 让菜单从该点向下展开
+        if let screenPoint = dependencies.menuScreenPoint() {
             menu.popUp(positioning: nil, at: screenPoint, in: nil)
         }
+        menuActionHandler = nil
     }
 }
 
@@ -240,8 +283,22 @@ private struct ToolbarLogoMenu: View {
 
 @MainActor
 @objc private class ToolbarMenuActionHandler: NSObject {
-    static let shared = ToolbarMenuActionHandler()
     var onAction: ((ToolbarAction) -> Void)?
+    var openSettingsAction: (() -> Void)?
+    var discoverMoreSkillsAction: (() -> Void)?
+    var disableToolbarAction: (() -> Void)?
+
+    init(
+        onAction: ((ToolbarAction) -> Void)? = nil,
+        openSettingsAction: (() -> Void)? = nil,
+        discoverMoreSkillsAction: (() -> Void)? = nil,
+        disableToolbarAction: (() -> Void)? = nil
+    ) {
+        self.onAction = onAction
+        self.openSettingsAction = openSettingsAction
+        self.discoverMoreSkillsAction = discoverMoreSkillsAction
+        self.disableToolbarAction = disableToolbarAction
+    }
     
     @objc func handleMenuAction(_ sender: NSMenuItem) {
         if let action = sender.representedObject as? ToolbarAction {
@@ -250,18 +307,15 @@ private struct ToolbarLogoMenu: View {
     }
     
     @objc func openSettings() {
-        SelectionToolbarManager.shared.hide()
-        NotificationCenter.default.post(name: .openToolbarSettings, object: nil)
+        openSettingsAction?()
     }
     
     @objc func discoverMoreSkills() {
-        SelectionToolbarManager.shared.hide()
-        NotificationCenter.default.post(name: .openToolbarSettings, object: nil, userInfo: ["focusAddSkill": true])
+        discoverMoreSkillsAction?()
     }
     
     @objc func disableToolbar() {
-        SelectionToolbarManager.shared.hide()
-        ToolbarConfigService.shared.isEnabled = false
+        disableToolbarAction?()
     }
 }
 
@@ -275,6 +329,7 @@ extension Notification.Name {
 
 struct ToolbarActionButton: View {
     let action: ToolbarAction
+    let dependencies: SelectionToolbarViewDependencies
     let onTap: () -> Void
     
     @EnvironmentObject var state: SelectionToolbarState
@@ -317,7 +372,7 @@ struct ToolbarActionButton: View {
                 isHovered = hovering
             }
             if hovering {
-                SelectionToolbarManager.shared.resetAutoHideTimer()
+                dependencies.resetAutoHideTimer()
             }
         }
         .simultaneousGesture(
@@ -327,18 +382,6 @@ struct ToolbarActionButton: View {
         )
         .disabled(isExecuting)
         .help(action.name)
-    }
-}
-
-// MARK: - 旧工具栏按钮 (兼容，后续移除)
-
-@available(*, deprecated, message: "Use ToolbarActionButton instead")
-struct ToolbarButton: View {
-    let action: SelectionToolbarActionType
-    let onTap: () -> Void
-    
-    var body: some View {
-        EmptyView()
     }
 }
 
@@ -407,9 +450,17 @@ struct ToolbarErrorView: View {
 
 // MARK: - Preview
 
+@MainActor
+private enum SelectionToolbarPreviewFixtures {
+    static let state = SelectionToolbarState.shared
+    static let dependencies = SelectionToolbarViewDependencies.preview
+}
+
 #Preview {
-    SelectionToolbarView()
-        .environmentObject(SelectionToolbarState.shared)
+    SelectionToolbarView(
+        dependencies: SelectionToolbarPreviewFixtures.dependencies
+    )
+        .environmentObject(SelectionToolbarPreviewFixtures.state)
         .frame(width: 400, height: 80)
         .padding()
         .background(DS.Colors.settingsBackground)

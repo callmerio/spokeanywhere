@@ -2,14 +2,12 @@ import AppKit
 import Vision
 
 extension ScreenshotContentView {
+    private var actionDependencies: ScreenshotActionDependencies { .live }
+
     // MARK: - Actions
 
     @objc func performPinAction() {
-        if item.isPinned {
-            ScreenshotManager.shared.unpin(item)
-        } else {
-            ScreenshotManager.shared.pin(item)
-        }
+        actionDependencies.togglePin(item)
 
         if let window = window as? ScreenshotWindow {
             window.updateCollectionBehavior()
@@ -20,11 +18,7 @@ extension ScreenshotContentView {
     }
 
     @objc func performLockAction() {
-        if item.isLocked {
-            ScreenshotManager.shared.unlock(item)
-        } else {
-            ScreenshotManager.shared.lock(item)
-        }
+        actionDependencies.toggleLock(item)
 
         if let window = window as? ScreenshotWindow {
             window.updateMovable()
@@ -33,7 +27,7 @@ extension ScreenshotContentView {
     }
 
     @objc func performCopyImage() {
-        ScreenshotManager.shared.copyToClipboard(item, enhancedImage: imageView.image)
+        actionDependencies.copyImage(item, imageView.image)
     }
 
     /// 获取当前显示的图片（可能是 AI 增强后的）
@@ -60,9 +54,7 @@ extension ScreenshotContentView {
         logger.info("🎨 Enhancing image before copy...")
 
         Task {
-            let enhanced = await Task.detached(priority: .userInitiated) {
-                await ImageEnhancementService.shared.enhance(original, to: targetSize)
-            }.value
+            let enhanced = actionDependencies.enhanceImage(original, targetSize)
 
             await MainActor.run {
                 if let enhanced = enhanced {
@@ -78,9 +70,7 @@ extension ScreenshotContentView {
     }
 
     private func copyImageToClipboard(_ image: NSImage) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
+        actionDependencies.copyRawImage(image)
     }
 
     @objc func performOCR() {
@@ -92,9 +82,7 @@ extension ScreenshotContentView {
             let text = await Self.extractText(from: cgImage)
             await MainActor.run {
                 if !text.isEmpty {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(text, forType: .string)
+                    self.actionDependencies.copyText(text)
                 }
             }
         }
@@ -102,9 +90,7 @@ extension ScreenshotContentView {
 
     @objc func performCopyText() {
         if let text = getRecognizedText(), !text.isEmpty {
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(text, forType: .string)
+            actionDependencies.copyText(text)
         }
     }
 
@@ -128,8 +114,7 @@ extension ScreenshotContentView {
 
     @objc func performQuickAsk() {
         guard let image = item.loadImage() else { return }
-        QuickAskService.shared.startSession()
-        QuickAskService.shared.state.addScreenshot(image)
+        actionDependencies.startQuickAsk(image)
     }
 
     // 公开给 Window 调用，支持快捷键 A 触发
@@ -138,15 +123,11 @@ extension ScreenshotContentView {
     }
 
     @objc func performCloseAction() {
-        ScreenshotManager.shared.close(item)
+        actionDependencies.closeWindow(item)
     }
 
     @objc func performMarkAction() {
-        if item.isMarked {
-            ScreenshotManager.shared.unmark(item)
-        } else {
-            ScreenshotManager.shared.mark(item)
-        }
+        actionDependencies.toggleMark(item)
         setupContextMenu()
         // 刷新光晕效果
         updateGlow(isHovered: isHovered, isMarked: item.isMarked, isPinned: item.isPinned)

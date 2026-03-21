@@ -10,6 +10,7 @@ final class ScreenshotWindow: NSPanel {
     // MARK: - Properties
     
     let item: ScreenshotItem
+    private let dependencies: ScreenshotActionDependencies
     
     /// 窗口移动回调
     var onFrameChanged: ((CGRect) -> Void)?
@@ -64,7 +65,7 @@ final class ScreenshotWindow: NSPanel {
             screenshotContentView?.triggerQuickAsk()
             
         case "c": // C -> Copy Image
-            ScreenshotManager.shared.copyToClipboard(item, enhancedImage: screenshotContentView?.getCurrentDisplayImage())
+            dependencies.copyImage(item, screenshotContentView?.getCurrentDisplayImage())
             // 可选：添加简单的视觉反馈（如闪烁一下）
             flashFeedback()
             
@@ -72,7 +73,7 @@ final class ScreenshotWindow: NSPanel {
             copyRecognizedText()
             
         case "q": // Q -> Quit/Close
-            ScreenshotManager.shared.close(item)
+            dependencies.closeWindow(item)
             
         default:
             super.keyDown(with: event)
@@ -82,9 +83,7 @@ final class ScreenshotWindow: NSPanel {
     private func copyRecognizedText() {
         // 尝试获取 Live Text 文本
         if let text = screenshotContentView?.getRecognizedText(), !text.isEmpty {
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(text, forType: .string)
+            dependencies.copyText(text)
             flashFeedback()
         } else {
             // Fallback: 如果没有 Live Text，尝试触发 OCR (仅旧版需要，新版通常已经有了 Live Text)
@@ -114,8 +113,12 @@ final class ScreenshotWindow: NSPanel {
     
     // MARK: - Init
     
-    init(item: ScreenshotItem) {
+    init(
+        item: ScreenshotItem,
+        dependencies: ScreenshotActionDependencies
+    ) {
         self.item = item
+        self.dependencies = dependencies
         
         super.init(
             contentRect: item.frame,
@@ -126,10 +129,17 @@ final class ScreenshotWindow: NSPanel {
         
         configure()
     }
+
+    @MainActor
+    convenience init(item: ScreenshotItem) {
+        self.init(item: item, dependencies: .live)
+    }
     
     // MARK: - Configuration
     
     private func configure() {
+        identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.screenshot)
+        setAccessibilityIdentifier(UITestIdentifiers.Window.screenshot)
         level = .floating
         isOpaque = false
         backgroundColor = .clear
@@ -149,7 +159,9 @@ final class ScreenshotWindow: NSPanel {
         isMovableByWindowBackground = !item.isLocked
         
         // 🔑 使用纯 AppKit 内容视图，避免 NSHostingView 约束循环崩溃
-        let contentView = ScreenshotContentView(item: item)
+        let contentView = ScreenshotContentView(item: item, dependencies: dependencies)
+        contentView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.screenshotContent)
+        contentView.setAccessibilityIdentifier(UITestIdentifiers.Element.screenshotContent)
         contentView.autoresizingMask = [.width, .height]
         self.contentView = contentView
         self.screenshotContentView = contentView
@@ -160,14 +172,14 @@ final class ScreenshotWindow: NSPanel {
         // Window 级别 tracking area 已移除，由 ContentView 接管
         
         // 监听窗口移动
-        NotificationCenter.default.addObserver(
+        dependencies.notificationCenter.addObserver(
             self,
             selector: #selector(windowDidMove),
             name: NSWindow.didMoveNotification,
             object: self
         )
         
-        NotificationCenter.default.addObserver(
+        dependencies.notificationCenter.addObserver(
             self,
             selector: #selector(windowDidResize),
             name: NSWindow.didResizeNotification,
@@ -312,7 +324,7 @@ final class ScreenshotWindow: NSPanel {
         if abs(item.opacity - newOpacity) > 0.001 {
             item.opacity = newOpacity
             alphaValue = newOpacity
-            ScreenshotManager.shared.saveAll()
+            dependencies.saveWindowState()
         }
     }
     
@@ -395,7 +407,7 @@ final class ScreenshotWindow: NSPanel {
         
         setFrame(newFrame, display: true, animate: false)
         item.frame = newFrame
-        ScreenshotManager.shared.saveAll()
+        dependencies.saveWindowState()
         
         // 触发图片增强（带防抖）
         // 传递内容区域尺寸（不含 glow padding）
@@ -405,6 +417,6 @@ final class ScreenshotWindow: NSPanel {
     }
     
     deinit {
-        NotificationCenter.default.removeObserver(self)
+        dependencies.notificationCenter.removeObserver(self)
     }
 }

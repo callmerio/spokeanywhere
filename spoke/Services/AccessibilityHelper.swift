@@ -5,6 +5,12 @@ import Foundation
 /// 提供统一的辅助功能权限请求接口，避免直接访问 Apple SDK 的非 Sendable 类型
 enum AccessibilityHelper {
 
+    /// 静默检查辅助功能权限，不触发系统弹窗
+    @MainActor
+    static func hasAccessibilityPermission() -> Bool {
+        AXIsProcessTrusted()
+    }
+
     /// 请求辅助功能权限（带提示）
     /// - Returns: 当前是否已授权
     ///

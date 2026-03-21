@@ -3,11 +3,13 @@ import AppKit
 // MARK: - Action Bar View (Pure AppKit)
 
 /// 纯 AppKit 实现的操作条（无背景小按钮样式，类似系统 Live Text 按钮）
+@MainActor
 final class ActionBarView: NSView {
     
     // MARK: - Properties
     
     private let item: ScreenshotItem
+    private let dependencies: ScreenshotActionDependencies
     private var actionButtons: [ActionBarButton] = []
     
     private let buttonSize: CGFloat = 24
@@ -15,8 +17,12 @@ final class ActionBarView: NSView {
     
     // MARK: - Init
     
-    init(item: ScreenshotItem) {
+    init(
+        item: ScreenshotItem,
+        dependencies: ScreenshotActionDependencies
+    ) {
         self.item = item
+        self.dependencies = dependencies
         super.init(frame: .zero)
         
         wantsLayer = true
@@ -25,6 +31,10 @@ final class ActionBarView: NSView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    convenience init(item: ScreenshotItem) {
+        self.init(item: item, dependencies: .live)
     }
     
     private func setupButtons() {
@@ -68,11 +78,7 @@ final class ActionBarView: NSView {
     // MARK: - Actions
     
     private func togglePin() {
-        if item.isPinned {
-            ScreenshotManager.shared.unpin(item)
-        } else {
-            ScreenshotManager.shared.pin(item)
-        }
+        dependencies.togglePin(item)
         
         if let window = window as? ScreenshotWindow {
             window.updateCollectionBehavior()
@@ -81,11 +87,7 @@ final class ActionBarView: NSView {
     }
     
     private func toggleLock() {
-        if item.isLocked {
-            ScreenshotManager.shared.unlock(item)
-        } else {
-            ScreenshotManager.shared.lock(item)
-        }
+        dependencies.toggleLock(item)
         
         if let window = window as? ScreenshotWindow {
             window.updateMovable()
@@ -96,7 +98,7 @@ final class ActionBarView: NSView {
     private func copyImage(button: ActionBarButton) {
         // 通过 window 获取 ScreenshotContentView 的增强图片
         let enhancedImage = (window as? ScreenshotWindow)?.screenshotContentView?.getCurrentDisplayImage()
-        ScreenshotManager.shared.copyToClipboard(item, enhancedImage: enhancedImage)
+        dependencies.copyImage(item, enhancedImage)
         button.showFeedback()
     }
     
@@ -113,9 +115,7 @@ final class ActionBarView: NSView {
             await MainActor.run {
                 button.stopSpinner()
                 if !text.isEmpty {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(text, forType: .string)
+                    self.dependencies.copyText(text)
                     button.showFeedback()
                 }
             }
@@ -128,12 +128,11 @@ final class ActionBarView: NSView {
         // 点击后短暂变色（AI 按钮是索引 0）
         actionButtons[0].flashActive()
         
-        QuickAskService.shared.startSession()
-        QuickAskService.shared.state.addScreenshot(image)
+        dependencies.startQuickAsk(image)
     }
     
     private func closeWindow() {
-        ScreenshotManager.shared.close(item)
+        dependencies.closeWindow(item)
     }
     
     func refreshButtons() {

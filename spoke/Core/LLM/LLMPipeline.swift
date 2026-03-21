@@ -1,6 +1,28 @@
 import Foundation
 import os
 
+@MainActor
+struct LLMPipelineDependencies {
+    let settings: LLMSettings
+    let contextService: ContextService
+    let clipboardHistory: ClipboardHistoryService
+    let screenOCR: ScreenOCRService
+    let shouldUseLLMForCorrection: () -> Bool
+    let dictionaryEntries: () -> [DictionaryEntry]
+}
+
+@MainActor
+extension LLMPipelineDependencies {
+    static let live = LLMPipelineDependencies(
+        settings: .shared,
+        contextService: .shared,
+        clipboardHistory: .shared,
+        screenOCR: .shared,
+        shouldUseLLMForCorrection: { UserDefaults.standard.useLLMForCorrection },
+        dictionaryEntries: { DictionaryService.shared.entries }
+    )
+}
+
 /// LLM 处理管线
 /// 负责协调转写文本的 LLM 精炼处理
 @MainActor
@@ -8,16 +30,13 @@ final class LLMPipeline {
     
     // MARK: - Singleton
     
-    static let shared = LLMPipeline()
+    static let shared = LLMPipeline(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LLMPipeline")
     
     // MARK: - Dependencies
     
-    private let settings = LLMSettings.shared
-    private let contextService = ContextService.shared
-    private let clipboardHistory = ClipboardHistoryService.shared
-    private let screenOCR = ScreenOCRService.shared
+    private let dependencies: LLMPipelineDependencies
     
     // MARK: - Properties
     
@@ -26,18 +45,20 @@ final class LLMPipeline {
     
     // MARK: - Init
     
-    private init() {}
+    private init(dependencies: LLMPipelineDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
     /// 检查是否需要 LLM 处理
     var shouldProcess: Bool {
-        settings.isFullyConfigured
+        dependencies.settings.isFullyConfigured
     }
     
     /// 当前 Provider 名称（用于显示）
     var currentProviderName: String {
-        settings.currentProviderName
+        dependencies.settings.currentProviderName
     }
     
     /// 对话（Quick Ask 专用）
@@ -49,7 +70,7 @@ final class LLMPipeline {
             return .failure(.notConfigured)
         }
         
-        guard let provider = settings.createCurrentProvider() else {
+        guard let provider = dependencies.settings.createCurrentProvider() else {
             logger.error("❌ Failed to create LLM provider")
             return .failure(.notConfigured)
         }
@@ -75,7 +96,7 @@ final class LLMPipeline {
         let prompt = LLMPrompt(
             systemPrompt: systemPrompt,
             userMessage: message,
-            contextAppName: contextService.getCurrentTargetApp()?.name
+            contextAppName: dependencies.contextService.getCurrentTargetApp()?.name
         )
         
         logger.info("🤖 Quick Ask: \(message.prefix(100), privacy: .public)...")
@@ -99,7 +120,7 @@ final class LLMPipeline {
     ///   - profile: 指定的 LLM Profile
     /// - Returns: AI 回答（包含文本和可能的图片）
     func chat(_ message: String, profile: ProviderProfile) async -> Result<LLMResponse, LLMError> {
-        guard let provider = settings.createProvider(for: profile) else {
+        guard let provider = dependencies.settings.createProvider(for: profile) else {
             logger.error("❌ Failed to create LLM provider for profile: \(profile.name, privacy: .public)")
             return .failure(.notConfigured)
         }
@@ -140,15 +161,15 @@ final class LLMPipeline {
         }
 
         // 优先使用 transcriptionProfile，回退到 selectedProfile
-        let profile = settings.transcriptionProfile ?? settings.selectedProfile
+        let profile = dependencies.settings.transcriptionProfile ?? dependencies.settings.selectedProfile
         guard let profile = profile,
-              let provider = settings.createProvider(for: profile) else {
+              let provider = dependencies.settings.createProvider(for: profile) else {
             logger.error("❌ Failed to create LLM provider")
             return .failure(.notConfigured)
         }
 
         // 记录实际使用的 profile（用于验证 transcriptionProfileId 消费链）
-        let profileSource = settings.transcriptionProfile != nil ? "transcription" : "selected"
+        let profileSource = dependencies.settings.transcriptionProfile != nil ? "transcription" : "selected"
         logger.info("🤖 Using \(profileSource) profile: \(profile.name) (id: \(profile.id))")
         
         isProcessing = true
@@ -190,37 +211,36 @@ final class LLMPipeline {
     // MARK: - Private
     
     private func buildPrompt(for text: String) async -> LLMPrompt {
-        var systemPrompt = settings.systemPrompt
+        var sections: [PromptSection] = [PromptSection(body: dependencies.settings.systemPrompt)]
         
         // 添加应用上下文（OCR 内容）
-        if settings.includeActiveApp {
+        if dependencies.settings.includeActiveApp {
             let appContext = await buildAppContext()
-            if !appContext.isEmpty {
-                // 放在独立区块，明确告知这是参考上下文，不要影响转录核心任务
-                systemPrompt += "\n\n" + appContext
+            if let section = PromptRenderer.section(body: appContext) {
+                sections.append(section)
             }
         }
         
-        if settings.includeClipboard {
+        if dependencies.settings.includeClipboard {
             // 限制为最近 10 条，减少噪音并聚焦最近上下文
-            let historyContext = clipboardHistory.formatForPrompt(limit: 10)
-            if !historyContext.isEmpty {
-                systemPrompt += "\n\n" + historyContext
+            let historyContext = dependencies.clipboardHistory.formatForPrompt(limit: 10)
+            if let section = PromptRenderer.section(body: historyContext) {
+                sections.append(section)
             }
         }
         
         // 智能纠错：检测词典匹配，让 AI 根据上下文判断
-        if UserDefaults.standard.useLLMForCorrection {
+        if dependencies.shouldUseLLMForCorrection() {
             let correctionHints = buildCorrectionHints(for: text)
-            if !correctionHints.isEmpty {
-                systemPrompt += "\n\n" + correctionHints
+            if let section = PromptRenderer.section(body: correctionHints) {
+                sections.append(section)
             }
         }
         
         return LLMPrompt(
-            systemPrompt: systemPrompt,
+            systemPrompt: PromptRenderer.renderSections(sections),
             userMessage: text,
-            contextAppName: contextService.getCurrentTargetApp()?.name
+            contextAppName: dependencies.contextService.getCurrentTargetApp()?.name
         )
     }
     
@@ -228,20 +248,24 @@ final class LLMPipeline {
     private func buildAppContext() async -> String {
         let startTime = CFAbsoluteTimeGetCurrent()
         
-        guard let app = contextService.getCurrentTargetApp() else {
+        guard let app = dependencies.contextService.getCurrentTargetApp() else {
             logger.info("📱 [AppContext] 无聚焦应用")
             return ""
         }
         
         logger.info("📱 [AppContext] 开始构建 | 应用: \(app.name, privacy: .public)")
         
-        var context = "【应用上下文 - 仅用于理解用户意图，不要将无关内容混入转录】"
-        context += "\n当前应用: \(app.name)"
+        var sections: [PromptSection] = [
+            PromptSection(
+                title: "【应用上下文 - 仅用于理解用户意图，不要将无关内容混入转录】",
+                body: "当前应用: \(app.name)"
+            )
+        ]
         
         // 优先等待预取结果（已在录音开始时触发），否则实时获取
-        var ocrText = await screenOCR.awaitPrefetch()
+        var ocrText = await dependencies.screenOCR.awaitPrefetch()
         if ocrText == nil {
-            ocrText = await screenOCR.getActiveWindowText(maxLength: 1500)
+            ocrText = await dependencies.screenOCR.getActiveWindowText(maxLength: 1500)
         }
         
         if let ocrText = ocrText {
@@ -251,10 +275,12 @@ final class LLMPipeline {
                 .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
                 .joined(separator: "\n")
             
-            if !cleanedText.isEmpty {
-                context += "\n窗口内容摘要:\n\(cleanedText)"
+            if let section = PromptRenderer.section(title: "窗口内容摘要:", body: cleanedText) {
+                sections.append(section)
             }
         }
+
+        let context = PromptRenderer.renderSections(sections)
         
         let totalTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         logger.info("📱 [AppContext] 构建完成 | 总长度: \(context.count, privacy: .public) 字符 | 耗时: \(String(format: "%.1f", totalTime), privacy: .public)ms")
@@ -265,33 +291,23 @@ final class LLMPipeline {
     /// 构建词典纠错提示
     /// 检测文本中可能匹配词典 corrections 的部分，让 AI 根据上下文决定是否替换
     private func buildCorrectionHints(for text: String) -> String {
-        let dictionaryService = DictionaryService.shared
         var hints: [(errorForm: String, correctWord: String)] = []
         
         // 遍历所有词条，检查是否有 corrections 匹配
-        for entry in dictionaryService.entries where entry.confirmedByUser {
+        for entry in dependencies.dictionaryEntries() where entry.confirmedByUser {
             for correction in entry.corrections where text.range(of: correction, options: .caseInsensitive) != nil {
                 hints.append((errorForm: correction, correctWord: entry.word))
             }
         }
         
         guard !hints.isEmpty else { return "" }
-        
-        // 构建提示文本
-        var prompt = """
-        【词典纠错提示】
-        检测到以下可能的识别错误，请根据上下文判断是否需要替换：
-        """
-        
-        for hint in hints {
-            prompt += "\n- 「\(hint.errorForm)」可能是「\(hint.correctWord)」的误识别"
-        }
-        
-        prompt += """
-        
-        注意：这只是提示，请结合上下文语义判断是否合理。如果上下文表明原词是正确的，则保持不变。
-        """
-        
-        return prompt
+
+        let items = hints.map { "「\($0.errorForm)」可能是「\($0.correctWord)」的误识别" }
+        return PromptRenderer.renderBulletSection(
+            title: "【词典纠错提示】",
+            intro: "检测到以下可能的识别错误，请根据上下文判断是否需要替换：",
+            items: items,
+            outro: "注意：这只是提示，请结合上下文语义判断是否合理。如果上下文表明原词是正确的，则保持不变。"
+        ) ?? ""
     }
 }

@@ -81,4 +81,22 @@ struct AudioCallbackRouterTests {
         #expect(recordingEvents.last == 98)
         #expect(quickAskEvents.last == 99)
     }
+
+    @Test("移除当前活跃会话后不会残留脏 activeSession")
+    func removingActiveSessionClearsActiveSession() {
+        let router = AudioCallbackRouter()
+        let recordingSession = UUID()
+        let quickAskSession = UUID()
+
+        router.ensureSession(recordingSession)
+        router.ensureSession(quickAskSession)
+        router.setActiveSession(quickAskSession)
+
+        router.removeSession(quickAskSession)
+
+        #expect(router.activeSessionID == nil)
+
+        router.setActiveSession(recordingSession)
+        #expect(router.activeSessionID == recordingSession)
+    }
 }

@@ -51,28 +51,61 @@ enum KeyComboFormatter {
 }
 
 @MainActor
-class AppSettings: ObservableObject {
-    @MainActor static let shared = AppSettings()
-    
-    @AppStorage("StartAtLogin") var startAtLogin: Bool = false {
-        didSet {
+struct AppSettingsDependencies {
+    let notificationCenter: NotificationCenter
+    let updateLoginItemRegistration: (Bool) -> Void
+    let applyDockVisibility: (Bool) -> Void
+    let updateSelectionToolbarEnabled: (Bool) -> Void
+}
+
+@MainActor
+extension AppSettingsDependencies {
+    static let live = AppSettingsDependencies(
+        notificationCenter: .default,
+        updateLoginItemRegistration: { enabled in
             if #available(macOS 13.0, *) {
-                if startAtLogin {
+                if enabled {
                     try? SMAppService.mainApp.register()
                 } else {
                     try? SMAppService.mainApp.unregister()
                 }
             }
-        }
-    }
-    
-    @AppStorage("ShowInDock") var showInDock: Bool = true {
-        didSet {
+        },
+        applyDockVisibility: { showInDock in
             if showInDock {
                 NSApp.setActivationPolicy(.regular)
             } else {
                 NSApp.setActivationPolicy(.accessory)
             }
+        },
+        updateSelectionToolbarEnabled: { enabled in
+            if enabled {
+                SelectionToolbarManager.shared.start(requestPermissionIfNeeded: true)
+            } else {
+                SelectionToolbarManager.shared.stop()
+            }
+        }
+    )
+}
+
+@MainActor
+class AppSettings: ObservableObject {
+    @MainActor static let shared = AppSettings()
+    private let dependencies: AppSettingsDependencies
+
+    init() {
+        self.dependencies = .live
+    }
+    
+    @AppStorage("StartAtLogin") var startAtLogin: Bool = false {
+        didSet {
+            dependencies.updateLoginItemRegistration(startAtLogin)
+        }
+    }
+    
+    @AppStorage("ShowInDock") var showInDock: Bool = true {
+        didSet {
+            dependencies.applyDockVisibility(showInDock)
         }
     }
     
@@ -128,7 +161,7 @@ class AppSettings: ObservableObject {
     static let shortcutDidChangeNotification = Notification.Name("ShortcutDidChange")
     
     private func notifyShortcutChange() {
-        NotificationCenter.default.post(name: Self.shortcutDidChangeNotification, object: nil)
+        postNotification(Self.shortcutDidChangeNotification)
     }
     
     /// 获取快捷键显示字符串
@@ -158,7 +191,7 @@ class AppSettings: ObservableObject {
     static let quickAskShortcutDidChangeNotification = Notification.Name("QuickAskShortcutDidChange")
     
     private func notifyQuickAskShortcutChange() {
-        NotificationCenter.default.post(name: Self.quickAskShortcutDidChangeNotification, object: nil)
+        postNotification(Self.quickAskShortcutDidChangeNotification)
     }
     
     /// 获取 Quick Ask 快捷键显示字符串
@@ -178,11 +211,7 @@ class AppSettings: ObservableObject {
     @AppStorage("SelectionToolbarEnabled") var selectionToolbarEnabled: Bool = true {
         didSet {
             Task { @MainActor in
-                if selectionToolbarEnabled {
-                    SelectionToolbarManager.shared.start()
-                } else {
-                    SelectionToolbarManager.shared.stop()
-                }
+                self.dependencies.updateSelectionToolbarEnabled(self.selectionToolbarEnabled)
             }
         }
     }
@@ -212,7 +241,7 @@ class AppSettings: ObservableObject {
     static let messagePanelShortcutDidChangeNotification = Notification.Name("MessagePanelShortcutDidChange")
     
     private func notifyMessagePanelShortcutChange() {
-        NotificationCenter.default.post(name: Self.messagePanelShortcutDidChangeNotification, object: nil)
+        postNotification(Self.messagePanelShortcutDidChangeNotification)
     }
     
     /// 获取 Message Panel 快捷键显示字符串
@@ -242,7 +271,7 @@ class AppSettings: ObservableObject {
     static let liveCaptionShortcutDidChangeNotification = Notification.Name("LiveCaptionShortcutDidChange")
     
     private func notifyLiveCaptionShortcutChange() {
-        NotificationCenter.default.post(name: Self.liveCaptionShortcutDidChangeNotification, object: nil)
+        postNotification(Self.liveCaptionShortcutDidChangeNotification)
     }
     
     /// 获取 Live Caption 快捷键显示字符串
@@ -272,7 +301,7 @@ class AppSettings: ObservableObject {
     static let screenshotShortcutDidChangeNotification = Notification.Name("ScreenshotShortcutDidChange")
     
     private func notifyScreenshotShortcutChange() {
-        NotificationCenter.default.post(name: Self.screenshotShortcutDidChangeNotification, object: nil)
+        postNotification(Self.screenshotShortcutDidChangeNotification)
     }
     
     /// 获取 Screenshot 快捷键显示字符串
@@ -314,5 +343,9 @@ class AppSettings: ObservableObject {
             case .mixed: return "智能混合 (Hybrid)"
             }
         }
+    }
+
+    private func postNotification(_ name: Notification.Name) {
+        dependencies.notificationCenter.post(name: name, object: nil)
     }
 }

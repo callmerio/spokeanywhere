@@ -1,408 +1,152 @@
 # SpokenAnyWhere 项目架构全景
 
-**版本**: 1.0
-**更新时间**: 2026-02-22
-**代码规模**: ~51,000 行 Swift 代码
+**版本**: 1.2
+**更新时间**: 2026-03-22
+**定位**: 架构首页与阅读导航
 
 ---
 
 ## 一、项目概览
 
-SpokenAnyWhere 是一个原生 macOS 生产力应用（macOS 14+），提供语音转文本转录和 AI 驱动的文本处理功能。
+SpokenAnyWhere 是一个原生 macOS 生产力应用（macOS 14+），以语音输入为核心，向外扩展 Quick Ask、实时字幕、截图标注、词典与文本选择工具栏等能力。
 
-**核心能力**:
-- 全局热键支持的语音输入
-- 实时字幕显示
-- 截图 OCR 与标注
-- 文本选择工具栏
-- AI 对话与文本处理
+当前技术栈：
 
-**技术栈**:
-- Swift 5.9+, SwiftUI + AppKit 混合架构
+- Swift 5.9+
+- SwiftUI + AppKit 混合 UI
 - SwiftData 持久化
 - Swift Package Manager
-- Swift 6 strict concurrency 合规
+- Swift 6 strict concurrency 检查
 
 ---
 
 ## 二、架构分层
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    App Layer (入口层)                     │
-│  SpokenlyApp.swift, AppDelegate.swift                   │
-│  - 应用生命周期管理                                        │
-│  - 启动序列编排                                           │
-│  - ModelContainer 初始化                                 │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                 Services Layer (服务层)                   │
-│  全局单例服务，跨功能协调                                   │
-│  - HotKeyService: 全局热键管理                            │
-│  - SelectionMonitorService: 文本选择监控                  │
-│  - QuickAskService: 快速提问面板编排                       │
-│  - RecordingController: 录音控制器                        │
-│  - ServiceContainer: 轻量级依赖注入                       │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                  Core Layer (核心业务层)                   │
-│  按功能域组织的业务逻辑模块                                  │
-│  - Audio: 音频捕获与处理                                   │
-│  - Transcription: ASR 引擎集成                           │
-│  - LLM: AI 模型集成                                      │
-│  - Screenshot: 截图捕获与管理                             │
-│  - LiveCaption: 实时字幕                                 │
-│  - Dictionary: 词典服务                                  │
-│  - Attachment: 附件管理                                  │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                    UI Layer (视图层)                      │
-│  SwiftUI 视图组件，按功能域组织                             │
-│  - QuickAsk: AI 对话面板                                 │
-│  - LiveCaption: 字幕显示                                 │
-│  - Screenshot: 截图标注 UI                               │
-│  - Settings: 设置界面                                    │
-│  - Components: 可复用组件                                │
-│  - Theme: DesignTokens (设计系统)                        │
-└─────────────────────────────────────────────────────────┘
+```text
+App
+  - SpokenlyApp.swift
+  - AppDelegate.swift
+  - 生命周期、启动编排、ModelContainer、菜单栏
+
+Services
+  - HotKeyService
+  - RecordingController
+  - QuickAskService
+  - SelectionMonitorService
+  - SelectionToolbarManager
+  - HistoryManager
+  - ServiceContainer
+  - 全局协调、输入输出、设置与历史
+
+Core
+  - Audio / Transcription / LLM / Screenshot / LiveCaption
+  - Dictionary / Attachment / Workflow / Translation
+  - MessagePanel / History / Tags / SelectionToolbar / Debug
+  - 业务逻辑、状态模型、平台能力封装
+
+UI
+  - HUD / QuickAsk / MessagePanel / LiveCaption / Screenshot
+  - Dictionary / SelectionToolbar / Settings / Workflow / Components
+  - 视图、浮窗、样式与交互承载
 ```
 
 ---
 
-## 三、目录结构
+## 三、关键入口
 
-### App/ - 应用入口
-```
-App/
-├── SpokenlyApp.swift          # SwiftUI App 入口
-└── AppDelegate.swift          # AppKit 生命周期管理
-```
+### 3.1 应用入口
 
-**职责**:
-- 应用启动序列（12 步初始化流程）
-- ModelContainer 配置（SwiftData）
-- 菜单栏图标管理
-- 权限检查与引导
+- `App/SpokenlyApp.swift`: SwiftUI `@main` 入口，仅暴露 Settings Scene
+- `App/AppDelegate.swift`: 启动序列、状态栏、权限、历史清理、截图恢复、资源监控
 
-### Core/ - 核心业务逻辑
-```
-Core/
-├── Audio/                     # 音频捕获与处理
-│   ├── AudioRecorderService.swift
-│   ├── AudioCallbackRouter.swift
-│   └── AudioRecoveryPolicy.swift
-├── Transcription/             # 语音识别
-│   ├── Providers/             # ASR 引擎适配器
-│   │   ├── SFSpeechProvider.swift
-│   │   └── SpeechAnalyzerProvider.swift
-│   ├── Models/                # 模型管理
-│   └── TranscriptionManager.swift
-├── LLM/                       # AI 模型集成
-│   ├── LLMProvider.swift
-│   ├── LLMPipeline.swift
-│   └── OpenAICompatibleProvider.swift
-├── Screenshot/                # 截图管理
-│   ├── ScreenshotManager.swift
-│   ├── ScreenshotItem.swift
-│   └── ImageUpscalerModelManager.swift
-├── LiveCaption/               # 实时字幕
-│   ├── LiveCaptionManager.swift
-│   ├── CaptionStabilizer.swift
-│   └── SystemAudioCaptureService.swift
-├── Dictionary/                # 词典服务
-│   ├── Models/
-│   ├── Providers/
-│   └── UnifiedDictionaryService.swift
-├── Attachment/                # 附件管理
-│   ├── AttachmentManager.swift
-│   └── ScreenCaptureService.swift
-└── [其他功能域...]
-```
+### 3.2 核心编排入口
 
-### Services/ - 全局服务
-```
-Services/
-├── ServiceContainer.swift     # 依赖注入容器
-├── HotKeyService.swift        # 全局热键
-├── SelectionMonitorService.swift  # 文本选择监控
-├── QuickAskService.swift      # 快速提问编排
-├── RecordingController.swift  # 录音控制
-├── AppSettings.swift          # 用户设置
-├── HistoryManager.swift       # 历史记录
-└── HotKey/                    # 热键子系统
-    ├── HotKeyRegistry.swift
-    └── Handlers/              # 热键处理器
-```
+- `Services/RecordingController.swift`: 语音录制主编排器
+- `Services/QuickAskService.swift`: Quick Ask 会话编排器
+- `Services/ServiceContainer.swift`: 协议化依赖入口
 
-### UI/ - 用户界面
-```
-UI/
-├── QuickAsk/                  # AI 对话面板
-├── LiveCaption/               # 字幕显示
-├── Screenshot/                # 截图标注
-├── Settings/                  # 设置界面
-├── Components/                # 可复用组件
-├── Theme/                     # 设计系统
-│   └── DesignTokens.swift     # 唯一样式来源
-└── [其他 UI 模块...]
-```
+### 3.3 持久化入口
+
+`AppDelegate.sharedModelContainer` 初始化 SwiftData：
+
+- `HistoryItem`
+- `AppRule`
+- `AIProviderConfig`
+
+数据目录仍为：
+
+- `~/Library/Application Support/Spoke/Data/`
 
 ---
 
-## 四、关键架构模式
+## 四、主链路
 
-### 4.1 Service-Oriented Architecture
+### 4.1 语音输入
 
-**ServiceContainer** 提供轻量级依赖注入：
+`HotKeyService -> VoiceHandler -> RecordingController -> AudioRecorderService -> TranscriptionManager`
 
-```swift
-// 获取服务
-let audio = ServiceContainer.shared.audioCapture
+### 4.2 Quick Ask
 
-// SwiftUI 中使用
-@Environment(\.services) var services
+`HotKeyService -> QuickAskHandler -> QuickAskService -> LLMPipeline`
 
-// 测试时注入 Mock
-ServiceContainer.shared.register(audioCapture: MockAudioService())
-```
+当前补充说明：
 
-**核心服务协议**:
-- `AudioCaptureServiceProtocol`: 音频捕获
-- `TranscriptionServiceProtocol`: 语音识别
-- `LLMServiceProtocol`: AI 模型
-- `AppSettingsProtocol`: 应用设置
-- `HistoryManagerProtocol`: 历史记录
-- `QuickAskServiceProtocol`: 快速提问
+- `Core/QuickAsk/QuickAskPromptAssembler.swift` 已将 Quick Ask prompt 组装从 `QuickAskService` 热路径中抽离，成为可单测的纯拼装层。
 
-### 4.2 SwiftUI + AppKit 混合
+### 4.3 截图
 
-- **SwiftUI**: 主要 UI 框架，用于设置界面、对话面板等
-- **AppKit**: 用于需要精确控制的场景
-  - NSPanel: 浮动窗口（字幕、截图）
-  - NSWindow: 设置窗口
-  - NSStatusItem: 菜单栏图标
+`HotKeyService -> ScreenshotHandler -> ScreenshotManager -> ScreenCaptureService`
 
-### 4.3 SwiftData 持久化
+### 4.4 实时字幕
 
-**ModelContainer** 在 AppDelegate 中初始化：
+`HotKeyService -> CaptionHandler -> LiveCaptionManager -> SystemAudioCaptureService -> LiveCaptionTranscriber`
 
-```swift
-static let sharedModelContainer: ModelContainer = {
-    let schema = Schema([HistoryItem.self, AppRule.self, AIProviderConfig.self])
-    // 专属路径: ~/Library/Application Support/Spoke/Data/
-    // ...
-}()
-```
+### 4.5 文本选择工具栏
 
-**持久化模型**:
-- `HistoryItem`: 历史记录
-- `AppRule`: 应用规则
-- `AIProviderConfig`: AI 提供商配置
-
-### 4.4 Swift 6 Concurrency
-
-项目符合 Swift 6 strict concurrency：
-- 0 warnings (48 个并发告警站点已清除)
-- @MainActor 隔离
-- Sendable 类型传播
-- Task.detached 后台任务
-
-**当前状态**: **Conditional Go**
-- ✅ 代码可运行 (0 warnings, 129/129 tests)
-- ⚠️ 质量门禁需补齐 (Build/Test/Sanitizer 完整，Concurrency gate 待补齐)
-- ⚠️ 架构演进需收敛 (单例密度、UI 直连、双通道耦合)
-
-**Full Go 触发条件**: 完成 QG-W1-1/W1-2 (并发门禁硬阻断)
-
-详见: [风险评估与改进建议](./risks-and-recommendations.md)
+`SelectionMonitorService -> SelectionToolbarManager -> SelectionActionService`
 
 ---
 
-## 五、启动流程
+## 五、当前架构特征
 
-AppDelegate.applicationDidFinishLaunching 执行 12 步初始化：
+### 5.1 优点
 
-1. **Step 0**: 安装崩溃日志记录器
-2. **Step 1**: 检查辅助功能权限
-3. **Step 2**: 设置状态栏图标
-4. **Step 3**: 启动剪贴板服务
-5. **Step 4**: 启动录音控制器
-6. **Step 5**: 配置 HistoryManager
-7. **Step 6**: 执行历史清理
-8. **Step 6.1**: 清理孤立音频文件
-9. **Step 6.5**: 词典预编译（后台）
-10. **Step 7**: 启动热键服务
-11. **Step 8**: 启动选择监控服务
-12. **Step 9**: 恢复 Pinned 截图（异步）
+- 分层边界基本清晰
+- 主要功能域已按目录拆分
+- 本地严格并发检查通过
+- 测试基线已在 2026-03-22 更新到 `137 tests / 25 suites`
 
-**性能优化**:
-- 词典预编译：Task.detached(priority: .background)
-- 截图恢复：Task(priority: .utility) + 分帧恢复
+### 5.2 主要约束
 
----
+- 仍以单例为主，初始化顺序较隐式
+- UI 层存在大量 `*.shared` 直接依赖
+- `NotificationCenter`、直接调用、`ServiceContainer` 三条依赖通道并存
+- 文档需要持续校准，避免与代码现实脱节
 
-## 六、数据流
+本轮新增的结构收敛：
 
-### 6.1 语音输入流程
+- `Services/RecordingTranscriptionDecision.swift` 已把录音转写后的 clipboard / HUD / processedText 决策从 `RecordingController` 中抽离。
+- `App/AppLifecyclePlan.swift` 已把启动/关闭步骤顺序提炼为显式 plan spec，并由 `AppDelegate` 映射到实际 side effect。
 
-```
-用户按下热键
-    ↓
-HotKeyService 触发 VoiceHandler
-    ↓
-RecordingController.startRecording()
-    ↓
-AudioRecorderService 捕获音频
-    ↓
-TranscriptionManager 转录
-    ↓
-LLMPipeline 处理（可选）
-    ↓
-HistoryManager 保存
-    ↓
-InputService 输入到活跃应用
-```
+### 5.3 当前判断
 
-### 6.2 Quick Ask 流程
+- 从可运行性看：**Go**
+- 从可持续演进看：**Conditional Go**
 
-```
-用户按下 Quick Ask 热键
-    ↓
-QuickAskService.startSession()
-    ↓
-显示 QuickAskPanel (NSPanel)
-    ↓
-用户输入问题（语音/文本）
-    ↓
-LLMPipeline.chat()
-    ↓
-流式响应显示
-    ↓
-用户可继续对话或关闭
-```
-
-### 6.3 截图流程
-
-```
-用户按下截图热键
-    ↓
-ScreenshotManager.captureRegion()
-    ↓
-显示 RegionSelectionWindow
-    ↓
-用户选择区域
-    ↓
-ScreenCaptureService 捕获
-    ↓
-保存到 ~/Library/Application Support/Spoke/Screenshots/
-    ↓
-创建 ScreenshotWindow (NSPanel)
-    ↓
-用户可标注、Pin、Lock、Mark
-```
+详见：`./risks-and-recommendations.md`
 
 ---
 
-## 七、关键技术决策
+## 六、文档导航
 
-### 7.1 为什么使用 ServiceContainer？
-
-- **轻量级**: 相比完整 DI 框架，代码量小
-- **可测试**: 支持 Mock 注入
-- **类型安全**: 协议约束
-- **SwiftUI 友好**: Environment 集成
-
-### 7.2 为什么混合 SwiftUI + AppKit？
-
-- **SwiftUI**: 快速开发，声明式 UI
-- **AppKit**: 精确控制（NSPanel 浮动行为、窗口层级）
-- **渐进迁移**: 保留 AppKit 能力，逐步 SwiftUI 化
-
-### 7.3 为什么使用 NSPanel 而非 NSWindow？
-
-- **浮动行为**: 始终在最前
-- **不抢焦点**: 不影响用户当前工作流
-- **跨 Space**: 可配置是否跟随 Space 切换
-
----
-
-## 八、性能特征
-
-### 8.1 启动性能
-
-- **冷启动**: ~33s (clean build)
-- **热启动**: <1s
-- **关键优化**:
-  - 异步截图恢复（Task.detached）
-  - 后台词典预编译
-  - 分帧窗口恢复（await Task.yield()）
-
-### 8.2 内存占用
-
-- **基线**: ~50MB
-- **录音中**: +10-20MB
-- **AI 处理**: +50-100MB（取决于模型）
-
-### 8.3 并发模型
-
-- **主线程**: UI 更新、用户交互
-- **后台线程**: 文件 I/O、网络请求、AI 推理
-- **隔离策略**: @MainActor + Sendable
-
----
-
-## 九、扩展点
-
-### 9.1 添加新的 ASR 引擎
-
-1. 实现 `TranscriptionProvider` 协议
-2. 在 `TranscriptionManager` 中注册
-3. 更新 `TranscriptionEngineType` 枚举
-
-### 9.2 添加新的 LLM 提供商
-
-1. 实现 `LLMProvider` 协议
-2. 在 `LLMPipeline` 中注册
-3. 更新设置界面
-
-### 9.3 添加新的热键功能
-
-1. 在 `Services/HotKey/Handlers/` 创建新 Handler
-2. 实现 `HotKeyHandler` 协议
-3. 在 `HotKeyService` 中注册
-
----
-
-## 十、相关文档
-
-- [风险评估与改进建议](./risks-and-recommendations.md) - 三维风险分析 + 双轴改进 Backlog
-- [快速导航索引](./quick-reference.md) - 功能 → 实现位置映射
-- [App 层启动序列](./app-layer-startup-sequence.md) - 12 步启动流程
-- [App 层回调链](./app-layer-callback-chains.md) - 4 条主链路
-- [App 层风险评估](./app-layer-risk-assessment.md) - 9 个风险点
-- [设计系统规范](../../../docs/style/INDEX.md) - DesignTokens 使用指南
-- [性能基准测试](../performance-benchmarking.md) - 性能测试方案
-
----
-
-## 十一、快速定位
-
-| 功能 | 入口文件 | 关键类型 |
-|------|---------|---------|
-| 语音输入 | Services/RecordingController.swift | RecordingController |
-| AI 对话 | Services/QuickAskService.swift | QuickAskService |
-| 截图管理 | Core/Screenshot/ScreenshotManager.swift | ScreenshotManager |
-| 实时字幕 | Core/LiveCaption/LiveCaptionManager.swift | LiveCaptionManager |
-| 热键管理 | Services/HotKeyService.swift | HotKeyService |
-| 文本选择 | Services/SelectionMonitorService.swift | SelectionMonitorService |
-| 历史记录 | Services/HistoryManager.swift | HistoryManager |
-| 应用设置 | Services/AppSettings.swift | AppSettings |
+- `./current-state-audit.md`：当前状态审计与事实基线
+- `./core-modules.md`：Core 层真实模块清单
+- `./ui-components.md`：UI 场景与业务依赖
+- `./quick-reference.md`：实现定位与验证命令
+- `./risks-and-recommendations.md`：风险与建议
+- `../m2-final-acceptance.md`：2026-02-22 历史验收记录
 
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-02-22
-**审阅**: codex-1 (架构轴), code (门禁轴), claude-2 (App 层)
+**最后更新**: 2026-03-22

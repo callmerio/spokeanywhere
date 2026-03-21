@@ -11,6 +11,7 @@ private let logger = Logger(subsystem: "com.spokeanywhere", category: "QuickAskI
 /// 支持：剪贴板粘贴图片、拖拽文件
 struct QuickAskInputView: View {
     @Bindable var state: QuickAskState
+    @State private var workflowState: WorkflowState
     
     /// 发送回调
     var onSend: (() -> Void)?
@@ -24,6 +25,26 @@ struct QuickAskInputView: View {
     var onDrop: (([NSItemProvider]) -> Void)?
     /// 文本变化回调（用于 Workflow / 触发检测）
     var onTextChange: ((String, Bool) -> Void)?
+
+    init(
+        state: QuickAskState,
+        workflowState: WorkflowState,
+        onSend: (() -> Void)? = nil,
+        onCancel: (() -> Void)? = nil,
+        onDragEntered: (() -> Void)? = nil,
+        onDragExited: (() -> Void)? = nil,
+        onDrop: (([NSItemProvider]) -> Void)? = nil,
+        onTextChange: ((String, Bool) -> Void)? = nil
+    ) {
+        self.state = state
+        self._workflowState = State(initialValue: workflowState)
+        self.onSend = onSend
+        self.onCancel = onCancel
+        self.onDragEntered = onDragEntered
+        self.onDragExited = onDragExited
+        self.onDrop = onDrop
+        self.onTextChange = onTextChange
+    }
     
     var body: some View {
         // 主内容
@@ -59,10 +80,10 @@ struct QuickAskInputView: View {
     private var inputField: some View {
         HStack(alignment: .top, spacing: 8) {
             // Workflow 标签（选中时显示）
-            if let workflow = WorkflowState.shared.selectedWorkflow {
+            if let workflow = workflowState.selectedWorkflow {
                 WorkflowTagView(keyword: workflow.keyword) {
                     // 点击 x 取消 Workflow
-                    WorkflowState.shared.reset()
+                    workflowState.reset()
                     state.userInput = ""
                 }
             }
@@ -70,7 +91,7 @@ struct QuickAskInputView: View {
             // 使用自定义 NSTextView 包装器
             QuickAskTextEditor(
                 text: $state.userInput,
-                placeholder: WorkflowState.shared.selectedWorkflow != nil 
+                placeholder: workflowState.selectedWorkflow != nil
                     ? "输入内容..." 
                     : "Ask anything...",
                 onSend: {
@@ -84,7 +105,13 @@ struct QuickAskInputView: View {
                 onDragEntered: onDragEntered,
                 onDragExited: onDragExited,
                 onDrop: onDrop,
-                onTextChange: onTextChange
+                onTextChange: onTextChange,
+                onWorkflowKeyEvent: { event in
+                    workflowState.handleKeyEvent(event)
+                },
+                isWorkflowPickerVisible: {
+                    workflowState.isPickerVisible
+                }
             )
             .frame(minHeight: 20, maxHeight: 200)
         }
@@ -112,6 +139,10 @@ struct QuickAskTextEditor: NSViewRepresentable {
     var onDrop: (([NSItemProvider]) -> Void)?
     /// 文本变化回调（用于 Workflow / 触发检测）
     var onTextChange: ((String, Bool) -> Void)?
+    /// Workflow 键盘事件回调
+    var onWorkflowKeyEvent: ((NSEvent) -> Bool)?
+    /// Workflow Picker 是否可见
+    var isWorkflowPickerVisible: (() -> Bool)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -151,6 +182,8 @@ struct QuickAskTextEditor: NSViewRepresentable {
         textView.onDragEntered = onDragEntered
         textView.onDragExited = onDragExited
         textView.onDrop = onDrop
+        textView.onWorkflowKeyEvent = onWorkflowKeyEvent
+        textView.isWorkflowPickerVisible = isWorkflowPickerVisible
         
         scrollView.documentView = textView
         
@@ -213,6 +246,8 @@ struct QuickAskTextEditor: NSViewRepresentable {
         textView.onDragEntered = onDragEntered
         textView.onDragExited = onDragExited
         textView.onDrop = onDrop
+        textView.onWorkflowKeyEvent = onWorkflowKeyEvent
+        textView.isWorkflowPickerVisible = isWorkflowPickerVisible
         
         // 更新 placeholder（只有当 placeholder 变化时才重绘）
         if textView.placeholderString != placeholder {
@@ -254,6 +289,10 @@ class QuickAskNSTextView: NSTextView {
     var onDragExited: (() -> Void)?
     /// 拖拽放下回调
     var onDrop: (([NSItemProvider]) -> Void)?
+    /// Workflow 键盘事件处理
+    var onWorkflowKeyEvent: ((NSEvent) -> Bool)?
+    /// Workflow Picker 是否可见
+    var isWorkflowPickerVisible: (() -> Bool)?
     
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)
@@ -354,7 +393,7 @@ class QuickAskNSTextView: NSTextView {
     override func keyDown(with event: NSEvent) {
         logger.info("🔑 keyDown: keyCode=\(event.keyCode)")
         // 让 WorkflowState 先处理键盘事件
-        if WorkflowState.shared.handleKeyEvent(event) {
+        if onWorkflowKeyEvent?(event) == true {
             logger.info("🔑 keyDown: event consumed by WorkflowState")
             return
         }
@@ -382,7 +421,7 @@ class QuickAskNSTextView: NSTextView {
             if markedRange.length > 0 {
                 // 有 marked text，让输入法确认（调用默认行为）
                 super.doCommand(by: selector)
-            } else if WorkflowState.shared.isPickerVisible {
+            } else if isWorkflowPickerVisible?() == true {
                 // Picker 可见时，Enter 确认选择（由 keyDown 处理）
                 // 这里不做任何事，避免重复触发
                 return
@@ -495,10 +534,10 @@ typealias AttachmentThumbnail = AttachmentThumbnailView
 // MARK: - Preview
 
 #Preview {
-    let state = QuickAskState()
+    let state = QuickAskState(attachmentManager: .shared)
     state.phase = .recording
     
-    return QuickAskInputView(state: state)
+    return QuickAskInputView(state: state, workflowState: .shared)
         .frame(width: 340, height: 150)
         .background(DesignTokens.Colors.settingsBackground)
 }

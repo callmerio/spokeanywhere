@@ -1,12 +1,23 @@
 import AppKit
 import os
 
+@MainActor
+struct HotKeyRegistryDependencies {
+    let notificationCenter: NotificationCenter
+}
+
+@MainActor
+extension HotKeyRegistryDependencies {
+    static let live = HotKeyRegistryDependencies(notificationCenter: .default)
+}
+
 /// 热键注册表
 /// 管理所有热键绑定的存储和查询
 @MainActor
 final class HotKeyRegistry {
 
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "HotKeyRegistry")
+    private let dependencies: HotKeyRegistryDependencies
 
     /// 所有已注册的处理器
     private var handlers: [HotKeyType: HotKeyHandler] = [:]
@@ -15,11 +26,17 @@ final class HotKeyRegistry {
     nonisolated(unsafe) private var observers: [NSObjectProtocol] = []
 
     init() {
+        self.dependencies = .live
+        setupObservers()
+    }
+
+    init(dependencies: HotKeyRegistryDependencies) {
+        self.dependencies = dependencies
         setupObservers()
     }
 
     deinit {
-        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers.forEach { dependencies.notificationCenter.removeObserver($0) }
     }
 
     // MARK: - Handler Registration
@@ -64,63 +81,26 @@ final class HotKeyRegistry {
     // MARK: - Settings Observers
 
     private func setupObservers() {
-        // Recording 快捷键变更
-        observers.append(NotificationCenter.default.addObserver(
-            forName: AppSettings.shortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handlers[.recording]?.reloadBinding()
-                self?.logger.info("Recording shortcut reloaded")
-            }
-        })
+        observeShortcutChange(AppSettings.shortcutDidChangeNotification, type: .recording, logMessage: "Recording shortcut reloaded")
+        observeShortcutChange(AppSettings.quickAskShortcutDidChangeNotification, type: .quickAsk, logMessage: "Quick Ask shortcut reloaded")
+        observeShortcutChange(AppSettings.messagePanelShortcutDidChangeNotification, type: .messagePanel, logMessage: "Message Panel shortcut reloaded")
+        observeShortcutChange(AppSettings.liveCaptionShortcutDidChangeNotification, type: .liveCaption, logMessage: "Live Caption shortcut reloaded")
+        observeShortcutChange(AppSettings.screenshotShortcutDidChangeNotification, type: .screenshot, logMessage: "Screenshot shortcut reloaded")
+    }
 
-        // Quick Ask 快捷键变更
-        observers.append(NotificationCenter.default.addObserver(
-            forName: AppSettings.quickAskShortcutDidChangeNotification,
+    private func observeShortcutChange(
+        _ notificationName: Notification.Name,
+        type: HotKeyType,
+        logMessage: String
+    ) {
+        observers.append(dependencies.notificationCenter.addObserver(
+            forName: notificationName,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.handlers[.quickAsk]?.reloadBinding()
-                self?.logger.info("Quick Ask shortcut reloaded")
-            }
-        })
-
-        // Message Panel 快捷键变更
-        observers.append(NotificationCenter.default.addObserver(
-            forName: AppSettings.messagePanelShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handlers[.messagePanel]?.reloadBinding()
-                self?.logger.info("Message Panel shortcut reloaded")
-            }
-        })
-
-        // Live Caption 快捷键变更
-        observers.append(NotificationCenter.default.addObserver(
-            forName: AppSettings.liveCaptionShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handlers[.liveCaption]?.reloadBinding()
-                self?.logger.info("Live Caption shortcut reloaded")
-            }
-        })
-
-        // Screenshot 快捷键变更
-        observers.append(NotificationCenter.default.addObserver(
-            forName: AppSettings.screenshotShortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handlers[.screenshot]?.reloadBinding()
-                self?.logger.info("Screenshot shortcut reloaded")
+                self?.handlers[type]?.reloadBinding()
+                self?.logger.info("\(logMessage, privacy: .public)")
             }
         })
     }

@@ -2,6 +2,59 @@ import SwiftUI
 
 private typealias DS = DesignTokens
 
+@MainActor
+struct TagBubbleDependencies {
+    let updateTagName: (UUID, String) -> Void
+    let updateTagColor: (UUID, TagColor) -> Void
+    let deleteTag: (UUID) -> Void
+    let removeTagFromCard: (UUID, UUID) -> Void
+    let toggleTagFilter: (UUID) -> Void
+    let recentTags: () -> [CardTag]
+    let searchTags: (String) -> [CardTag]
+    let tagNamed: (String) -> CardTag?
+    let createAndAddTag: (String, UUID) -> Void
+    let addTagToCard: (UUID, UUID) -> Void
+}
+
+@MainActor
+extension TagBubbleDependencies {
+    private static func makeLive(
+        tagLibrary: TagLibrary,
+        messagePanelState: MessagePanelState
+    ) -> TagBubbleDependencies {
+        TagBubbleDependencies(
+            updateTagName: { tagLibrary.updateTagName($0, name: $1) },
+            updateTagColor: { tagLibrary.updateTagColor($0, color: $1) },
+            deleteTag: { tagLibrary.deleteTag($0) },
+            removeTagFromCard: { messagePanelState.removeTag($0, from: $1) },
+            toggleTagFilter: { messagePanelState.toggleTagFilter($0) },
+            recentTags: { tagLibrary.recentTags },
+            searchTags: { tagLibrary.search($0) },
+            tagNamed: { tagLibrary.tag(named: $0) },
+            createAndAddTag: { messagePanelState.createAndAddTag(name: $0, to: $1) },
+            addTagToCard: { messagePanelState.addTag($0, to: $1) }
+        )
+    }
+
+    static let live = makeLive(
+        tagLibrary: TagLibrary.shared,
+        messagePanelState: MessagePanelState.shared
+    )
+
+    static let preview = TagBubbleDependencies(
+        updateTagName: { _, _ in },
+        updateTagColor: { _, _ in },
+        deleteTag: { _ in },
+        removeTagFromCard: { _, _ in },
+        toggleTagFilter: { _ in },
+        recentTags: { [] },
+        searchTags: { _ in [] },
+        tagNamed: { _ in nil },
+        createAndAddTag: { _, _ in },
+        addTagToCard: { _, _ in }
+    )
+}
+
 // MARK: - Tag Bubble View
 
 /// 单个标签气泡视图
@@ -10,6 +63,7 @@ private typealias DS = DesignTokens
 struct TagBubbleView: View {
     let tag: CardTag
     let cardId: UUID?
+    private let dependencies: TagBubbleDependencies
     var onRemoveFromCard: (() -> Void)?
     var isFilterActive: Bool = false
     var onFilterToggle: (() -> Void)?
@@ -17,6 +71,40 @@ struct TagBubbleView: View {
     @State private var isHovered = false
     @State private var isEditing = false
     @State private var editingName = ""
+
+    @MainActor
+    init(
+        tag: CardTag,
+        cardId: UUID?,
+        onRemoveFromCard: (() -> Void)? = nil,
+        isFilterActive: Bool = false,
+        onFilterToggle: (() -> Void)? = nil
+    ) {
+        self.init(
+            tag: tag,
+            cardId: cardId,
+            dependencies: .live,
+            onRemoveFromCard: onRemoveFromCard,
+            isFilterActive: isFilterActive,
+            onFilterToggle: onFilterToggle
+        )
+    }
+
+    init(
+        tag: CardTag,
+        cardId: UUID?,
+        dependencies: TagBubbleDependencies,
+        onRemoveFromCard: (() -> Void)? = nil,
+        isFilterActive: Bool = false,
+        onFilterToggle: (() -> Void)? = nil
+    ) {
+        self.tag = tag
+        self.cardId = cardId
+        self.dependencies = dependencies
+        self.onRemoveFromCard = onRemoveFromCard
+        self.isFilterActive = isFilterActive
+        self.onFilterToggle = onFilterToggle
+    }
     
     var body: some View {
         if isEditing {
@@ -67,7 +155,7 @@ struct TagBubbleView: View {
                 Menu {
                     ForEach(TagColor.allCases, id: \.self) { color in
                         Button {
-                            TagLibrary.shared.updateTagColor(tag.id, color: color)
+                            dependencies.updateTagColor(tag.id, color)
                         } label: {
                             HStack {
                                 Circle()
@@ -90,7 +178,7 @@ struct TagBubbleView: View {
                 if let cardId = cardId {
                     Button {
                         onRemoveFromCard?()
-                        MessagePanelState.shared.removeTag(tag.id, from: cardId)
+                        dependencies.removeTagFromCard(tag.id, cardId)
                     } label: {
                         Label("从卡片移除", systemImage: "minus.circle")
                     }
@@ -98,7 +186,7 @@ struct TagBubbleView: View {
                 
                 // 删除标签（全局）
                 Button(role: .destructive) {
-                    TagLibrary.shared.deleteTag(tag.id)
+                    dependencies.deleteTag(tag.id)
                 } label: {
                     Label("删除标签", systemImage: "trash")
                 }
@@ -151,7 +239,7 @@ struct TagBubbleView: View {
     private func commitEdit() {
         let trimmed = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            TagLibrary.shared.updateTagName(tag.id, name: trimmed)
+            dependencies.updateTagName(tag.id, trimmed)
         }
         isEditing = false
     }
@@ -164,10 +252,41 @@ struct TagBubbleView: View {
 struct TagListView: View {
     let tags: [CardTag]
     let cardId: UUID
+    private let dependencies: TagBubbleDependencies
     let activeFilterTagIds: Set<UUID>  // 从外部传入，避免观察整个 state
     var onAddTag: (() -> Void)?
     
     @State private var isHoveringAdd = false
+
+    @MainActor
+    init(
+        tags: [CardTag],
+        cardId: UUID,
+        activeFilterTagIds: Set<UUID>,
+        onAddTag: (() -> Void)? = nil
+    ) {
+        self.init(
+            tags: tags,
+            cardId: cardId,
+            dependencies: .live,
+            activeFilterTagIds: activeFilterTagIds,
+            onAddTag: onAddTag
+        )
+    }
+
+    init(
+        tags: [CardTag],
+        cardId: UUID,
+        dependencies: TagBubbleDependencies,
+        activeFilterTagIds: Set<UUID>,
+        onAddTag: (() -> Void)? = nil
+    ) {
+        self.tags = tags
+        self.cardId = cardId
+        self.dependencies = dependencies
+        self.activeFilterTagIds = activeFilterTagIds
+        self.onAddTag = onAddTag
+    }
     
     var body: some View {
         FlowLayout(spacing: 6) {
@@ -175,9 +294,10 @@ struct TagListView: View {
                 TagBubbleView(
                     tag: tag,
                     cardId: cardId,
+                    dependencies: dependencies,
                     isFilterActive: activeFilterTagIds.contains(tag.id),
                     onFilterToggle: {
-                        MessagePanelState.shared.toggleTagFilter(tag.id)
+                        dependencies.toggleTagFilter(tag.id)
                     }
                 )
             }
@@ -298,14 +418,33 @@ struct FlowLayout: Layout {
 /// 添加标签弹窗
 struct AddTagPopover: View {
     let cardId: UUID
+    private let dependencies: TagBubbleDependencies
     @Binding var isPresented: Bool
     
-    @ObservedObject private var tagLibrary = TagLibrary.shared
-    @State private var newTagName = ""
+    @State private var recentTags: [CardTag]
     @State private var searchQuery = ""
     @FocusState private var isInputFocused: Bool
+
+    @MainActor
+    init(cardId: UUID, isPresented: Binding<Bool>) {
+        self.init(cardId: cardId, dependencies: .live, isPresented: isPresented)
+    }
+
+    init(
+        cardId: UUID,
+        dependencies: TagBubbleDependencies,
+        isPresented: Binding<Bool>
+    ) {
+        self.cardId = cardId
+        self.dependencies = dependencies
+        self._isPresented = isPresented
+        self._recentTags = State(initialValue: dependencies.recentTags())
+    }
     
     var body: some View {
+        let filteredTags = dependencies.searchTags(searchQuery)
+        let matchingTag = dependencies.tagNamed(searchQuery)
+
         VStack(alignment: .leading, spacing: 12) {
             // 搜索/新建输入框
             HStack(spacing: 8) {
@@ -328,14 +467,14 @@ struct AddTagPopover: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
             // 最近使用
-            if !tagLibrary.recentTags.isEmpty && searchQuery.isEmpty {
+            if !recentTags.isEmpty && searchQuery.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("最近使用")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.secondary)
                     
                     FlowLayout(spacing: 6) {
-                        ForEach(tagLibrary.recentTags) { tag in
+                        ForEach(recentTags) { tag in
                             TagBubbleButton(tag: tag) {
                                 addExistingTag(tag)
                             }
@@ -345,7 +484,6 @@ struct AddTagPopover: View {
             }
             
             // 搜索结果
-            let filteredTags = tagLibrary.search(searchQuery)
             if !searchQuery.isEmpty && !filteredTags.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("已有标签")
@@ -363,7 +501,7 @@ struct AddTagPopover: View {
             }
             
             // 创建新标签提示
-            if !searchQuery.isEmpty && tagLibrary.tag(named: searchQuery) == nil {
+            if !searchQuery.isEmpty && matchingTag == nil {
                 Button {
                     createAndAdd()
                 } label: {
@@ -382,17 +520,18 @@ struct AddTagPopover: View {
         .frame(width: 220)
         .onAppear {
             isInputFocused = true
+            recentTags = dependencies.recentTags()
         }
     }
     
     private func createAndAdd() {
-        MessagePanelState.shared.createAndAddTag(name: searchQuery, to: cardId)
+        dependencies.createAndAddTag(searchQuery, cardId)
         searchQuery = ""
         isPresented = false
     }
     
     private func addExistingTag(_ tag: CardTag) {
-        MessagePanelState.shared.addTag(tag.id, to: cardId)
+        dependencies.addTagToCard(tag.id, cardId)
         isPresented = false
     }
 }
@@ -475,11 +614,14 @@ struct ActiveFilterTagBubble: View {
 // MARK: - Preview
 
 #Preview {
+    let previewDependencies = TagBubbleDependencies.preview
+
     VStack(spacing: 20) {
         // 单个标签
         TagBubbleView(
             tag: CardTag(name: "macOS", color: .blue),
-            cardId: nil
+            cardId: nil,
+            dependencies: previewDependencies
         )
         
         // 标签列表
@@ -490,6 +632,7 @@ struct ActiveFilterTagBubble: View {
                 CardTag(name: "紧急", color: .red)
             ],
             cardId: UUID(),
+            dependencies: previewDependencies,
             activeFilterTagIds: []
         )
         .frame(width: 200)

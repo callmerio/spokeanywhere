@@ -12,7 +12,10 @@ struct QuickAskCapsuleView: View {
     @Bindable var state: QuickAskState
     
     /// Workflow 状态
-    @State private var workflowState = WorkflowState.shared
+    @State private var workflowState: WorkflowState
+    private let attachmentManager: AttachmentManager
+    private let openSettingsAction: (() -> Void)?
+    private let dependencies: QuickAskCapsuleViewDependencies
     
     /// 左下角图标 hover 状态或菜单打开状态
     @State private var isIconHovering = false
@@ -31,6 +34,20 @@ struct QuickAskCapsuleView: View {
     
     /// 拖拽状态
     @State private var isDragOver = false
+
+    init(
+        state: QuickAskState,
+        workflowState: WorkflowState,
+        attachmentManager: AttachmentManager,
+        openSettingsAction: (() -> Void)? = nil,
+        dependencies: QuickAskCapsuleViewDependencies
+    ) {
+        self.state = state
+        self._workflowState = State(initialValue: workflowState)
+        self.attachmentManager = attachmentManager
+        self.openSettingsAction = openSettingsAction
+        self.dependencies = dependencies
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -65,6 +82,7 @@ struct QuickAskCapsuleView: View {
                 if state.phase == .recording || state.phase == .sending {
                     QuickAskInputView(
                         state: state,
+                        workflowState: workflowState,
                         onSend: {
                             // 检查是否有选中的 Workflow
                             if let workflow = workflowState.selectedWorkflow {
@@ -91,7 +109,7 @@ struct QuickAskCapsuleView: View {
                         onDragExited: { isDragOver = false },
                         onDrop: { providers in
                             isDragOver = false
-                            AttachmentManager.shared.handleDrop(providers: providers) { attachment in
+                            attachmentManager.handleDrop(providers: providers) { attachment in
                                 state.addAttachment(attachment)
                             }
                         },
@@ -139,7 +157,7 @@ struct QuickAskCapsuleView: View {
             }
             // 拖拽处理（使用 AttachmentManager）
             .onDrop(of: [.image, .fileURL, .folder, .zip], isTargeted: $isDragOver) { providers in
-                AttachmentManager.shared.handleDrop(providers: providers) { attachment in
+                attachmentManager.handleDrop(providers: providers) { attachment in
                     state.addAttachment(attachment)
                 }
                 return true
@@ -152,9 +170,7 @@ struct QuickAskCapsuleView: View {
         .background {
             // 隐藏的快捷键监听：Cmd + , 打开设置
             Button("") {
-                if let appDelegate = NSApp.delegate as? AppDelegate {
-                    appDelegate.openSettings()
-                }
+                openSettingsAction?()
             }
             .keyboardShortcut(",", modifiers: .command)
             .hidden()
@@ -230,7 +246,7 @@ struct QuickAskCapsuleView: View {
         Menu {
             // 从设备上传
             Button {
-                AttachmentManager.shared.pickFiles { state.addAttachment($0) }
+                attachmentManager.pickFiles { state.addAttachment($0) }
             } label: {
                 Label("从设备上传", systemImage: "doc.badge.plus")
             }
@@ -239,14 +255,14 @@ struct QuickAskCapsuleView: View {
             
             // 导入文件夹
             Button {
-                AttachmentManager.shared.pickFolder { state.addAttachment($0) }
+                attachmentManager.pickFolder { state.addAttachment($0) }
             } label: {
                 Label("导入文件夹 (转为文本)", systemImage: "folder.badge.plus")
             }
             
             // 导入 ZIP
             Button {
-                AttachmentManager.shared.pickZIP { state.addAttachment($0) }
+                attachmentManager.pickZIP { state.addAttachment($0) }
             } label: {
                 Label("导入 ZIP (转为文本)", systemImage: "doc.zipper")
             }
@@ -255,14 +271,14 @@ struct QuickAskCapsuleView: View {
             
             // 图库
             Button {
-                AttachmentManager.shared.pickFromPhotos { state.addAttachment($0) }
+                attachmentManager.pickFromPhotos { state.addAttachment($0) }
             } label: {
                 Label("图库", systemImage: "photo.on.rectangle")
             }
             
             // 屏幕截图
             Button {
-                AttachmentManager.shared.captureScreen { state.addAttachment($0) }
+                attachmentManager.captureScreen { state.addAttachment($0) }
             } label: {
                 Label("屏幕截图", systemImage: "camera.viewfinder")
             }
@@ -354,7 +370,7 @@ struct QuickAskCapsuleView: View {
             screenContext: nil,
             selectedText: nil,
             voiceTranscription: state.voiceTranscription,
-            clipboardContent: NSPasteboard.general.string(forType: .string)
+            clipboardContent: dependencies.clipboardText()
         )
         
         // 重置状态
@@ -365,26 +381,23 @@ struct QuickAskCapsuleView: View {
         state.startSending()
         
         // 隐藏 HUD
-        QuickAskHUDManager.shared.hide(restorePolicy: false)
+        dependencies.hideHUD(false)
         
         // 显示 Answer Panel
-        let panelId = AnswerPanelManager.shared.show(
-            question: question,
-            attachments: attachments
-        )
+        let panelId = dependencies.showAnswerPanel(question, attachments)
         
         // 执行 Workflow
         Task {
-            let result = await WorkflowExecutor.shared.execute(workflow, context: context)
+            let result = await dependencies.executeWorkflow(workflow, context)
             
             switch result {
             case .success(let response):
                 // 显示结果到 Answer Panel
-                AnswerPanelManager.shared.updateAnswer(response, for: panelId)
+                dependencies.updateAnswer(response, panelId)
                 
             case .failure(let error):
                 // 显示错误
-                AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
+                dependencies.showAnswerError(error.localizedDescription, panelId)
             }
             
             // 重置 Quick Ask 状态
@@ -396,9 +409,21 @@ struct QuickAskCapsuleView: View {
 // MARK: - Preview
 
 #Preview {
-    let state = QuickAskState()
+    let state = QuickAskState(attachmentManager: .shared)
     state.phase = .recording
     
-    return QuickAskCapsuleView(state: state)
+    return QuickAskCapsuleView(
+        state: state,
+        workflowState: .shared,
+        attachmentManager: .shared,
+        dependencies: QuickAskCapsuleViewDependencies(
+            clipboardText: { NSPasteboard.general.string(forType: .string) },
+            hideHUD: { _ in },
+            showAnswerPanel: { _, _ in UUID() },
+            updateAnswer: { _, _ in },
+            showAnswerError: { _, _ in },
+            executeWorkflow: { _, _ in .success("") }
+        )
+    )
         .frame(width: 340, height: 200)
 }

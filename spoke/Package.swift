@@ -39,6 +39,8 @@ let package = Package(
                 "progress.txt",
                 "prd.json",
                 "CLAUDE.md",
+                "autoresearch",       // autoresearch 运行产物（非源码）
+                "issues",             // issue 快照（非源码）
                 "scripts",             // 性能测试脚本（非源码）
                 "perf"                 // 性能基线数据（非源码）
             ],
@@ -49,6 +51,7 @@ let package = Package(
             dependencies: ["SpokenAnyWhere"],
             path: "Tests",
             exclude: [
+                "UITests",
                 "run-tests.sh",
                 "test_edge_tts.swift",
                 "TextExtractionTests.swift",  // 独立脚本，有 @main
@@ -58,6 +61,11 @@ let package = Package(
                 "run-concurrency-check.sh",
                 "TEST_ISOLATION.md"
             ]
+        ),
+        .testTarget(
+            name: "SpokenAnyWhereUITests",
+            dependencies: ["SpokenAnyWhere"],
+            path: "Tests/UITests"
         )
     ]
 )

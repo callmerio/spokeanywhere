@@ -183,45 +183,6 @@ final class CaptionLineBuffer: ObservableObject {
         logger.info("🧹 CaptionLineBuffer cleared")
     }
     
-    // MARK: - Deprecated API
-    
-    @available(*, deprecated, message: "Use items + pendingText instead")
-    var displayText: String {
-        // 简单拼接最后一条原文 + pending
-        if let last = items.last {
-            return last.original + (pendingText.isEmpty ? "" : "\n" + pendingText)
-        }
-        return pendingText
-    }
-    
-    @available(*, deprecated, message: "Use items.last?.translation instead")
-    var translatedText: String {
-        items.last?.translation ?? ""
-    }
-    
-    @available(*, deprecated, message: "No longer used")
-    var stableTextForTranslation: String? { nil }
-    
-    @available(*, deprecated, message: "Use updateTranslation(id:translation:) instead")
-    func updateTranslation(_ translation: String) {}
-    
-    @available(*, deprecated, message: "Use addFinalized + updateVolatile instead")
-    func update(finalizedText: String, volatileText: String) {
-        logger.warning("⚠️ Deprecated update() called")
-    }
-    
-    @available(*, deprecated, message: "Use updateTranslation(id:translation:) instead")
-    func updateLastTranslation(_ translation: String) {
-        if !items.isEmpty {
-            items[items.count - 1].translation = translation
-        }
-    }
-    
-    @available(*, deprecated, message: "Use addFinalized + updateTranslation instead")
-    func append(text: String, translation: String? = nil) {
-        guard addFinalized(text: text) != nil else { return }
-        if let trans = translation { updateLastTranslation(trans) }
-    }
 }
 
 // MARK: - Notification Names

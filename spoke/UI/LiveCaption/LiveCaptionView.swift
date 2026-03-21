@@ -15,10 +15,59 @@ private let scrollLogger = Logger(subsystem: "app.spokenly", category: "LiveCapt
 
 /// 实时字幕视图 - 简洁卡片式设计
 /// 集成 Apple Translation API 实现实时翻译（macOS 15+）
+@MainActor
+struct LiveCaptionViewDependencies {
+    let lookupWord: (String) async -> UnifiedDictionaryResult?
+    let markVocabulary: (String) -> String
+    let showSelectionToolbar: (SelectionContext, CGPoint) -> Void
+    let showDictionaryResult: (DictionaryData, String, SelectionContext, CGPoint) async -> Void
+    let showDictionaryError: (String, SelectionContext, CGPoint) async -> Void
+}
+
+@MainActor
+extension LiveCaptionViewDependencies {
+    static func live(
+        lookupWord: @escaping (String) async -> UnifiedDictionaryResult?,
+        markVocabulary: @escaping (String) -> String,
+        selectionToolbarState: SelectionToolbarState,
+        selectionToolbarManager: SelectionToolbarManager
+    ) -> Self {
+        LiveCaptionViewDependencies(
+            lookupWord: lookupWord,
+            markVocabulary: markVocabulary,
+            showSelectionToolbar: { context, point in
+                selectionToolbarState.show(with: context)
+                selectionToolbarManager.show(at: point)
+            },
+            showDictionaryResult: { data, word, context, point in
+                selectionToolbarState.currentContext = context
+                selectionToolbarState.showDictionaryResult(data, forText: word)
+                try? await Task.sleep(for: .milliseconds(16))
+                selectionToolbarManager.show(at: point)
+            },
+            showDictionaryError: { word, context, point in
+                selectionToolbarState.currentContext = context
+                selectionToolbarState.showDictionaryError(.notFound, word: word)
+                try? await Task.sleep(for: .milliseconds(16))
+                selectionToolbarManager.show(at: point)
+            }
+        )
+    }
+
+    static let preview = LiveCaptionViewDependencies(
+        lookupWord: { _ in nil },
+        markVocabulary: { $0 },
+        showSelectionToolbar: { _, _ in },
+        showDictionaryResult: { _, _, _, _ in },
+        showDictionaryError: { _, _, _ in }
+    )
+}
+
 struct LiveCaptionView: View {
     
     @ObservedObject var manager: LiveCaptionManager
-    @ObservedObject var translator = TranslationService.shared
+    @ObservedObject var translator: TranslationService
+    private let dependencies: LiveCaptionViewDependencies
     
     @State private var isExpanded: Bool = false
     @State private var isHovering: Bool = false
@@ -36,6 +85,18 @@ struct LiveCaptionView: View {
     @State private var highlightedWord: String?  // 🔥 当前点击高亮的单词（跨所有 VocabularyHighlightText 共享）
 
     var onClose: () -> Void
+
+    init(
+        manager: LiveCaptionManager,
+        onClose: @escaping () -> Void,
+        translator: TranslationService,
+        dependencies: LiveCaptionViewDependencies
+    ) {
+        self.manager = manager
+        self.onClose = onClose
+        self.translator = translator
+        self.dependencies = dependencies
+    }
     
     var body: some View {
         ZStack {
@@ -152,6 +213,7 @@ struct LiveCaptionView: View {
                 }
             }
         }
+        .accessibilityIdentifier(UITestIdentifiers.Element.liveCaptionRoot)
     }
     
     // MARK: - Translation
@@ -221,36 +283,30 @@ struct LiveCaptionView: View {
                         if manager.lineBuffer.pendingLineActive {
                             VStack(alignment: .leading, spacing: 4) {
                                 // 流式原文 - 使用 displayPendingText 保证内容不会瞬间变空
-                                // 🔥 修复：也用 VocabularyHighlightText 支持点击查词
+                                // 🔥 修复：始终保留 VocabularyHighlightText，避免类型切换导致视图重建
                                 let displayText = manager.lineBuffer.displayPendingText
-                                if displayText.isEmpty {
-                                    Text(" ")
-                                        .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                                        .foregroundColor(CaptionDesign.textPrimary.opacity(0))
-                                } else {
-                                    VocabularyHighlightText(
-                                text: displayText,
-                                fontSize: CaptionDesign.fontSize,
-                                opacity: 0.7,
-                                onSelectionStarted: { 
-                                    isUserSelecting = true
-                                    manager.lineBuffer.setUserInteracting(true)
-                                },
-                                onSelectionEnded: { 
-                                    isUserSelecting = false
-                                    manager.lineBuffer.setUserInteracting(false)
-                                },
-                                onTextSelected: { selectedText, screenPoint in
-                                    handleTextSelected(selectedText, at: screenPoint)
-                                },
-                                onWordClicked: { word, screenPoint in
-                                    handleWordClicked(word, at: screenPoint)
-                                },
-                                refreshTrigger: vocabularyRefreshTrigger,
-                                highlightedWord: highlightedWord
-                            )
-                                    .fixedSize(horizontal: false, vertical: true)
-                                }
+                                VocabularyHighlightText(
+                                    text: displayText.isEmpty ? " " : displayText,
+                                    fontSize: CaptionDesign.fontSize,
+                                    opacity: displayText.isEmpty ? 0 : 0.7,
+                                    onSelectionStarted: {
+                                        isUserSelecting = true
+                                        manager.lineBuffer.setUserInteracting(true)
+                                    },
+                                    onSelectionEnded: {
+                                        isUserSelecting = false
+                                        manager.lineBuffer.setUserInteracting(false)
+                                    },
+                                    onTextSelected: { selectedText, screenPoint in
+                                        handleTextSelected(selectedText, at: screenPoint)
+                                    },
+                                    onWordClicked: { word, screenPoint in
+                                        handleWordClicked(word, at: screenPoint)
+                                    },
+                                    refreshTrigger: vocabularyRefreshTrigger,
+                                    highlightedWord: highlightedWord
+                                )
+                                .fixedSize(horizontal: false, vertical: true)
                                 
                                 // 流式翻译（始终占位，防止闪烁）
                                 let pendingTranslation = manager.lineBuffer.pendingTranslation
@@ -330,40 +386,34 @@ struct LiveCaptionView: View {
                 }
                 
                 // 正在输入的流式文本
-                // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
+                // 🔥 用 pendingLineActive 而不是 isEmpty,防止转录回退时整行消失导致布局跳动
                 if manager.lineBuffer.pendingLineActive {
                     let displayText = manager.lineBuffer.displayPendingText
                     let pendingTranslation = manager.lineBuffer.pendingTranslation
                     VStack(alignment: .leading, spacing: 4) {
-                        // 🔥 修复：也用 VocabularyHighlightText 支持点击查词
-                        if displayText.isEmpty {
-                            Text(" ")
-                                .font(.system(size: CaptionDesign.fontSize, weight: .regular))
-                                .foregroundColor(CaptionDesign.textPrimary.opacity(0))
-                        } else {
-                            VocabularyHighlightText(
-                                text: displayText,
-                                fontSize: CaptionDesign.fontSize,
-                                opacity: 0.7,
-                                onSelectionStarted: { 
-                                    isUserSelecting = true
-                                    manager.lineBuffer.setUserInteracting(true)
-                                },
-                                onSelectionEnded: { 
-                                    isUserSelecting = false
-                                    manager.lineBuffer.setUserInteracting(false)
-                                },
-                                onTextSelected: { selectedText, screenPoint in
-                                    handleTextSelected(selectedText, at: screenPoint)
-                                },
-                                onWordClicked: { word, screenPoint in
-                                    handleWordClicked(word, at: screenPoint)
-                                },
-                                refreshTrigger: vocabularyRefreshTrigger,
-                                highlightedWord: highlightedWord
-                            )
-                            .fixedSize(horizontal: false, vertical: true)
-                        }
+                        // 🔥 修复：始终保留 VocabularyHighlightText，避免类型切换导致视图重建
+                        VocabularyHighlightText(
+                            text: displayText.isEmpty ? " " : displayText,
+                            fontSize: CaptionDesign.fontSize,
+                            opacity: displayText.isEmpty ? 0 : 0.7,
+                            onSelectionStarted: {
+                                isUserSelecting = true
+                                manager.lineBuffer.setUserInteracting(true)
+                            },
+                            onSelectionEnded: {
+                                isUserSelecting = false
+                                manager.lineBuffer.setUserInteracting(false)
+                            },
+                            onTextSelected: { selectedText, screenPoint in
+                                handleTextSelected(selectedText, at: screenPoint)
+                            },
+                            onWordClicked: { word, screenPoint in
+                                handleWordClicked(word, at: screenPoint)
+                            },
+                            refreshTrigger: vocabularyRefreshTrigger,
+                            highlightedWord: highlightedWord
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
                         
                         Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
                             .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
@@ -432,8 +482,7 @@ struct LiveCaptionView: View {
         )
         
         // 显示工具栏
-        SelectionToolbarState.shared.show(with: context)
-        SelectionToolbarManager.shared.show(at: screenPoint)
+        dependencies.showSelectionToolbar(context, screenPoint)
     }
     
     /// 处理单词点击，调用统一查词服务并在选择工具栏中显示结果
@@ -461,7 +510,7 @@ struct LiveCaptionView: View {
                 sourceAppName: "SpokenAnyWhere"
             )
             
-            if let result = await UnifiedDictionaryService.shared.lookup(word) {
+            if let result = await dependencies.lookupWord(word) {
                 // 转换为 DictionaryData
                 let senses = result.senses.map { sense in
                     DictionarySense(
@@ -480,24 +529,9 @@ struct LiveCaptionView: View {
                     lemmaInfo: nil
                 )
                 
-                // 🔥 设置上下文并直接进入词典显示状态（不经过 showing 阶段）
-                SelectionToolbarState.shared.currentContext = context
-                SelectionToolbarState.shared.showDictionaryResult(data, forText: word)
-                
-                // 🔥 等待一帧让 SwiftUI 更新视图，避免闪现旧内容
-                try? await Task.sleep(for: .milliseconds(16))
-                
-                // 显示窗口（此时 phase 已经是 showingDictionary，视图已更新）
-                SelectionToolbarManager.shared.show(at: screenPoint)
+                await dependencies.showDictionaryResult(data, word, context, screenPoint)
             } else {
-                // 查询失败时设置上下文并显示错误
-                SelectionToolbarState.shared.currentContext = context
-                SelectionToolbarState.shared.showDictionaryError(.notFound, word: word)
-                
-                // 🔥 同样等待一帧
-                try? await Task.sleep(for: .milliseconds(16))
-                
-                SelectionToolbarManager.shared.show(at: screenPoint)
+                await dependencies.showDictionaryError(word, context, screenPoint)
             }
         }
     }
@@ -599,7 +633,7 @@ struct LiveCaptionView: View {
         
         for item in itemsSnapshot {
             // 原文：标记生词（直接复用 Service 层的高性能正则）
-            let markedOriginal = VocabularyService.shared.markVocabulary(in: item.original)
+            let markedOriginal = dependencies.markVocabulary(item.original)
             lines.append(markedOriginal)
             
             // 译文
@@ -613,7 +647,7 @@ struct LiveCaptionView: View {
         
         // 当前正在输入的内容
         if !pendingTextSnapshot.isEmpty {
-            let markedPending = VocabularyService.shared.markVocabulary(in: pendingTextSnapshot)
+            let markedPending = dependencies.markVocabulary(pendingTextSnapshot)
             lines.append(markedPending)
             if !pendingTranslationSnapshot.isEmpty {
                 lines.append(pendingTranslationSnapshot)
@@ -755,7 +789,9 @@ struct TranslationTaskModifier15: ViewModifier {
             Spacer()
             LiveCaptionView(
                 manager: LiveCaptionManager.shared,
-                onClose: {}
+                onClose: {},
+                translator: .shared,
+                dependencies: .preview
             )
             .padding(.bottom, 60)
         }

@@ -7,6 +7,20 @@ import Vision
 struct ActionStripView: View {
     
     @Bindable var item: ScreenshotItem
+    private let dependencies: ScreenshotActionDependencies
+
+    init(
+        item: ScreenshotItem,
+        dependencies: ScreenshotActionDependencies
+    ) {
+        self.item = item
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init(item: ScreenshotItem) {
+        self.init(item: item, dependencies: .live)
+    }
     
     var body: some View {
         HStack(spacing: 4) {
@@ -85,11 +99,7 @@ struct ActionStripView: View {
     // MARK: - Actions
     
     private func togglePin() {
-        if item.isPinned {
-            ScreenshotManager.shared.unpin(item)
-        } else {
-            ScreenshotManager.shared.pin(item)
-        }
+        dependencies.togglePin(item)
         
         if let window = findWindow() {
             window.updateCollectionBehavior()
@@ -97,11 +107,7 @@ struct ActionStripView: View {
     }
     
     private func toggleLock() {
-        if item.isLocked {
-            ScreenshotManager.shared.unlock(item)
-        } else {
-            ScreenshotManager.shared.lock(item)
-        }
+        dependencies.toggleLock(item)
         
         if let window = findWindow() {
             window.updateMovable()
@@ -109,11 +115,7 @@ struct ActionStripView: View {
     }
     
     private func toggleMark() {
-        if item.isMarked {
-            ScreenshotManager.shared.unmark(item)
-        } else {
-            ScreenshotManager.shared.mark(item)
-        }
+        dependencies.toggleMark(item)
         
         if let window = findWindow() {
             window.updateGlow()
@@ -121,7 +123,7 @@ struct ActionStripView: View {
     }
     
     private func copyImage() {
-        ScreenshotManager.shared.copyToClipboard(item)
+        dependencies.copyImage(item, nil)
     }
     
     private func performOCR() {
@@ -134,9 +136,7 @@ struct ActionStripView: View {
             let text = await Self.extractText(from: cgImage)
             await MainActor.run {
                 if !text.isEmpty {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(text, forType: .string)
+                    dependencies.copyText(text)
                 }
             }
         }
@@ -162,14 +162,11 @@ struct ActionStripView: View {
     
     private func openQuickAsk() {
         guard let image = item.loadImage() else { return }
-        
-        // 先启动会话（会清空状态），再添加截图
-        QuickAskService.shared.startSession()
-        QuickAskService.shared.state.addScreenshot(image)
+        dependencies.startQuickAsk(image)
     }
     
     private func closeWindow() {
-        ScreenshotManager.shared.close(item)
+        dependencies.closeWindow(item)
     }
     
     private func findWindow() -> ScreenshotWindow? {

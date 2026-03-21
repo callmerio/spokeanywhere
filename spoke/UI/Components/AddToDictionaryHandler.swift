@@ -4,25 +4,59 @@ private typealias DS = DesignTokens
 
 // MARK: - Add to Dictionary Handler
 
+@MainActor
+struct AddToDictionaryHandlerDependencies {
+    let notificationCenter: NotificationCenter
+    let dictionaryService: DictionaryService
+    let messagePanelState: MessagePanelState
+}
+
+@MainActor
+extension AddToDictionaryHandlerDependencies {
+    static let live = AddToDictionaryHandlerDependencies(
+        notificationCenter: .default,
+        dictionaryService: .shared,
+        messagePanelState: .shared
+    )
+}
+
+@MainActor
+struct AddToDictionarySheetDependencies {
+    let dictionaryService: DictionaryService
+    let addHighlight: (TextHighlight) -> Void
+}
+
+@MainActor
+extension AddToDictionarySheetDependencies {
+    static let live = AddToDictionarySheetDependencies(
+        dictionaryService: .shared,
+        addHighlight: { MessagePanelState.shared.addHighlightToLatestCard($0) }
+    )
+}
+
 /// 处理「添加到词典」请求的管理器
 @MainActor
 final class AddToDictionaryHandler: ObservableObject {
     
-    static let shared = AddToDictionaryHandler()
+    static let shared = AddToDictionaryHandler(dependencies: .live)
     
     @Published var isShowingAddSheet = false
     @Published var isShowingCorrectionSheet = false
     @Published var pendingWord = ""
     @Published var pendingFullText = ""  // 完整句子，用于训练短语
     
+    private let dependencies: AddToDictionaryHandlerDependencies
     nonisolated(unsafe) private var observer: NSObjectProtocol?
     
-    private init() {
+    private init(
+        dependencies: AddToDictionaryHandlerDependencies
+    ) {
+        self.dependencies = dependencies
         setupObserver()
     }
     
     private func setupObserver() {
-        observer = NotificationCenter.default.addObserver(
+        observer = dependencies.notificationCenter.addObserver(
             forName: .requestAddToDictionary,
             object: nil,
             queue: .main
@@ -58,18 +92,18 @@ final class AddToDictionaryHandler: ObservableObject {
     /// 快速添加（不显示弹窗，直接添加）+ 记录训练短语
     func quickAdd(_ word: String, trainingPhrase: String? = nil) {
         Task { @MainActor in
-            if let entry = DictionaryService.shared.addEntry(word: word) {
+            if let entry = dependencies.dictionaryService.addEntry(word: word) {
                 // 如果有训练短语，记录下来
                 if let phrase = trainingPhrase, !phrase.isEmpty {
-                    DictionaryService.shared.addTrainingPhrase(phrase, to: entry.id)
+                    dependencies.dictionaryService.addTrainingPhrase(phrase, to: entry.id)
                 }
             }
         }
     }
     
-deinit {
+    deinit {
         if let observer = observer {
-            NotificationCenter.default.removeObserver(observer)
+            dependencies.notificationCenter.removeObserver(observer)
         }
     }
 }
@@ -82,15 +116,28 @@ struct QuickAddToDictionarySheet: View {
     let initialWord: String
     let fullText: String  // 完整句子，用于训练短语
     
+    @ObservedObject private var dictionaryService: DictionaryService
+    private let dependencies: AddToDictionarySheetDependencies
     @State private var word: String
     @State private var correctionsText = ""
-    @ObservedObject private var dictionaryService = DictionaryService.shared
     
-    init(isPresented: Binding<Bool>, initialWord: String, fullText: String = "") {
+    init(
+        isPresented: Binding<Bool>,
+        initialWord: String,
+        fullText: String = "",
+        dependencies: AddToDictionarySheetDependencies
+    ) {
         self._isPresented = isPresented
         self.initialWord = initialWord
         self.fullText = fullText
+        self.dependencies = dependencies
+        self.dictionaryService = dependencies.dictionaryService
         self._word = State(initialValue: initialWord)
+    }
+
+    @MainActor
+    init(isPresented: Binding<Bool>, initialWord: String, fullText: String = "") {
+        self.init(isPresented: isPresented, initialWord: initialWord, fullText: fullText, dependencies: .live)
     }
     
     var body: some View {
@@ -182,11 +229,7 @@ struct QuickAddToDictionarySheet: View {
             }
             
             // 添加高亮标记到 Pipeline 卡片（词典学习样式：橙色目标词）
-            Task { @MainActor in
-                MessagePanelState.shared.addHighlightToLatestCard(
-                    .dictionary(word: trimmedWord)
-                )
-            }
+            dependencies.addHighlight(.dictionary(word: trimmedWord))
         }
         isPresented = false
     }
@@ -201,10 +244,29 @@ struct CorrectToSheet: View {
     let errorText: String
     let fullText: String  // 完整句子，用于训练短语
     
-    @ObservedObject private var dictionaryService = DictionaryService.shared
+    @ObservedObject private var dictionaryService: DictionaryService
+    private let dependencies: AddToDictionarySheetDependencies
     @State private var correctWord = ""  // 用户输入的正确词形
     @State private var selectedEntryId: UUID?
     @FocusState private var isInputFocused: Bool
+
+    init(
+        isPresented: Binding<Bool>,
+        errorText: String,
+        fullText: String = "",
+        dependencies: AddToDictionarySheetDependencies
+    ) {
+        self._isPresented = isPresented
+        self.errorText = errorText
+        self.fullText = fullText
+        self.dependencies = dependencies
+        self.dictionaryService = dependencies.dictionaryService
+    }
+
+    @MainActor
+    init(isPresented: Binding<Bool>, errorText: String, fullText: String = "") {
+        self.init(isPresented: isPresented, errorText: errorText, fullText: fullText, dependencies: .live)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -359,11 +421,7 @@ struct CorrectToSheet: View {
         }
         
         // 添加高亮标记到 Pipeline 卡片（纠错样式：~~错误词~~ + 正确词）
-        Task { @MainActor in
-            MessagePanelState.shared.addHighlightToLatestCard(
-                .correction(from: errorText, to: trimmedWord)
-            )
-        }
+        dependencies.addHighlight(.correction(from: errorText, to: trimmedWord))
         
         isPresented = false
     }

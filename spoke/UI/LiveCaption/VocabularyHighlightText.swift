@@ -6,6 +6,95 @@ private typealias DS = DesignTokens
 
 private let vocabTextLogger = Logger(subsystem: "com.spokeanywhere", category: "VocabularyText")
 
+private func runVocabularyHighlightMainActor(
+    _ operation: @escaping @MainActor () async -> Void
+) {
+    Task { @MainActor in
+        await operation()
+    }
+}
+
+@MainActor
+private final class VocabularyTranslationStore {
+    private var translations: [String: String] = [:]
+    private var loadingWords: Set<String> = []
+
+    func cachedTranslation(for word: String) -> String? {
+        translations[word]
+    }
+
+    func beginLookup(for word: String) -> Bool {
+        guard !loadingWords.contains(word) else { return false }
+        loadingWords.insert(word)
+        return true
+    }
+
+    func finishLookup(
+        for word: String,
+        result: Result<DictionaryData, DictionaryAPIError>
+    ) -> String? {
+        loadingWords.remove(word)
+
+        guard case let .success(data) = result else { return nil }
+
+        let translation = buildVocabularyTranslationDisplay(from: data)
+        translations[word] = translation
+        return translation
+    }
+}
+
+private func buildVocabularyTranslationDisplay(from data: DictionaryData) -> String {
+    let senses = data.effectiveSenses
+    guard let firstSense = senses.first, let chinese = firstSense.chinese else {
+        return "无释义"
+    }
+
+    let posDisplay = firstSense.posDisplay
+    let senseText = posDisplay.isEmpty ? chinese : "\(posDisplay) \(chinese)"
+
+    if let formType = data.formTypeDisplay, let lemma = data.lemmaWord {
+        return "\(formType) \(lemma) \(senseText)"
+    }
+
+    return senseText
+}
+
+@MainActor
+struct VocabularyHighlightDependencies {
+    let highlightRanges: (String) -> [NSRange]
+    let containsVocabulary: (String) -> Bool
+    let addVocabulary: (String) -> Void
+    let removeVocabulary: (String) -> Void
+    let lookupDictionary: (String) async -> Result<DictionaryData, DictionaryAPIError>
+    fileprivate let translationStore: VocabularyTranslationStore
+}
+
+@MainActor
+extension VocabularyHighlightDependencies {
+    static let live: VocabularyHighlightDependencies = {
+        let vocabularyService = VocabularyService.shared
+        let dictionaryService = DictionaryAPIService.shared
+        let translationStore = VocabularyTranslationStore()
+
+        return VocabularyHighlightDependencies(
+            highlightRanges: { vocabularyService.highlightRanges(in: $0) },
+            containsVocabulary: { vocabularyService.contains($0) },
+            addVocabulary: { _ = vocabularyService.add($0) },
+            removeVocabulary: { word in
+                if let item = vocabularyService.items.first(where: {
+                    $0.word.lowercased() == word.lowercased()
+                }) {
+                    vocabularyService.remove(item.id)
+                }
+            },
+            lookupDictionary: { word in
+                await dictionaryService.lookup(word)
+            },
+            translationStore: translationStore
+        )
+    }()
+}
+
 // MARK: - Vocabulary Highlight Text
 
 /// 支持生词高亮和右键菜单的字幕文本视图
@@ -15,6 +104,7 @@ private let vocabTextLogger = Logger(subsystem: "com.spokeanywhere", category: "
 struct VocabularyHighlightText: NSViewRepresentable {
 
     let text: String
+    private let dependencies: VocabularyHighlightDependencies
     var fontSize: CGFloat = 18
     var textColor: NSColor = DS.Colors.NS.textPrimary
     var opacity: CGFloat = 1.0
@@ -33,9 +123,63 @@ struct VocabularyHighlightText: NSViewRepresentable {
 
     /// 🔥 从父视图传入的高亮单词（点击查词时高亮）
     var highlightedWord: String?
+
+    init(
+        text: String,
+        fontSize: CGFloat = 18,
+        textColor: NSColor = DS.Colors.NS.textPrimary,
+        opacity: CGFloat = 1.0,
+        onSelectionStarted: (() -> Void)? = nil,
+        onSelectionEnded: (() -> Void)? = nil,
+        onTextSelected: ((String, CGPoint) -> Void)? = nil,
+        onWordClicked: ((String, CGPoint) -> Void)? = nil,
+        refreshTrigger: Int = 0,
+        highlightedWord: String? = nil
+    ) {
+        self.init(
+            text: text,
+            dependencies: .live,
+            fontSize: fontSize,
+            textColor: textColor,
+            opacity: opacity,
+            onSelectionStarted: onSelectionStarted,
+            onSelectionEnded: onSelectionEnded,
+            onTextSelected: onTextSelected,
+            onWordClicked: onWordClicked,
+            refreshTrigger: refreshTrigger,
+            highlightedWord: highlightedWord
+        )
+    }
+
+    init(
+        text: String,
+        dependencies: VocabularyHighlightDependencies,
+        fontSize: CGFloat = 18,
+        textColor: NSColor = DS.Colors.NS.textPrimary,
+        opacity: CGFloat = 1.0,
+        onSelectionStarted: (() -> Void)? = nil,
+        onSelectionEnded: (() -> Void)? = nil,
+        onTextSelected: ((String, CGPoint) -> Void)? = nil,
+        onWordClicked: ((String, CGPoint) -> Void)? = nil,
+        refreshTrigger: Int = 0,
+        highlightedWord: String? = nil
+    ) {
+        self.text = text
+        self.dependencies = dependencies
+        self.fontSize = fontSize
+        self.textColor = textColor
+        self.opacity = opacity
+        self.onSelectionStarted = onSelectionStarted
+        self.onSelectionEnded = onSelectionEnded
+        self.onTextSelected = onTextSelected
+        self.onWordClicked = onWordClicked
+        self.refreshTrigger = refreshTrigger
+        self.highlightedWord = highlightedWord
+    }
     
     func makeCoordinator() -> Coordinator {
         Coordinator(
+            dependencies: dependencies,
             onSelectionStarted: onSelectionStarted,
             onSelectionEnded: onSelectionEnded,
             onTextSelected: onTextSelected,
@@ -76,6 +220,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
         context.coordinator.onSelectionEnded = onSelectionEnded
         context.coordinator.onTextSelected = onTextSelected
         context.coordinator.onWordClicked = onWordClicked
+        context.coordinator.dependencies = dependencies
 
         // 内容变化、生词列表变化、或高亮单词变化时更新
         let needsUpdate = textView.string != text
@@ -110,7 +255,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
         )
 
         // 应用生词高亮（橙色文字 + 略微加粗）
-        let highlightRanges = VocabularyService.shared.highlightRanges(in: text)
+        let highlightRanges = dependencies.highlightRanges(text)
 
         for range in highlightRanges {
             guard range.location + range.length <= text.utf16.count else { continue }
@@ -143,6 +288,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
     
     @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
+        var dependencies: VocabularyHighlightDependencies
         
         var onSelectionStarted: (() -> Void)?
         var onSelectionEnded: (() -> Void)?
@@ -154,17 +300,14 @@ struct VocabularyHighlightText: NSViewRepresentable {
         private var selectionDebounceTimer: Timer?
         private weak var lastTextView: NSTextView?
         
-        /// 翻译缓存（word -> translation）
-        private static var translationCache: [String: String] = [:]
-        /// 正在加载的单词
-        private static var loadingWords: Set<String> = []
-        
         init(
+            dependencies: VocabularyHighlightDependencies,
             onSelectionStarted: (() -> Void)?,
             onSelectionEnded: (() -> Void)?,
             onTextSelected: ((String, CGPoint) -> Void)?,
             onWordClicked: ((String, CGPoint) -> Void)?
         ) {
+            self.dependencies = dependencies
             self.onSelectionStarted = onSelectionStarted
             self.onSelectionEnded = onSelectionEnded
             self.onTextSelected = onTextSelected
@@ -241,9 +384,9 @@ struct VocabularyHighlightText: NSViewRepresentable {
             if hasSelection {
                 lastTextView = textView
                 selectionDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
-                    Task { @MainActor in
-                        guard let self = self, let textView = self.lastTextView else { return }
-                        self.handleSelectionCompleted(in: textView)
+                    runVocabularyHighlightMainActor {
+                        guard let textView = self?.lastTextView else { return }
+                        self?.handleSelectionCompleted(in: textView)
                     }
                 }
             }
@@ -308,7 +451,7 @@ struct VocabularyHighlightText: NSViewRepresentable {
             let newMenu = NSMenu()
             
             // 判断是否已是生词，显示对应菜单项
-            let isVocabulary = VocabularyService.shared.contains(trimmedText)
+            let isVocabulary = dependencies.containsVocabulary(trimmedText)
             
             if isVocabulary {
                 // 移除生词
@@ -352,28 +495,11 @@ struct VocabularyHighlightText: NSViewRepresentable {
         }
         
         @objc func addToVocabulary(_ sender: NSMenuItem) {
-            guard let word = sender.representedObject as? String else { return }
-            
-            Task { @MainActor in
-                VocabularyService.shared.add(word)
-                // 操作完成后恢复滚动状态
-                self.resetSelectionState()
-            }
+            performVocabularyMenuAction(sender: sender, using: dependencies.addVocabulary)
         }
         
         @objc func removeFromVocabulary(_ sender: NSMenuItem) {
-            guard let word = sender.representedObject as? String else { return }
-            
-            Task { @MainActor in
-                // 通过词查找对应 ID 再删除
-                if let item = VocabularyService.shared.items.first(where: { 
-                    $0.word.lowercased() == word.lowercased() 
-                }) {
-                    VocabularyService.shared.remove(item.id)
-                }
-                // 操作完成后恢复滚动状态
-                self.resetSelectionState()
-            }
+            performVocabularyMenuAction(sender: sender, using: dependencies.removeVocabulary)
         }
         
         /// 重置选中状态，恢复自动滚动
@@ -389,71 +515,65 @@ struct VocabularyHighlightText: NSViewRepresentable {
         /// 创建翻译菜单项（动态显示翻译结果，加载完成后自动更新）
         private func createTranslationMenuItem(for word: String) -> NSMenuItem {
             let lowercaseWord = word.lowercased()
+            let translationStore = dependencies.translationStore
             
             // 检查缓存
-            if let cached = Self.translationCache[lowercaseWord] {
-                let item = NSMenuItem(
-                    title: "翻译: \(cached)",
-                    action: nil,
-                    keyEquivalent: ""
-                )
-                item.image = NSImage(systemSymbolName: "character.book.closed", accessibilityDescription: nil)
-                return item
+            if let cached = translationStore.cachedTranslation(for: lowercaseWord) {
+                return makeTranslationMenuItem(title: "翻译: \(cached)")
             }
             
             // 没有缓存，显示加载中并异步获取
-            let item = NSMenuItem(
-                title: "翻译: 加载中...",
-                action: nil,
-                keyEquivalent: ""
-            )
-            item.image = NSImage(systemSymbolName: "character.book.closed", accessibilityDescription: nil)
+            let item = makeTranslationMenuItem(title: "翻译: 加载中...")
             
             // 异步获取翻译并更新菜单项
-            if !Self.loadingWords.contains(lowercaseWord) {
-                Self.loadingWords.insert(lowercaseWord)
-                
-                Task { @MainActor in
-                    let result = await DictionaryAPIService.shared.lookup(lowercaseWord)
-                    Self.loadingWords.remove(lowercaseWord)
-                    
-                    switch result {
-                    case .success(let data):
-                        // 构建翻译显示文本
-                        let translation = Self.buildTranslationDisplay(from: data)
-                        Self.translationCache[lowercaseWord] = translation
-                        
-                        // 动态更新菜单项（如果菜单仍然显示）
-                        item.title = "翻译: \(translation)"
-                    case .failure:
-                        // 查询失败，显示错误
-                        item.title = "翻译: 未找到"
-                    }
+            if translationStore.beginLookup(for: lowercaseWord) {
+                let lookupDictionary = dependencies.lookupDictionary
+                runVocabularyHighlightMainActor {
+                    let result = await lookupDictionary(lowercaseWord)
+                    self.updateTranslationItem(
+                        item,
+                        for: lowercaseWord,
+                        using: translationStore,
+                        result: result
+                    )
                 }
             }
             
             return item
         }
-        
-        /// 构建翻译显示文本（支持词形变化显示原型释义）
-        /// 格式：有 lemmaInfo 时 → "第三人称单数 sustain v. 维持"
-        ///      无 lemmaInfo 时 → "v. 维持"
-        private static func buildTranslationDisplay(from data: DictionaryData) -> String {
-            // 优先使用原型释义
-            let senses = data.effectiveSenses
-            guard let firstSense = senses.first, let chinese = firstSense.chinese else {
-                return "无释义"
+
+        private func performVocabularyMenuAction(
+            sender: NSMenuItem,
+            using action: @escaping (String) -> Void
+        ) {
+            guard let word = sender.representedObject as? String else { return }
+
+            runVocabularyHighlightMainActor {
+                action(word)
+                self.resetSelectionState()
             }
-            
-            let posDisplay = firstSense.posDisplay
-            let senseText = posDisplay.isEmpty ? chinese : "\(posDisplay) \(chinese)"
-            
-            // 如果有词形信息，添加前缀
-            if let formType = data.formTypeDisplay, let lemma = data.lemmaWord {
-                return "\(formType) \(lemma) \(senseText)"
+        }
+
+        private func makeTranslationMenuItem(title: String) -> NSMenuItem {
+            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            item.image = NSImage(
+                systemSymbolName: "character.book.closed",
+                accessibilityDescription: nil
+            )
+            return item
+        }
+
+        private func updateTranslationItem(
+            _ item: NSMenuItem,
+            for word: String,
+            using store: VocabularyTranslationStore,
+            result: Result<DictionaryData, DictionaryAPIError>
+        ) {
+            if let translation = store.finishLookup(for: word, result: result) {
+                item.title = "翻译: \(translation)"
+            } else {
+                item.title = "翻译: 未找到"
             }
-            
-            return senseText
         }
     }
 }

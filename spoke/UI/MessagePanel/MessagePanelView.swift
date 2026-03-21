@@ -3,6 +3,18 @@ import SwiftUI
 
 // MARK: - Hover State (用于键盘事件)
 
+@MainActor
+struct MessagePanelHoverStateDependencies {
+    let isPanelVisible: () -> Bool
+    let addAttachmentToCard: (NSImage, UUID) -> Void
+    let triggerClipboardPipeline: () -> Void
+}
+
+@MainActor
+struct MessagePanelViewDependencies {
+    let restoreConversation: (SessionRecord) -> Void
+}
+
 /// 追踪当前 hover 的卡片（用于 Cmd+V 粘贴图片/文本）
 @MainActor
 final class MessagePanelHoverState: ObservableObject {
@@ -14,6 +26,11 @@ final class MessagePanelHoverState: ObservableObject {
     
     nonisolated(unsafe) private var localMonitor: Any?
     nonisolated(unsafe) private var globalMonitor: Any?
+    private var dependencies = MessagePanelHoverStateDependencies(
+        isPanelVisible: { false },
+        addAttachmentToCard: { _, _ in },
+        triggerClipboardPipeline: {}
+    )
     
     private init() {
         setupKeyboardMonitor()
@@ -26,6 +43,10 @@ final class MessagePanelHoverState: ObservableObject {
         if let monitor = globalMonitor {
             NSEvent.removeMonitor(monitor)
         }
+    }
+
+    func configure(dependencies: MessagePanelHoverStateDependencies) {
+        self.dependencies = dependencies
     }
     
     /// 设置键盘监听器（本地 + 全局）
@@ -60,7 +81,7 @@ final class MessagePanelHoverState: ObservableObject {
         }
         
         // 如果鼠标在 Panel 区域但不在卡片上，尝试粘贴文本创建新节点
-        if isMouseInPanel && MessagePanelManager.shared.isVisible {
+        if isMouseInPanel && dependencies.isPanelVisible() {
             if pasteTextAsNewCard() {
                 return true
             }
@@ -81,7 +102,7 @@ final class MessagePanelHoverState: ObservableObject {
         
         // 读取图片
         if let image = NSImage(pasteboard: pasteboard) {
-            MessagePanelState.shared.addAttachment(image, to: cardId)
+            dependencies.addAttachmentToCard(image, cardId)
             return true
         }
         
@@ -99,7 +120,7 @@ final class MessagePanelHoverState: ObservableObject {
         }
         
         // 触发 ClipboardPipelineService 创建新节点
-        ClipboardPipelineService.shared.trigger()
+        dependencies.triggerClipboardPipeline()
         return true
     }
 }
@@ -109,8 +130,33 @@ final class MessagePanelHoverState: ObservableObject {
 /// 消息面板主视图
 struct MessagePanelView: View {
     @ObservedObject var state: MessagePanelState
-    @ObservedObject var historyService = SessionHistoryService.shared
-    @StateObject private var dictionaryHandler = AddToDictionaryHandler.shared
+    @ObservedObject var historyService: SessionHistoryService
+    @ObservedObject var hoverState: MessagePanelHoverState
+    @StateObject private var dictionaryHandler: AddToDictionaryHandler
+    private let hidePanel: () -> Void
+    private let startQuickAsk: () -> Void
+    private let dependencies: MessagePanelViewDependencies
+    private let cardDependencies: MessageCardViewDependencies
+
+    init(
+        state: MessagePanelState,
+        historyService: SessionHistoryService,
+        dictionaryHandler: AddToDictionaryHandler,
+        hoverState: MessagePanelHoverState,
+        hidePanel: @escaping () -> Void,
+        startQuickAsk: @escaping () -> Void,
+        dependencies: MessagePanelViewDependencies,
+        cardDependencies: MessageCardViewDependencies
+    ) {
+        self.state = state
+        self.historyService = historyService
+        self.hoverState = hoverState
+        self._dictionaryHandler = StateObject(wrappedValue: dictionaryHandler)
+        self.hidePanel = hidePanel
+        self.startQuickAsk = startQuickAsk
+        self.dependencies = dependencies
+        self.cardDependencies = cardDependencies
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -135,7 +181,7 @@ struct MessagePanelView: View {
         .offset(x: state.slideOffset)  // 滑动动画
         // 追踪鼠标是否在 Panel 区域（用于 Cmd+V 粘贴）
         .onHover { isHovering in
-            MessagePanelHoverState.shared.isMouseInPanel = isHovering
+            hoverState.isMouseInPanel = isHovering
         }
         // 词典弹窗
         .sheet(isPresented: $dictionaryHandler.isShowingAddSheet) {
@@ -210,7 +256,7 @@ struct MessagePanelView: View {
             
             // 关闭按钮（隐藏面板）
             HoverCloseButton(action: {
-                MessagePanelManager.shared.hide()
+                hidePanel()
             }, size: 24, iconSize: 10)
         }
     }
@@ -284,7 +330,11 @@ struct MessagePanelView: View {
                 // Pipeline 卡片（分页显示，新卡片在上）
                 let cards = state.visibleCards
                 ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                    MessageCardView(card: card, activeFilterTagIds: state.activeFilterTagIds) {
+                    MessageCardView(
+                        card: card,
+                        activeFilterTagIds: state.activeFilterTagIds,
+                        dependencies: cardDependencies
+                    ) {
                         withAnimation(.easeOut(duration: 0.2)) {
                             state.removeCard(card.id)
                         }
@@ -327,34 +377,12 @@ struct MessagePanelView: View {
         }
         
         // 隐藏面板
-        MessagePanelManager.shared.hide()
+        hidePanel()
     }
     
     /// 恢复对话窗口
     private func restoreConversation(_ record: SessionRecord) {
-        // 转换消息格式
-        let chatMessages = record.messages.map { msg in
-            ChatMessage(
-                role: msg.role == .user ? .user : .assistant,
-                content: msg.content,
-                attachments: []
-            )
-        }
-        
-        // 创建新面板并恢复消息
-        let panelId = AnswerPanelManager.shared.show(
-            question: record.title,
-            attachments: []
-        )
-        
-        // 延迟更新消息（等待窗口创建）
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(100))
-            if let state = AnswerPanelManager.shared.state(for: panelId) {
-                state.messages = chatMessages
-                state.isLoading = false
-            }
-        }
+        dependencies.restoreConversation(record)
     }
     
     // MARK: - Ask Button
@@ -391,18 +419,7 @@ struct MessagePanelView: View {
     }
     
     private func triggerQuickAsk() {
-        // 触发 Quick Ask（和 ⌥T 一样的效果）
-        Task { @MainActor in
-            // 先隐藏 Message Panel
-            MessagePanelManager.shared.hide()
-            
-            // 等一小会让 Panel 开始隐藏动画
-            try? await Task.sleep(for: .milliseconds(100))
-            
-            // 设置 Quick Ask 状态并触发
-            HotKeyService.shared.isQuickAskActive = true
-            HotKeyService.shared.onQuickAskStart?()
-        }
+        startQuickAsk()
     }
     
     // MARK: - Widget Background
@@ -422,6 +439,19 @@ struct MessagePanelView: View {
 
 #Preview {
     let state = MessagePanelState()
+    let previewDependencies = MessagePanelViewDependencies(
+        restoreConversation: { _ in }
+    )
+    let previewCardDependencies = MessageCardViewDependencies(
+        hoverState: .shared,
+        resolveTags: { TagLibrary.shared.tags(for: $0) },
+        setRecordType: { state.setRecordType($0, type: $1) },
+        pasteImageFromClipboard: { state.pasteImageFromClipboard(to: $0) },
+        addAttachment: { image, id in state.addAttachment(image, to: id) },
+        generateSummary: { id, regenerate in
+            Task { await SummaryService.shared.generateSummary(for: id, regenerate: regenerate) }
+        }
+    )
     
     // 添加测试数据
     Task { @MainActor in
@@ -439,7 +469,16 @@ struct MessagePanelView: View {
         )
     }
     
-    return MessagePanelView(state: state)
+    return MessagePanelView(
+        state: state,
+        historyService: .shared,
+        dictionaryHandler: .shared,
+        hoverState: .shared,
+        hidePanel: {},
+        startQuickAsk: {},
+        dependencies: previewDependencies,
+        cardDependencies: previewCardDependencies
+    )
         .frame(height: 600)
         .padding()
         .background(Color.gray.opacity(0.3))

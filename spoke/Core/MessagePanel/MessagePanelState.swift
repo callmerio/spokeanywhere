@@ -6,6 +6,127 @@ import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "MessagePanelState")
 
+private enum MessagePanelFilterEngine {
+    static func filteredCards(
+        from cards: IdentifiedArrayOf<MessageCard>,
+        filterMode: CardFilterMode,
+        activeFilterTagIds: Set<UUID>
+    ) -> [MessageCard] {
+        switch filterMode {
+        case .all:
+            let sortedCards = Array(cards).sorted { $0.timestamp > $1.timestamp }
+            guard !activeFilterTagIds.isEmpty else { return sortedCards }
+            return sortByTagMatchKeepingOrder(sortedCards, activeFilterTagIds: activeFilterTagIds)
+        case .todo:
+            let todoCards = Array(cards.filter { $0.recordType == .todo })
+                .sorted { $0.timestamp > $1.timestamp }
+            let doneCards = Array(cards.filter { $0.recordType == .done })
+                .sorted { $0.timestamp > $1.timestamp }
+
+            guard !activeFilterTagIds.isEmpty else {
+                return todoCards + doneCards
+            }
+
+            let (matchedTodo, unmatchedTodo) = partitionByTagMatch(todoCards, activeFilterTagIds: activeFilterTagIds)
+            let (matchedDone, unmatchedDone) = partitionByTagMatch(doneCards, activeFilterTagIds: activeFilterTagIds)
+            return matchedTodo + matchedDone + unmatchedTodo + unmatchedDone
+        case .note:
+            let noteCards = Array(cards.filter { $0.recordType == .note })
+                .sorted { $0.timestamp > $1.timestamp }
+            guard !activeFilterTagIds.isEmpty else { return noteCards }
+            return sortByTagMatchKeepingOrder(noteCards, activeFilterTagIds: activeFilterTagIds)
+        }
+    }
+
+    static func partitionByTagMatch(
+        _ cards: [MessageCard],
+        activeFilterTagIds: Set<UUID>
+    ) -> ([MessageCard], [MessageCard]) {
+        let matched = cards.filter { card in
+            activeFilterTagIds.isSubset(of: Set(card.tagIds))
+        }
+        let unmatched = cards.filter { card in
+            !activeFilterTagIds.isSubset(of: Set(card.tagIds))
+        }
+        return (matched, unmatched)
+    }
+
+    static func sortByTagMatchKeepingOrder(
+        _ cards: [MessageCard],
+        activeFilterTagIds: Set<UUID>
+    ) -> [MessageCard] {
+        let (matched, unmatched) = partitionByTagMatch(cards, activeFilterTagIds: activeFilterTagIds)
+        return matched + unmatched
+    }
+}
+
+private enum MessagePanelStorage {
+    static func storageURL() -> URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
+        return spokeDir.appendingPathComponent("pipeline_history.json")
+    }
+
+    static func save(cards: [MessageCard], to storageURL: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .prettyPrinted
+        let data = try encoder.encode(cards)
+
+        let dir = storageURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try data.write(to: storageURL, options: .atomic)
+    }
+
+    static func load(from storageURL: URL) throws -> [MessageCard] {
+        let data = try Data(contentsOf: storageURL)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([MessageCard].self, from: data)
+    }
+}
+
+@MainActor
+struct MessagePanelStateDependencies {
+    let tagLibrary: TagLibrary
+    let attachmentStorage: CardAttachmentStorage
+    let attachmentImageCache: AttachmentImageCache
+    let notificationCenter: NotificationCenter
+    let llmSettings: LLMSettings
+}
+
+@MainActor
+extension MessagePanelStateDependencies {
+    static let live = MessagePanelStateDependencies(
+        tagLibrary: .shared,
+        attachmentStorage: .shared,
+        attachmentImageCache: .shared,
+        notificationCenter: .default,
+        llmSettings: .shared
+    )
+}
+
+private enum MessagePanelCardMaintenance {
+    static func persistableCards(from cards: IdentifiedArrayOf<MessageCard>) -> [MessageCard] {
+        cards.filter { card in
+            switch card.stage {
+            case .asr, .llm, .clipboard:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    static func retainedLoadedCards(_ loadedCards: [MessageCard], cutoff: Date) -> [MessageCard] {
+        var filtered = loadedCards.filter { card in
+            card.recordType.isPinned || card.timestamp > cutoff
+        }
+        filtered.sort { $0.timestamp < $1.timestamp }
+        return filtered
+    }
+}
+
 // MARK: - Source App Info
 
 /// 来源应用信息（用于 Pipeline 卡片显示）
@@ -420,7 +541,7 @@ extension MessageCard: Hashable {
 final class MessagePanelState: ObservableObject {
     
     /// 全局单例
-    static let shared = MessagePanelState()
+    static let shared = MessagePanelState(dependencies: .live)
     
     // MARK: - Published Properties
     
@@ -450,45 +571,19 @@ final class MessagePanelState: ObservableObject {
     
     /// Combine 订阅存储
     private var cancellables = Set<AnyCancellable>()
+    private let dependencies: MessagePanelStateDependencies
+    private var tagDeletionObserver: NSObjectProtocol?
     
     // MARK: - Private
     
     /// 重新计算过滤结果（在 cards/filterMode/activeFilterTagIds 变化时调用）
     /// 注意：结果按最终显示顺序排序（新的在前），visibleCards 直接取前 N 个
     private func updateFilteredCards() {
-        var result: [MessageCard]
-        
-        switch filterMode {
-        case .all:
-            // All 模式：按时间倒序（新的在前）
-            result = Array(cards).sorted { $0.timestamp > $1.timestamp }
-            // 有标签过滤时：匹配的在前，每组内保持时间倒序
-            if !activeFilterTagIds.isEmpty {
-                result = sortByTagMatchKeepingOrder(result)
-            }
-        case .todo:
-            // Todo 模式：先 todo 后 done，每组内按时间倒序（新的在前）
-            let todoCards = Array(cards.filter { $0.recordType == .todo })
-                .sorted { $0.timestamp > $1.timestamp }
-            let doneCards = Array(cards.filter { $0.recordType == .done })
-                .sorted { $0.timestamp > $1.timestamp }
-            
-            if activeFilterTagIds.isEmpty {
-                // 无标签过滤：todo 在前，done 在后
-                result = todoCards + doneCards
-            } else {
-                // 有标签过滤：匹配标签的 todo → 匹配标签的 done → 不匹配的 todo → 不匹配的 done
-                let (matchedTodo, unmatchedTodo) = partitionByTagMatch(todoCards)
-                let (matchedDone, unmatchedDone) = partitionByTagMatch(doneCards)
-                result = matchedTodo + matchedDone + unmatchedTodo + unmatchedDone
-            }
-        case .note:
-            result = Array(cards.filter { $0.recordType == .note })
-                .sorted { $0.timestamp > $1.timestamp }
-            if !activeFilterTagIds.isEmpty {
-                result = sortByTagMatchKeepingOrder(result)
-            }
-        }
+        let result = MessagePanelFilterEngine.filteredCards(
+            from: cards,
+            filterMode: filterMode,
+            activeFilterTagIds: activeFilterTagIds
+        )
         
         // IdentifiedArray 的 ids 属性可以高效比较
         let resultIds = result.map(\.id)
@@ -497,23 +592,6 @@ final class MessagePanelState: ObservableObject {
         if resultIds != Array(currentIds) {
             filteredCards = IdentifiedArrayOf(uniqueElements: result)
         }
-    }
-    
-    /// 按标签匹配分组（匹配的, 不匹配的），保持原有顺序
-    private func partitionByTagMatch(_ cards: [MessageCard]) -> ([MessageCard], [MessageCard]) {
-        let matched = cards.filter { card in
-            activeFilterTagIds.isSubset(of: Set(card.tagIds))
-        }
-        let unmatched = cards.filter { card in
-            !activeFilterTagIds.isSubset(of: Set(card.tagIds))
-        }
-        return (matched, unmatched)
-    }
-    
-    /// 按标签匹配排序，保持每组内原有顺序
-    private func sortByTagMatchKeepingOrder(_ cards: [MessageCard]) -> [MessageCard] {
-        let (matched, unmatched) = partitionByTagMatch(cards)
-        return matched + unmatched
     }
     
     /// 各类型卡片数量（用于显示 badge）
@@ -563,19 +641,28 @@ final class MessagePanelState: ObservableObject {
     
     /// 存储文件路径
     private var storageURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let spokeDir = appSupport.appendingPathComponent("Spoke", isDirectory: true)
-        return spokeDir.appendingPathComponent("pipeline_history.json")
+        MessagePanelStorage.storageURL()
     }
     
     // MARK: - Init
     
-    init() {
+    convenience init() {
+        self.init(dependencies: .live)
+    }
+
+    private init(dependencies: MessagePanelStateDependencies) {
+        self.dependencies = dependencies
         loadCards()
         setupTagDeletionObserver()
         setupFilteredCardsSubscription()
         // 初始化过滤结果
         updateFilteredCards()
+    }
+
+    deinit {
+        if let tagDeletionObserver {
+            dependencies.notificationCenter.removeObserver(tagDeletionObserver)
+        }
     }
     
     /// 设置过滤结果自动更新订阅
@@ -725,7 +812,7 @@ final class MessagePanelState: ObservableObject {
         logger.info("📌 Card record type set to \(type.displayName)")
         
         // 如果切换到 todo/note 且之前不是这两种类型，自动触发总结
-        let shouldAutoSummary = autoSummary ?? LLMSettings.shared.summaryAutoEnabled
+        let shouldAutoSummary = autoSummary ?? dependencies.llmSettings.summaryAutoEnabled
         let isNewPinnedType = (type == .todo || type == .note) && previousType == .normal
         
         if shouldAutoSummary && isNewPinnedType && cards[index].summaryStatus == .none {
@@ -774,7 +861,7 @@ final class MessagePanelState: ObservableObject {
         saveCards()
         
         // 标记为最近使用
-        TagLibrary.shared.markAsRecentlyUsed(tagId)
+        dependencies.tagLibrary.markAsRecentlyUsed(tagId)
         
         logger.info("🏷️ 添加标签到卡片")
     }
@@ -791,13 +878,14 @@ final class MessagePanelState: ObservableObject {
     
     /// 创建并添加标签到卡片（快捷方式）
     func createAndAddTag(name: String, to cardId: UUID) {
-        let tag = TagLibrary.shared.createTag(name: name)
+        let tag = dependencies.tagLibrary.createTag(name: name)
         addTag(tag.id, to: cardId)
     }
     
     /// 监听标签删除通知，移除相关引用
     func setupTagDeletionObserver() {
-        NotificationCenter.default.addObserver(
+        guard tagDeletionObserver == nil else { return }
+        tagDeletionObserver = dependencies.notificationCenter.addObserver(
             forName: .tagDeleted,
             object: nil,
             queue: .main
@@ -849,7 +937,7 @@ final class MessagePanelState: ObservableObject {
     
     /// 获取当前激活的筛选标签
     var activeFilterTags: [CardTag] {
-        TagLibrary.shared.tags(for: Array(activeFilterTagIds))
+        dependencies.tagLibrary.tags(for: Array(activeFilterTagIds))
     }
     
     // MARK: - Attachment Management
@@ -857,7 +945,7 @@ final class MessagePanelState: ObservableObject {
     /// 添加附件到卡片（从图片）
     func addAttachment(_ image: NSImage, to cardId: UUID) {
         guard let index = cards.firstIndex(where: { $0.id == cardId }) else { return }
-        guard let attachment = CardAttachmentStorage.shared.saveImage(image) else { return }
+        guard let attachment = dependencies.attachmentStorage.saveImage(image) else { return }
         
         cards[index].attachments.append(attachment)
         saveCards()
@@ -873,9 +961,9 @@ final class MessagePanelState: ObservableObject {
         let attachment = cards[index].attachments[attachmentIndex]
         
         // 删除文件
-        CardAttachmentStorage.shared.deleteAttachment(attachment)
+        dependencies.attachmentStorage.deleteAttachment(attachment)
         // 清除缓存
-        AttachmentImageCache.shared.clearCache(for: attachmentId)
+        dependencies.attachmentImageCache.clearCache(for: attachmentId)
         
         cards[index].attachments.remove(at: attachmentIndex)
         saveCards()
@@ -910,25 +998,10 @@ final class MessagePanelState: ObservableObject {
     
     /// 保存卡片到本地
     func saveCards() {
-        // 只保存 ASR/LLM/Clipboard 结果（过滤掉 welcome/keyPress/system）
-        let cardsToSave = cards.filter { card in
-            switch card.stage {
-            case .asr, .llm, .clipboard: return true
-            default: return false
-            }
-        }
+        let cardsToSave = MessagePanelCardMaintenance.persistableCards(from: cards)
         
         do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = .prettyPrinted
-            let data = try encoder.encode(cardsToSave)
-            
-            // 确保目录存在
-            let dir = storageURL.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            
-            try data.write(to: storageURL, options: .atomic)
+            try MessagePanelStorage.save(cards: Array(cardsToSave), to: storageURL)
             logger.debug("💾 Saved \(cardsToSave.count) pipeline cards")
         } catch {
             logger.error("❌ Failed to save pipeline cards: \(error.localizedDescription)")
@@ -943,22 +1016,9 @@ final class MessagePanelState: ObservableObject {
         }
         
         do {
-            let data = try Data(contentsOf: storageURL)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let loadedCards = try decoder.decode([MessageCard].self, from: data)
-            
-            // 过滤规则：
-            // - todo/done/note 卡片永久保留
-            // - normal 卡片只保留最近 24 小时
+            let loadedCards = try MessagePanelStorage.load(from: storageURL)
             let cutoff = Date().addingTimeInterval(-24 * 60 * 60)
-            var filtered = loadedCards.filter { card in
-                card.recordType.isPinned || card.timestamp > cutoff
-            }
-            
-            // 按时间正序排列（旧的在前，新的在后）
-            // 显示时用 reversed()，这样 append 只影响末尾，ForEach diff O(1)
-            filtered.sort { $0.timestamp < $1.timestamp }
+            let filtered = MessagePanelCardMaintenance.retainedLoadedCards(loadedCards, cutoff: cutoff)
             cards = IdentifiedArrayOf(uniqueElements: filtered)
             
             logger.info("📥 Loaded \(self.cards.count) pipeline cards from history")

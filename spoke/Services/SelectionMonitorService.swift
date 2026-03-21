@@ -5,6 +5,36 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "SelectionMonitor")
 
+@MainActor
+struct SelectionMonitorServiceDependencies {
+    let workspace: NSWorkspace
+    let hasAccessibilityPermission: () -> Bool
+    let requestAccessibilityPermission: () -> Bool
+    let toolbarWindow: () -> NSPanel?
+    let hideToolbar: (_ force: Bool) -> Void
+}
+
+@MainActor
+extension SelectionMonitorServiceDependencies {
+    static func makeLive() -> SelectionMonitorServiceDependencies {
+        SelectionMonitorServiceDependencies(
+            workspace: .shared,
+            hasAccessibilityPermission: {
+                AccessibilityHelper.hasAccessibilityPermission()
+            },
+            requestAccessibilityPermission: {
+                AccessibilityHelper.requestAccessibilityPermission()
+            },
+            toolbarWindow: {
+                SelectionToolbarManager.shared.toolbarWindow
+            },
+            hideToolbar: { force in
+                SelectionToolbarManager.shared.hide(force: force)
+            }
+        )
+    }
+}
+
 /// 全局文本选择监听服务
 /// 使用 macOS Accessibility API 监听系统范围内的文本选择
 @MainActor
@@ -12,16 +42,17 @@ final class SelectionMonitorService {
     
     // MARK: - Singleton
     
-    static let shared = SelectionMonitorService()
+    static let shared = SelectionMonitorService(dependencies: .makeLive())
     
     // MARK: - Properties
+    private let dependencies: SelectionMonitorServiceDependencies
     
     /// 是否正在监听
     private(set) var isMonitoring = false
     
     /// 是否已授权辅助功能权限
     var isAccessibilityEnabled: Bool {
-        AXIsProcessTrusted()
+        dependencies.hasAccessibilityPermission()
     }
     
     /// 选中文本变化回调
@@ -110,12 +141,16 @@ final class SelectionMonitorService {
     
     // MARK: - Init
     
-    private init() {}
+    private init(
+        dependencies: SelectionMonitorServiceDependencies
+    ) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
     /// 开始监听
-    func startMonitoring() {
+    func startMonitoring(requestPermissionIfNeeded: Bool = false) {
         logger.info("📋 [SelectionMonitor] startMonitoring() 被调用")
 
         guard !isMonitoring else {
@@ -128,8 +163,10 @@ final class SelectionMonitorService {
         logger.info("📋 [SelectionMonitor] 辅助功能权限: \(hasPermission)")
 
         guard hasPermission else {
-            logger.warning("📋 [SelectionMonitor] ❌ 未授权辅助功能权限，请求授权...")
-            requestAccessibilityPermission()
+            logger.warning("📋 [SelectionMonitor] ❌ 未授权辅助功能权限")
+            if requestPermissionIfNeeded {
+                requestAccessibilityPermission()
+            }
             return
         }
 
@@ -155,39 +192,24 @@ final class SelectionMonitorService {
         isMonitoring = false
         
         // 移除鼠标监听 (Global)
-        if let monitor = mouseDownMonitor {
-            NSEvent.removeMonitor(monitor)
-            mouseDownMonitor = nil
-        }
-        if let monitor = mouseEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            mouseEventMonitor = nil
-        }
+        removeMonitor(&mouseDownMonitor)
+        removeMonitor(&mouseEventMonitor)
         
         // 移除鼠标监听 (Local)
-        if let monitor = localMouseDownMonitor {
-            NSEvent.removeMonitor(monitor)
-            localMouseDownMonitor = nil
-        }
-        if let monitor = localMouseUpMonitor {
-            NSEvent.removeMonitor(monitor)
-            localMouseUpMonitor = nil
-        }
+        removeMonitor(&localMouseDownMonitor)
+        removeMonitor(&localMouseUpMonitor)
         
         isMouseDown = false
         
         // 移除键盘监听
-        if let monitor = keyEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyEventMonitor = nil
-        }
+        removeMonitor(&keyEventMonitor)
         
         // 移除 AXObserver
         removeCurrentAXObserver()
         
         // 移除应用切换观察者
         if let observer = appActivationObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            dependencies.workspace.notificationCenter.removeObserver(observer)
             appActivationObserver = nil
         }
         
@@ -199,10 +221,7 @@ final class SelectionMonitorService {
     
     /// 请求辅助功能权限
     func requestAccessibilityPermission() {
-        MainActor.assumeIsolated {
-            _ = AccessibilityHelper.requestAccessibilityPermission()
-        }
-
+        _ = dependencies.requestAccessibilityPermission()
         logger.info("📋 [SelectionMonitor] 已请求辅助功能权限")
     }
     
@@ -231,7 +250,7 @@ final class SelectionMonitorService {
     
     /// 设置应用切换监听
     private func setupAppActivationObserver() {
-        appActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+        appActivationObserver = dependencies.workspace.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
@@ -245,7 +264,7 @@ final class SelectionMonitorService {
     
     /// 为当前前台应用设置 AXObserver
     private func updateAXObserverForFrontmostApp() {
-        guard let frontApp = NSWorkspace.shared.frontmostApplication else {
+        guard let frontApp = dependencies.workspace.frontmostApplication else {
             logger.debug("📋 [SelectionMonitor] 无前台应用")
             return
         }
@@ -387,7 +406,7 @@ final class SelectionMonitorService {
                         self.checkSelection(source: "Global doubleClick")
                     } else {
                         // 真正的单击，隐藏工具栏
-                        SelectionToolbarManager.shared.hide()
+                        self.dependencies.hideToolbar(false)
                     }
                     self.didRecentMouseDrag = false
                 } else {
@@ -423,7 +442,7 @@ final class SelectionMonitorService {
                                    mouseUpLocation.y - self.mouseDownLocation.y)
                 
                 // 🔥 检查点击是否在工具栏窗口内，如果是则不隐藏（让按钮事件处理）
-                if let toolbarWindow = SelectionToolbarManager.shared.toolbarWindow,
+                if let toolbarWindow = self.dependencies.toolbarWindow(),
                    toolbarWindow.isVisible,
                    toolbarWindow.frame.contains(mouseUpLocation) {
                     // 点击在工具栏内，不处理（让按钮 action 处理）
@@ -438,7 +457,7 @@ final class SelectionMonitorService {
                         self.checkSelection(source: "Local doubleClick")
                     } else {
                         // 真正的单击，点击工具栏外部（本应用内），强制隐藏（包括词典结果）
-                        SelectionToolbarManager.shared.hide(force: true)
+                        self.dependencies.hideToolbar(true)
                     }
                     self.didRecentMouseDrag = false
                 } else {
@@ -476,7 +495,7 @@ final class SelectionMonitorService {
     /// 执行选中文本检查
     private func performSelectionCheck() {
         // 获取当前聚焦的应用
-        guard let frontApp = NSWorkspace.shared.frontmostApplication else {
+        guard let frontApp = dependencies.workspace.frontmostApplication else {
             return
         }
         
@@ -509,6 +528,12 @@ final class SelectionMonitorService {
                 self.handleSelectionResult(selectedText, bounds: bounds, bundleId: bundleId, appName: appName)
             }
         }
+    }
+
+    private func removeMonitor(_ monitor: inout Any?) {
+        guard let existingMonitor = monitor else { return }
+        NSEvent.removeMonitor(existingMonitor)
+        monitor = nil
     }
     
     /// 🔥 处理选中结果（主线程调用）
@@ -549,188 +574,208 @@ final class SelectionMonitorService {
     /// 使用 Accessibility API 获取选中文本和位置
     /// 🔥 nonisolated: 允许在后台线程调用
     nonisolated private func getSelectedTextAndBounds(for app: NSRunningApplication) -> (String, CGRect)? {
-        var bounds = CGRect.zero
-        var selectedText: String?
-        var focusedElement: AXUIElement?
-        
         let pid = app.processIdentifier
         let appElement = AXUIElementCreateApplication(pid)
         
         // 关键：为 Electron/Chrome 等应用启用 Accessibility
         // 这些应用默认不暴露 AX tree，需要设置特殊属性
         enableAccessibilityForApp(appElement)
-        
-        // 方法1: 使用 SystemWide 元素获取
+
+        guard let axElement = focusedElement(for: appElement) else {
+            return nil
+        }
+
+        guard let text = selectedText(from: axElement), !text.isEmpty else {
+            return nil
+        }
+
+        let bounds = selectionBounds(for: axElement) ?? fallbackSelectionBounds()
+        return (text, bounds)
+    }
+
+    nonisolated private func focusedElement(for appElement: AXUIElement) -> AXUIElement? {
+        focusedElementFromSystemWide() ?? focusedElementFromApplication(appElement)
+    }
+
+    nonisolated private func focusedElementFromSystemWide() -> AXUIElement? {
         let systemWideElement = AXUIElementCreateSystemWide()
-        
         var focusedApp: CFTypeRef?
         let appResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedApplicationAttribute as CFString, &focusedApp)
-        
-        if appResult == .success, let appRef = focusedApp {
-            // swiftlint:disable:next force_cast
-            let appElement = (appRef as! AXUIElement)
-            var focusedUIElement: CFTypeRef?
-            let focusResult = AXUIElementCopyAttributeValue(
-                appElement,
-                kAXFocusedUIElementAttribute as CFString,
-                &focusedUIElement
-            )
-            
-            if focusResult == .success, let elementRef = focusedUIElement {
-                // swiftlint:disable:next force_cast
-                focusedElement = (elementRef as! AXUIElement)
-            }
-        }
-        
-        // 方法2: 如果 SystemWide 失败，使用 Application 方式
-        if focusedElement == nil {
-            var element: CFTypeRef?
-            let focusResult = AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &element)
-            
-            if focusResult == .success, let elementRef = element {
-                // swiftlint:disable:next force_cast
-                focusedElement = (elementRef as! AXUIElement)
-            }
-        }
-        
-        guard let axElement = focusedElement else {
+        guard appResult == .success,
+              let appElement = asAXUIElement(focusedApp) else {
             return nil
         }
-        
-        // 策略1: 尝试通过标准 AXSelectedText API 获取
+
+        return focusedUIElement(from: appElement)
+    }
+
+    nonisolated private func focusedElementFromApplication(_ appElement: AXUIElement) -> AXUIElement? {
+        focusedUIElement(from: appElement)
+    }
+
+    nonisolated private func focusedUIElement(from appElement: AXUIElement) -> AXUIElement? {
+        var focusedUIElement: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedUIElement
+        )
+        guard result == .success else { return nil }
+        return asAXUIElement(focusedUIElement)
+    }
+
+    nonisolated private func selectedText(from axElement: AXUIElement) -> String? {
+        selectedTextFromDirectAttribute(axElement)
+            ?? selectedTextFromParameterizedRange(axElement)
+            ?? selectedTextFromValueRange(axElement)
+            ?? selectedTextFromParent(axElement)
+            ?? findSelectedTextInChildren(axElement, depth: 0)
+    }
+
+    nonisolated private func selectedTextFromDirectAttribute(_ axElement: AXUIElement) -> String? {
         var selectedTextValue: CFTypeRef?
-        let textResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue)
-        
-        if textResult == .success, let textValue = selectedTextValue as? String, !textValue.isEmpty {
-            selectedText = textValue
-        }
-        
-        // 策略2: 参数化属性 (Parameterized Attribute) - 通过范围获取文本
-        if selectedText == nil || selectedText?.isEmpty == true {
-            var rangeValue: CFTypeRef?
-            let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
-            
-            if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
-                // swiftlint:disable:next force_cast
-                let axValue = (rangeRef as! AXValue)
-                if AXValueGetType(axValue) == .cfRange {
-                    var range = CFRange()
-                    AXValueGetValue(axValue, .cfRange, &range)
-                    
-                    if range.length > 0 {
-                        var stringForRangeValue: CFTypeRef?
-                        let stringResult = AXUIElementCopyParameterizedAttributeValue(
-                            axElement,
-                            kAXStringForRangeParameterizedAttribute as CFString,
-                            rangeRef,
-                            &stringForRangeValue
-                        )
-                        
-                        if stringResult == .success, let text = stringForRangeValue as? String, !text.isEmpty {
-                            selectedText = text
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 策略3: Value + Range (手动截取)
-        if selectedText == nil || selectedText?.isEmpty == true {
-             var valueRef: CFTypeRef?
-             let valueResult = AXUIElementCopyAttributeValue(axElement, kAXValueAttribute as CFString, &valueRef)
-             
-             if valueResult == .success, let fullText = valueRef as? String, !fullText.isEmpty {
-                 var rangeValue: CFTypeRef?
-                 let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
-                 
-                 if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
-                     // swiftlint:disable:next force_cast
-                     let axValue = (rangeRef as! AXValue)
-                     if AXValueGetType(axValue) == .cfRange {
-                         var range = CFRange()
-                         AXValueGetValue(axValue, .cfRange, &range)
-                         
-                         let utf16Count = fullText.utf16.count
-                         if range.length > 0 && range.location + range.length <= utf16Count {
-                             let start = String.Index(utf16Offset: range.location, in: fullText)
-                             let end = String.Index(utf16Offset: range.location + range.length, in: fullText)
-                             selectedText = String(fullText[start..<end])
-                         }
-                     }
-                 }
-             }
-        }
-        
-        // 策略4: 如果直接获取失败，尝试从父元素获取
-        if selectedText == nil || selectedText?.isEmpty == true {
-            var parent: CFTypeRef?
-            if AXUIElementCopyAttributeValue(axElement, kAXParentAttribute as CFString, &parent) == .success,
-               let parentRef = parent {
-                // swiftlint:disable:next force_cast
-                let parentElement = (parentRef as! AXUIElement)
-                var parentSelectedText: CFTypeRef?
-                if AXUIElementCopyAttributeValue(
-                    parentElement,
-                    kAXSelectedTextAttribute as CFString,
-                    &parentSelectedText
-                ) == .success,
-                   let parentText = parentSelectedText as? String, !parentText.isEmpty {
-                    selectedText = parentText
-                }
-            }
-        }
-        
-        // 策略5: 如果还是失败，尝试遍历子元素
-        if selectedText == nil || selectedText?.isEmpty == true {
-            selectedText = findSelectedTextInChildren(axElement, depth: 0)
-        }
-        
-        if let text = selectedText, !text.isEmpty {
-            // 尝试获取选中范围和位置
-            var selectedRangeValue: CFTypeRef?
-            let rangeResult = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &selectedRangeValue)
-            
-            if rangeResult == .success, let rangeValue = selectedRangeValue {
-                var boundsValue: CFTypeRef?
-                let boundsResult = AXUIElementCopyParameterizedAttributeValue(
-                    axElement,
-                    kAXBoundsForRangeParameterizedAttribute as CFString,
-                    rangeValue,
-                    &boundsValue
-                )
-                
-                if boundsResult == .success, let axRef = boundsValue {
-                    // swiftlint:disable:next force_cast
-                    let axValue = (axRef as! AXValue)
-                    var rect = CGRect.zero
-                    if AXValueGetValue(axValue, .cgRect, &rect) {
-                        bounds = rect
-                    }
-                }
-            }
-        }
-        
-        guard let text = selectedText, !text.isEmpty else {
+        let result = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextAttribute as CFString, &selectedTextValue)
+        guard result == .success,
+              let text = selectedTextValue as? String,
+              !text.isEmpty else {
             return nil
         }
-        
-        // 如果无法获取精确位置，使用鼠标位置 (Quartz 坐标系)
-        if bounds == .zero {
-            let mouseLocation = NSEvent.mouseLocation
-            if let screen = NSScreen.main {
-                // NSEvent.mouseLocation 是 AppKit 坐标 (左下角原点)
-                // 转换为 Quartz 坐标 (左上角原点)
-                let quartzY = screen.frame.height - mouseLocation.y
-                bounds = CGRect(
-                    x: mouseLocation.x - 50,
-                    y: quartzY - 10,  // 稍微上移，工具栏显示在鼠标下方
-                    width: 100,
-                    height: 20
-                )
-            }
+        return text
+    }
+
+    nonisolated private func selectedTextFromParameterizedRange(_ axElement: AXUIElement) -> String? {
+        guard let rangeValue = selectedRangeValue(from: axElement),
+              let range = cfRange(from: rangeValue),
+              range.length > 0 else {
+            return nil
         }
-        
-        return (text, bounds)
+
+        var stringForRangeValue: CFTypeRef?
+        let result = AXUIElementCopyParameterizedAttributeValue(
+            axElement,
+            kAXStringForRangeParameterizedAttribute as CFString,
+            rangeValue,
+            &stringForRangeValue
+        )
+        guard result == .success,
+              let text = stringForRangeValue as? String,
+              !text.isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    nonisolated private func selectedTextFromValueRange(_ axElement: AXUIElement) -> String? {
+        var valueRef: CFTypeRef?
+        let valueResult = AXUIElementCopyAttributeValue(axElement, kAXValueAttribute as CFString, &valueRef)
+        guard valueResult == .success,
+              let fullText = valueRef as? String,
+              !fullText.isEmpty,
+              let rangeValue = selectedRangeValue(from: axElement),
+              let range = cfRange(from: rangeValue) else {
+            return nil
+        }
+
+        let utf16Count = fullText.utf16.count
+        guard range.length > 0, range.location + range.length <= utf16Count else {
+            return nil
+        }
+
+        let start = String.Index(utf16Offset: range.location, in: fullText)
+        let end = String.Index(utf16Offset: range.location + range.length, in: fullText)
+        return String(fullText[start..<end])
+    }
+
+    nonisolated private func selectedTextFromParent(_ axElement: AXUIElement) -> String? {
+        var parent: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(axElement, kAXParentAttribute as CFString, &parent)
+        guard result == .success,
+              let parentElement = asAXUIElement(parent) else {
+            return nil
+        }
+
+        return selectedTextFromDirectAttribute(parentElement)
+    }
+
+    nonisolated private func selectionBounds(for axElement: AXUIElement) -> CGRect? {
+        guard let rangeValue = selectedRangeValue(from: axElement) else {
+            return nil
+        }
+
+        var boundsValue: CFTypeRef?
+        let result = AXUIElementCopyParameterizedAttributeValue(
+            axElement,
+            kAXBoundsForRangeParameterizedAttribute as CFString,
+            rangeValue,
+            &boundsValue
+        )
+        guard result == .success,
+              let axValue = asAXValue(boundsValue, type: .cgRect) else {
+            return nil
+        }
+
+        var rect = CGRect.zero
+        guard AXValueGetValue(axValue, .cgRect, &rect) else {
+            return nil
+        }
+        return rect == .zero ? nil : rect
+    }
+
+    nonisolated private func selectedRangeValue(from axElement: AXUIElement) -> AXValue? {
+        var rangeValue: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(axElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
+        guard result == .success,
+              let axValue = asAXValue(rangeValue, type: .cfRange) else {
+            return nil
+        }
+        return axValue
+    }
+
+    nonisolated private func asAXUIElement(_ value: CFTypeRef?) -> AXUIElement? {
+        guard let value, CFGetTypeID(value) == AXUIElementGetTypeID() else {
+            return nil
+        }
+        return unsafeBitCast(value, to: AXUIElement.self)
+    }
+
+    nonisolated private func asAXValue(_ value: CFTypeRef?, type: AXValueType) -> AXValue? {
+        guard let value, CFGetTypeID(value) == AXValueGetTypeID() else {
+            return nil
+        }
+
+        let axValue = unsafeBitCast(value, to: AXValue.self)
+        guard AXValueGetType(axValue) == type else {
+            return nil
+        }
+        return axValue
+    }
+
+    nonisolated private func cfRange(from value: AXValue) -> CFRange? {
+        guard AXValueGetType(value) == .cfRange else {
+            return nil
+        }
+        var range = CFRange()
+        guard AXValueGetValue(value, .cfRange, &range) else {
+            return nil
+        }
+        return range
+    }
+
+    nonisolated private func fallbackSelectionBounds() -> CGRect {
+        let mouseLocation = NSEvent.mouseLocation
+        guard let screen = NSScreen.main else {
+            return .zero
+        }
+
+        // NSEvent.mouseLocation 是 AppKit 坐标 (左下角原点)
+        // 转换为 Quartz 坐标 (左上角原点)
+        let quartzY = screen.frame.height - mouseLocation.y
+        return CGRect(
+            x: mouseLocation.x - 50,
+            y: quartzY - 10,
+            width: 100,
+            height: 20
+        )
     }
     
     /// 递归遍历子元素寻找选中文本 (用于某些复杂 UI 结构)
@@ -748,49 +793,16 @@ final class SelectionMonitorService {
         }
         
         for child in childArray {
-            // 方法1: 尝试从当前子元素获取选中文本
-            var selectedTextValue: CFTypeRef?
-            if AXUIElementCopyAttributeValue(child, kAXSelectedTextAttribute as CFString, &selectedTextValue) == .success,
-               let text = selectedTextValue as? String, !text.isEmpty {
+            if let text = selectedTextFromDirectAttribute(child) {
                 return text
             }
             
-            // 方法2: 尝试 Value + Range 策略
-            var rangeValue: CFTypeRef?
-            let rangeResult = AXUIElementCopyAttributeValue(child, kAXSelectedTextRangeAttribute as CFString, &rangeValue)
-            
-            if rangeResult == .success, let rangeRef = rangeValue, CFGetTypeID(rangeRef) == AXValueGetTypeID() {
-                // swiftlint:disable:next force_cast
-                let axValue = (rangeRef as! AXValue)
-                if AXValueGetType(axValue) == .cfRange {
-                    var range = CFRange()
-                    AXValueGetValue(axValue, .cfRange, &range)
-                    
-                    if range.length > 0 {
-                        // 获取 Value
-                        var valueRef: CFTypeRef?
-                        if AXUIElementCopyAttributeValue(child, kAXValueAttribute as CFString, &valueRef) == .success,
-                           let fullText = valueRef as? String, !fullText.isEmpty {
-                            let utf16Count = fullText.utf16.count
-                            if range.location + range.length <= utf16Count {
-                                let start = String.Index(utf16Offset: range.location, in: fullText)
-                                let end = String.Index(utf16Offset: range.location + range.length, in: fullText)
-                                return String(fullText[start..<end])
-                            }
-                        }
-                        
-                        // 尝试 StringForRange
-                        var stringForRangeValue: CFTypeRef?
-                        if AXUIElementCopyParameterizedAttributeValue(
-                            child,
-                            kAXStringForRangeParameterizedAttribute as CFString,
-                            rangeRef,
-                            &stringForRangeValue
-                        ) == .success, let text = stringForRangeValue as? String, !text.isEmpty {
-                            return text
-                        }
-                    }
-                }
+            if let text = selectedTextFromValueRange(child) {
+                return text
+            }
+
+            if let text = selectedTextFromParameterizedRange(child) {
+                return text
             }
             
             // 递归遍历子元素的子元素

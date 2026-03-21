@@ -2,12 +2,30 @@ import SwiftUI
 
 private typealias DS = DesignTokens
 
+@MainActor
+struct DictionarySettingsDependencies {
+    let dictionaryService: DictionaryService
+    let transcriptionManager: TranscriptionManager
+    let vocabularyService: VocabularyService
+}
+
+@MainActor
+extension DictionarySettingsDependencies {
+    static let live = DictionarySettingsDependencies(
+        dictionaryService: .shared,
+        transcriptionManager: .shared,
+        vocabularyService: .shared
+    )
+}
+
 // MARK: - Dictionary Settings Content
 
 /// 词典设置页面
 /// 参考设计：橙色主题、卡片式列表、Tab 筛选
 struct DictionarySettingsContent: View {
-    @ObservedObject private var dictionaryService = DictionaryService.shared
+    @ObservedObject private var dictionaryService: DictionaryService
+    @ObservedObject private var vocabularyService: VocabularyService
+    private let dependencies: DictionarySettingsDependencies
     
     @State private var selectedFilter: DictionaryFilter = .all
     @State private var searchText = ""
@@ -17,6 +35,18 @@ struct DictionarySettingsContent: View {
     @State private var selectedEntries: Set<UUID> = []
     
     @State private var showVocabularyList = false
+
+    @MainActor
+    init() {
+        self.init(dependencies: .live)
+    }
+
+    @MainActor
+    init(dependencies: DictionarySettingsDependencies) {
+        self.dependencies = dependencies
+        self._dictionaryService = ObservedObject(wrappedValue: dependencies.dictionaryService)
+        self._vocabularyService = ObservedObject(wrappedValue: dependencies.vocabularyService)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xl) {
@@ -114,13 +144,13 @@ struct DictionarySettingsContent: View {
                 // 词典注入开关
                 HStack(spacing: DS.Spacing.md) {
                     Toggle("词典注入", isOn: Binding(
-                        get: { TranscriptionManager.shared.isDictionaryInjectionEnabled },
+                        get: { dependencies.transcriptionManager.isDictionaryInjectionEnabled },
                         set: { newValue in
-                            TranscriptionManager.shared.isDictionaryInjectionEnabled = newValue
+                            dependencies.transcriptionManager.isDictionaryInjectionEnabled = newValue
                             if newValue {
                                 // 开启时重新准备词典
                                 Task {
-                                    await TranscriptionManager.shared.prepareDictionary()
+                                    await dependencies.transcriptionManager.prepareDictionary()
                                 }
                             }
                         }
@@ -159,7 +189,7 @@ struct DictionarySettingsContent: View {
             }
             
             // 第二行：权重选择（只在词典注入开启时显示）
-            if TranscriptionManager.shared.isDictionaryInjectionEnabled {
+            if dependencies.transcriptionManager.isDictionaryInjectionEnabled {
                 HStack(spacing: DS.Spacing.lg) {
                     Text("识别强度")
                         .font(DS.Typography.caption)
@@ -172,7 +202,7 @@ struct DictionarySettingsContent: View {
                             UserDefaults.standard.dictionaryWeightLevel = newValue
                             // 权重变化需要重新准备词典
                             Task {
-                                await TranscriptionManager.shared.prepareDictionary()
+                                await dependencies.transcriptionManager.prepareDictionary()
                             }
                         }
                     )) {
@@ -199,16 +229,16 @@ struct DictionarySettingsContent: View {
         .padding(.vertical, DS.Spacing.lg)
         .background(DS.Colors.settingsCardBorder.opacity(0.5))
         .cornerRadius(DS.CornerRadius.md)
-        .animation(DS.Animation.normal, value: TranscriptionManager.shared.isDictionaryInjectionEnabled)
+        .animation(DS.Animation.normal, value: dependencies.transcriptionManager.isDictionaryInjectionEnabled)
     }
     
     private var dictionaryStatusBadge: some View {
         HStack(spacing: DS.Spacing.sm) {
             Circle()
-                .fill(TranscriptionManager.shared.isDictionaryPrepared ? DS.Colors.success : DS.Colors.warning)
+                .fill(dependencies.transcriptionManager.isDictionaryPrepared ? DS.Colors.success : DS.Colors.warning)
                 .frame(width: DS.Spacing.sm, height: DS.Spacing.sm)
             
-            Text(TranscriptionManager.shared.isDictionaryPrepared ? "已就绪" : "待准备")
+            Text(dependencies.transcriptionManager.isDictionaryPrepared ? "已就绪" : "待准备")
                 .font(DS.Typography.captionSmall)
                 .foregroundStyle(DS.Colors.textSecondary)
         }
@@ -730,7 +760,7 @@ extension DictionarySettingsContent {
                 
                 Spacer()
                 
-                Text("\(VocabularyService.shared.items.count) 个")
+                Text("\(vocabularyService.items.count) 个")
                     .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.textSecondary)
                 

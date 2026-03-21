@@ -5,6 +5,63 @@ import ScreenCaptureKit
 
 // MARK: - Screenshot Manager
 
+@MainActor
+struct ScreenshotManagerDependencies {
+    let enhancementPath: () -> String
+    let copyEnhancedImageEnabled: () -> Bool
+    let resetBlurDiagnostics: () -> Void
+    let blurMainDispatchP95: () -> Double
+    let blurCoverage: () -> Bool
+    let captureScreen: (NSScreen) async -> NSImage?
+    let copyImageToPasteboard: (NSImage) -> Void
+    let openScreenCaptureSettings: () -> Void
+}
+
+@MainActor
+extension ScreenshotManagerDependencies {
+    static let live = ScreenshotManagerDependencies(
+        enhancementPath: {
+            switch ScreenshotSettings.shared.upscalingMode {
+            case .none:
+                return "none"
+            case .basic:
+                return "basic"
+            case .ai:
+                return "ai-fallback"
+            }
+        },
+        copyEnhancedImageEnabled: { ScreenshotSettings.shared.copyEnhancedImage },
+        resetBlurDiagnostics: {
+            if #available(macOS 12.3, *) {
+                ScreenCaptureBlurService.shared.resetDiagnostics()
+            }
+        },
+        blurMainDispatchP95: {
+            if #available(macOS 12.3, *) {
+                return ScreenCaptureBlurService.shared.getBlurMainDispatchP95()
+            }
+            return 0
+        },
+        blurCoverage: {
+            if #available(macOS 12.3, *) {
+                return ScreenCaptureBlurService.shared.coverageBlur
+            }
+            return false
+        },
+        captureScreen: { screen in
+            await ScreenCaptureService.shared.captureScreen(screen)
+        },
+        copyImageToPasteboard: { image in
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.writeObjects([image])
+        },
+        openScreenCaptureSettings: {
+            SystemAudioCaptureService.openScreenCaptureSettings()
+        }
+    )
+}
+
 /// 截图管理器
 /// 管理截图窗口的生命周期、持久化和恢复
 @MainActor
@@ -12,9 +69,10 @@ final class ScreenshotManager {
     
     // MARK: - Singleton
     
-    static let shared = ScreenshotManager()
+    static let shared = ScreenshotManager(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenshotManager")
+    private let dependencies: ScreenshotManagerDependencies
 
     // MARK: - Diagnostic Counters (R2-2)
 
@@ -32,6 +90,11 @@ final class ScreenshotManager {
 
     /// 覆盖标志：是否触发过 blur 路径（由 ScreenCaptureBlurService 设置）
     private var coverageBlur: Bool = false
+
+#if DEBUG
+    /// Debug 自动化上一次创建的截图（用于闭环清理，避免窗口叠加）
+    private var debugAutomationLastItemID: UUID?
+#endif
 
     // MARK: - Properties
 
@@ -72,7 +135,9 @@ final class ScreenshotManager {
     
     // MARK: - Init
     
-    private init() {}
+    private init(dependencies: ScreenshotManagerDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
@@ -80,28 +145,7 @@ final class ScreenshotManager {
     /// 使用自建选区 UI，精确获取选区坐标
     /// 再次触发时取消当前截图（toggle 行为）
     func captureRegion() async {
-        // R2-2: 重置本轮诊断状态
-        captureStartTime = CFAbsoluteTimeGetCurrent()
-        saveAllWriteTimes.removeAll()
-        coverageSaveAll = false
-        coverageBlur = false
-
-        // R2-2: 记录增强路径（基于当前设置）
-        let upscalingMode = ScreenshotSettings.shared.upscalingMode
-        switch upscalingMode {
-        case .none:
-            lastEnhancementPath = "none"
-        case .basic:
-            lastEnhancementPath = "basic"
-        case .ai:
-            // AI 当前应急禁用，会回退到 basic
-            lastEnhancementPath = "ai-fallback"
-        }
-
-        // 重置 blur service 诊断计数器
-        if #available(macOS 12.3, *) {
-            ScreenCaptureBlurService.shared.resetDiagnostics()
-        }
+        resetCaptureDiagnostics()
 
         logger.info("📸 [ScreenshotManager] captureRegion triggered")
         
@@ -140,102 +184,84 @@ final class ScreenshotManager {
         switch confirmMode {
         case .copy:
             // 直接复制到剪贴板，不创建窗口
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.writeObjects([croppedImage])
+            dependencies.copyImageToPasteboard(croppedImage)
             logger.info("📋 [ScreenshotManager] Screenshot copied to clipboard")
             return
             
         case .temporary, .pin:
             break // 继续创建窗口
         }
-        
-        // 4. 保存图片到文件
-        let itemId = UUID()
-        let imagePath = screenshotsDirectory.appendingPathComponent("\(itemId.uuidString).png")
-        
-        guard await saveImage(croppedImage, to: imagePath) else {
-            logger.error("❌ [ScreenshotManager] Failed to save image")
+
+        await persistAndShowScreenshot(
+            viewSelectionRect: viewSelectionRect,
+            croppedImage: croppedImage,
+            screenFrame: screenFrame,
+            confirmMode: confirmMode
+        )
+    }
+
+#if DEBUG
+    /// Debug-only：自动化脚本入口，固定区域截图（无需手动框选）
+    func debugCaptureForAutomation() async {
+        resetCaptureDiagnostics()
+
+        if let lastID = debugAutomationLastItemID,
+           let previousItem = items.first(where: { $0.id == lastID }) {
+            // 自动化闭环：每轮先清理上一次自动化截图，避免窗口叠加干扰验收
+            close(previousItem)
+            debugAutomationLastItemID = nil
+            logger.info("🧪 [DebugAutomation] cleaned previous automation screenshot")
+        }
+
+        // 自动化路径使用快速预检，避免系统权限弹窗打断后续回归轮次
+        guard hasScreenCapturePermissionForAutomation() else {
+            logger.warning("🚫 [DebugAutomation] Screen capture permission not granted (preflight)")
             return
         }
-        
-        // 5. 计算窗口位置
-        let screenSelectionRect = CGRect(
-            x: screenFrame.origin.x + viewSelectionRect.origin.x,
-            y: screenFrame.origin.y + viewSelectionRect.origin.y,
-            width: viewSelectionRect.width,
-            height: viewSelectionRect.height
+
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else {
+            logger.error("❌ [DebugAutomation] No screen available")
+            return
+        }
+
+        guard let fullImage = await dependencies.captureScreen(screen) else {
+            logger.error("❌ [DebugAutomation] Full screen capture failed")
+            return
+        }
+
+        let screenFrame = screen.frame
+        let targetWidth = min(screenFrame.width * 0.4, 640)
+        let targetHeight = min(screenFrame.height * 0.35, 360)
+        let viewSelectionRect = CGRect(
+            x: (screenFrame.width - targetWidth) / 2,
+            y: (screenFrame.height - targetHeight) / 2,
+            width: targetWidth,
+            height: targetHeight
         )
-        
-        let padding: CGFloat = ScreenshotContentView.paddingPerSide
-        let frame = CGRect(
-            x: screenSelectionRect.midX - (croppedImage.size.width + padding * 2) / 2,
-            y: screenSelectionRect.midY - (croppedImage.size.height + padding * 2) / 2,
-            width: croppedImage.size.width + padding * 2,
-            height: croppedImage.size.height + padding * 2
+
+        let imageSelectionRect = CGRect(
+            x: viewSelectionRect.origin.x * fullImage.size.width / screenFrame.width,
+            y: viewSelectionRect.origin.y * fullImage.size.height / screenFrame.height,
+            width: viewSelectionRect.width * fullImage.size.width / screenFrame.width,
+            height: viewSelectionRect.height * fullImage.size.height / screenFrame.height
         )
-        
-        // 6. 创建 ScreenshotItem
-        let item = ScreenshotItem(
-            id: itemId,
-            imagePath: imagePath.path,
-            frame: frame,
-            originalSize: croppedImage.size
+
+        let croppedImage = cropImage(fullImage, to: imageSelectionRect)
+        let itemCountBefore = items.count
+        await persistAndShowScreenshot(
+            viewSelectionRect: viewSelectionRect,
+            croppedImage: croppedImage,
+            screenFrame: screenFrame,
+            confirmMode: .temporary
         )
-        item.cachedImage = croppedImage
-        
-        // 如果是 Pin 模式，直接标记为 Pinned
-        if confirmMode == .pin {
-            item.isPinned = true
-            // 保存当前显示器名称
-            let mouseLocation = NSEvent.mouseLocation
-            if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) {
-                item.screenLocalizedName = screen.localizedName
-            }
-        }
-        
-        items.append(item)
-        
-        // 7. 创建并显示窗口
-        showWindow(for: item)
-        
-        // 如果是 Pin 模式，保存状态
-        if confirmMode == .pin {
-            saveAll()
+
+        if items.count > itemCountBefore, let lastItem = items.last {
+            debugAutomationLastItemID = lastItem.id
         }
 
-        // R2-2: 计算并记录所有诊断指标
-        let captureLatencyMs = (CFAbsoluteTimeGetCurrent() - self.captureStartTime) * 1000
-
-        // 收集 saveAll 写入耗时 (P95)
-        let saveAllWriteP95: Double
-        if !self.saveAllWriteTimes.isEmpty {
-            let sorted = self.saveAllWriteTimes.sorted()
-            let p95Index = Int(Double(sorted.count) * 0.95)
-            saveAllWriteP95 = sorted[min(p95Index, sorted.count - 1)]
-        } else {
-            saveAllWriteP95 = 0
-        }
-
-        // 收集 blur 主线程派发耗时 (P95)
-        let blurMainDispatchP95: Double
-        if #available(macOS 12.3, *) {
-            blurMainDispatchP95 = ScreenCaptureBlurService.shared.getBlurMainDispatchP95()
-            self.coverageBlur = ScreenCaptureBlurService.shared.coverageBlur
-        } else {
-            blurMainDispatchP95 = 0
-        }
-
-        logger.info("""
-            ✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode, privacy: .public)): \(itemId, privacy: .public) \
-            [capture_latency: \(String(format: "%.0f", captureLatencyMs), privacy: .public)ms, \
-            enhancement_path: \(self.lastEnhancementPath, privacy: .public), \
-            save_all_write_p95: \(String(format: "%.1f", saveAllWriteP95), privacy: .public)ms, \
-            blur_main_dispatch_p95: \(String(format: "%.1f", blurMainDispatchP95), privacy: .public)ms, \
-            coverage_saveall: \(self.coverageSaveAll ? 1 : 0, privacy: .public), \
-            coverage_blur: \(self.coverageBlur ? 1 : 0, privacy: .public)]
-            """)
+        logger.info("🧪 [DebugAutomation] screenshot.capture complete")
     }
+#endif
     
     /// 显示选区 UI 并等待用户选择
     /// - Returns: (视图内选区坐标, 裁剪后的图片, 确认模式) 或 nil（用户取消）
@@ -253,7 +279,7 @@ final class ScreenshotManager {
             // 异步获取截图并更新背景
             Task(priority: .userInitiated) {
                 logger.info("📸 [ScreenshotManager] Starting async screen capture...")
-                if let image = await ScreenCaptureService.shared.captureScreen(screen) {
+                if let image = await self.dependencies.captureScreen(screen) {
                     logger.info("✅ [ScreenshotManager] Async capture complete, updating UI")
                     if selectionWindow.isVisible {
                         selectionWindow.setBackgroundImage(image)
@@ -275,6 +301,97 @@ final class ScreenshotManager {
 
             selectionWindow.show()
         }
+    }
+
+    private func persistAndShowScreenshot(
+        viewSelectionRect: CGRect,
+        croppedImage: NSImage,
+        screenFrame: CGRect,
+        confirmMode: RegionSelectionWindow.ConfirmMode
+    ) async {
+        let itemId = UUID()
+        let imagePath = screenshotsDirectory.appendingPathComponent("\(itemId.uuidString).png")
+
+        guard await saveImage(croppedImage, to: imagePath) else {
+            logger.error("❌ [ScreenshotManager] Failed to save image")
+            return
+        }
+
+        let screenSelectionRect = CGRect(
+            x: screenFrame.origin.x + viewSelectionRect.origin.x,
+            y: screenFrame.origin.y + viewSelectionRect.origin.y,
+            width: viewSelectionRect.width,
+            height: viewSelectionRect.height
+        )
+
+        let padding: CGFloat = ScreenshotContentView.paddingPerSide
+        let frame = CGRect(
+            x: screenSelectionRect.midX - (croppedImage.size.width + padding * 2) / 2,
+            y: screenSelectionRect.midY - (croppedImage.size.height + padding * 2) / 2,
+            width: croppedImage.size.width + padding * 2,
+            height: croppedImage.size.height + padding * 2
+        )
+
+        let item = ScreenshotItem(
+            id: itemId,
+            imagePath: imagePath.path,
+            frame: frame,
+            originalSize: croppedImage.size
+        )
+        item.cachedImage = croppedImage
+
+        if confirmMode == .pin {
+            item.isPinned = true
+            let mouseLocation = NSEvent.mouseLocation
+            if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) {
+                item.screenLocalizedName = screen.localizedName
+            }
+        }
+
+        items.append(item)
+        showWindow(for: item)
+
+        if confirmMode == .pin {
+            saveAll()
+        }
+
+        let captureLatencyMs = (CFAbsoluteTimeGetCurrent() - self.captureStartTime) * 1000
+        let saveAllWriteP95: Double
+        if !self.saveAllWriteTimes.isEmpty {
+            let sorted = self.saveAllWriteTimes.sorted()
+            let p95Index = Int(Double(sorted.count) * 0.95)
+            saveAllWriteP95 = sorted[min(p95Index, sorted.count - 1)]
+        } else {
+            saveAllWriteP95 = 0
+        }
+
+        let blurMainDispatchP95: Double
+        blurMainDispatchP95 = dependencies.blurMainDispatchP95()
+        self.coverageBlur = dependencies.blurCoverage()
+
+        logger.info("""
+            ✅ [ScreenshotManager] Screenshot created (mode: \(confirmMode, privacy: .public)): \(itemId, privacy: .public) \
+            [capture_latency: \(String(format: "%.0f", captureLatencyMs), privacy: .public)ms, \
+            enhancement_path: \(self.lastEnhancementPath, privacy: .public), \
+            save_all_write_p95: \(String(format: "%.1f", saveAllWriteP95), privacy: .public)ms, \
+            blur_main_dispatch_p95: \(String(format: "%.1f", blurMainDispatchP95), privacy: .public)ms, \
+            coverage_saveall: \(self.coverageSaveAll ? 1 : 0, privacy: .public), \
+            coverage_blur: \(self.coverageBlur ? 1 : 0, privacy: .public)]
+            """)
+    }
+
+    private func cropImage(_ image: NSImage, to imageRect: CGRect) -> NSImage {
+        let rect = imageRect.integral
+        let croppedImage = NSImage(size: rect.size)
+        croppedImage.lockFocus()
+        image.draw(
+            at: NSPoint(x: -rect.origin.x, y: -rect.origin.y),
+            from: NSRect(origin: .zero, size: image.size),
+            operation: .copy,
+            fraction: 1.0
+        )
+        croppedImage.unlockFocus()
+        return croppedImage
     }
     
     /// Pin 截图到当前 Space
@@ -371,7 +488,8 @@ final class ScreenshotManager {
         let imageToUse: NSImage?
         
         // 如果设置开启且提供了增强图片，使用增强图片
-        if ScreenshotSettings.shared.copyEnhancedImage, let enhanced = enhancedImage {
+        if dependencies.enhancementPath() != "none",
+           dependencies.copyEnhancedImageEnabled(), let enhanced = enhancedImage {
             imageToUse = enhanced
             logger.info("📋 [ScreenshotManager] Using enhanced image for clipboard")
         } else {
@@ -381,9 +499,7 @@ final class ScreenshotManager {
         
         guard let image = imageToUse else { return }
         
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
+        dependencies.copyImageToPasteboard(image)
         
         logger.info("📋 [ScreenshotManager] Copied to clipboard: \(item.id)")
     }
@@ -618,9 +734,14 @@ final class ScreenshotManager {
     }
     
     // MARK: - Permission
+
+    /// Debug-only 快速权限预检：不触发系统请求流程，避免自动化链路被弹窗阻塞。
+    private func hasScreenCapturePermissionForAutomation() -> Bool {
+        CGPreflightScreenCaptureAccess()
+    }
     
     /// 检查并请求屏幕录制权限
-    private func checkAndRequestPermission() async -> Bool {
+    private func checkAndRequestPermission(shouldShowGuide: Bool = true) async -> Bool {
         // macOS 15+ 使用 SCShareableContent 检查
         if #available(macOS 15.0, *) {
             do {
@@ -628,7 +749,9 @@ final class ScreenshotManager {
                 return true
             } catch {
                 print("📸 [ScreenshotManager] Permission check failed: \(error.localizedDescription)")
-                await showPermissionGuide()
+                if shouldShowGuide {
+                    await showPermissionGuide()
+                }
                 return false
             }
         }
@@ -640,7 +763,9 @@ final class ScreenshotManager {
         
         // 请求权限
         CGRequestScreenCaptureAccess()
-        await showPermissionGuide()
+        if shouldShowGuide {
+            await showPermissionGuide()
+        }
         return false
     }
     
@@ -664,7 +789,16 @@ final class ScreenshotManager {
         
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
-            SystemAudioCaptureService.openScreenCaptureSettings()
+            dependencies.openScreenCaptureSettings()
         }
+    }
+
+    private func resetCaptureDiagnostics() {
+        captureStartTime = CFAbsoluteTimeGetCurrent()
+        saveAllWriteTimes.removeAll()
+        coverageSaveAll = false
+        coverageBlur = false
+        lastEnhancementPath = dependencies.enhancementPath()
+        dependencies.resetBlurDiagnostics()
     }
 }

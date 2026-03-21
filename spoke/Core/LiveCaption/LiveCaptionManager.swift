@@ -33,6 +33,16 @@ struct CaptionSegment: Identifiable, Equatable, Codable {
 
 // MARK: - Live Caption Manager
 
+@MainActor
+struct LiveCaptionManagerDependencies {
+    let translator: TranslationService
+    let appCaptureService: AppAudioCaptureService
+    let systemCaptureService: SystemAudioCaptureService
+    let transcriptionModelManager: TranscriptionModelManager
+    let dictionaryService: DictionaryService
+    let postTranslationUpdate: () -> Void
+}
+
 /// 实时字幕管理器
 /// 整合音频捕获、转录、翻译
 /// 使用 SpeechAnalyzerProvider (macOS 26+) 获得最佳识别效果
@@ -41,10 +51,22 @@ final class LiveCaptionManager: ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = LiveCaptionManager()
+    static let shared = LiveCaptionManager(
+        dependencies: LiveCaptionManagerDependencies(
+            translator: .shared,
+            appCaptureService: .shared,
+            systemCaptureService: .shared,
+            transcriptionModelManager: .shared,
+            dictionaryService: .shared,
+            postTranslationUpdate: {
+                NotificationCenter.default.post(name: .translationUpdated, object: nil)
+            }
+        )
+    )
     
     // MARK: - Properties
     
+    private let dependencies: LiveCaptionManagerDependencies
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LiveCaption")
     
     /// 是否激活
@@ -80,7 +102,7 @@ final class LiveCaptionManager: ObservableObject {
     /// 是否正在重试连接（UI 显示用）
     var isRetrying: Bool {
         if #available(macOS 14.0, *) {
-            return AppAudioCaptureService.shared.isRetrying
+            return dependencies.appCaptureService.isRetrying
         }
         return false
     }
@@ -135,8 +157,6 @@ final class LiveCaptionManager: ObservableObject {
     /// 回退：使用旧的 LiveCaptionTranscriber (macOS < 26)
     private var legacyTranscriber: LiveCaptionTranscriber?
     
-    private let translator = TranslationService.shared
-    
     /// 内存中最大保留段落数（用于 UI 显示）
     /// 文字很轻量，可以保留较多用于回看
     private let maxSegmentsInMemory = 500
@@ -162,7 +182,10 @@ final class LiveCaptionManager: ObservableObject {
     
     // MARK: - Init
     
-    private init() {
+    private init(
+        dependencies: LiveCaptionManagerDependencies
+    ) {
+        self.dependencies = dependencies
         loadSegments()
     }
     
@@ -233,7 +256,7 @@ final class LiveCaptionManager: ObservableObject {
     /// 使用应用选择器模式 (macOS 26+ 因为依赖 SpeechAnalyzerProvider)
     @available(macOS 26.0, *)
     private func startWithAppPicker() async throws {
-        let appCapture = AppAudioCaptureService.shared
+        let appCapture = dependencies.appCaptureService
         
         // 设置选择完成回调
         appCapture.onSelectionComplete = { [weak self] success in
@@ -300,7 +323,7 @@ final class LiveCaptionManager: ObservableObject {
         try await setupSpeechAnalyzer(withAppCapture: false)
         
         // 启动全局音频捕获
-        let capture = SystemAudioCaptureService.shared
+        let capture = dependencies.systemCaptureService
         do {
             try await capture.startCapture()
         } catch {
@@ -315,7 +338,7 @@ final class LiveCaptionManager: ObservableObject {
     @available(macOS 26.0, *)
     private func setupSpeechAnalyzer(withAppCapture: Bool) async throws {
         // 获取用户配置的实时字幕模型
-        let modelManager = TranscriptionModelManager.shared
+        let modelManager = dependencies.transcriptionModelManager
         let liveCaptionModelId = modelManager.settings.liveCaptionModelId
         let modelSettings = modelManager.settings.settings(for: liveCaptionModelId)
         
@@ -349,7 +372,7 @@ final class LiveCaptionManager: ObservableObject {
         
         // 根据模式设置音频回调
         if withAppCapture {
-            let appCapture = AppAudioCaptureService.shared
+            let appCapture = dependencies.appCaptureService
             appCapture.onPCMBuffer = { [weak self] buffer in
                 guard let self = self else { return }
                 do {
@@ -359,7 +382,7 @@ final class LiveCaptionManager: ObservableObject {
                 }
             }
         } else {
-            let capture = SystemAudioCaptureService.shared
+            let capture = dependencies.systemCaptureService
             capture.onPCMBuffer = { [weak self] buffer in
                 guard let self = self else { return }
                 do {
@@ -407,7 +430,7 @@ final class LiveCaptionManager: ObservableObject {
         }
         
         // 启动音频捕获
-        let capture = SystemAudioCaptureService.shared
+        let capture = dependencies.systemCaptureService
         
         capture.onAudioBuffer = { [weak self] buffer in
             self?.legacyTranscriber?.processAudioBuffer(buffer)
@@ -433,7 +456,7 @@ final class LiveCaptionManager: ObservableObject {
         transcriber.updateLocale(Locale(identifier: sourceLanguage))
         
         // 注入词典词汇
-        let dictionaryWords = DictionaryService.shared.getAllWords()
+        let dictionaryWords = dependencies.dictionaryService.getAllWords()
         if !dictionaryWords.isEmpty {
             transcriber.contextualStrings = dictionaryWords
             logger.info("📚 Injected \(dictionaryWords.count) dictionary words")
@@ -462,11 +485,11 @@ final class LiveCaptionManager: ObservableObject {
         // 停止音频捕获（根据当前模式）
         if captureMode == CaptureMode.appPicker.rawValue {
             if #available(macOS 14.0, *) {
-                await AppAudioCaptureService.shared.stopCapture()
+                await dependencies.appCaptureService.stopCapture()
             }
         } else {
             if #available(macOS 12.3, *) {
-                await SystemAudioCaptureService.shared.stopCapture()
+                await dependencies.systemCaptureService.stopCapture()
             }
         }
         
@@ -491,7 +514,7 @@ final class LiveCaptionManager: ObservableObject {
         
         if #available(macOS 14.0, *) {
             logger.info("🔄 Re-selecting app...")
-            AppAudioCaptureService.shared.reselectApp()
+            dependencies.appCaptureService.reselectApp()
         }
     }
     
@@ -686,7 +709,7 @@ final class LiveCaptionManager: ObservableObject {
     
     /// 对流式文本进行实时翻译（300ms 防抖）
     private func translateVolatileText(_ text: String) {
-        guard translationEnabled, translator.isAvailable else { return }
+        guard translationEnabled, dependencies.translator.isAvailable else { return }
         
         // 获取当前版本号
         let currentVersion = lineBuffer.currentVolatileVersion
@@ -699,7 +722,7 @@ final class LiveCaptionManager: ObservableObject {
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
             
-            if let translated = await translator.translate(text) {
+            if let translated = await dependencies.translator.translate(text) {
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     lineBuffer.updatePendingTranslation(translated, version: currentVersion)
@@ -711,18 +734,18 @@ final class LiveCaptionManager: ObservableObject {
     /// 翻译并更新 Buffer 中的 Item（带重试）
     /// - Returns: 翻译结果，用于复用到历史记录
     private func translateAndUpdateBuffer(itemId: UUID, text: String) async -> String? {
-        guard translationEnabled, translator.isAvailable else { return nil }
+        guard translationEnabled, dependencies.translator.isAvailable else { return nil }
         
         // 最多重试 3 次
         for attempt in 1...3 {
             // 检查任务是否被取消（如用户关闭字幕窗口）
             guard !Task.isCancelled else { return nil }
             
-            if let translated = await translator.translate(text) {
+            if let translated = await dependencies.translator.translate(text) {
                 await MainActor.run {
                     lineBuffer.updateTranslation(id: itemId, translation: translated)
                     // 🔥 翻译完成后发送通知，触发强制滚动
-                    NotificationCenter.default.post(name: .translationUpdated, object: nil)
+                    dependencies.postTranslationUpdate()
                 }
                 return translated
             }

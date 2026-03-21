@@ -1,0 +1,35 @@
+{
+  "issue_id": "TEST-010",
+  "title": "架构回归与 Conditional Go 复核",
+  "mode": "exec",
+  "goal": "在前序架构治理完成后，统一复跑门禁、复核 issue 状态，并输出最终 Conditional Go 复核结论。",
+  "scope": [
+    "autoresearch/status/conditional-go-architecture.json",
+    "docs/architecture/current-state-audit.md",
+    "docs/architecture/risks-and-recommendations.md",
+    "issues/2026-03-19_20-55-00-conditional-go-architecture.csv"
+  ],
+  "metric": "remaining_conditional_go_blockers",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue TEST-010",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 6,
+  "run_tag": "TEST-010",
+  "depends_on": [
+    "AG-010",
+    "QG-010",
+    "APP-010",
+    "APP-020",
+    "ARCH-010",
+    "ARCH-020",
+    "ARCH-030",
+    "GOV-010"
+  ],
+  "worktree_name": "test-010-conditional-go-review",
+  "artifacts_dir": "autoresearch/runs/TEST-010",
+  "stop_condition": "metric=0 且 guard 全通过，或确认存在硬 blocker",
+  "notes": "该 issue 是最终 gate；其 metric 基于队列状态与最终复核产物。"
+}

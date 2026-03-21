@@ -1,6 +1,39 @@
 import AppKit
 import SwiftUI
 
+@MainActor
+struct CardAttachmentViewDependencies {
+    let imageCache: AttachmentImageCache
+    let removeAttachment: (UUID, UUID) -> Void
+    let copyImage: (NSImage) -> Void
+    let saveImageToDesktop: (NSImage, UUID) -> Void
+}
+
+@MainActor
+extension CardAttachmentViewDependencies {
+    static let live = CardAttachmentViewDependencies(
+        imageCache: .shared,
+        removeAttachment: { attachmentId, cardId in
+            MessagePanelState.shared.removeAttachment(attachmentId, from: cardId)
+        },
+        copyImage: { image in
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.writeObjects([image])
+        },
+        saveImageToDesktop: { image, attachmentId in
+            guard let tiffData = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmap.representation(using: .png, properties: [:]) else { return }
+
+            let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
+            let fileName = "attachment_\(attachmentId.uuidString.prefix(8)).png"
+            let fileURL = desktopURL.appendingPathComponent(fileName)
+            try? pngData.write(to: fileURL)
+        }
+    )
+}
+
 // MARK: - Card Attachment View
 
 /// 卡片附件视图
@@ -11,6 +44,7 @@ struct CardAttachmentView: View {
     let attachments: [CardAttachment]
     let cardId: UUID
     let isExpanded: Bool
+    private let dependencies: CardAttachmentViewDependencies
     
     /// 缩略图固定高度
     private let thumbnailHeight: CGFloat = 60
@@ -18,6 +52,32 @@ struct CardAttachmentView: View {
     private let spacing: CGFloat = 6
     /// 可用宽度（卡片宽度 - padding）
     private let availableWidth: CGFloat = MessagePanelState.panelWidth - 28 - 16  // padding + 边距
+
+    init(
+        attachments: [CardAttachment],
+        cardId: UUID,
+        isExpanded: Bool,
+        dependencies: CardAttachmentViewDependencies
+    ) {
+        self.attachments = attachments
+        self.cardId = cardId
+        self.isExpanded = isExpanded
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init(
+        attachments: [CardAttachment],
+        cardId: UUID,
+        isExpanded: Bool
+    ) {
+        self.init(
+            attachments: attachments,
+            cardId: cardId,
+            isExpanded: isExpanded,
+            dependencies: .live
+        )
+    }
     
     var body: some View {
         if attachments.isEmpty {
@@ -41,7 +101,8 @@ struct CardAttachmentView: View {
                     CardAttachmentThumbnail(
                         attachment: attachment,
                         cardId: cardId,
-                        fixedHeight: thumbnailHeight
+                        fixedHeight: thumbnailHeight,
+                        dependencies: dependencies
                     )
                 }
                 Spacer(minLength: 0)
@@ -73,7 +134,8 @@ struct CardAttachmentView: View {
                     attachment: attachment,
                     cardId: cardId,
                     fixedHeight: thumbnailHeight,
-                    showDeleteButton: true
+                    showDeleteButton: true,
+                    dependencies: dependencies
                 )
             }
         }
@@ -201,11 +263,28 @@ struct CardAttachmentThumbnail: View {
     /// 最大宽度模式（传统模式）
     var maxWidth: CGFloat = 120
     var showDeleteButton: Bool = false
+    private let dependencies: CardAttachmentViewDependencies
     
     @State private var thumbnail: NSImage?
     @State private var isHovered = false
     @State private var showFullImage = false
-    
+
+    init(
+        attachment: CardAttachment,
+        cardId: UUID,
+        fixedHeight: CGFloat? = nil,
+        maxWidth: CGFloat = 120,
+        showDeleteButton: Bool = false,
+        dependencies: CardAttachmentViewDependencies
+    ) {
+        self.attachment = attachment
+        self.cardId = cardId
+        self.fixedHeight = fixedHeight
+        self.maxWidth = maxWidth
+        self.showDeleteButton = showDeleteButton
+        self.dependencies = dependencies
+    }
+
     /// 计算显示尺寸
     private var displaySize: CGSize {
         let ratio = attachment.aspectRatio
@@ -255,7 +334,7 @@ struct CardAttachmentThumbnail: View {
             // 删除按钮（hover 时显示）
             if showDeleteButton && isHovered {
                 Button {
-                    MessagePanelState.shared.removeAttachment(attachment.id, from: cardId)
+                    dependencies.removeAttachment(attachment.id, cardId)
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
@@ -297,42 +376,36 @@ struct CardAttachmentThumbnail: View {
             Divider()
             
             Button(role: .destructive) {
-                MessagePanelState.shared.removeAttachment(attachment.id, from: cardId)
+                dependencies.removeAttachment(attachment.id, cardId)
             } label: {
                 Label("删除", systemImage: "trash")
             }
         }
         .popover(isPresented: $showFullImage, arrowEdge: .trailing) {
-            FullImagePopover(attachment: attachment, isPresented: $showFullImage)
+            FullImagePopover(
+                attachment: attachment,
+                isPresented: $showFullImage,
+                dependencies: dependencies
+            )
         }
     }
     
     private func loadThumbnail() {
         Task {
-            if let image = AttachmentImageCache.shared.thumbnail(for: attachment, maxSize: maxWidth * 2) {
+            if let image = dependencies.imageCache.thumbnail(for: attachment, maxSize: maxWidth * 2) {
                 thumbnail = image
             }
         }
     }
     
     private func copyToClipboard() {
-        guard let image = AttachmentImageCache.shared.original(for: attachment) else { return }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
+        guard let image = dependencies.imageCache.original(for: attachment) else { return }
+        dependencies.copyImage(image)
     }
     
     private func saveToDesktop() {
-        guard let image = AttachmentImageCache.shared.original(for: attachment),
-              let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else { return }
-        
-        let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
-        let fileName = "attachment_\(attachment.id.uuidString.prefix(8)).png"
-        let fileURL = desktopURL.appendingPathComponent(fileName)
-        
-        try? pngData.write(to: fileURL)
+        guard let image = dependencies.imageCache.original(for: attachment) else { return }
+        dependencies.saveImageToDesktop(image, attachment.id)
     }
 }
 
@@ -342,8 +415,19 @@ struct CardAttachmentThumbnail: View {
 struct FullImagePopover: View {
     let attachment: CardAttachment
     @Binding var isPresented: Bool
+    private let dependencies: CardAttachmentViewDependencies
     @State private var image: NSImage?
-    
+
+    init(
+        attachment: CardAttachment,
+        isPresented: Binding<Bool>,
+        dependencies: CardAttachmentViewDependencies
+    ) {
+        self.attachment = attachment
+        self._isPresented = isPresented
+        self.dependencies = dependencies
+    }
+
     /// 计算合适的显示尺寸
     private var displaySize: CGSize {
         let maxWidth: CGFloat = 400
@@ -409,28 +493,18 @@ struct FullImagePopover: View {
         }
         .padding(12)
         .onAppear {
-            image = AttachmentImageCache.shared.original(for: attachment)
+            image = dependencies.imageCache.original(for: attachment)
         }
     }
     
     private func copyToClipboard() {
         guard let image = image else { return }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
+        dependencies.copyImage(image)
     }
     
     private func saveToDesktop() {
-        guard let image = image,
-              let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else { return }
-        
-        let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
-        let fileName = "attachment_\(attachment.id.uuidString.prefix(8)).png"
-        let fileURL = desktopURL.appendingPathComponent(fileName)
-        
-        try? pngData.write(to: fileURL)
+        guard let image = image else { return }
+        dependencies.saveImageToDesktop(image, attachment.id)
     }
 }
 

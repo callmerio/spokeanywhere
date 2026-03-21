@@ -1,13 +1,174 @@
 import SwiftUI
 import Vision
 
+@MainActor
+struct ScreenshotActionDependencies {
+    let togglePin: (ScreenshotItem) -> Void
+    let toggleLock: (ScreenshotItem) -> Void
+    let toggleMark: (ScreenshotItem) -> Void
+    let withWindow: (UUID, (ScreenshotWindow) -> Void) -> Void
+    let updateWindowCollectionBehavior: (UUID) -> Void
+    let updateWindowMovable: (UUID) -> Void
+    let copyImage: (ScreenshotItem, NSImage?) -> Void
+    let copyRawImage: (NSImage) -> Void
+    let closeWindow: (ScreenshotItem) -> Void
+    let startQuickAsk: (NSImage) -> Void
+    let enhanceImage: @MainActor (NSImage, CGSize) -> NSImage?
+    let enhanceBasic: @Sendable (NSImage, CGSize) async -> NSImage?
+    let enhanceAIHighRes: @Sendable (NSImage) async -> NSImage?
+    let scaleImage: (NSImage, CGSize, CGFloat) -> NSImage?
+    let shouldShowEnhancedCopy: () -> Bool
+    let showSelectionToolbar: (SelectionContext, CGPoint) -> Void
+    let saveWindowState: () -> Void
+    let notificationCenter: NotificationCenter
+    let copyText: (String) -> Void
+}
+
+@MainActor
+extension ScreenshotActionDependencies {
+    private static func toggleAction(
+        isEnabled: @escaping (ScreenshotItem) -> Bool,
+        enable: @escaping (ScreenshotManager, ScreenshotItem) -> Void,
+        disable: @escaping (ScreenshotManager, ScreenshotItem) -> Void,
+        manager: ScreenshotManager
+    ) -> (ScreenshotItem) -> Void {
+        { item in
+            if isEnabled(item) {
+                disable(manager, item)
+            } else {
+                enable(manager, item)
+            }
+        }
+    }
+
+    private static func copyImageToPasteboard(_ image: NSImage, pasteboard: NSPasteboard) {
+        pasteboard.clearContents()
+        pasteboard.writeObjects([image])
+    }
+
+    private static func copyTextToPasteboard(_ text: String, pasteboard: NSPasteboard) {
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+    }
+
+    private static func screenshotWindow(for itemID: UUID) -> ScreenshotWindow? {
+        NSApp.windows
+            .compactMap { $0 as? ScreenshotWindow }
+            .first(where: { $0.item.id == itemID })
+    }
+
+    private static func withWindow(_ itemID: UUID, perform update: (ScreenshotWindow) -> Void) {
+        guard let window = screenshotWindow(for: itemID) else {
+            return
+        }
+        update(window)
+    }
+
+    static let live: ScreenshotActionDependencies = {
+        let screenshotManager = ScreenshotManager.shared
+        let quickAskService = QuickAskService.shared
+        let imageEnhancementService = ImageEnhancementService.shared
+        let screenshotSettings = ScreenshotSettings.shared
+        let selectionToolbarState = SelectionToolbarState.shared
+        let selectionToolbarManager = SelectionToolbarManager.shared
+        let pasteboard = NSPasteboard.general
+
+        return ScreenshotActionDependencies(
+            togglePin: Self.toggleAction(
+                isEnabled: \.isPinned,
+                enable: { manager, item in manager.pin(item) },
+                disable: { manager, item in manager.unpin(item) },
+                manager: screenshotManager
+            ),
+            toggleLock: Self.toggleAction(
+                isEnabled: \.isLocked,
+                enable: { manager, item in manager.lock(item) },
+                disable: { manager, item in manager.unlock(item) },
+                manager: screenshotManager
+            ),
+            toggleMark: Self.toggleAction(
+                isEnabled: \.isMarked,
+                enable: { manager, item in manager.mark(item) },
+                disable: { manager, item in manager.unmark(item) },
+                manager: screenshotManager
+            ),
+            withWindow: { itemID, update in
+                Self.withWindow(itemID, perform: update)
+            },
+            updateWindowCollectionBehavior: { itemID in
+                Self.withWindow(itemID) { window in
+                    window.updateCollectionBehavior()
+                }
+            },
+            updateWindowMovable: { itemID in
+                Self.withWindow(itemID) { window in
+                    window.updateMovable()
+                }
+            },
+            copyImage: { item, enhancedImage in
+                screenshotManager.copyToClipboard(item, enhancedImage: enhancedImage)
+            },
+            copyRawImage: { image in
+                Self.copyImageToPasteboard(image, pasteboard: pasteboard)
+            },
+            closeWindow: { item in
+                screenshotManager.close(item)
+            },
+            startQuickAsk: { image in
+                quickAskService.startSession()
+                quickAskService.state.addScreenshot(image)
+            },
+            enhanceImage: { image, targetSize in
+                imageEnhancementService.enhance(image, to: targetSize)
+            },
+            enhanceBasic: { image, targetSize in
+                await imageEnhancementService.enhanceBasic(image, to: targetSize)
+            },
+            enhanceAIHighRes: { image in
+                await imageEnhancementService.enhanceAIHighResAsync(image)
+            },
+            scaleImage: { image, targetSize, backingScale in
+                imageEnhancementService.scaleNSImage(image, to: targetSize, backingScale: backingScale)
+            },
+            shouldShowEnhancedCopy: {
+                screenshotSettings.upscalingMode != .none
+            },
+            showSelectionToolbar: { context, point in
+                selectionToolbarState.show(with: context)
+                selectionToolbarManager.show(at: point)
+            },
+            saveWindowState: {
+                screenshotManager.saveAll()
+            },
+            notificationCenter: .default,
+            copyText: { text in
+                Self.copyTextToPasteboard(text, pasteboard: pasteboard)
+            }
+        )
+    }()
+}
+
 // MARK: - Screenshot View
 
 /// 截图视图（SwiftUI）
 struct ScreenshotView: View {
     
     @Bindable var item: ScreenshotItem
+    private let dependencies: ScreenshotActionDependencies
     @State private var isHovered = false
+
+    init(
+        item: ScreenshotItem,
+        dependencies: ScreenshotActionDependencies
+    ) {
+        self.item = item
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init(item: ScreenshotItem) {
+        self.init(item: item, dependencies: .live)
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -29,7 +190,7 @@ struct ScreenshotView: View {
             
             // Action Strip (hover 时显示)
             if isHovered {
-                ActionStripView(item: item)
+                ActionStripView(item: item, dependencies: dependencies)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             
@@ -56,9 +217,7 @@ struct ScreenshotView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .shadow(color: DesignTokens.Colors.overlayDark, radius: 8, x: 0, y: 4)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
-            }
+            setHoverState(hovering)
         }
         .contextMenu {
             contextMenuItems
@@ -69,92 +228,103 @@ struct ScreenshotView: View {
     
     @ViewBuilder
     private var contextMenuItems: some View {
-        Button {
-            togglePin()
-        } label: {
-            Label(item.isPinned ? "Unpin" : "Pin to Space", systemImage: item.isPinned ? "pin.slash" : "pin")
-        }
+        contextMenuButton(pinMenuTitle, systemImage: pinMenuImage, action: togglePin)
         
-        Button {
-            toggleLock()
-        } label: {
-            Label(item.isLocked ? "Unlock" : "Lock", systemImage: item.isLocked ? "lock.open" : "lock")
-        }
+        contextMenuButton(lockMenuTitle, systemImage: lockMenuImage, action: toggleLock)
         
         Divider()
         
-        Button {
-            copyImage()
-        } label: {
-            Label("Copy Image", systemImage: "doc.on.doc")
-        }
+        contextMenuButton("Copy Image", systemImage: "doc.on.doc", action: copyImage)
         
-        Button {
-            performOCR()
-        } label: {
-            Label("OCR", systemImage: "text.viewfinder")
-        }
+        contextMenuButton("OCR", systemImage: "text.viewfinder", action: performOCR)
         
-        Button {
-            openQuickAsk()
-        } label: {
-            Label("Quick Ask", systemImage: "sparkles")
-        }
+        contextMenuButton("Quick Ask", systemImage: "sparkles", action: openQuickAsk)
         
         Divider()
         
-        Button(role: .destructive) {
-            closeWindow()
-        } label: {
-            Label("Close", systemImage: "xmark")
-        }
+        contextMenuButton("Close", systemImage: "xmark", role: .destructive, action: closeWindow)
     }
     
     // MARK: - Actions
+
+    private var pinMenuTitle: String {
+        item.isPinned ? "Unpin" : "Pin to Space"
+    }
+
+    private var pinMenuImage: String {
+        item.isPinned ? "pin.slash" : "pin"
+    }
+
+    private var lockMenuTitle: String {
+        item.isLocked ? "Unlock" : "Lock"
+    }
+
+    private var lockMenuImage: String {
+        item.isLocked ? "lock.open" : "lock"
+    }
+
+    @ViewBuilder
+    private func contextMenuButton(
+        _ title: String,
+        systemImage: String,
+        role: ButtonRole? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(role: role, action: action) {
+            Label(title, systemImage: systemImage)
+        }
+    }
+
+    private func setHoverState(_ hovering: Bool) {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            isHovered = hovering
+        }
+    }
+
+    private func performItemAction(
+        _ action: (ScreenshotItem) -> Void,
+        synchronizeWindow update: ((UUID) -> Void)? = nil
+    ) {
+        action(item)
+        update?(item.id)
+    }
     
     private func togglePin() {
-        if item.isPinned {
-            ScreenshotManager.shared.unpin(item)
-        } else {
-            ScreenshotManager.shared.pin(item)
-        }
-        
-        // 更新窗口行为
-        if let window = NSApp.windows.first(where: { ($0 as? ScreenshotWindow)?.item.id == item.id }) as? ScreenshotWindow {
-            window.updateCollectionBehavior()
-        }
+        performItemAction(dependencies.togglePin, synchronizeWindow: dependencies.updateWindowCollectionBehavior)
     }
     
     private func toggleLock() {
-        if item.isLocked {
-            ScreenshotManager.shared.unlock(item)
-        } else {
-            ScreenshotManager.shared.lock(item)
-        }
-        
-        // 更新窗口可拖动状态
-        if let window = NSApp.windows.first(where: { ($0 as? ScreenshotWindow)?.item.id == item.id }) as? ScreenshotWindow {
-            window.updateMovable()
-        }
+        performItemAction(dependencies.toggleLock, synchronizeWindow: dependencies.updateWindowMovable)
     }
     
     private func copyImage() {
-        ScreenshotManager.shared.copyToClipboard(item)
+        dependencies.copyImage(item, nil)
+    }
+
+    private func withLoadedImage(_ action: (NSImage) -> Void) {
+        guard let image = item.loadImage() else {
+            return
+        }
+        action(image)
+    }
+
+    private func withLoadedCGImage(_ action: (CGImage) -> Void) {
+        withLoadedImage { image in
+            guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+                return
+            }
+            action(cgImage)
+        }
     }
     
     private func performOCR() {
-        guard let image = item.loadImage(),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            return
-        }
-        
-        Task.detached {
-            let text = await Self.extractText(from: cgImage)
-            await MainActor.run {
-                if !text.isEmpty {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(text, forType: .string)
+        withLoadedCGImage { cgImage in
+            Task.detached {
+                let text = await Self.extractText(from: cgImage)
+                await MainActor.run {
+                    if !text.isEmpty {
+                        dependencies.copyText(text)
+                    }
                 }
             }
         }
@@ -179,14 +349,12 @@ struct ScreenshotView: View {
     }
     
     private func openQuickAsk() {
-        guard let image = item.loadImage() else { return }
-        
-        // 先启动会话（会清空状态），再添加截图
-        QuickAskService.shared.startSession()
-        QuickAskService.shared.state.addScreenshot(image)
+        withLoadedImage { image in
+            dependencies.startQuickAsk(image)
+        }
     }
     
     private func closeWindow() {
-        ScreenshotManager.shared.close(item)
+        dependencies.closeWindow(item)
     }
 }

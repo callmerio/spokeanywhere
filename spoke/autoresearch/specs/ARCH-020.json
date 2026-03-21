@@ -1,0 +1,26 @@
+{
+  "issue_id": "ARCH-020",
+  "title": "MessagePanel 注入试点",
+  "mode": "exec",
+  "goal": "在 MessagePanelView 上试点可注入服务访问，降低 shared 直连和预览耦合。",
+  "scope": [
+    "UI/MessagePanel/MessagePanelView.swift",
+    "Services/ServiceContainer.swift"
+  ],
+  "metric": "message_panel_shared_calls",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ARCH-020",
+  "guard": [
+    "swift test"
+  ],
+  "iterations": 10,
+  "run_tag": "ARCH-020",
+  "depends_on": [
+    "APP-010",
+    "APP-020"
+  ],
+  "worktree_name": "arch-020-messagepanel-injection",
+  "artifacts_dir": "autoresearch/runs/ARCH-020",
+  "stop_condition": "metric=0 且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "优先减少目标视图的 `.shared` 访问，不强求一轮内完成全量注入。"
+}

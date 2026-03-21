@@ -1,0 +1,127 @@
+{
+  "queue_id": "conditional-go-architecture",
+  "csv_path": "issues/2026-03-19_20-55-00-conditional-go-architecture.csv",
+  "updated_at": "2026-03-19T21:10:00Z",
+  "issues": {
+    "AG-010": {
+      "state": "planned",
+      "depends_on": [],
+      "spec": "autoresearch/specs/AG-010.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "QG-010": {
+      "state": "completed",
+      "depends_on": [],
+      "spec": "autoresearch/specs/QG-010.json",
+      "last_run": "2026-03-19T21:20:00Z",
+      "artifacts": "autoresearch/specs/QG-010.json",
+      "worktree": null,
+      "exit_code": 0,
+      "summary": {
+        "metric_name": "missing_quality_gate_contract_items",
+        "metric": 0,
+        "source": "manual baseline validation"
+      }
+    },
+    "APP-010": {
+      "state": "planned",
+      "depends_on": [
+        "AG-010"
+      ],
+      "spec": "autoresearch/specs/APP-010.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "APP-020": {
+      "state": "planned",
+      "depends_on": [
+        "APP-010"
+      ],
+      "spec": "autoresearch/specs/APP-020.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "ARCH-010": {
+      "state": "planned",
+      "depends_on": [
+        "APP-010",
+        "APP-020"
+      ],
+      "spec": "autoresearch/specs/ARCH-010.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "ARCH-020": {
+      "state": "planned",
+      "depends_on": [
+        "APP-010",
+        "APP-020"
+      ],
+      "spec": "autoresearch/specs/ARCH-020.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "ARCH-030": {
+      "state": "planned",
+      "depends_on": [
+        "APP-010",
+        "APP-020"
+      ],
+      "spec": "autoresearch/specs/ARCH-030.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "GOV-010": {
+      "state": "planned",
+      "depends_on": [
+        "ARCH-010",
+        "ARCH-020",
+        "ARCH-030"
+      ],
+      "spec": "autoresearch/specs/GOV-010.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    },
+    "TEST-010": {
+      "state": "planned",
+      "depends_on": [
+        "AG-010",
+        "QG-010",
+        "APP-010",
+        "APP-020",
+        "ARCH-010",
+        "ARCH-020",
+        "ARCH-030",
+        "GOV-010"
+      ],
+      "spec": "autoresearch/specs/TEST-010.json",
+      "last_run": null,
+      "artifacts": null,
+      "worktree": null,
+      "exit_code": null,
+      "summary": null
+    }
+  }
+}

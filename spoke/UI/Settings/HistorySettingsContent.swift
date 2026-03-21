@@ -5,12 +5,42 @@ import SwiftUI
 
 private typealias DS = DesignTokens
 
+@MainActor
+struct HistorySettingsDependencies {
+    let historyManager: HistoryManager
+    let llmSettings: LLMSettings
+    let audioPlayer: AudioPlayerService
+    let copyText: (String) -> Void
+}
+
+@MainActor
+extension HistorySettingsDependencies {
+    static let live = HistorySettingsDependencies(
+        historyManager: .shared,
+        llmSettings: .shared,
+        audioPlayer: .shared,
+        copyText: { text in
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        }
+    )
+}
+
 // MARK: - History Settings
 
 struct HistorySettingsContent: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \HistoryItem.createdAt, order: .reverse) private var historyItems: [HistoryItem]
+    private let dependencies: HistorySettingsDependencies
     @State private var searchText = ""
+
+    init() {
+        self.dependencies = .live
+    }
+
+    init(dependencies: HistorySettingsDependencies) {
+        self.dependencies = dependencies
+    }
     
     /// 按日期分组的历史记录
     private var groupedItems: [(String, [HistoryItem])] {
@@ -77,6 +107,7 @@ struct HistorySettingsContent: View {
                                     ForEach(items) { item in
                                         HistoryItemRow(
                                             item: item,
+                                            dependencies: dependencies,
                                             onDelete: { deleteItem(item) }
                                         )
                                     }
@@ -120,7 +151,7 @@ struct HistorySettingsContent: View {
     private func deleteItem(_ item: HistoryItem) {
         // 删除音频文件
         if let audioPath = item.audioPath {
-            let audioURL = HistoryManager.shared.audioStorageURL.appendingPathComponent(audioPath)
+            let audioURL = dependencies.historyManager.audioStorageURL.appendingPathComponent(audioPath)
             try? FileManager.default.removeItem(at: audioURL)
         }
         modelContext.delete(item)
@@ -132,11 +163,21 @@ struct HistorySettingsContent: View {
 struct ReprocessSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: HistoryItem
+    private let dependencies: HistorySettingsDependencies
     
     @State private var customPrompt = ""
     @State private var isProcessing = false
     @State private var resultText: String?
     @State private var errorMessage: String?
+
+    init(item: HistoryItem, dependencies: HistorySettingsDependencies) {
+        self.item = item
+        self.dependencies = dependencies
+    }
+
+    init(item: HistoryItem) {
+        self.init(item: item, dependencies: .live)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -258,7 +299,7 @@ struct ReprocessSheet: View {
         
         Task {
             let prompt = customPrompt.isEmpty ? nil : customPrompt
-            let result = await HistoryManager.shared.reprocess(item, with: prompt ?? LLMSettings.shared.systemPrompt)
+            let result = await dependencies.historyManager.reprocess(item, with: prompt ?? dependencies.llmSettings.systemPrompt)
             
             await MainActor.run {
                 isProcessing = false
@@ -275,12 +316,28 @@ struct ReprocessSheet: View {
 
 struct HistoryItemRow: View {
     let item: HistoryItem
+    private let dependencies: HistorySettingsDependencies
     var onDelete: () -> Void
     
-    @ObservedObject private var audioPlayer = AudioPlayerService.shared
+    @ObservedObject private var audioPlayer: AudioPlayerService
     @State private var isHovering = false
     @State private var showCopied = false
     @State private var isReprocessing = false
+
+    init(
+        item: HistoryItem,
+        dependencies: HistorySettingsDependencies,
+        onDelete: @escaping () -> Void
+    ) {
+        self.item = item
+        self.dependencies = dependencies
+        self.onDelete = onDelete
+        self.audioPlayer = dependencies.audioPlayer
+    }
+
+    init(item: HistoryItem, onDelete: @escaping () -> Void) {
+        self.init(item: item, dependencies: .live, onDelete: onDelete)
+    }
     
     /// 当前是否正在播放此条目的音频
     private var isPlayingThis: Bool {
@@ -401,8 +458,7 @@ struct HistoryItemRow: View {
     }
     
     private func copyToClipboard() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(displayText, forType: .string)
+        dependencies.copyText(displayText)
         
         withAnimation {
             showCopied = true
@@ -417,7 +473,7 @@ struct HistoryItemRow: View {
     
     private func togglePlay() {
         guard let audioPath = item.audioPath else { return }
-        let url = HistoryManager.shared.audioStorageURL.appendingPathComponent(audioPath)
+        let url = dependencies.historyManager.audioStorageURL.appendingPathComponent(audioPath)
         
         if isPlayingThis {
             // 正在播放此条目，暂停
@@ -440,7 +496,7 @@ struct HistoryItemRow: View {
         
         Task {
             // 使用当前系统 Prompt 重处理
-            let result = await HistoryManager.shared.reprocess(item, with: LLMSettings.shared.systemPrompt)
+            let result = await dependencies.historyManager.reprocess(item, with: dependencies.llmSettings.systemPrompt)
             
             await MainActor.run {
                 isReprocessing = false

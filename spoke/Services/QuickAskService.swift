@@ -20,6 +20,106 @@ enum ContextSource: String, CaseIterable {
     }
 }
 
+private func runQuickAskServiceOnMain(
+    _ service: QuickAskService?,
+    _ action: @escaping @MainActor (QuickAskService) async -> Void
+) {
+    Task { @MainActor in
+        guard let service else { return }
+        await action(service)
+    }
+}
+
+private func runQuickAskHUDManagerOnMain(
+    _ manager: QuickAskHUDManager?,
+    _ action: @escaping @MainActor (QuickAskHUDManager) -> Void
+) {
+    Task { @MainActor in
+        guard let manager else { return }
+        action(manager)
+    }
+}
+
+@MainActor
+struct QuickAskCapsuleViewDependencies {
+    let clipboardText: () -> String?
+    let hideHUD: (_ restorePolicy: Bool) -> Void
+    let showAnswerPanel: (_ question: String, _ attachments: [Attachment]) -> UUID
+    let updateAnswer: (_ answer: String, _ panelId: UUID) -> Void
+    let showAnswerError: (_ message: String, _ panelId: UUID) -> Void
+    let executeWorkflow: (_ workflow: WorkflowAction, _ context: WorkflowContext) async -> Result<String, WorkflowError>
+}
+
+@MainActor
+struct QuickAskHUDManagerDependencies {
+    let hotKeyService: HotKeyService
+    let workflowState: WorkflowState
+    let attachmentManager: AttachmentManager
+    let notificationCenter: NotificationCenter
+    let clipboardText: () -> String?
+    let showAnswerPanel: (_ question: String, _ attachments: [Attachment]) -> UUID
+    let updateAnswer: (_ answer: String, _ panelId: UUID) -> Void
+    let showAnswerError: (_ message: String, _ panelId: UUID) -> Void
+    let executeWorkflow: (_ workflow: WorkflowAction, _ context: WorkflowContext) async -> Result<String, WorkflowError>
+    let openSettings: () -> Void
+}
+
+@MainActor
+struct QuickAskServiceDependencies {
+    let hudManager: QuickAskHUDManager
+    let contextService: ContextService
+    let audioService: AudioRecorderService
+    let llmPipeline: LLMPipeline
+    let llmSettings: LLMSettings
+    let screenOCRService: ScreenOCRService
+    let answerPanelManager: AnswerPanelManager
+    let hotKeyService: HotKeyService
+    let clipboardHistoryService: ClipboardHistoryService
+    let liveCaptionManager: LiveCaptionManager
+    let notificationCenter: NotificationCenter
+}
+
+@MainActor
+extension QuickAskHUDManagerDependencies {
+    static func makeLive(answerPanelManager: AnswerPanelManager) -> Self {
+        .init(
+            hotKeyService: .shared,
+            workflowState: .shared,
+            attachmentManager: .shared,
+            notificationCenter: .default,
+            clipboardText: { NSPasteboard.general.string(forType: .string) },
+            showAnswerPanel: { answerPanelManager.show(question: $0, attachments: $1) },
+            updateAnswer: { answerPanelManager.updateAnswer($0, for: $1) },
+            showAnswerError: { answerPanelManager.showError($0, for: $1) },
+            executeWorkflow: { workflow, context in
+                await WorkflowExecutor.shared.execute(workflow, context: context)
+            },
+            openSettings: {
+                _ = NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil)
+            }
+        )
+    }
+}
+
+@MainActor
+extension QuickAskServiceDependencies {
+    static func makeLive() -> Self {
+        .init(
+            hudManager: .shared,
+            contextService: .shared,
+            audioService: .shared,
+            llmPipeline: .shared,
+            llmSettings: .shared,
+            screenOCRService: .shared,
+            answerPanelManager: .shared,
+            hotKeyService: .shared,
+            clipboardHistoryService: .shared,
+            liveCaptionManager: .shared,
+            notificationCenter: .default
+        )
+    }
+}
+
 /// Quick Ask 服务
 /// 管理 Quick Ask 功能的整体流程
 @MainActor
@@ -27,7 +127,7 @@ final class QuickAskService {
     
     // MARK: - Singleton
     
-    static let shared = QuickAskService()
+    static let shared = QuickAskService(dependencies: .makeLive())
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "QuickAsk")
     
@@ -39,10 +139,7 @@ final class QuickAskService {
     
     // MARK: - Dependencies
     
-    private let hudManager = QuickAskHUDManager.shared
-    private let contextService = ContextService.shared
-    private let audioService = AudioRecorderService.shared
-    private let llmPipeline = LLMPipeline.shared
+    private let dependencies: QuickAskServiceDependencies
     
     // MARK: - Properties
     
@@ -52,7 +149,7 @@ final class QuickAskService {
     
     /// 当前状态
     var state: QuickAskState {
-        hudManager.state
+        dependencies.hudManager.state
     }
     
     /// 是否处于 Quick Ask 模式
@@ -62,62 +159,49 @@ final class QuickAskService {
     
     // MARK: - Init
     
-    private init() {
+    private init(
+        dependencies: QuickAskServiceDependencies
+    ) {
+        self.dependencies = dependencies
         setupHUDCallbacks()
     }
     
     // MARK: - Setup
     
     private func setupHUDCallbacks() {
-        hudManager.onSend = { [weak self] in
-            Task { @MainActor in
-                await self?.sendQuestion()
-            }
+        dependencies.hudManager.onSend = makeAsyncAction { service in
+            await service.sendQuestion()
         }
         
-        hudManager.onCancel = { [weak self] in
-            Task { @MainActor in
-                self?.cancelSession()
-            }
+        dependencies.hudManager.onCancel = makeAction { service in
+            service.cancelSession()
         }
         
         // 监听追问通知
-        NotificationCenter.default.addObserver(
+        dependencies.notificationCenter.addObserver(
             forName: .quickAskFollowUpRequested,
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let self = self,
-                  let userInfo = notification.userInfo,
-                  let panelId = userInfo["panelId"] as? UUID,
-                  let prompt = userInfo["prompt"] as? String,
-                  let attachments = userInfo["attachments"] as? [Attachment] else {
-                return
-            }
-            
-            Task {
-                await self.handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
+            runQuickAskServiceOnMain(self) { service in
+                await service.handleFollowUpRequest(notification)
             }
         }
     }
     
     private func registerAudioCallbacks() {
         if quickAskCallbackSessionID == nil {
-            quickAskCallbackSessionID = audioService.createCallbackSession()
+            quickAskCallbackSessionID = dependencies.audioService.createCallbackSession()
         }
 
         guard let sessionID = quickAskCallbackSessionID else { return }
-        audioService.updateCallbackSession(sessionID) { [weak self] callbacks in
-            callbacks.onAudioLevelUpdate = { [weak self] level in
-                Task { @MainActor in
-                    self?.state.updateAudioLevel(level)
-                }
+        dependencies.audioService.updateCallbackSession(sessionID) { [weak self] callbacks in
+            callbacks.onAudioLevelUpdate = self?.makeAction { service, level in
+                service.state.updateAudioLevel(level)
             }
 
-            callbacks.onPartialResult = { [weak self] result in
-                Task { @MainActor in
-                    self?.state.updateVoiceTranscription(result.text)
-                }
+            callbacks.onPartialResult = self?.makeAction { service, result in
+                service.state.updateVoiceTranscription(result.text)
             }
 
             callbacks.onFinalResult = nil
@@ -126,12 +210,12 @@ final class QuickAskService {
             }
         }
 
-        audioService.activateCallbackSession(sessionID)
+        dependencies.audioService.activateCallbackSession(sessionID)
     }
 
     private func unregisterAudioCallbacks() {
         guard let sessionID = quickAskCallbackSessionID else { return }
-        audioService.removeCallbackSession(sessionID)
+        dependencies.audioService.removeCallbackSession(sessionID)
         quickAskCallbackSessionID = nil
     }
     
@@ -139,20 +223,16 @@ final class QuickAskService {
     
     /// 启动 Quick Ask 会话
     func startSession() {
-        let targetApp = contextService.getCurrentTargetApp()
+        let targetApp = dependencies.contextService.getCurrentTargetApp()
         
         // 显示 HUD（这会激活窗口和输入法上下文）
-        hudManager.show(targetApp: targetApp)
+        dependencies.hudManager.show(targetApp: targetApp)
         
         // 记录开始时间
         recordingStartTime = Date()
         
         // 启动计时器
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateRecordingDuration()
-            }
-        }
+        startRecordingTimer()
         
         // 🔥 延迟启动录音，避免阻塞主线程导致输入法通信失败
         DispatchQueue.main.asyncAfter(deadline: .now() + Constants.recordingStartDelay) { [weak self] in
@@ -162,7 +242,7 @@ final class QuickAskService {
                 self.logger.info("🎙️ Quick Ask session started")
             } catch {
                 self.logger.error("❌ Failed to start Quick Ask recording: \(error)")
-                self.hudManager.fail(with: "录音启动失败")
+                self.dependencies.hudManager.fail(with: "录音启动失败")
             }
         }
     }
@@ -175,13 +255,13 @@ final class QuickAskService {
         // 切换到发送状态
         state.startSending()
         
-        let settings = LLMSettings.shared
+        let settings = dependencies.llmSettings
         var contextSources: [ContextSource] = []
         
         // 异步获取 OCR 上下文
         var ocrContext: String?
         if settings.quickAskIncludeOCR {
-            ocrContext = await ScreenOCRService.shared.getActiveWindowText(maxLength: 2000)
+            ocrContext = await dependencies.screenOCRService.getActiveWindowText(maxLength: 2000)
             if ocrContext != nil && !ocrContext!.isEmpty {
                 contextSources.append(.ocr)
             }
@@ -190,7 +270,7 @@ final class QuickAskService {
         // 获取截图（如果开启）
         var screenshotImage: CGImage?
         if settings.quickAskIncludeScreenshot {
-            screenshotImage = await ScreenOCRService.shared.captureActiveWindow()
+            screenshotImage = await dependencies.screenOCRService.captureActiveWindow()
             if screenshotImage != nil {
                 contextSources.append(.screenshot)
             }
@@ -202,7 +282,7 @@ final class QuickAskService {
         if promptResult.usedCaption { contextSources.append(.liveCaption) }
         
         guard !promptResult.prompt.isEmpty else {
-            hudManager.fail(with: "请输入问题")
+            dependencies.hudManager.fail(with: "请输入问题")
             return
         }
         
@@ -213,14 +293,14 @@ final class QuickAskService {
         )
         
         // 隐藏输入 HUD (不恢复 Policy，因为 AnswerPanel 需要 Key Window)
-        hudManager.hide(restorePolicy: false)
+        dependencies.hudManager.hide(restorePolicy: false)
         
         // 分离手动输入和语音转录（用于 UI 区分显示）
         let userInputText = state.userInput.trimmingCharacters(in: .whitespacesAndNewlines)
         let voiceText = state.voiceTranscription.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // 显示回答窗口（传递上下文来源 + 语音转录）
-        let panelId = AnswerPanelManager.shared.show(
+        let panelId = dependencies.answerPanelManager.show(
             question: userInputText,
             voiceTranscription: voiceText.isEmpty ? nil : voiceText,
             attachments: state.attachments,
@@ -229,33 +309,27 @@ final class QuickAskService {
         )
         
         // 调用 LLM
-        let result = await llmPipeline.chat(promptResult.prompt)
+        let result = await dependencies.llmPipeline.chat(promptResult.prompt)
         
         switch result {
         case .success(let response):
-            AnswerPanelManager.shared.updateAnswer(response, for: panelId)
+            dependencies.answerPanelManager.updateAnswer(response, for: panelId)
             logger.info("✅ Quick Ask completed (\(response.images.count, privacy: .public) images)")
             
         case .failure(let error):
-            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
+            dependencies.answerPanelManager.showError(error.localizedDescription, for: panelId)
             logger.error("❌ Quick Ask failed: \(error, privacy: .public)")
         }
         
         // 重置状态
-        state.reset()
-        
-        // 重置 HotKeyService 状态
-        HotKeyService.shared.resetQuickAskState()
+        resetSessionState()
     }
     
     /// 取消会话
     func cancelSession() {
         stopRecording()
-        hudManager.hide()
-        state.reset()
-        
-        // 重置 HotKeyService 状态
-        HotKeyService.shared.resetQuickAskState()
+        dependencies.hudManager.hide()
+        resetSessionState()
         
         logger.info("🚫 Quick Ask cancelled")
     }
@@ -263,7 +337,7 @@ final class QuickAskService {
     /// 重新开始录音
     func restartRecording() {
         // 停止当前录音
-        audioService.cancelRecording()
+        dependencies.audioService.cancelRecording()
         unregisterAudioCallbacks()
         
         // 重置录音相关状态
@@ -282,10 +356,21 @@ final class QuickAskService {
     /// 通过快捷键发送（再次按下快捷键）
     func sendViaShortcut() {
         if state.canSend {
-            Task {
-                await sendQuestion()
+            runQuickAskServiceOnMain(self) { service in
+                await service.sendQuestion()
             }
         }
+    }
+
+    private func handleFollowUpRequest(_ notification: Notification) async {
+        guard let userInfo = notification.userInfo,
+              let panelId = userInfo["panelId"] as? UUID,
+              let prompt = userInfo["prompt"] as? String,
+              let attachments = userInfo["attachments"] as? [Attachment] else {
+            return
+        }
+
+        await handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
     }
     
     /// 处理追问
@@ -293,41 +378,26 @@ final class QuickAskService {
         logger.info("🔄 Handling follow-up [\(panelId)]: \(prompt)")
         
         // 1. 获取指定面板的历史记录
-        guard let panelState = AnswerPanelManager.shared.state(for: panelId) else {
+        guard let panelState = dependencies.answerPanelManager.state(for: panelId) else {
             logger.error("❌ Panel not found: \(panelId)")
             return
         }
         
         let history = panelState.messages
         // 注意：此时 history 已经包含了当前最新的 user message (由 AnswerPanelView 添加)
-        
-        var finalPrompt = ""
-        
-        // 简单的 history 拼接 (排除最后一条，因为它是当前问题)
-        if history.count > 1 {
-            finalPrompt += "以下是之前的对话历史：\n\n"
-            for message in history.dropLast() {
-                let role = message.role == .user ? "用户" : "AI"
-                // 简单的防注入处理
-                let content = message.content.replacingOccurrences(of: "\n", with: " ")
-                finalPrompt += "\(role): \(content)\n"
-            }
-            finalPrompt += "\n---\n\n"
-        }
-        
-        // 2. 添加当前问题
-        finalPrompt += "用户当前问题: \(prompt)"
+
+        let finalPrompt = buildFollowUpPrompt(history: history, prompt: prompt)
         
         // 3. 调用 LLM
-        let result = await llmPipeline.chat(finalPrompt)
+        let result = await dependencies.llmPipeline.chat(finalPrompt)
         
         switch result {
         case .success(let response):
-            AnswerPanelManager.shared.updateAnswer(response, for: panelId)
+            dependencies.answerPanelManager.updateAnswer(response, for: panelId)
             logger.info("✅ Follow-up completed [\(panelId)] (\(response.images.count) images)")
             
         case .failure(let error):
-            AnswerPanelManager.shared.showError(error.localizedDescription, for: panelId)
+            dependencies.answerPanelManager.showError(error.localizedDescription, for: panelId)
             logger.error("❌ Follow-up failed [\(panelId)]: \(error)")
         }
     }
@@ -339,7 +409,7 @@ final class QuickAskService {
         registerAudioCallbacks()
 
         do {
-            try audioService.startRecording()
+            try dependencies.audioService.startRecording()
         } catch {
             unregisterAudioCallbacks()
             throw error
@@ -347,11 +417,9 @@ final class QuickAskService {
     }
     
     private func stopRecording() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        recordingStartTime = nil
+        stopRecordingTimer()
         
-        _ = audioService.stopRecording()
+        _ = dependencies.audioService.stopRecording()
         unregisterAudioCallbacks()
     }
     
@@ -360,38 +428,73 @@ final class QuickAskService {
         let duration = Date().timeIntervalSince(startTime)
         state.updateDuration(duration)
     }
-    
-    private struct PromptBuildResult {
-        let prompt: String
-        let usedClipboard: Bool
-        let usedCaption: Bool
+
+    private func startRecordingTimer() {
+        let updateDuration = makeAction { service in
+            service.updateRecordingDuration()
+        }
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            updateDuration()
+        }
     }
-    
-    private struct AttachmentSummary {
-        let summaryLine: String
-        let textBundleContents: [String]
+
+    private func stopRecordingTimer() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        recordingStartTime = nil
+    }
+
+    private func resetSessionState() {
+        state.reset()
+        dependencies.hotKeyService.resetQuickAskState()
+    }
+
+    private func makeAction(
+        _ action: @escaping @MainActor (QuickAskService) -> Void
+    ) -> () -> Void {
+        { [weak self] in
+            runQuickAskServiceOnMain(self) { service in
+                action(service)
+            }
+        }
+    }
+
+    private func makeAction<Value>(
+        _ action: @escaping @MainActor (QuickAskService, Value) -> Void
+    ) -> (Value) -> Void {
+        { [weak self] value in
+            runQuickAskServiceOnMain(self) { service in
+                action(service, value)
+            }
+        }
+    }
+
+    private func makeAsyncAction(
+        _ action: @escaping @MainActor (QuickAskService) async -> Void
+    ) -> () -> Void {
+        { [weak self] in
+            runQuickAskServiceOnMain(self, action)
+        }
     }
     
     /// 构建发送给 LLM 的 prompt（带上下文来源追踪）
-    private func buildPromptResult(ocrContext: String? = nil) -> PromptBuildResult {
-        let settings = LLMSettings.shared
-        var parts: [String] = []
-        
-        let userInput = trimmedText(state.userInput)
-        let voiceText = trimmedText(state.voiceTranscription)
-        
-        appendUserInput(userInput, to: &parts)
-        appendVoiceText(voiceText, userInput: userInput, to: &parts)
-        appendOCRContext(ocrContext, to: &parts)
-        
-        let usedClipboard = appendClipboardIfNeeded(settings: settings, to: &parts)
-        let usedCaption = appendLiveCaptionIfNeeded(settings: settings, to: &parts)
-        appendAttachments(to: &parts)
-        
-        return PromptBuildResult(
-            prompt: parts.joined(separator: "\n\n"),
-            usedClipboard: usedClipboard,
-            usedCaption: usedCaption
+    private func buildPromptResult(ocrContext: String? = nil) -> QuickAskPromptBuildResult {
+        let settings = dependencies.llmSettings
+        return QuickAskPromptAssembler.build(
+            QuickAskPromptRequest(
+                userInput: state.userInput,
+                voiceText: state.voiceTranscription,
+                ocrContext: ocrContext,
+                clipboardHistory: dependencies.clipboardHistoryService.getHistoryForContext(limit: 5),
+                liveCaptionText: dependencies.liveCaptionManager.getOriginalTextHistory(
+                    limit: settings.quickAskLiveCaptionLimit
+                ),
+                liveCaptionLimit: settings.quickAskLiveCaptionLimit,
+                attachments: state.attachments,
+                includeOCR: settings.quickAskIncludeOCR,
+                includeClipboard: settings.quickAskIncludeClipboard,
+                includeLiveCaption: settings.quickAskIncludeLiveCaption
+            )
         )
     }
     
@@ -399,76 +502,27 @@ final class QuickAskService {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
-    private func appendUserInput(_ userInput: String, to parts: inout [String]) {
-        if !userInput.isEmpty {
-            parts.append("## 用户输入\n\(userInput)")
-        }
-    }
-    
-    private func appendVoiceText(_ voiceText: String, userInput: String, to parts: inout [String]) {
-        guard !voiceText.isEmpty else { return }
-        parts.append("## 语音转写\n\(voiceText)")
-        if !userInput.isEmpty {
-            parts.append("> 注意：语音转写可能存在偏差（如专业术语、人名等），请结合用户输入理解真实意图。")
-        }
-    }
-    
-    private func appendOCRContext(_ ocrContext: String?, to parts: inout [String]) {
-        guard let ocrText = ocrContext, !ocrText.isEmpty else { return }
-        parts.append("## 当前屏幕内容（OCR）\n\(ocrText)")
-    }
-    
-    private func appendClipboardIfNeeded(settings: LLMSettings, to parts: inout [String]) -> Bool {
-        guard settings.quickAskIncludeClipboard else { return false }
-        let history = ClipboardHistoryService.shared.getHistoryForContext(limit: 5)
-        guard !history.isEmpty else { return false }
-        let historyText = history.map { "- \(String($0.prefix(200)))" }.joined(separator: "\n")
-        parts.append("## 剪贴板历史\n\(historyText)")
-        return true
-    }
-    
-    private func appendLiveCaptionIfNeeded(settings: LLMSettings, to parts: inout [String]) -> Bool {
-        guard settings.quickAskIncludeLiveCaption else { return false }
-        let limit = settings.quickAskLiveCaptionLimit
-        let captionText = LiveCaptionManager.shared.getOriginalTextHistory(limit: limit)
-        guard !captionText.isEmpty else { return false }
-        let limitDesc = limit == 0 ? "全量" : "最近\(limit)条"
-        parts.append("## 实时字幕历史（\(limitDesc)）\n\(captionText)")
-        return true
-    }
-    
-    private func appendAttachments(to parts: inout [String]) {
-        guard !state.attachments.isEmpty else { return }
-        let summary = buildAttachmentSummary(from: state.attachments)
-        parts.append("## 附件\n\(summary.summaryLine)")
-        
-        guard !summary.textBundleContents.isEmpty else { return }
-        let bundleText = summary.textBundleContents.joined(separator: "\n\n---\n\n")
-        parts.append("## 代码/文档内容\n\(bundleText)")
-    }
-    
-    private func buildAttachmentSummary(from attachments: [Attachment]) -> AttachmentSummary {
-        var attachmentParts: [String] = []
-        var textBundleContents: [String] = []
-        
-        for attachment in attachments {
-            switch attachment {
-            case .image:
-                attachmentParts.append("[图片]")
-            case .screenshot:
-                attachmentParts.append("[截图]")
-            case .file(let url, _):
-                attachmentParts.append("[文件: \(url.lastPathComponent)]")
-            case .textBundle(let content, let source, let count, _):
-                attachmentParts.append("[代码包: \(source) (\(count) 文件)]")
-                textBundleContents.append("### \(source)\n\(content)")
+    private func buildFollowUpPrompt(history: [ChatMessage], prompt: String) -> String {
+        var sections: [PromptSection] = []
+
+        if history.count > 1 {
+            let historyLines = history.dropLast().map { message in
+                let role = message.role == .user ? "用户" : "AI"
+                return "\(role): \(PromptRenderer.singleLine(message.content))"
+            }
+            if let historySection = PromptRenderer.section(
+                title: "以下是之前的对话历史：",
+                body: historyLines.joined(separator: "\n")
+            ) {
+                sections.append(historySection)
             }
         }
-        
-        return AttachmentSummary(
-            summaryLine: attachmentParts.joined(separator: ", "),
-            textBundleContents: textBundleContents
-        )
+
+        if let questionSection = PromptRenderer.section(title: "用户当前问题:", body: prompt) {
+            sections.append(questionSection)
+        }
+
+        return PromptRenderer.renderSections(sections)
     }
 }
 
@@ -485,10 +539,11 @@ final class QuickAskHUDManager {
     
     // MARK: - Singleton
     
-    static let shared = QuickAskHUDManager()
+    static let shared = QuickAskHUDManager(dependencies: .makeLive(answerPanelManager: .shared))
     
     // MARK: - Properties
     
+    private let dependencies: QuickAskHUDManagerDependencies
     private var panel: QuickAskPanel?
     let state: QuickAskState
     
@@ -502,19 +557,22 @@ final class QuickAskHUDManager {
     
     // MARK: - Init
     
-    private init() {
-        self.state = QuickAskState()
+    private init(
+        dependencies: QuickAskHUDManagerDependencies
+    ) {
+        self.dependencies = dependencies
+        self.state = QuickAskState(attachmentManager: dependencies.attachmentManager)
         setupCancelObserver()
     }
     
     private func setupCancelObserver() {
-        cancelObserver = NotificationCenter.default.addObserver(
+        cancelObserver = dependencies.notificationCenter.addObserver(
             forName: .quickAskCancelRequested,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.onCancel?()
+            runQuickAskHUDManagerOnMain(self) { manager in
+                manager.onCancel?()
             }
         }
     }
@@ -525,10 +583,10 @@ final class QuickAskHUDManager {
         createPanelIfNeeded()
         
         // 🔥 第一步：禁用 event tap，避免干扰输入法（必须在窗口激活前执行）
-        HotKeyService.shared.setQuickAskActive(true)
+        dependencies.hotKeyService.setQuickAskActive(true)
         
         // 启用按键调试日志
-        HotKeyService.shared.debugKeyEvents = true
+        dependencies.hotKeyService.debugKeyEvents = true
         
         // 🔥 第二步：切换到普通应用模式以支持输入法
         NSApp.setActivationPolicy(.regular)
@@ -541,47 +599,31 @@ final class QuickAskHUDManager {
         panel?.orderFront(nil)
         
         // 🔥 第四步：延迟一帧再激活（等待窗口完全显示）
-        Task { @MainActor [weak self] in
-            guard let panel = self?.panel else { return }
-
-            // 激活应用（强制激活，忽略其他应用）
-            NSApp.activate(ignoringOtherApps: true)
-
-            // 让窗口成为 key window 和 main window
-            panel.makeKeyAndOrderFront(nil)
-            panel.makeMain()
+        runQuickAskHUDManagerOnMain(self) { manager in
+            manager.activatePanelWindow()
         }
     }
     
     func hide(restorePolicy: Bool = true) {
         // 关闭按键调试日志
-        HotKeyService.shared.debugKeyEvents = false
+        dependencies.hotKeyService.debugKeyEvents = false
         
         // 🔥 重新启用 event tap
-        HotKeyService.shared.setQuickAskActive(false)
+        dependencies.hotKeyService.setQuickAskActive(false)
         
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             panel?.animator().alphaValue = 0
         } completionHandler: { [weak self] in
-            Task { @MainActor in
-                self?.panel?.orderOut(nil)
-                self?.panel?.alphaValue = 1
-                // 恢复为辅助应用模式
-                if restorePolicy {
-                    NSApp.setActivationPolicy(.accessory)
-                }
+            runQuickAskHUDManagerOnMain(self) { manager in
+                manager.finishHide(restorePolicy: restorePolicy)
             }
         }
     }
     
     func fail(with message: String) {
         state.fail(with: message)
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            self?.hide()
-            self?.state.reset()
-        }
+        scheduleFailureReset()
     }
     
     // MARK: - Private
@@ -589,7 +631,24 @@ final class QuickAskHUDManager {
     private func createPanelIfNeeded() {
         guard panel == nil else { return }
         
-        var contentView = QuickAskCapsuleView(state: state)
+        let capsuleDependencies = QuickAskCapsuleViewDependencies(
+            clipboardText: dependencies.clipboardText,
+            hideHUD: { [weak self] restorePolicy in
+                self?.hide(restorePolicy: restorePolicy)
+            },
+            showAnswerPanel: dependencies.showAnswerPanel,
+            updateAnswer: dependencies.updateAnswer,
+            showAnswerError: dependencies.showAnswerError,
+            executeWorkflow: dependencies.executeWorkflow
+        )
+        
+        var contentView = QuickAskCapsuleView(
+            state: state,
+            workflowState: dependencies.workflowState,
+            attachmentManager: dependencies.attachmentManager,
+            openSettingsAction: dependencies.openSettings,
+            dependencies: capsuleDependencies
+        )
         contentView.onSend = { [weak self] in
             self?.onSend?()
         }
@@ -611,5 +670,28 @@ final class QuickAskHUDManager {
         newPanel.contentView = hostingView
         
         self.panel = newPanel
+    }
+
+    private func activatePanelWindow() {
+        guard let panel else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        panel.makeMain()
+    }
+
+    private func finishHide(restorePolicy: Bool) {
+        panel?.orderOut(nil)
+        panel?.alphaValue = 1
+        if restorePolicy {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    private func scheduleFailureReset() {
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            self?.hide()
+            self?.state.reset()
+        }
     }
 }

@@ -8,10 +8,16 @@ import Speech
 /// 使用 TranscriptionManager 自动选择最佳转录引擎
 @MainActor
 final class AudioRecorderService: NSObject {
+    private struct CrashRecoveryWriteContext {
+        let fileBox: UnsafeTransferBox<AVAudioFile>?
+        let queue: DispatchQueue
+        let slots: DispatchSemaphore
+    }
     
     // MARK: - Singleton
     
     static let shared = AudioRecorderService()
+    private static let warmupEnvKey = "SPOKE_AUDIO_WARMUP"
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "Audio")
     
@@ -117,11 +123,27 @@ final class AudioRecorderService: NSObject {
         callbackRouter.ensureSession(legacyCallbackSessionID)
         callbackRouter.setActiveSession(legacyCallbackSessionID)
         
-        // 仅在存在输入设备时预热，避免无麦克风环境触发 CoreAudio 错误噪音
-        if AudioDeviceManager.hasAvailableInputDevice() {
+        // 仅在显式开启且存在输入设备时预热，避免启动阶段被 CoreAudio 初始化阻塞
+        if Self.isWarmupEnabledByEnvironment(), AudioDeviceManager.hasAvailableInputDevice() {
             warmupAudioEngine()
+        } else if !Self.isWarmupEnabledByEnvironment() {
+            logger.info("ℹ️ Audio engine warmup disabled by env \(Self.warmupEnvKey, privacy: .public)")
         } else {
             logger.warning("⚠️ No input device detected at startup, skipping audio engine warmup")
+        }
+    }
+
+    private static func isWarmupEnabledByEnvironment() -> Bool {
+        guard let raw = ProcessInfo.processInfo.environment[warmupEnvKey]?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return true
+        }
+
+        switch raw.lowercased() {
+        case "0", "false", "no", "off":
+            return false
+        default:
+            return true
         }
     }
     
@@ -248,6 +270,158 @@ final class AudioRecorderService: NSObject {
         audioEngine.prepare()
         try audioEngine.start()
     }
+
+    private func resetRecordingStartState() {
+        isEngineReady = false
+        bufferLock.lock()
+        audioBuffer.removeAll()
+        bufferLock.unlock()
+
+        preReadyBufferPeak = 0
+        preReadyDropCount = 0
+        recoveryWriteDropCount = 0
+        enginePrepareStartTime = 0
+    }
+
+    private func createTranscriptionProvider() -> TranscriptionProvider {
+        let provider = transcriptionManager.createBestProvider()
+        transcriptionProvider = provider
+        setupProviderCallbacks(provider)
+        return provider
+    }
+
+    private func prepareCrashRecoveryWriteContext(recordingFormat: AVAudioFormat) {
+        if let url = tempAudioFileURL {
+            audioFile = try? AVAudioFile(forWriting: url, settings: recordingFormat.settings)
+        }
+    }
+
+    private func makeCrashRecoveryWriteContext() -> CrashRecoveryWriteContext {
+        CrashRecoveryWriteContext(
+            fileBox: audioFile.map { UnsafeTransferBox(value: $0) },
+            queue: DispatchQueue(
+                label: "com.spokeanywhere.audio.crash-recovery-write",
+                qos: .utility
+            ),
+            slots: DispatchSemaphore(value: maxPendingCrashRecoveryWrites)
+        )
+    }
+
+    private func installRecordingTap(
+        on inputNode: AVAudioInputNode,
+        recordingFormat: AVAudioFormat,
+        crashRecovery: CrashRecoveryWriteContext
+    ) {
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
+            guard let self else { return }
+
+            self.writeCrashRecoveryBuffer(buffer, context: crashRecovery)
+            self.processAudioLevel(buffer: buffer)
+
+            if self.isEngineReady {
+                try? self.transcriptionProvider?.process(buffer: buffer)
+            } else {
+                self.bufferPreReadyAudio(buffer)
+            }
+        }
+        isEngineConfigured = true
+    }
+
+    private func writeCrashRecoveryBuffer(
+        _ buffer: AVAudioPCMBuffer,
+        context: CrashRecoveryWriteContext
+    ) {
+        guard let fileBox = context.fileBox,
+              let copiedBuffer = Self.copyPCMBuffer(buffer) else {
+            return
+        }
+
+        if context.slots.wait(timeout: .now()) == .success {
+            let transferredBuffer = UnsafeTransferBox(value: copiedBuffer)
+            context.queue.async {
+                defer { context.slots.signal() }
+                try? fileBox.value.write(from: transferredBuffer.value)
+            }
+        } else {
+            bufferLock.lock()
+            recoveryWriteDropCount += 1
+            bufferLock.unlock()
+        }
+    }
+
+    private func bufferPreReadyAudio(_ buffer: AVAudioPCMBuffer) {
+        bufferLock.lock()
+        if audioBuffer.count >= maxBufferedChunksBeforeEngineReady {
+            let overflow = audioBuffer.count - maxBufferedChunksBeforeEngineReady + 1
+            audioBuffer.removeFirst(overflow)
+            preReadyDropCount += overflow
+        }
+        audioBuffer.append(buffer)
+        if audioBuffer.count > preReadyBufferPeak {
+            preReadyBufferPeak = audioBuffer.count
+        }
+        bufferLock.unlock()
+    }
+
+    private func startAudioEngine() throws {
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+
+    private func markRecordingStarted() {
+        isRecording = true
+        logger.info("🎙️ Recording started (engine preparing in background)")
+    }
+
+    private func prepareTranscriptionEngine(_ provider: TranscriptionProvider) {
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                self.enginePrepareStartTime = CFAbsoluteTimeGetCurrent()
+                self.logger.info("⏳ Preparing transcription engine...")
+                try await provider.prepare()
+
+                await MainActor.run {
+                    self.flushBufferedAudioAfterEngineReady()
+                    self.isEngineReady = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.logger.error("❌ Engine prepare failed: \(error)")
+                    self.handleRecoveryFailure(error, context: "engine-prepare")
+                }
+            }
+        }
+    }
+
+    private func flushBufferedAudioAfterEngineReady() {
+        bufferLock.lock()
+        let bufferedAudio = audioBuffer
+        let peak = preReadyBufferPeak
+        let drops = preReadyDropCount
+        let recoveryDrops = recoveryWriteDropCount
+        audioBuffer.removeAll()
+        bufferLock.unlock()
+
+        let enginePrepareMs = (CFAbsoluteTimeGetCurrent() - enginePrepareStartTime) * 1000
+        logger.info("✅ Engine ready, sending \(bufferedAudio.count) buffered chunks [prepare: \(String(format: "%.0f", enginePrepareMs))ms, peak: \(peak), drops: \(drops), recovery_drops: \(recoveryDrops)]")
+
+        var successCount = 0
+        var failCount = 0
+        for buffer in bufferedAudio {
+            do {
+                try transcriptionProvider?.process(buffer: buffer)
+                successCount += 1
+            } catch {
+                failCount += 1
+                logger.warning("⚠️ Failed to process buffered chunk: \(error.localizedDescription)")
+            }
+        }
+        if failCount > 0 {
+            logger.warning("⚠️ Buffered chunks: \(successCount) success, \(failCount) failed")
+        }
+    }
     
     /// 绑定用户选择的输入设备
     private func bindSelectedInputDevice() {
@@ -322,159 +496,28 @@ final class AudioRecorderService: NSObject {
         guard !isRecording else { return }
         try validateRecordingPreconditions()
         
-        // 🔧 停止并重置引擎状态（复用实例，避免 CoreAudio -10877）
         resetAudioEngine()
         setupConfigurationChangeObserver()
-        
-        // 重置状态
-        isEngineReady = false
-        bufferLock.lock()
-        audioBuffer.removeAll()
-        bufferLock.unlock()
+        resetRecordingStartState()
 
-        // 重置背压诊断计数器
-        preReadyBufferPeak = 0
-        preReadyDropCount = 0
-        recoveryWriteDropCount = 0
-        enginePrepareStartTime = 0
-        
-        // 创建最佳转录引擎
-        let provider = transcriptionManager.createBestProvider()
-        transcriptionProvider = provider
-        
-        // 设置回调
-        setupProviderCallbacks(provider)
-        
-        // 确保引擎可用
+        let provider = createTranscriptionProvider()
         guard provider.isAvailable else {
             throw AudioRecorderError.recognizerNotAvailable
         }
         
-        // 创建临时文件用于保存音频
         tempAudioFileURL = createTempAudioFileURL()
-        
-        // 🎤 绑定用户选择的麦克风 (不随系统默认漂移)
+
         bindSelectedInputDevice()
-        
-        // 获取输入节点
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        
-        // 创建音频文件（用于崩溃恢复）
-        if let url = tempAudioFileURL {
-            audioFile = try? AVAudioFile(forWriting: url, settings: recordingFormat.settings)
-        }
-        let crashRecoveryFileBox = audioFile.map { UnsafeTransferBox(value: $0) }
-        let crashRecoveryWriteQueue = DispatchQueue(
-            label: "com.spokeanywhere.audio.crash-recovery-write",
-            qos: .utility
-        )
-        let crashRecoveryWriteSlots = DispatchSemaphore(value: maxPendingCrashRecoveryWrites)
-        
-        // 安装 Tap 节点 - 立即开始录音
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-            guard let self = self else { return }
-            
-            // 写入磁盘（崩溃恢复）：音频回调不做同步 I/O，避免回调线程被阻塞
-            if let crashRecoveryFileBox,
-               let copiedBuffer = Self.copyPCMBuffer(buffer) {
-                if crashRecoveryWriteSlots.wait(timeout: .now()) == .success {
-                    let transferredBuffer = UnsafeTransferBox(value: copiedBuffer)
-                    crashRecoveryWriteQueue.async {
-                        defer { crashRecoveryWriteSlots.signal() }
-                        try? crashRecoveryFileBox.value.write(from: transferredBuffer.value)
-                    }
-                } else {
-                    // 背压：写入槽位已满，丢弃此次写入（需加锁保护计数器）
-                    self.bufferLock.lock()
-                    self.recoveryWriteDropCount += 1
-                    self.bufferLock.unlock()
-                }
-            }
-            
-            // 计算音频电平
-            self.processAudioLevel(buffer: buffer)
-            
-            // 根据引擎状态决定发送还是缓存
-            if self.isEngineReady {
-                // 引擎已准备好，直接发送
-                try? self.transcriptionProvider?.process(buffer: buffer)
-            } else {
-                // 引擎未准备好，缓存音频
-                self.bufferLock.lock()
-                if self.audioBuffer.count >= self.maxBufferedChunksBeforeEngineReady {
-                    let overflow = self.audioBuffer.count - self.maxBufferedChunksBeforeEngineReady + 1
-                    self.audioBuffer.removeFirst(overflow)
-                    self.preReadyDropCount += overflow  // 记录丢帧次数
-                }
-                self.audioBuffer.append(buffer)
-                // 更新缓冲区峰值
-                if self.audioBuffer.count > self.preReadyBufferPeak {
-                    self.preReadyBufferPeak = self.audioBuffer.count
-                }
-                self.bufferLock.unlock()
-            }
-        }
-        isEngineConfigured = true
-        
-        // 启动音频引擎（立即开始录音）
-        audioEngine.prepare()
-        try audioEngine.start()
-        
-        isRecording = true
-        logger.info("🎙️ Recording started (engine preparing in background)")
-        
-        // 异步准备转录引擎
-        Task { [weak self] in
-            guard let self = self else { return }
 
-            do {
-                self.enginePrepareStartTime = CFAbsoluteTimeGetCurrent()
-                logger.info("⏳ Preparing transcription engine...")
-                try await provider.prepare()
-                
-                await MainActor.run {
-                    // 发送缓存的音频
-                    self.bufferLock.lock()
-                    let bufferedAudio = self.audioBuffer
-                    // 快照计数器（避免日志读取与写入并发）
-                    let peak = self.preReadyBufferPeak
-                    let drops = self.preReadyDropCount
-                    let recoveryDrops = self.recoveryWriteDropCount
+        prepareCrashRecoveryWriteContext(recordingFormat: recordingFormat)
+        let crashRecovery = makeCrashRecoveryWriteContext()
+        installRecordingTap(on: inputNode, recordingFormat: recordingFormat, crashRecovery: crashRecovery)
 
-                    self.audioBuffer.removeAll()
-                    self.bufferLock.unlock()
-
-                    // 计算引擎准备时间
-                    let enginePrepareMs = (CFAbsoluteTimeGetCurrent() - self.enginePrepareStartTime) * 1000
-
-                    self.logger.info("✅ Engine ready, sending \(bufferedAudio.count) buffered chunks [prepare: \(String(format: "%.0f", enginePrepareMs))ms, peak: \(peak), drops: \(drops), recovery_drops: \(recoveryDrops)]")
-                    
-                    var successCount = 0
-                    var failCount = 0
-                    for buffer in bufferedAudio {
-                        do {
-                            try self.transcriptionProvider?.process(buffer: buffer)
-                            successCount += 1
-                        } catch {
-                            failCount += 1
-                            self.logger.warning("⚠️ Failed to process buffered chunk: \(error.localizedDescription)")
-                        }
-                    }
-                    if failCount > 0 {
-                        self.logger.warning("⚠️ Buffered chunks: \(successCount) success, \(failCount) failed")
-                    }
-                    
-                    // 标记引擎已准备好
-                    self.isEngineReady = true
-                }
-            } catch {
-                await MainActor.run {
-                    self.logger.error("❌ Engine prepare failed: \(error)")
-                    self.handleRecoveryFailure(error, context: "engine-prepare")
-                }
-            }
-        }
+        try startAudioEngine()
+        markRecordingStarted()
+        prepareTranscriptionEngine(provider)
     }
     
     /// 设置 Provider 回调

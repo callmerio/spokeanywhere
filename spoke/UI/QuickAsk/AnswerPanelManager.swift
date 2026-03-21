@@ -68,13 +68,20 @@ final class AnswerPanelInstance {
 
 // MARK: - Answer Panel Manager
 
+@MainActor
+struct AnswerPanelManagerDependencies {
+    let historyService: SessionHistoryService
+}
+
 /// 回答面板管理器（支持多窗口）
 @MainActor
 final class AnswerPanelManager {
 
     // MARK: - Singleton
 
-    static let shared = AnswerPanelManager()
+    static let shared = AnswerPanelManager(
+        dependencies: AnswerPanelManagerDependencies(historyService: .shared)
+    )
 
     // MARK: - Properties
 
@@ -84,10 +91,15 @@ final class AnswerPanelManager {
     /// 窗口位置偏移（用于级联排列新窗口）
     private var windowOffset: CGFloat = 0
     private let offsetStep: CGFloat = 30
+    private let dependencies: AnswerPanelManagerDependencies
 
     // MARK: - Init
 
-    private init() {}
+    private init(
+        dependencies: AnswerPanelManagerDependencies
+    ) {
+        self.dependencies = dependencies
+    }
 
     // MARK: - Public API
 
@@ -210,7 +222,7 @@ final class AnswerPanelManager {
 
         // 保存对话到历史记录（如果有消息）
         if !instance.state.messages.isEmpty {
-            SessionHistoryService.shared.saveConversation(
+            dependencies.historyService.saveConversation(
                 panelId: panelId,
                 messages: instance.state.messages
             )

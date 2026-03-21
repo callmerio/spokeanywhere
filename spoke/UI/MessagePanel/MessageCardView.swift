@@ -1,11 +1,22 @@
 import AppKit
 import SwiftUI
 
+@MainActor
+struct MessageCardViewDependencies {
+    let hoverState: MessagePanelHoverState
+    let resolveTags: ([UUID]) -> [CardTag]
+    let setRecordType: (UUID, CardRecordType) -> Void
+    let pasteImageFromClipboard: (UUID) -> Bool
+    let addAttachment: (NSImage, UUID) -> Void
+    let generateSummary: (UUID, Bool) -> Void
+}
+
 /// 单条消息卡片
 /// 支持折叠/展开、复制、删除
 struct MessageCardView: View {
     let card: MessageCard
     let activeFilterTagIds: Set<UUID>  // 从外部传入，避免在 TagListView 中观察整个 state
+    let dependencies: MessageCardViewDependencies
     var onDelete: (() -> Void)?
 
     @State private var isHovered = false
@@ -115,9 +126,9 @@ extension MessageCardView {
             isHovered = hovering
             // 更新全局 hover 状态（用于键盘事件）
             if hovering && card.stage.isTranscriptionResult {
-                MessagePanelHoverState.shared.hoveredCardId = card.id
-            } else if MessagePanelHoverState.shared.hoveredCardId == card.id {
-                MessagePanelHoverState.shared.hoveredCardId = nil
+                dependencies.hoverState.hoveredCardId = card.id
+            } else if dependencies.hoverState.hoveredCardId == card.id {
+                dependencies.hoverState.hoveredCardId = nil
             }
         }
         .contextMenu {
@@ -126,7 +137,7 @@ extension MessageCardView {
                 // Todo 相关操作
                 if card.recordType != .todo {
                     Button {
-                        MessagePanelState.shared.setRecordType(card.id, type: .todo)
+                        dependencies.setRecordType(card.id, .todo)
                     } label: {
                         Label("设为 Todo", systemImage: "circle")
                     }
@@ -135,7 +146,7 @@ extension MessageCardView {
                 // Done 相关操作（仅 Todo 类别显示）
                 if card.recordType == .todo {
                     Button {
-                        MessagePanelState.shared.setRecordType(card.id, type: .done)
+                        dependencies.setRecordType(card.id, .done)
                     } label: {
                         Label("标记完成", systemImage: "checkmark.circle.fill")
                     }
@@ -144,7 +155,7 @@ extension MessageCardView {
                 // Done → Todo（重新激活）
                 if card.recordType == .done {
                     Button {
-                        MessagePanelState.shared.setRecordType(card.id, type: .todo)
+                        dependencies.setRecordType(card.id, .todo)
                     } label: {
                         Label("重新激活", systemImage: "arrow.uturn.backward.circle")
                     }
@@ -153,7 +164,7 @@ extension MessageCardView {
                 // Note 操作
                 if card.recordType != .note {
                     Button {
-                        MessagePanelState.shared.setRecordType(card.id, type: .note)
+                        dependencies.setRecordType(card.id, .note)
                     } label: {
                         Label("设为 Note", systemImage: "bookmark")
                     }
@@ -163,7 +174,7 @@ extension MessageCardView {
                 if card.recordType.isPinned {
                     Divider()
                     Button {
-                        MessagePanelState.shared.setRecordType(card.id, type: .normal)
+                        dependencies.setRecordType(card.id, .normal)
                     } label: {
                         Label("取消标记", systemImage: "xmark.circle")
                     }
@@ -180,7 +191,7 @@ extension MessageCardView {
 
                 // 粘贴图片
                 Button {
-                    _ = MessagePanelState.shared.pasteImageFromClipboard(to: card.id)
+                    _ = dependencies.pasteImageFromClipboard(card.id)
                 } label: {
                     Label("粘贴图片", systemImage: "photo.on.rectangle")
                 }
@@ -192,14 +203,14 @@ extension MessageCardView {
             if card.summary == nil || card.summary?.isEmpty == true {
                 // 没有摘要时显示"总结"
                 Button {
-                    Task { await SummaryService.shared.generateSummary(for: card.id) }
+                    dependencies.generateSummary(card.id, false)
                 } label: {
                     Label("总结", systemImage: "text.quote")
                 }
             } else {
                 // 有摘要时显示"重新总结"
                 Button {
-                    Task { await SummaryService.shared.generateSummary(for: card.id, regenerate: true) }
+                    dependencies.generateSummary(card.id, true)
                 } label: {
                     Label("重新总结", systemImage: "arrow.clockwise")
                 }
@@ -235,7 +246,7 @@ extension MessageCardView {
                 _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
                     if let image = image as? NSImage {
                         Task { @MainActor in
-                            MessagePanelState.shared.addAttachment(image, to: card.id)
+                            dependencies.addAttachment(image, card.id)
                         }
                     }
                 }
@@ -248,7 +259,7 @@ extension MessageCardView {
                        let url = URL(dataRepresentation: data, relativeTo: nil),
                        let image = NSImage(contentsOf: url) {
                         Task { @MainActor in
-                            MessagePanelState.shared.addAttachment(image, to: card.id)
+                            dependencies.addAttachment(image, card.id)
                         }
                     }
                 }
@@ -271,7 +282,7 @@ extension MessageCardView {
 
         // 读取图片
         if let image = NSImage(pasteboard: pasteboard) {
-            MessagePanelState.shared.addAttachment(image, to: card.id)
+            dependencies.addAttachment(image, card.id)
             return true
         }
 
@@ -447,7 +458,7 @@ extension MessageCardView {
 
     /// 从 TagLibrary 获取卡片标签
     private var cardTags: [CardTag] {
-        TagLibrary.shared.tags(for: card.tagIds)
+        dependencies.resolveTags(card.tagIds)
     }
 
     private var tagsView: some View {

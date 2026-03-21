@@ -1,0 +1,26 @@
+{
+  "issue_id": "AG-010",
+  "title": "统一事实基线与历史口径边界",
+  "mode": "exec",
+  "goal": "把架构事实基线、历史口径边界和文档同步清单固定下来，避免后续架构结论再次漂移。",
+  "scope": [
+    "docs/architecture/current-state-audit.md",
+    "docs/architecture/overview.md",
+    "docs/architecture/quick-reference.md",
+    "docs/architecture/risks-and-recommendations.md",
+    "docs/m2-final-acceptance.md"
+  ],
+  "metric": "remaining_fact_boundary_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue AG-010",
+  "guard": [
+    "python3 scripts/autoresearch/verify_issue_metric.py --issue QG-010"
+  ],
+  "iterations": 6,
+  "run_tag": "AG-010",
+  "depends_on": [],
+  "worktree_name": "ag-010-fact-baseline",
+  "artifacts_dir": "autoresearch/runs/AG-010",
+  "stop_condition": "metric=0 或连续 3 次 discard 后 pivot",
+  "notes": "该 issue 更偏文档治理，但已压缩为可机械验证的事实边界缺口数。"
+}

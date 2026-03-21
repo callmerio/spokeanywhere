@@ -258,101 +258,114 @@ final class LLMSettings {
         let defaults = UserDefaults.standard
         
         self.isEnabled = defaults.bool(forKey: Keys.isEnabled)
-        
-        // 加载旧版配置（兼容）
-        if let rawValue = defaults.string(forKey: Keys.selectedProvider) {
-            self.selectedProviderType = LLMProviderType(rawValue: rawValue)
-        } else {
-            self.selectedProviderType = nil
-        }
-        
-        if let data = defaults.data(forKey: Keys.providerConfigs),
-           let configs = try? JSONDecoder().decode([String: ProviderConfig].self, from: data) {
-            var typedConfigs: [LLMProviderType: ProviderConfig] = [:]
-            for (key, value) in configs {
-                if let type = LLMProviderType(rawValue: key) {
-                    typedConfigs[type] = value
-                }
-            }
-            self.providerConfigs = typedConfigs
-        } else {
-            self.providerConfigs = [:]
-        }
-        
-        // 加载新版 Profile 系统
-        if let data = defaults.data(forKey: Keys.profiles),
-           let loadedProfiles = try? JSONDecoder().decode([ProviderProfile].self, from: data) {
-            self.profiles = loadedProfiles
-        } else {
-            self.profiles = []
-        }
-        
-        if let idString = defaults.string(forKey: Keys.selectedProfileId),
-           let uuid = UUID(uuidString: idString) {
-            self.selectedProfileId = uuid
-        } else {
-            self.selectedProfileId = nil
-        }
-        
-        if let idString = defaults.string(forKey: Keys.transcriptionProfileId),
-           let uuid = UUID(uuidString: idString) {
-            self.transcriptionProfileId = uuid
-        } else {
-            self.transcriptionProfileId = nil
-        }
-        
-        if let idString = defaults.string(forKey: Keys.chatProfileId),
-           let uuid = UUID(uuidString: idString) {
-            self.chatProfileId = uuid
-        } else {
-            self.chatProfileId = nil
-        }
-        
-        if let idString = defaults.string(forKey: Keys.summaryProfileId),
-           let uuid = UUID(uuidString: idString) {
-            self.summaryProfileId = uuid
-        } else {
-            self.summaryProfileId = nil
-        }
-        
-        self.summaryAutoEnabled = defaults.object(forKey: Keys.summaryAutoEnabled) as? Bool ?? true
+        self.selectedProviderType = Self.loadSelectedProviderType(from: defaults)
+        self.providerConfigs = Self.loadLegacyProviderConfigs(from: defaults)
+        self.profiles = Self.loadProfiles(from: defaults)
+        self.selectedProfileId = Self.loadProfileId(for: Keys.selectedProfileId, defaults: defaults)
+        self.transcriptionProfileId = Self.loadProfileId(for: Keys.transcriptionProfileId, defaults: defaults)
+        self.chatProfileId = Self.loadProfileId(for: Keys.chatProfileId, defaults: defaults)
+        self.summaryProfileId = Self.loadProfileId(for: Keys.summaryProfileId, defaults: defaults)
+        self.summaryAutoEnabled = Self.loadBool(for: Keys.summaryAutoEnabled, defaults: defaults, defaultValue: true)
         
         // Quick Ask 专属设置
-        self.quickAskIncludeOCR = defaults.object(forKey: Keys.quickAskIncludeOCR) as? Bool ?? true
-        self.quickAskIncludeScreenshot = defaults.object(forKey: Keys.quickAskIncludeScreenshot) as? Bool ?? false
-        self.quickAskIncludeClipboard = defaults.object(forKey: Keys.quickAskIncludeClipboard) as? Bool ?? true
-        self.quickAskIncludeLiveCaption = defaults.object(forKey: Keys.quickAskIncludeLiveCaption) as? Bool ?? false
-        self.quickAskLiveCaptionLimit = defaults.object(forKey: Keys.quickAskLiveCaptionLimit) as? Int ?? 50
+        self.quickAskIncludeOCR = Self.loadBool(for: Keys.quickAskIncludeOCR, defaults: defaults, defaultValue: true)
+        self.quickAskIncludeScreenshot = Self.loadBool(for: Keys.quickAskIncludeScreenshot, defaults: defaults, defaultValue: false)
+        self.quickAskIncludeClipboard = Self.loadBool(for: Keys.quickAskIncludeClipboard, defaults: defaults, defaultValue: true)
+        self.quickAskIncludeLiveCaption = Self.loadBool(for: Keys.quickAskIncludeLiveCaption, defaults: defaults, defaultValue: false)
+        self.quickAskLiveCaptionLimit = Self.loadInt(for: Keys.quickAskLiveCaptionLimit, defaults: defaults, defaultValue: 50)
         
-        self.systemPrompt = defaults.string(forKey: Keys.systemPrompt) ?? Self.defaultSystemPrompt
-        self.includeClipboard = defaults.object(forKey: Keys.includeClipboard) as? Bool ?? false
-        self.includeActiveApp = defaults.object(forKey: Keys.includeActiveApp) as? Bool ?? true
-        self.temperature = defaults.object(forKey: Keys.temperature) as? Double ?? 0.3
+        self.systemPrompt = Self.migrateSystemPromptIfNeeded(
+            defaults.string(forKey: Keys.systemPrompt) ?? Self.defaultSystemPrompt
+        )
+        self.includeClipboard = Self.loadBool(for: Keys.includeClipboard, defaults: defaults, defaultValue: false)
+        self.includeActiveApp = Self.loadBool(for: Keys.includeActiveApp, defaults: defaults, defaultValue: true)
+        self.temperature = Self.loadDouble(for: Keys.temperature, defaults: defaults, defaultValue: 0.3)
         self.timeout = defaults.object(forKey: Keys.timeout) as? TimeInterval ?? 30
-        self.aiGeneratedTitleEnabled = defaults.object(forKey: Keys.aiGeneratedTitleEnabled) as? Bool ?? false
+        self.aiGeneratedTitleEnabled = Self.loadBool(for: Keys.aiGeneratedTitleEnabled, defaults: defaults, defaultValue: false)
         
         // 迁移旧数据到新 Profile 系统
-        if !defaults.bool(forKey: Keys.hasMigrated) && !providerConfigs.isEmpty {
-            migrateToProfiles()
-            defaults.set(true, forKey: Keys.hasMigrated)
-        }
-        
-        // Prompt 迁移检查
-        if self.systemPrompt.starts(with: "处理语音转写的文本：") {
-            logger.info("♻️ Migrating v1 system prompt to new version")
-            self.systemPrompt = Self.defaultSystemPrompt
-        } else if self.systemPrompt.contains("修正策略（优先级从高到低）：") {
-            logger.info("♻️ Migrating v2 system prompt to v4")
-            self.systemPrompt = Self.defaultSystemPrompt
-        } else if self.systemPrompt.contains("你是 SpokenAnyWhere 的语音转写后处理专家") {
-            logger.info("♻️ Migrating v3 system prompt to v4 (conservative)")
-            self.systemPrompt = Self.defaultSystemPrompt
-        }
+        migrateToProfilesIfNeeded(defaults: defaults)
         
         // 加载并合并 API Keys
         consolidateLegacyAPIKeys()
         
         logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled, privacy: .public), profiles: \(self.profiles.count, privacy: .public)")
+    }
+
+    private static func loadSelectedProviderType(from defaults: UserDefaults) -> LLMProviderType? {
+        guard let rawValue = defaults.string(forKey: Keys.selectedProvider) else {
+            return nil
+        }
+        return LLMProviderType(rawValue: rawValue)
+    }
+
+    private static func loadLegacyProviderConfigs(from defaults: UserDefaults) -> [LLMProviderType: ProviderConfig] {
+        guard let data = defaults.data(forKey: Keys.providerConfigs),
+              let configs = try? JSONDecoder().decode([String: ProviderConfig].self, from: data) else {
+            return [:]
+        }
+
+        var typedConfigs: [LLMProviderType: ProviderConfig] = [:]
+        for (key, value) in configs {
+            if let type = LLMProviderType(rawValue: key) {
+                typedConfigs[type] = value
+            }
+        }
+        return typedConfigs
+    }
+
+    private static func loadProfiles(from defaults: UserDefaults) -> [ProviderProfile] {
+        guard let data = defaults.data(forKey: Keys.profiles),
+              let loadedProfiles = try? JSONDecoder().decode([ProviderProfile].self, from: data) else {
+            return []
+        }
+        return loadedProfiles
+    }
+
+    private static func loadProfileId(for key: String, defaults: UserDefaults) -> UUID? {
+        guard let idString = defaults.string(forKey: key) else {
+            return nil
+        }
+        return UUID(uuidString: idString)
+    }
+
+    private static func loadBool(for key: String, defaults: UserDefaults, defaultValue: Bool) -> Bool {
+        defaults.object(forKey: key) as? Bool ?? defaultValue
+    }
+
+    private static func loadInt(for key: String, defaults: UserDefaults, defaultValue: Int) -> Int {
+        defaults.object(forKey: key) as? Int ?? defaultValue
+    }
+
+    private static func loadDouble(for key: String, defaults: UserDefaults, defaultValue: Double) -> Double {
+        defaults.object(forKey: key) as? Double ?? defaultValue
+    }
+
+    private func migrateToProfilesIfNeeded(defaults: UserDefaults) {
+        guard !defaults.bool(forKey: Keys.hasMigrated), !providerConfigs.isEmpty else {
+            return
+        }
+        migrateToProfiles()
+        defaults.set(true, forKey: Keys.hasMigrated)
+    }
+
+    private static func migrateSystemPromptIfNeeded(_ prompt: String) -> String {
+        if prompt.starts(with: "处理语音转写的文本：") {
+            Logger(subsystem: "com.spokeanywhere", category: "LLMSettings")
+                .info("♻️ Migrating v1 system prompt to new version")
+            return Self.defaultSystemPrompt
+        }
+        if prompt.contains("修正策略（优先级从高到低）：") {
+            Logger(subsystem: "com.spokeanywhere", category: "LLMSettings")
+                .info("♻️ Migrating v2 system prompt to v4")
+            return Self.defaultSystemPrompt
+        }
+        if prompt.contains("你是 SpokenAnyWhere 的语音转写后处理专家") {
+            Logger(subsystem: "com.spokeanywhere", category: "LLMSettings")
+                .info("♻️ Migrating v3 system prompt to v4 (conservative)")
+            return Self.defaultSystemPrompt
+        }
+        return prompt
     }
     
     /// 从旧版配置迁移到 Profile 系统

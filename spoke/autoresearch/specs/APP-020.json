@@ -1,0 +1,28 @@
+{
+  "issue_id": "APP-020",
+  "title": "回调注册与清理治理",
+  "mode": "exec",
+  "goal": "为音频、通知和高风险回调注册点建立显式清理策略，降低 observer、callback、timer 与 task 残留风险。",
+  "scope": [
+    "App/AppDelegate.swift",
+    "Services/RecordingController.swift",
+    "UI/MessagePanel/MessagePanelView.swift",
+    "docs/architecture/app-layer-risk-assessment.md"
+  ],
+  "metric": "unmanaged_callback_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue APP-020",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 10,
+  "run_tag": "APP-020",
+  "depends_on": [
+    "APP-010"
+  ],
+  "worktree_name": "app-020-callback-cleanup",
+  "artifacts_dir": "autoresearch/runs/APP-020",
+  "stop_condition": "metric=0 且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "该 metric 当前由 inventory 缺口、observer 清理失衡和 RecordingController cleanup 信号组成。"
+}

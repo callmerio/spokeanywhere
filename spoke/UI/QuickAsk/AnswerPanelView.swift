@@ -1,14 +1,37 @@
 import AppKit
 import SwiftUI
 
+@MainActor
+struct AnswerPanelViewDependencies {
+    let workflowState: WorkflowState
+    let ttsService: TTSService
+    let ttsSettings: TTSSettings
+    let openSettings: () -> Void
+}
+
+@MainActor
+extension AnswerPanelViewDependencies {
+    static let live = AnswerPanelViewDependencies(
+        workflowState: .shared,
+        ttsService: .shared,
+        ttsSettings: .shared,
+        openSettings: {
+            if let appDelegate = NSApp.delegate as? AppDelegate {
+                appDelegate.openSettings()
+            }
+        }
+    )
+}
+
 /// Quick Ask 回答面板视图
 struct AnswerPanelView: View {
     @Bindable var state: AnswerPanelState
+    private let dependencies: AnswerPanelViewDependencies
     
     @State var followUpInput: String = ""
     
     /// Workflow 状态
-    @State var workflowState = WorkflowState.shared
+    @State var workflowState: WorkflowState
     
     /// 录音状态
     @State var isRecording: Bool = false
@@ -23,8 +46,8 @@ struct AnswerPanelView: View {
     
     // 操作按钮状态
     @State private var isCopied: Bool = false
-    @ObservedObject private var ttsService = TTSService.shared
-    @ObservedObject private var ttsSettings = TTSSettings.shared
+    @ObservedObject private var ttsService: TTSService
+    @ObservedObject private var ttsSettings: TTSSettings
     
     // 模式选择
     @State private var selectedMode: QuickAskMode = .chat
@@ -46,6 +69,42 @@ struct AnswerPanelView: View {
     var onNewChat: (() -> Void)?
     /// 重新生成回调
     var onRegenerate: (() -> Void)?
+
+    init(
+        state: AnswerPanelState,
+        dependencies: AnswerPanelViewDependencies,
+        onClose: (() -> Void)? = nil,
+        onFollowUp: ((String, [Attachment]) -> Void)? = nil,
+        onNewChat: (() -> Void)? = nil,
+        onRegenerate: (() -> Void)? = nil
+    ) {
+        self.state = state
+        self.dependencies = dependencies
+        self._workflowState = State(initialValue: dependencies.workflowState)
+        self.ttsService = dependencies.ttsService
+        self.ttsSettings = dependencies.ttsSettings
+        self.onClose = onClose
+        self.onFollowUp = onFollowUp
+        self.onNewChat = onNewChat
+        self.onRegenerate = onRegenerate
+    }
+
+    init(
+        state: AnswerPanelState,
+        onClose: (() -> Void)? = nil,
+        onFollowUp: ((String, [Attachment]) -> Void)? = nil,
+        onNewChat: (() -> Void)? = nil,
+        onRegenerate: (() -> Void)? = nil
+    ) {
+        self.init(
+            state: state,
+            dependencies: .live,
+            onClose: onClose,
+            onFollowUp: onFollowUp,
+            onNewChat: onNewChat,
+            onRegenerate: onRegenerate
+        )
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -160,9 +219,6 @@ struct AnswerPanelView: View {
     
     /// 打开设置窗口
     private func openSettings() {
-        // 通过 AppDelegate 打开设置
-        if let appDelegate = NSApp.delegate as? AppDelegate {
-            appDelegate.openSettings()
-        }
+        dependencies.openSettings()
     }
 }

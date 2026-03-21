@@ -102,6 +102,28 @@ protocol QuickAskServiceProtocol: AnyObject {
 
 // MARK: - Service Container
 
+@MainActor
+struct ServiceContainerDependencies {
+    let makeAudioCapture: () -> AudioCaptureServiceProtocol
+    let makeTranscription: () -> TranscriptionServiceProtocol
+    let makeLLM: () -> LLMServiceProtocol
+    let makeAppSettings: () -> AppSettingsProtocol
+    let makeHistoryManager: () -> HistoryManagerProtocol
+    let makeQuickAsk: () -> QuickAskServiceProtocol
+}
+
+@MainActor
+extension ServiceContainerDependencies {
+    static let live = ServiceContainerDependencies(
+        makeAudioCapture: { AudioRecorderService.shared },
+        makeTranscription: { TranscriptionManager.shared },
+        makeLLM: { LLMPipeline.shared },
+        makeAppSettings: { AppSettings.shared },
+        makeHistoryManager: { HistoryManager.shared },
+        makeQuickAsk: { QuickAskService.shared }
+    )
+}
+
 /// 轻量级依赖注入容器
 ///
 /// 使用方式:
@@ -120,7 +142,9 @@ final class ServiceContainer: ObservableObject {
 
     // MARK: - Singleton
 
-    static let shared = ServiceContainer()
+    static let shared = ServiceContainer(dependencies: .live)
+
+    private let dependencies: ServiceContainerDependencies
 
     // MARK: - Private Storage
 
@@ -135,62 +159,32 @@ final class ServiceContainer: ObservableObject {
 
     /// 音频捕获服务
     var audioCapture: AudioCaptureServiceProtocol {
-        if let service = _audioCapture {
-            return service
-        }
-        let service = AudioRecorderService.shared
-        _audioCapture = service
-        return service
+        resolveService(storage: &_audioCapture, provider: dependencies.makeAudioCapture)
     }
 
     /// 转录服务
     var transcription: TranscriptionServiceProtocol {
-        if let service = _transcription {
-            return service
-        }
-        let service = TranscriptionManager.shared
-        _transcription = service
-        return service
+        resolveService(storage: &_transcription, provider: dependencies.makeTranscription)
     }
 
     /// LLM 服务
     var llm: LLMServiceProtocol {
-        if let service = _llm {
-            return service
-        }
-        let service = LLMPipeline.shared
-        _llm = service
-        return service
+        resolveService(storage: &_llm, provider: dependencies.makeLLM)
     }
 
     /// 应用设置服务
     var appSettings: AppSettingsProtocol {
-        if let service = _appSettings {
-            return service
-        }
-        let service = AppSettings.shared
-        _appSettings = service
-        return service
+        resolveService(storage: &_appSettings, provider: dependencies.makeAppSettings)
     }
 
     /// 历史记录服务
     var historyManager: HistoryManagerProtocol {
-        if let service = _historyManager {
-            return service
-        }
-        let service = HistoryManager.shared
-        _historyManager = service
-        return service
+        resolveService(storage: &_historyManager, provider: dependencies.makeHistoryManager)
     }
 
     /// Quick Ask 服务
     var quickAsk: QuickAskServiceProtocol {
-        if let service = _quickAsk {
-            return service
-        }
-        let service = QuickAskService.shared
-        _quickAsk = service
-        return service
+        resolveService(storage: &_quickAsk, provider: dependencies.makeQuickAsk)
     }
 
     // MARK: - Test Injection
@@ -237,7 +231,25 @@ final class ServiceContainer: ObservableObject {
 
     // MARK: - Init
 
-    private init() {}
+    init() {
+        self.dependencies = .live
+    }
+
+    private init(dependencies: ServiceContainerDependencies) {
+        self.dependencies = dependencies
+    }
+
+    private func resolveService<Service>(
+        storage: inout Service?,
+        provider: () -> Service
+    ) -> Service {
+        if let service = storage {
+            return service
+        }
+        let service = provider()
+        storage = service
+        return service
+    }
 }
 
 // MARK: - SwiftUI Environment Integration

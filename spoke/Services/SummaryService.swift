@@ -2,6 +2,29 @@ import AppKit
 import Foundation
 import OSLog
 
+@MainActor
+private func resolveSharedMessagePanelState() -> MessagePanelState {
+    MessagePanelState.shared
+}
+
+@MainActor
+struct SummaryServiceDependencies {
+    let messagePanelState: () -> MessagePanelState
+    let attachmentStorage: CardAttachmentStorage
+    let llmSettings: LLMSettings
+    let urlSession: URLSession
+}
+
+@MainActor
+extension SummaryServiceDependencies {
+    static let live = SummaryServiceDependencies(
+        messagePanelState: { resolveSharedMessagePanelState() },
+        attachmentStorage: .shared,
+        llmSettings: .shared,
+        urlSession: .shared
+    )
+}
+
 /// 总结服务
 /// 负责生成卡片内容的智能摘要
 @MainActor
@@ -9,9 +32,16 @@ final class SummaryService {
     
     // MARK: - Singleton
     
-    static let shared = SummaryService()
+    static let shared = SummaryService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "SummaryService")
+    private let dependencies: SummaryServiceDependencies
+
+    private init(
+        dependencies: SummaryServiceDependencies
+    ) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
@@ -20,7 +50,7 @@ final class SummaryService {
     ///   - cardId: 卡片 ID
     ///   - regenerate: 是否重新生成（忽略已有总结）
     func generateSummary(for cardId: UUID, regenerate: Bool = false) async {
-        let state = MessagePanelState.shared
+        let state = dependencies.messagePanelState()
         
         guard let card = state.cards[id: cardId] else {
             logger.warning("⚠️ Card not found: \(cardId)")
@@ -40,24 +70,23 @@ final class SummaryService {
         }
         
         // 更新状态为 pending
-        state.cards[id: cardId]?.summaryStatus = .pending
-        state.objectWillChange.send()
+        updateCard(cardId: cardId) { $0.summaryStatus = .pending }
         
         do {
             // 根据内容类型选择处理策略
             let (content, images) = try await prepareContent(for: card)
             
             // 更新状态为 generating
-            state.cards[id: cardId]?.summaryStatus = .generating
-            state.objectWillChange.send()
+            updateCard(cardId: cardId) { $0.summaryStatus = .generating }
             
             // 调用 LLM 生成总结（传入原文长度和图片）
             let summary = try await callLLM(content: content, images: images, originalLength: card.content.count)
             
             // 更新总结内容
-            state.cards[id: cardId]?.summary = summary
-            state.cards[id: cardId]?.summaryStatus = .completed
-            state.objectWillChange.send()
+            updateCard(cardId: cardId) {
+                $0.summary = summary
+                $0.summaryStatus = .completed
+            }
             
             // 保存
             state.saveCards()
@@ -65,8 +94,7 @@ final class SummaryService {
             logger.info("✅ Summary generated for card: \(cardId)")
         } catch {
             // 更新状态为失败
-            state.cards[id: cardId]?.summaryStatus = .failed
-            state.objectWillChange.send()
+            updateCard(cardId: cardId) { $0.summaryStatus = .failed }
             
             logger.error("❌ Summary generation failed: \(error.localizedDescription)")
         }
@@ -74,13 +102,14 @@ final class SummaryService {
     
     /// 清除卡片的总结
     func clearSummary(for cardId: UUID) {
-        let state = MessagePanelState.shared
+        let state = dependencies.messagePanelState()
         
         guard state.cards[id: cardId] != nil else { return }
         
-        state.cards[id: cardId]?.summary = nil
-        state.cards[id: cardId]?.summaryStatus = .none
-        state.objectWillChange.send()
+        updateCard(cardId: cardId) {
+            $0.summary = nil
+            $0.summaryStatus = .none
+        }
         state.saveCards()
         
         logger.info("🗑️ Summary cleared for card: \(cardId)")
@@ -90,17 +119,7 @@ final class SummaryService {
     
     /// 准备用于总结的内容和图片
     private func prepareContent(for card: MessageCard) async throws -> (text: String, images: [Data]) {
-        var images: [Data] = []
-        
-        // 加载附件图片
-        for attachment in card.attachments {
-            if let nsImage = CardAttachmentStorage.shared.loadOriginal(for: attachment),
-               let tiffData = nsImage.tiffRepresentation,
-               let bitmap = NSBitmapImageRep(data: tiffData),
-               let pngData = bitmap.representation(using: .png, properties: [:]) {
-                images.append(pngData)
-            }
-        }
+        let images = loadAttachmentImages(for: card)
         
         switch card.contentType {
         case .text:
@@ -121,6 +140,21 @@ final class SummaryService {
             return (card.content, images)
         }
     }
+
+    private func loadAttachmentImages(for card: MessageCard) -> [Data] {
+        var images: [Data] = []
+
+        for attachment in card.attachments {
+            if let nsImage = dependencies.attachmentStorage.loadOriginal(for: attachment),
+               let tiffData = nsImage.tiffRepresentation,
+               let bitmap = NSBitmapImageRep(data: tiffData),
+               let pngData = bitmap.representation(using: .png, properties: [:]) {
+                images.append(pngData)
+            }
+        }
+
+        return images
+    }
     
     /// 抓取 URL 内容
     private func fetchURLContent(from text: String) async throws -> String {
@@ -137,7 +171,7 @@ final class SummaryService {
         }
         
         // 使用 URLSession 抓取内容
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await dependencies.urlSession.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
@@ -201,7 +235,7 @@ final class SummaryService {
     
     /// 调用 LLM 生成总结
     private func callLLM(content: String, images: [Data], originalLength: Int) async throws -> String {
-        let settings = LLMSettings.shared
+        let settings = dependencies.llmSettings
         
         // 获取总结模型（优先 summaryProfile，其次 selectedProfile）
         guard let profile = settings.summaryProfile ?? settings.selectedProfile,
@@ -234,6 +268,13 @@ final class SummaryService {
         }
         
         return summary
+    }
+
+    private func updateCard(cardId: UUID, _ update: (MessageCard) -> Void) {
+        let state = dependencies.messagePanelState()
+        guard let card = state.cards[id: cardId] else { return }
+        update(card)
+        state.objectWillChange.send()
     }
 }
 

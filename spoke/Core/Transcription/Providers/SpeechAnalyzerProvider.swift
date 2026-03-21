@@ -8,6 +8,70 @@ import Speech
 /// 新一代设备端语音识别，更快更准确，支持自定义词典
 @available(macOS 26.0, iOS 26.0, *)
 @MainActor
+struct SpeechAnalyzerProviderDictionaryInjectionState {
+    let isEnabled: Bool
+    let isPrepared: Bool
+    let injector: DictionaryInjector?
+}
+
+@available(macOS 26.0, iOS 26.0, *)
+@MainActor
+struct SpeechAnalyzerProviderDictionaryLexicon {
+    let words: Set<String>
+    let trainingPhrases: [(word: String, phrase: String)]
+
+    var hasTrainingPhrases: Bool {
+        !trainingPhrases.isEmpty
+    }
+
+    var contextualStrings: [String] {
+        var allStrings = Array(words)
+        for (_, phrase) in trainingPhrases {
+            allStrings.append(phrase)
+        }
+        return allStrings
+    }
+}
+
+@available(macOS 26.0, iOS 26.0, *)
+@MainActor
+struct SpeechAnalyzerProviderDependencies {
+    let dictionaryInjectionState: () -> SpeechAnalyzerProviderDictionaryInjectionState
+    let dictionaryLexicon: () -> SpeechAnalyzerProviderDictionaryLexicon
+}
+
+@available(macOS 26.0, iOS 26.0, *)
+@MainActor
+extension SpeechAnalyzerProviderDependencies {
+    static let live = SpeechAnalyzerProviderDependencies(
+        dictionaryInjectionState: {
+            let manager = transcriptionManager()
+            return SpeechAnalyzerProviderDictionaryInjectionState(
+                isEnabled: manager.isDictionaryInjectionEnabled,
+                isPrepared: manager.isDictionaryPrepared,
+                injector: manager.dictionaryInjector
+            )
+        },
+        dictionaryLexicon: {
+            let dictionaryService = currentDictionaryService()
+            return SpeechAnalyzerProviderDictionaryLexicon(
+                words: Set(dictionaryService.getAllWords()),
+                trainingPhrases: dictionaryService.getAllTrainingPhrases()
+            )
+        }
+    )
+
+    private static func transcriptionManager() -> TranscriptionManager {
+        TranscriptionManager.shared
+    }
+
+    private static func currentDictionaryService() -> DictionaryService {
+        DictionaryService.shared
+    }
+}
+
+@available(macOS 26.0, iOS 26.0, *)
+@MainActor
 final class SpeechAnalyzerProvider: TranscriptionProvider {
     
     // MARK: - Properties
@@ -77,17 +141,27 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     // 累积的文本
     private var finalizedText: String = ""   // 已确认的文本
     private var volatileText: String = ""    // 当前预览文本
+    private let dependencies: SpeechAnalyzerProviderDependencies
     
     // MARK: - Init
     
-    init(locale: Locale = Locale(identifier: "zh-Hans"), modelType: TranscriptionModelType = .dictation) {
+    init(
+        locale: Locale = Locale(identifier: "zh-Hans"),
+        modelType: TranscriptionModelType = .dictation,
+        dependencies: SpeechAnalyzerProviderDependencies
+    ) {
         self.locale = locale
         self.modelType = modelType
+        self.dependencies = dependencies
+    }
+
+    convenience init(locale: Locale = Locale(identifier: "zh-Hans"), modelType: TranscriptionModelType = .dictation) {
+        self.init(locale: locale, modelType: modelType, dependencies: .live)
     }
     
     /// Initialize from TranscriptionModelManager configuration
     convenience init(config: TranscriptionProviderConfig) {
-        self.init(locale: config.locale, modelType: config.modelType)
+        self.init(locale: config.locale, modelType: config.modelType, dependencies: .live)
         self.enablePrecompiledLM = config.enablePrecompiledLM
     }
     
@@ -341,19 +415,13 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     
     /// Inject contextualStrings to analyzer (words + training phrases)
     private func injectContextualStrings(to analyzer: SpeechAnalyzer) async throws {
-        guard TranscriptionManager.shared.isDictionaryInjectionEnabled else {
+        let injectionState = dependencies.dictionaryInjectionState()
+        guard injectionState.isEnabled else {
             logger.info("ℹ️ [词典] 词典注入已禁用")
             return
         }
         
-        // Collect all words
-        var allStrings: [String] = DictionaryService.shared.getAllWords()
-        
-        // Add training phrases (for SpeechTranscriber, this compensates for lack of precompiled LM)
-        let trainingPhrases = DictionaryService.shared.getAllTrainingPhrases()
-        for (_, phrase) in trainingPhrases {
-            allStrings.append(phrase)
-        }
+        let allStrings = contextualStringsForAnalyzer()
         
         guard !allStrings.isEmpty else {
             logger.info("⚠️ [词典] 词典为空，跳过注入")
@@ -385,20 +453,21 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         let basePreset = DictationTranscriber.Preset.progressiveShortDictation
         var contentHints = basePreset.contentHints
         var reportingOptions = basePreset.reportingOptions
+        let injectionState = dependencies.dictionaryInjectionState()
+        let lexicon = dependencies.dictionaryLexicon()
         
         // Only enable precompiled LM if user setting allows it
-        let manager = TranscriptionManager.shared
         if enablePrecompiledLM,
-           manager.isDictionaryInjectionEnabled,
-           DictionaryService.shared.hasTrainingPhrases,
-           manager.isDictionaryPrepared,
-           let injector = manager.dictionaryInjector as? AppleSpeechDictionaryInjector,
+           injectionState.isEnabled,
+           lexicon.hasTrainingPhrases,
+           injectionState.isPrepared,
+           let injector = injectionState.injector as? AppleSpeechDictionaryInjector,
            let lmConfiguration = injector.languageModelConfiguration {
             
             contentHints.insert(.customizedLanguage(modelConfiguration: lmConfiguration))
             reportingOptions.insert(.frequentFinalization)
             
-            let phraseCount = DictionaryService.shared.getAllTrainingPhrases().count
+            let phraseCount = lexicon.trainingPhrases.count
             logger.notice("📚 Precompiled LM enabled, training phrases: \(phraseCount, privacy: .public)")
         } else if !enablePrecompiledLM {
             logger.notice("ℹ️ Precompiled LM disabled by user setting")
@@ -413,6 +482,10 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         )
         
         return transcriber
+    }
+
+    private func contextualStringsForAnalyzer() -> [String] {
+        dependencies.dictionaryLexicon().contextualStrings
     }
     
     // MARK: - [DEPRECATED] SpeechTranscriber Setup (保留用于 fallback)
@@ -433,9 +506,10 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         self.transcriber = transcriber
         
         // Step 3: 配置 contextualStrings（实时注入，无需预编译）
-        if TranscriptionManager.shared.isDictionaryInjectionEnabled {
+        let injectionState = dependencies.dictionaryInjectionState()
+        if injectionState.isEnabled {
             let context = AnalysisContext()
-            let words = DictionaryService.shared.getAllWords()
+            let words = Array(dependencies.dictionaryLexicon().words)
             if !words.isEmpty {
                 context.contextualStrings[.general] = words
                 try await analyzer?.setContext(context)

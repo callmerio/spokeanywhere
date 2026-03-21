@@ -134,6 +134,8 @@ final class FloatingHUDManager {
             .frame(width: Self.fixedWindowWidth, height: Self.fixedWindowHeight, alignment: .bottom)
         
         let hostingView = NSHostingView(rootView: framedView)
+        hostingView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.floatingHUDRoot)
+        hostingView.setAccessibilityIdentifier(UITestIdentifiers.Element.floatingHUDRoot)
         
         // 固定窗口大小
         let frame = NSRect(
@@ -142,6 +144,8 @@ final class FloatingHUDManager {
         )
         
         let newPanel = FloatingPanel(contentRect: frame)
+        newPanel.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.floatingHUD)
+        newPanel.setAccessibilityIdentifier(UITestIdentifiers.Window.floatingHUD)
         newPanel.contentView = hostingView
         
         self.panel = newPanel

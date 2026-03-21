@@ -3,6 +3,26 @@ import Combine
 import Foundation
 import os
 
+@MainActor
+struct RecordingControllerDependencies {
+    let hudManager: FloatingHUDManager
+    let contextService: ContextService
+    let hotKeyService: HotKeyService
+    let audioService: AudioRecorderService
+    let inputService: InputService
+    let settings: AppSettings
+    let llmSettings: LLMSettings
+    let llmPipeline: LLMPipeline
+    let historyManager: HistoryManager
+    let quickAskService: QuickAskService
+    let screenOCR: ScreenOCRService
+    let messagePanelManager: MessagePanelManager
+    let liveCaptionWindowManager: LiveCaptionWindowManager
+    let clipboardPipelineService: ClipboardPipelineService
+    let copyToClipboard: (String) -> Void
+    let openSettings: () -> Void
+}
+
 /// 录音控制器
 /// 协调快捷键、HUD、上下文感知等服务
 @MainActor
@@ -17,22 +37,40 @@ final class RecordingController {
     
     // MARK: - Singleton
     
-    static let shared = RecordingController()
+    static let shared = RecordingController(
+        dependencies: RecordingControllerDependencies(
+            hudManager: .shared,
+            contextService: .shared,
+            hotKeyService: .shared,
+            audioService: .shared,
+            inputService: .shared,
+            settings: .shared,
+            llmSettings: .shared,
+            llmPipeline: .shared,
+            historyManager: .shared,
+            quickAskService: .shared,
+            screenOCR: .shared,
+            messagePanelManager: .shared,
+            liveCaptionWindowManager: .shared,
+            clipboardPipelineService: .shared,
+            copyToClipboard: { text in
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(text, forType: .string)
+            },
+            openSettings: {
+                if !NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil) {
+                    assertionFailure("AppDelegate should handle openSettings via responder chain")
+                }
+            }
+        )
+    )
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "Recording")
     
     // MARK: - Dependencies
     
-    private let hudManager = FloatingHUDManager.shared
-    private let contextService = ContextService.shared
-    private let hotKeyService = HotKeyService.shared
-    private let audioService = AudioRecorderService.shared
-    private let inputService = InputService.shared
-    private let settings = AppSettings.shared
-    private let llmPipeline = LLMPipeline.shared
-    private let historyManager = HistoryManager.shared
-    private let quickAskService = QuickAskService.shared
-    private let screenOCR = ScreenOCRService.shared
+    private let dependencies: RecordingControllerDependencies
     
     // MARK: - Properties
     
@@ -40,11 +78,19 @@ final class RecordingController {
     private var recordingStartTime: Date?
     private var lastTranscription: String = ""
     private let recordingCallbackSessionID: UUID
+
+    private struct CapturedRecordingSession {
+        let transcription: String
+        let audioURL: URL?
+        let appBundleId: String?
+        let sourceApp: SourceAppInfo?
+    }
     
     // MARK: - Init
     
-    private init() {
-        recordingCallbackSessionID = audioService.createCallbackSession()
+    private init(dependencies: RecordingControllerDependencies) {
+        self.dependencies = dependencies
+        recordingCallbackSessionID = dependencies.audioService.createCallbackSession()
         setupAudioCallbacks()
         setupHUDCallbacks()
         setupQuickAskCallbacks()
@@ -53,101 +99,75 @@ final class RecordingController {
     
     private func setupHUDCallbacks() {
         // 用户点击"完成录音"按钮
-        hudManager.onComplete = { [weak self] in
-            Task { @MainActor in
-                self?.completeRecordingSession()
-            }
+        dependencies.hudManager.onComplete = makeControllerAction { controller in
+            controller.completeRecordingSession()
         }
         
         // 用户点击"取消录音"按钮
-        hudManager.onCancel = { [weak self] in
-            Task { @MainActor in
-                self?.cancelRecordingSession()
-            }
+        dependencies.hudManager.onCancel = makeControllerAction { controller in
+            controller.cancelRecordingSession()
         }
     }
     
     private func setupQuickAskCallbacks() {
         // Quick Ask 开始
-        hotKeyService.onQuickAskStart = { [weak self] in
-            Task { @MainActor in
-                self?.quickAskService.startSession()
-            }
+        dependencies.hotKeyService.onQuickAskStart = makeControllerAction { controller in
+            controller.dependencies.quickAskService.startSession()
         }
         
         // Quick Ask 发送（再次按快捷键）
-        hotKeyService.onQuickAskSend = { [weak self] in
-            Task { @MainActor in
-                self?.quickAskService.sendViaShortcut()
-            }
+        dependencies.hotKeyService.onQuickAskSend = makeControllerAction { controller in
+            controller.dependencies.quickAskService.sendViaShortcut()
         }
         
         // Cmd+逗号 打开设置
-        hotKeyService.onOpenSettings = {
-            guard let appDelegate = AppDelegate.shared else {
-                assertionFailure("AppDelegate.shared should be set in applicationDidFinishLaunching")
-                return
-            }
-            appDelegate.openSettings()
+        dependencies.hotKeyService.onOpenSettings = makeDependenciesAction { dependencies in
+            dependencies.openSettings()
         }
     }
     
     private func setupMessagePanelCallbacks() {
         // Message Panel 切换显示
-        hotKeyService.onMessagePanelToggle = {
-            Task { @MainActor in
-                MessagePanelManager.shared.toggle()
-            }
+        dependencies.hotKeyService.onMessagePanelToggle = makeDependenciesAction { dependencies in
+            dependencies.messagePanelManager.toggle()
         }
         
         // Live Caption 切换显示
-        hotKeyService.onLiveCaptionToggle = {
-            Task { @MainActor in
-                LiveCaptionWindowManager.shared.toggle()
-            }
+        dependencies.hotKeyService.onLiveCaptionToggle = makeDependenciesAction { dependencies in
+            dependencies.liveCaptionWindowManager.toggle()
         }
         
         // Clipboard Pipeline 触发
-        hotKeyService.onClipboardPipelineTrigger = {
-            Task { @MainActor in
-                ClipboardPipelineService.shared.trigger()
-            }
+        dependencies.hotKeyService.onClipboardPipelineTrigger = makeDependenciesAction { dependencies in
+            dependencies.clipboardPipelineService.trigger()
         }
     }
     
     private func setupAudioCallbacks() {
-        audioService.updateCallbackSession(recordingCallbackSessionID) { [weak self] callbacks in
-            callbacks.onAudioLevelUpdate = { [weak self] level in
-                Task { @MainActor in
-                    self?.hudManager.updateAudioLevel(level)
+        dependencies.audioService.updateCallbackSession(recordingCallbackSessionID) { [weak self] callbacks in
+            callbacks.onAudioLevelUpdate = self?.makeControllerAction { controller, level in
+                controller.dependencies.hudManager.updateAudioLevel(level)
+            }
+
+            callbacks.onPartialResult = self?.makeControllerAction { controller, result in
+                // 保存完整文本
+                controller.lastTranscription = result.text
+
+                // HUD 始终显示完整文本（finalized + volatile）
+                controller.dependencies.hudManager.updatePartialText(result.text)
+
+                // 边说边打字模式：使用稳定性检测输入
+                if controller.dependencies.settings.realtimeTypingEnabled {
+                    // 基于前缀稳定性检测，更快地输入稳定内容
+                    controller.dependencies.inputService.typeWithStabilityDetection(
+                        finalizedText: result.finalizedText,
+                        volatileText: result.volatileText
+                    )
                 }
             }
 
-            callbacks.onPartialResult = { [weak self] result in
-                Task { @MainActor in
-                    guard let self = self else { return }
-
-                    // 保存完整文本
-                    self.lastTranscription = result.text
-
-                    // HUD 始终显示完整文本（finalized + volatile）
-                    self.hudManager.updatePartialText(result.text)
-
-                    // 边说边打字模式：使用稳定性检测输入
-                    if self.settings.realtimeTypingEnabled {
-                        // 基于前缀稳定性检测，更快地输入稳定内容
-                        self.inputService.typeWithStabilityDetection(
-                            finalizedText: result.finalizedText,
-                            volatileText: result.volatileText
-                        )
-                    }
-                }
-            }
-
-            callbacks.onFinalResult = { [weak self] text in
-                Task { @MainActor in
-                    self?.lastTranscription = text
-                }
+            callbacks.onFinalResult = self?.makeControllerAction { controller, text in
+                controller.lastTranscription = text
             }
 
             callbacks.onError = { [weak self] error in
@@ -161,111 +181,122 @@ final class RecordingController {
     /// 启动录音控制器
     func start() {
         setupHotKeyCallbacks()
-        hotKeyService.register()
+        dependencies.hotKeyService.register()
         
         logger.info("🎙️ RecordingController started")
     }
     
     /// 停止录音控制器
     func stop() {
-        hotKeyService.unregister()
+        dependencies.hotKeyService.unregister()
         stopRecordingSession()
     }
+
+#if DEBUG
+    /// Debug-only：用于自动化脚本触发录音开关（绕过全局热键）
+    func debugToggleRecording() {
+        if dependencies.hotKeyService.isRecording {
+            stopRecordingSession()
+            logger.info("🧪 [DebugAutomation] recording toggled -> stop")
+            return
+        }
+
+        dependencies.hotKeyService.isRecording = true
+        startRecordingSession()
+        if dependencies.hotKeyService.isRecording {
+            logger.info("🧪 [DebugAutomation] recording toggled -> start")
+        } else {
+            logger.info("🧪 [DebugAutomation] recording start aborted")
+        }
+    }
+#endif
     
     // MARK: - Private
     
     private func setupHotKeyCallbacks() {
-        hotKeyService.onRecordingStart = { [weak self] in
-            Task { @MainActor in
-                self?.startRecordingSession()
-            }
+        dependencies.hotKeyService.onRecordingStart = makeControllerAction { controller in
+            controller.startRecordingSession()
         }
         
-        hotKeyService.onRecordingStop = { [weak self] in
-            Task { @MainActor in
-                self?.stopRecordingSession()
-            }
+        dependencies.hotKeyService.onRecordingStop = makeControllerAction { controller in
+            controller.stopRecordingSession()
         }
     }
     
     private func startRecordingSession() {
-        let targetApp = contextService.getCurrentTargetApp()
+        let targetApp = dependencies.contextService.getCurrentTargetApp()
         
         // 显示 HUD（先显示"准备中"状态）
-        hudManager.show(targetApp: targetApp)
+        dependencies.hudManager.show(targetApp: targetApp)
         
         // 记录开始时间
         recordingStartTime = Date()
         lastTranscription = ""
         
         // 重置输入服务（边说边打字）
-        inputService.reset()
+        dependencies.inputService.reset()
         
         // 录音入口使用独立回调会话，避免与 Quick Ask 串线
         setupAudioCallbacks()
-        audioService.activateCallbackSession(recordingCallbackSessionID)
+        dependencies.audioService.activateCallbackSession(recordingCallbackSessionID)
         
         // 🔍 预取 OCR（与录音并行，不阻塞）
-        if LLMSettings.shared.includeActiveApp {
-            screenOCR.prefetch()
+        if dependencies.llmSettings.includeActiveApp {
+            dependencies.screenOCR.prefetch()
         }
         
         // 启动计时器更新时长
+        let updateDuration = makeControllerAction { controller in
+            controller.updateRecordingDuration()
+        }
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateRecordingDuration()
-            }
+            guard self != nil else { return }
+            updateDuration()
         }
         
         // 启动音频录制（立即开始，引擎后台准备）
         do {
-            try audioService.startRecording()
+            try dependencies.audioService.startRecording()
             logger.info("🔴 Recording started for: \(targetApp?.name ?? "Unknown", privacy: .public)")
         } catch {
             logger.error("❌ Failed to start recording: \(error, privacy: .public)")
-            hudManager.fail(with: "录音启动失败")
+            dependencies.hotKeyService.resetState()
+            dependencies.hudManager.fail(with: "录音启动失败")
         }
     }
     
     /// 结束录音会话的公共逻辑
     private func finishRecordingSession(source: String) {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        recordingStartTime = nil
-        
         // 捕获当前录音数据（新录音可能会覆盖）
-        let capturedTranscription = lastTranscription
-        let capturedAudioURL = audioService.tempAudioFileURL
-        let capturedAppBundleId = contextService.getCurrentTargetApp()?.bundleIdentifier
-        // 捕获来源应用信息（用于 Pipeline 卡片显示）
-        let capturedSourceApp: SourceAppInfo? = contextService.getCurrentTargetApp().map { SourceAppInfo.from($0) }
+        let capturedSession = captureCurrentSession()
+        resetRecordingSessionState(clearTranscription: false)
         
         // 停止音频录制（正常结束，等待最终结果）
-        _ = audioService.stopRecording()
+        _ = dependencies.audioService.stopRecording()
         
         // 边说边打字：刷新待输入的文本
-        if settings.realtimeTypingEnabled {
-            inputService.flushPendingText()
+        if dependencies.settings.realtimeTypingEnabled {
+            dependencies.inputService.flushPendingText()
         }
         
         // 立即重置热键状态，允许新录音
-        hotKeyService.resetState()
+        dependencies.hotKeyService.resetState()
         
         // 根据是否启用 LLM 选择状态
-        if llmPipeline.shouldProcess {
-            hudManager.startThinking()
+        if dependencies.llmPipeline.shouldProcess {
+            dependencies.hudManager.startThinking()
         } else {
-            hudManager.startProcessing()
+            dependencies.hudManager.startProcessing()
         }
         
         logger.info("⏹️ Recording \(source, privacy: .public)")
         
         // 后台处理转写结果（不阻塞新录音）
         processTranscription(
-            transcription: capturedTranscription,
-            audioURL: capturedAudioURL,
-            appBundleId: capturedAppBundleId,
-            sourceApp: capturedSourceApp
+            transcription: capturedSession.transcription,
+            audioURL: capturedSession.audioURL,
+            appBundleId: capturedSession.appBundleId,
+            sourceApp: capturedSession.sourceApp
         )
     }
     
@@ -280,19 +311,16 @@ final class RecordingController {
     
     /// 取消录音（用户点击"取消录音"按钮时调用）
     func cancelRecordingSession() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        recordingStartTime = nil
-        lastTranscription = ""
+        resetRecordingSessionState(clearTranscription: true)
         
         // 取消音频录制（丢弃结果）
-        audioService.cancelRecording()
+        dependencies.audioService.cancelRecording()
         
         // 重置热键状态（完整重置，包括 isToggleSession 和 recordingStartTime）
-        hotKeyService.resetState()
+        dependencies.hotKeyService.resetState()
         
         // 隐藏 HUD
-        hudManager.hide()
+        dependencies.hudManager.hide()
         
         logger.info("🚫 Recording cancelled by user")
     }
@@ -300,7 +328,78 @@ final class RecordingController {
     private func updateRecordingDuration() {
         guard let startTime = recordingStartTime else { return }
         let duration = Date().timeIntervalSince(startTime)
-        hudManager.updateDuration(duration)
+        dependencies.hudManager.updateDuration(duration)
+    }
+
+    private func makeControllerAction(
+        _ action: @escaping @MainActor (RecordingController) -> Void
+    ) -> () -> Void {
+        { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                action(self)
+            }
+        }
+    }
+
+    private func makeControllerAction<Value>(
+        _ action: @escaping @MainActor (RecordingController, Value) -> Void
+    ) -> (Value) -> Void {
+        { [weak self] value in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                action(self, value)
+            }
+        }
+    }
+
+    private func makeDependenciesAction(
+        _ action: @escaping @MainActor (RecordingControllerDependencies) -> Void
+    ) -> () -> Void {
+        let dependencies = self.dependencies
+        return {
+            Task { @MainActor in
+                action(dependencies)
+            }
+        }
+    }
+
+    private func captureCurrentSession() -> CapturedRecordingSession {
+        let targetApp = dependencies.contextService.getCurrentTargetApp()
+        return CapturedRecordingSession(
+            transcription: lastTranscription,
+            audioURL: dependencies.audioService.tempAudioFileURL,
+            appBundleId: targetApp?.bundleIdentifier,
+            sourceApp: targetApp.map(SourceAppInfo.from)
+        )
+    }
+
+    private func resetRecordingSessionState(clearTranscription: Bool) {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        recordingStartTime = nil
+        if clearTranscription {
+            lastTranscription = ""
+        }
+    }
+
+    private func withIdleRecordingState(_ action: (FloatingHUDManager) -> Void) {
+        guard !dependencies.hotKeyService.isRecording else { return }
+        action(dependencies.hudManager)
+    }
+
+    private func persistRecording(
+        rawText: String,
+        processedText: String?,
+        audioURL: URL?,
+        appBundleId: String?
+    ) async {
+        await dependencies.historyManager.saveRecording(
+            rawText: rawText,
+            processedText: processedText,
+            tempAudioURL: audioURL,
+            appBundleId: appBundleId
+        )
     }
     
     // MARK: - Processing
@@ -323,16 +422,16 @@ final class RecordingController {
             // 🚀 立即复制当前转录到剪贴板（用户可能急需）
             let immediateText = transcription
             if !immediateText.isEmpty {
-                copyToClipboard(immediateText)
+                dependencies.copyToClipboard(immediateText)
                 logger.info("📋 剪贴板(即时): \(immediateText.prefix(50), privacy: .public)...")
             }
             
             // 等待最终结果（最多等待 2 秒，新录音开始则立即中断）
             var waitTime = 0
-            while waitTime < Self.maxWaitForFinalResult && !hotKeyService.isRecording {
+            while waitTime < Self.maxWaitForFinalResult && !dependencies.hotKeyService.isRecording {
                 try? await Task.sleep(for: .milliseconds(Self.checkInterval))
                 waitTime += Self.checkInterval
-                if !audioService.isProcessing { break }
+                if !dependencies.audioService.isProcessing { break }
             }
             
             let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
@@ -343,7 +442,7 @@ final class RecordingController {
             
             if transcribedText.isEmpty {
                 // 仅在没有新录音时显示失败
-                if !hotKeyService.isRecording {
+                withIdleRecordingState { hudManager in
                     hudManager.fail(with: TranscriptionError.emptySpeech)
                 }
                 return
@@ -351,29 +450,30 @@ final class RecordingController {
             
             // 仅当文本有更新时再次复制（避免重复写入剪贴板）
             if transcribedText != immediateText {
-                copyToClipboard(transcribedText)
+                dependencies.copyToClipboard(transcribedText)
                 logger.info("📋 剪贴板(最终): 文本已更新")
             }
             
             // 发送 ASR 结果到 Message Panel（带来源应用）
-            MessagePanelManager.shared.addASRResult(
+            dependencies.messagePanelManager.addASRResult(
                 model: "Apple Speech",
                 content: transcribedText,
                 sourceApp: sourceApp
             )
             
             // 检查是否需要 LLM 处理
-            guard llmPipeline.shouldProcess else {
-                // 不需要 LLM，仅在没有新录音时更新 HUD
-                if !hotKeyService.isRecording {
-                    hudManager.complete(with: transcribedText)
-                }
+            guard dependencies.llmPipeline.shouldProcess else {
+                let decision = RecordingTranscriptionDecision.passthrough(
+                    rawText: transcribedText,
+                    isStillRecording: dependencies.hotKeyService.isRecording
+                )
+                applyDecision(decision)
                 
                 // 保存到历史记录
-                await historyManager.saveRecording(
+                await persistRecording(
                     rawText: transcribedText,
-                    processedText: nil,
-                    tempAudioURL: audioURL,
+                    processedText: decision.processedText,
+                    audioURL: audioURL,
                     appBundleId: appBundleId
                 )
                 
@@ -382,55 +482,53 @@ final class RecordingController {
             }
             
             // 调用 LLM 精炼
-            let result = await llmPipeline.refine(transcribedText)
-            
-            var processedText: String?
-            
+            let result = await dependencies.llmPipeline.refine(transcribedText)
+            let decision = RecordingTranscriptionDecision.make(
+                rawText: transcribedText,
+                refineResult: result,
+                isStillRecording: dependencies.hotKeyService.isRecording
+            )
+
             switch result {
             case .success(let refinedText):
-                // 写入剪贴板（精炼后文本）
-                copyToClipboard(refinedText)
-                logger.info("📋 Clipboard: refined text")
-                
-                // 发送 LLM 结果到 Message Panel（带来源应用，与 ASR 相同）
-                MessagePanelManager.shared.addLLMResult(
-                    model: llmPipeline.currentProviderName,
+                applyDecision(decision)
+                dependencies.messagePanelManager.addLLMResult(
+                    model: dependencies.llmPipeline.currentProviderName,
                     content: refinedText,
                     sourceApp: sourceApp
                 )
-                
-                // 仅在没有新录音时更新 HUD
-                if !hotKeyService.isRecording {
-                    hudManager.complete(with: refinedText)
-                }
-                processedText = refinedText
                 logger.info("✅ LLM refinement complete: \(refinedText, privacy: .public)")
                 
             case .failure(let error):
+                applyDecision(decision)
                 // LLM 失败，保留原始文本
                 logger.error("❌ LLM failed: \(error.localizedDescription, privacy: .public)")
-                
-                // 根据 PRD，AI 失败时如果 ASR 成功，显示 AI 失败提示但保留文本
-                // 这里我们可以先调用 fail 再调用 complete，或者修改 complete 以支持带 warning 的状态
-                // 目前先按 PRD 简单实现：AI 失败显示错误，延迟一段时间后消失（或用户可以看到原始文本已转录）
-                if !hotKeyService.isRecording {
-                    hudManager.fail(with: error)
-                }
                 logger.info("⚠️ Fallback to transcribed text")
             }
             
             // 保存到历史记录
-            await historyManager.saveRecording(
+            await persistRecording(
                 rawText: transcribedText,
-                processedText: processedText,
-                tempAudioURL: audioURL,
+                processedText: decision.processedText,
+                audioURL: audioURL,
                 appBundleId: appBundleId
             )
         }
     }
-    
-    private func copyToClipboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+
+    private func applyDecision(_ decision: RecordingTranscriptionDecision) {
+        dependencies.copyToClipboard(decision.clipboardText)
+
+        if let hudCompletionText = decision.hudCompletionText {
+            withIdleRecordingState { hudManager in
+                hudManager.complete(with: hudCompletionText)
+            }
+        }
+
+        if let hudFailure = decision.hudFailure {
+            withIdleRecordingState { hudManager in
+                hudManager.fail(with: hudFailure)
+            }
+        }
     }
 }

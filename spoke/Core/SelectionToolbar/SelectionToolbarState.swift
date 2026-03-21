@@ -43,6 +43,22 @@ struct SelectionToolbarConfig {
     var ocrContextMaxLength: Int = 2000
 }
 
+@MainActor
+struct SelectionToolbarStateDependencies {
+    let vocabularyService: VocabularyService
+    let appSettings: AppSettings
+    let notificationCenter: NotificationCenter
+}
+
+@MainActor
+extension SelectionToolbarStateDependencies {
+    static let live = SelectionToolbarStateDependencies(
+        vocabularyService: .shared,
+        appSettings: .shared,
+        notificationCenter: .default
+    )
+}
+
 // MARK: - 状态管理
 
 /// 选择工具栏状态管理
@@ -51,7 +67,7 @@ final class SelectionToolbarState: ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = SelectionToolbarState()
+    static let shared = SelectionToolbarState(dependencies: .live)
     
     // MARK: - Published Properties
     
@@ -89,6 +105,7 @@ final class SelectionToolbarState: ObservableObject {
     
     /// 工具栏配置
     @Published var config = SelectionToolbarConfig()
+    private let dependencies: SelectionToolbarStateDependencies
     
     // MARK: - Computed Properties
     
@@ -124,7 +141,10 @@ final class SelectionToolbarState: ObservableObject {
     
     // MARK: - Init
     
-    private init() {
+    private init(
+        dependencies: SelectionToolbarStateDependencies
+    ) {
+        self.dependencies = dependencies
         loadConfig()
     }
     
@@ -144,7 +164,7 @@ final class SelectionToolbarState: ObservableObject {
         logger.info("📋 [SelectionToolbar] 显示工具栏 | 文本长度: \(context.textLength) | 来源: \(context.sourceAppName ?? "unknown")")
         
         // 发送显示通知
-        NotificationCenter.default.post(name: .selectionToolbarDidShow, object: nil)
+        postNotification(.selectionToolbarDidShow)
     }
     
     /// 隐藏工具栏
@@ -159,7 +179,7 @@ final class SelectionToolbarState: ObservableObject {
         logger.debug("📋 [SelectionToolbar] 隐藏工具栏")
         
         // 发送隐藏通知
-        NotificationCenter.default.post(name: .selectionToolbarDidHide, object: nil)
+        postNotification(.selectionToolbarDidHide)
     }
     
     /// 执行动作 (旧版，兼容)
@@ -174,9 +194,8 @@ final class SelectionToolbarState: ObservableObject {
         
         logger.info("📋 [SelectionToolbar] 执行动作: \(action.displayName)")
         
-        NotificationCenter.default.post(
-            name: .selectionToolbarActionRequested,
-            object: nil,
+        postNotification(
+            .selectionToolbarActionRequested,
             userInfo: [
                 "action": action,
                 "context": context
@@ -196,9 +215,8 @@ final class SelectionToolbarState: ObservableObject {
         
         logger.info("📋 [SelectionToolbar] 执行工具栏动作: \(action.name)")
         
-        NotificationCenter.default.post(
-            name: .selectionToolbarActionRequested,
-            object: nil,
+        postNotification(
+            .selectionToolbarActionRequested,
             userInfo: [
                 "toolbarAction": action,
                 "context": context
@@ -245,7 +263,7 @@ final class SelectionToolbarState: ObservableObject {
         self.targetVocabularyWord = finalWord
         
         // 自动添加到生词本
-        VocabularyService.shared.add(finalWord)
+        _ = addVocabulary(finalWord)
         isWordInVocabulary = true
         
         logger.info("📋 [SelectionToolbar] 显示词典结果: \(data.word), 添加生词: \(finalWord)")
@@ -273,14 +291,12 @@ final class SelectionToolbarState: ObservableObject {
         
         if isWordInVocabulary {
             // 从生词本移除
-            if let item = VocabularyService.shared.items.first(where: { $0.word.lowercased() == word.lowercased() }) {
-                VocabularyService.shared.remove(item.id)
+            if removeVocabulary(matching: word) {
                 logger.info("📋 [SelectionToolbar] 从生词本移除: \(word)")
             } else {
                 // Lemma fallback
-                if let lemma = dictionaryResult?.word, 
-                   let item = VocabularyService.shared.items.first(where: { $0.word.lowercased() == lemma.lowercased() }) {
-                    VocabularyService.shared.remove(item.id)
+                if let lemma = dictionaryResult?.word,
+                   removeVocabulary(matching: lemma) {
                     logger.info("📋 [SelectionToolbar] 从生词本移除(Lemma): \(lemma)")
                 } else {
                     logger.warning("📋 [SelectionToolbar] 生词本中找不到: \(word)")
@@ -289,7 +305,7 @@ final class SelectionToolbarState: ObservableObject {
             isWordInVocabulary = false
         } else {
             // 添加到生词本
-            if VocabularyService.shared.add(word) != nil {
+            if addVocabulary(word) != nil {
                 logger.info("📋 [SelectionToolbar] 添加到生词本成功: \(word)")
             } else {
                 logger.warning("📋 [SelectionToolbar] 添加到生词本失败: \(word)")
@@ -311,7 +327,7 @@ final class SelectionToolbarState: ObservableObject {
 
     /// 加载配置
     private func loadConfig() {
-        let settings = AppSettings.shared
+        let settings = dependencies.appSettings
         config.autoHideDelay = settings.selectionToolbarAutoHideDelay
         config.showButtonText = settings.selectionToolbarShowText
         config.enableOCRContext = settings.selectionToolbarOCRContext
@@ -319,7 +335,7 @@ final class SelectionToolbarState: ObservableObject {
 
     /// 保存配置
     func saveConfig() {
-        let settings = AppSettings.shared
+        let settings = dependencies.appSettings
         settings.selectionToolbarAutoHideDelay = config.autoHideDelay
         settings.selectionToolbarShowText = config.showButtonText
         settings.selectionToolbarOCRContext = config.enableOCRContext
@@ -329,6 +345,25 @@ final class SelectionToolbarState: ObservableObject {
     func setEnabledActions(_ actions: [SelectionToolbarActionType]) {
         config.enabledActions = actions
         saveConfig()
+    }
+
+    private func postNotification(_ name: Notification.Name, userInfo: [AnyHashable: Any]? = nil) {
+        dependencies.notificationCenter.post(name: name, object: nil, userInfo: userInfo)
+    }
+
+    @discardableResult
+    private func addVocabulary(_ word: String) -> VocabularyItem? {
+        dependencies.vocabularyService.add(word)
+    }
+
+    private func removeVocabulary(matching word: String) -> Bool {
+        guard let item = dependencies.vocabularyService.items.first(where: {
+            $0.word.lowercased() == word.lowercased()
+        }) else {
+            return false
+        }
+        dependencies.vocabularyService.remove(item.id)
+        return true
     }
 }
 

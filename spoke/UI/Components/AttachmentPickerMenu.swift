@@ -22,6 +22,14 @@ struct AttachmentPickerMenu: View {
     private var isProcessing: Bool {
         attachmentManager.processingState.isProcessing
     }
+
+    init(
+        onAdd: @escaping @MainActor @Sendable (Attachment) -> Void,
+        buttonSize: CGFloat = 24
+    ) {
+        self.onAdd = onAdd
+        self.buttonSize = buttonSize
+    }
     
     var body: some View {
         HStack(spacing: 6) {

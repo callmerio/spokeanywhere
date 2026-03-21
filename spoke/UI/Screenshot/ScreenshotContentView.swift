@@ -22,6 +22,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     // MARK: - Properties
     
     let item: ScreenshotItem
+    private let dependencies: ScreenshotActionDependencies
     let imageView: NSImageView
     private(set) var actionBar: ActionBarView?
     private let glowLayer = CAShapeLayer()
@@ -80,8 +81,12 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     private var isLiveTextReady = false
     // MARK: - Init
     
-    init(item: ScreenshotItem) {
+    init(
+        item: ScreenshotItem,
+        dependencies: ScreenshotActionDependencies
+    ) {
         self.item = item
+        self.dependencies = dependencies
         self.imageView = NSImageView()
         
         super.init(frame: .zero)
@@ -90,6 +95,11 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
         setupLiveText()
         setupActionBar()
         setupContextMenu()
+    }
+
+    @MainActor
+    convenience init(item: ScreenshotItem) {
+        self.init(item: item, dependencies: .live)
     }
     
     required init?(coder: NSCoder) {
@@ -176,7 +186,7 @@ extension ScreenshotContentView {
             // 异步执行 downscale 避免卡顿
             Task {
                 let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
-                if let downscaled = ImageEnhancementService.shared.scaleNSImage(highRes, to: targetSize, backingScale: backingScale) {
+                if let downscaled = self.dependencies.scaleImage(highRes, targetSize, backingScale) {
                     await MainActor.run {
                         self.imageView.image = downscaled
                         self.lastEnhancedSize = targetSize
@@ -196,7 +206,7 @@ extension ScreenshotContentView {
             guard let self = self else { return }
             
             let basic = await Task.detached(priority: .userInitiated) {
-                await ImageEnhancementService.shared.enhanceBasic(original, to: targetSize)
+                await self.dependencies.enhanceBasic(original, targetSize)
             }.value
             
             if let basic = basic {
@@ -223,7 +233,7 @@ extension ScreenshotContentView {
                 
                 // 启动 AI 增强 (High Res)
                 let aiTask = Task.detached(priority: .userInitiated) {
-                    return await ImageEnhancementService.shared.enhanceAIHighResAsync(original)
+                    await self.dependencies.enhanceAIHighRes(original)
                 }
                 
                 // 等待 AI 结果
@@ -238,7 +248,7 @@ extension ScreenshotContentView {
                         
                         // Downscale 到当前需要的尺寸
                         let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
-                        if let finalResult = ImageEnhancementService.shared.scaleNSImage(highResResult, to: targetSize, backingScale: backingScale) {
+                        if let finalResult = self.dependencies.scaleImage(highResResult, targetSize, backingScale) {
                             await MainActor.run {
                                 self.imageView.image = finalResult
                                 self.lastEnhancedSize = targetSize
@@ -252,6 +262,10 @@ extension ScreenshotContentView {
         
         self.enhanceDebounceTask = debounceTask
         DispatchQueue.main.asyncAfter(deadline: .now() + enhanceDebounceDelay, execute: debounceTask)
+    }
+
+    func currentActionDependencies() -> ScreenshotActionDependencies {
+        dependencies
     }
     
     /// 设置 Live Text 覆盖层 (macOS 13+)
@@ -312,7 +326,7 @@ extension ScreenshotContentView {
         menu.addItem(copyImgItem)
         
         // 1.5 Copy Enhanced Image (仅当 upscalingMode != .none 时显示)
-        if ScreenshotSettings.shared.upscalingMode != .none {
+        if dependencies.shouldShowEnhancedCopy() {
             let copyEnhancedItem = NSMenuItem(title: "Copy Enhanced Image", action: #selector(MenuActionProxy.performCopyEnhancedImage), keyEquivalent: "")
             copyEnhancedItem.target = menuActionProxy
             menu.addItem(copyEnhancedItem)
@@ -382,7 +396,7 @@ extension ScreenshotContentView {
     
     private func setupActionBar() {
         // 右上角：AI + Pin 按钮组
-        let bar = ActionBarView(item: item)
+        let bar = ActionBarView(item: item, dependencies: dependencies)
         bar.isHidden = true
         bar.alphaValue = 0
         addSubview(bar)
@@ -628,8 +642,7 @@ extension ScreenshotContentView {
         )
         
         // 显示工具栏
-        SelectionToolbarState.shared.show(with: context)
-        SelectionToolbarManager.shared.show(at: screenPoint)
+        dependencies.showSelectionToolbar(context, screenPoint)
     }
     
     private func updateActionBarVisibility(animated: Bool) {

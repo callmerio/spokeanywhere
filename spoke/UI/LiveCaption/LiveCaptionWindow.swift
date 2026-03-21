@@ -4,26 +4,57 @@ import SwiftUI
 
 // MARK: - Live Caption Window Manager
 
+@MainActor
+struct LiveCaptionWindowManagerDependencies {
+    let manager: LiveCaptionManager
+    let translator: TranslationService
+    let viewDependencies: LiveCaptionViewDependencies
+}
+
+@MainActor
+extension LiveCaptionWindowManagerDependencies {
+    static let live = LiveCaptionWindowManagerDependencies(
+        manager: .shared,
+        translator: .shared,
+        viewDependencies: .live(
+            lookupWord: { word in
+                await UnifiedDictionaryService.shared.lookup(word)
+            },
+            markVocabulary: { text in
+                VocabularyService.shared.markVocabulary(in: text)
+            },
+            selectionToolbarState: .shared,
+            selectionToolbarManager: .shared
+        )
+    )
+}
+
 /// 实时字幕窗口管理器
 @MainActor
 final class LiveCaptionWindowManager {
     
     // MARK: - Singleton
     
-    static let shared = LiveCaptionWindowManager()
+    static let shared = LiveCaptionWindowManager(dependencies: .live)
     
     // MARK: - Properties
     
+    private let dependencies: LiveCaptionWindowManagerDependencies
     private var window: LiveCaptionPanel?
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LiveCaptionWindow")
-    private let manager = LiveCaptionManager.shared
+    private let manager: LiveCaptionManager
     
     /// 窗口是否可见
     var isVisible: Bool { window?.isVisible ?? false }
     
     // MARK: - Init
     
-    private init() {}
+    private init(
+        dependencies: LiveCaptionWindowManagerDependencies
+    ) {
+        self.dependencies = dependencies
+        self.manager = dependencies.manager
+    }
     
     // MARK: - Public API
     
@@ -90,27 +121,34 @@ final class LiveCaptionWindowManager {
         
         // 创建窗口
         let panel = LiveCaptionPanel(contentRect: frame)
+        panel.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.liveCaption)
+        panel.setAccessibilityIdentifier(UITestIdentifiers.Window.liveCaption)
         
         // 设置内容
         let contentView = LiveCaptionView(
             manager: manager,
             onClose: { [weak self] in
                 self?.hide()
-            }
+            },
+            translator: dependencies.translator,
+            dependencies: dependencies.viewDependencies
         )
         let hostingView = NSHostingView(rootView: contentView)
+        hostingView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.liveCaptionRoot)
+        hostingView.setAccessibilityIdentifier(UITestIdentifiers.Element.liveCaptionRoot)
         // 确保 NSHostingView 完全透明（避免 padding 区域出现灰色）
         hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = .clear
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
         // 🔧 关键：设置 layer 为非不透明，允许透明渲染
         hostingView.layer?.isOpaque = false
         // 设置视图本身也为非不透明
-        hostingView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+        hostingView.layerContentsRedrawPolicy = NSView.LayerContentsRedrawPolicy.onSetNeedsDisplay
         panel.contentView = hostingView
         
         self.window = panel
         logger.info("📺 Live Caption window created")
     }
+
 }
 
 // MARK: - Live Caption Panel

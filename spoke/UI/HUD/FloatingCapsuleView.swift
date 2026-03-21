@@ -163,6 +163,7 @@ struct FloatingCapsuleView: View {
                 .transition(.opacity.animation(.easeInOut(duration: 0.2)))
             }
         }
+        .accessibilityIdentifier(UITestIdentifiers.Element.floatingHUDRoot)
     }
     
     // MARK: - Text Area (上方，向上扩展)

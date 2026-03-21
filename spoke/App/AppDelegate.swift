@@ -4,6 +4,51 @@ import SwiftData
 import SwiftUI
 
 @MainActor
+struct AppDelegateDependencies {
+    let notificationCenter: NotificationCenter
+    let hotKeyService: HotKeyService
+    let screenshotManager: ScreenshotManager
+    let dictionaryPanelManager: DictionaryPanelManager
+    let debugAutomationTrigger: DebugAutomationTriggerService
+    let recordingController: RecordingController
+    let liveCaptionWindowManager: LiveCaptionWindowManager
+    let selectionActionService: SelectionActionService
+    let appSettings: AppSettings
+    let selectionToolbarManager: SelectionToolbarManager
+    let trackpadSwipeService: TrackpadSwipeService
+    let messagePanelManager: MessagePanelManager
+    let historyManager: HistoryManager
+    let resourceMonitor: ResourceMonitor
+    let clipboardHistoryService: ClipboardHistoryService
+    let transcriptionModelManager: TranscriptionModelManager
+    let transcriptionManager: TranscriptionManager
+    let crashLogger: CrashLogger
+
+    static func makeLive() -> Self {
+        .init(
+            notificationCenter: .default,
+            hotKeyService: .shared,
+            screenshotManager: .shared,
+            dictionaryPanelManager: .shared,
+            debugAutomationTrigger: .shared,
+            recordingController: .shared,
+            liveCaptionWindowManager: .shared,
+            selectionActionService: .shared,
+            appSettings: .shared,
+            selectionToolbarManager: .shared,
+            trackpadSwipeService: .shared,
+            messagePanelManager: .shared,
+            historyManager: .shared,
+            resourceMonitor: .shared,
+            clipboardHistoryService: .shared,
+            transcriptionModelManager: .shared,
+            transcriptionManager: .shared,
+            crashLogger: .shared
+        )
+    }
+}
+
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Singleton (for access from HotKeyService)
@@ -39,97 +84,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkeyMenuItem: NSMenuItem?
     private var selectionToolbarMenuItem: NSMenuItem?
     private var shortcutObserver: NSObjectProtocol?
+    private var toolbarSettingsObserver: NSObjectProtocol?
+    private let dependencies: AppDelegateDependencies
+
+    private typealias LifecycleStep = (name: String, action: () -> Void)
+
+    override init() {
+        self.dependencies = .makeLive()
+        super.init()
+    }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 启动计时（仅用于内部 logger）
         let launchStart = CFAbsoluteTimeGetCurrent()
-        let logger = Logger(subsystem: "com.spokeanywhere", category: "Launch")
-        
-        func logStep(_ name: String) {
-            // 运行时开关：环境变量 SPOKE_STARTUP_LOG=1 或 AppSettings 开关
-            let envEnabled = ProcessInfo.processInfo.environment["SPOKE_STARTUP_LOG"] == "1"
-            let settingsEnabled = AppSettings.shared.startupDiagnosticsEnabled
+        let launchLogger = Logger(subsystem: "com.spokeanywhere", category: "Launch")
 
-            if envEnabled || settingsEnabled {
-                let totalTime = (CFAbsoluteTimeGetCurrent() - launchStart) * 1000
-                logger.info("🚀 \(name) [\(String(format: "%.0f", totalTime))ms]")
-            }
-        }
-        
-        logStep("Step 0: Installing crash logger...")
-        // 安装崩溃日志记录器
-        CrashLogger.shared.install()
-        
-        logStep("Step 1: Checking accessibility permission...")
-        // 检查辅助功能权限
-        checkAccessibilityPermission()
-        
-        logStep("Step 2: Setting up status bar...")
-        // 创建状态栏图标
-        setupMenuBar()
-        
-        logStep("Step 3: Starting clipboard service...")
-        ClipboardHistoryService.shared.start()
-        
-        logStep("Step 4: Starting recording controller...")
-        RecordingController.shared.start()
-        
-        logStep("Step 5: Configuring HistoryManager...")
-        // 先配置 HistoryManager 的 ModelContext
-        HistoryManager.shared.configure(with: Self.sharedModelContainer.mainContext)
-        
-        logStep("Step 6: Performing history cleanup...")
-        performHistoryCleanup()
-        
-        logStep("Step 6.1: Cleaning orphaned audio files...")
-        performOrphanCleanup()
-        
-        // 双轨词典注入策略：
-        // 1. contextualStrings（轻量级）- 每次录音时实时注入，无需预编译
-        // 2. 预编译 LM（重量级）- 启动时后台准备，准备好后提供更强识别效果
-        // 只有当前选择的模型支持预编译 LM 时才执行
-        logStep("Step 6.5: Checking dictionary precompilation...")
-        if #available(macOS 26.0, *) {
-            let config = TranscriptionModelManager.shared.getProviderConfiguration()
-            if config.enablePrecompiledLM {
-                print("  → Starting dictionary precompilation (background)...")
-                Task.detached(priority: .background) {
-                    await TranscriptionManager.shared.prepareDictionary()
-                }
-            } else {
-                print("  → Skipping (model doesn't support it)")
-            }
-        } else {
-            // macOS 25 及以下，使用 SFSpeechRecognizer，支持预编译
-            print("  → Starting dictionary precompilation (background)...")
-            Task.detached(priority: .background) {
-                await TranscriptionManager.shared.prepareDictionary()
-            }
-        }
-        
-        // 预热语音引擎（后台）- 消除首次使用时的 ~2s 卡顿
-        // SpeechTranscriber assets 安装是主要耗时点
-        logStep("Step 6.6: Warming up speech engine (background)...")
-        Task.detached(priority: .background) {
-            await Self.warmupSpeechEngine()
-        }
-        
-        logStep("Step 7: Setting up trackpad gesture...")
-        setupTrackpadGesture()
-        
-        logStep("Step 8: Starting resource monitor...")
-        setupResourceMonitor()
-        
-        logStep("Step 9: Starting selection toolbar...")
-        setupSelectionToolbar()
-        
-        logStep("Step 10: Setting up screenshot service...")
-        setupScreenshotService()
-        
-        logStep("Step 11: Setting up dictionary panel...")
-        setupDictionaryPanel()
-        
-        logStep("Step 12: Application launch complete! ✅")
+        runStartupPipeline(launchStart: launchStart, launchLogger: launchLogger)
+
+        logLaunchStep("Step 12: Application launch complete! ✅", launchStart: launchStart, launchLogger: launchLogger)
 
         if ProcessInfo.processInfo.environment["SPOKE_PERF_LOG"] == "1" {
             let launchTotalMs = Int((CFAbsoluteTimeGetCurrent() - launchStart) * 1000)
@@ -141,22 +113,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("📸 [AppDelegate] setupScreenshotService() 开始")
         
         // 设置 HotKeyService 的截图回调
-        HotKeyService.shared.onScreenshotTrigger = { [weak self] in
+        dependencies.hotKeyService.onScreenshotTrigger = { [weak self] in
             self?.triggerScreenshot()
         }
         
         // 设置 ScreenshotManager 的窗口工厂
-        ScreenshotManager.shared.windowFactory = { item in
+        dependencies.screenshotManager.windowFactory = { [weak self] item in
             let window = ScreenshotWindow(item: item)
             window.onFrameChanged = { newFrame in
-                ScreenshotManager.shared.updateFrame(newFrame, for: item)
+                self?.dependencies.screenshotManager.updateFrame(newFrame, for: item)
             }
             return window
         }
         
         // 异步恢复之前 Pinned 的截图，避免启动阶段主线程阻塞
         Task(priority: .utility) { @MainActor [weak self] in
-            await ScreenshotManager.shared.restoreAll()
+            await self?.dependencies.screenshotManager.restoreAll()
             self?.logger.info("📸 [AppDelegate] Pinned screenshot restore finished")
         }
         
@@ -166,36 +138,52 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupDictionaryPanel() {
         logger.info("📖 [AppDelegate] setupDictionaryPanel() 开始")
         
-        DictionaryPanelManager.shared.registerShortcut()
+        dependencies.dictionaryPanelManager.registerShortcut()
         
         logger.info("📖 [AppDelegate] ✅ Dictionary panel setup complete (⌥+Space)")
     }
+
+#if DEBUG
+    private func setupDebugAutomationTrigger() {
+        let trigger = dependencies.debugAutomationTrigger
+        trigger.onRecordingToggle = {
+            self.dependencies.recordingController.debugToggleRecording()
+        }
+        trigger.onCaptionToggle = {
+            self.dependencies.liveCaptionWindowManager.toggle()
+        }
+        trigger.onScreenshotCapture = {
+            self.runMainActorTask {
+                await self.dependencies.screenshotManager.debugCaptureForAutomation()
+            }
+        }
+        if trigger.start() {
+            logger.info("🧪 [AppDelegate] Debug automation trigger ready")
+        } else {
+            logger.info("🧪 [AppDelegate] Debug automation trigger disabled by env")
+        }
+    }
+#endif
     
     private func setupSelectionToolbar() {
         logger.info("📋 [AppDelegate] setupSelectionToolbar() 开始")
         
         // 初始化动作服务 (监听通知)
-        _ = SelectionActionService.shared
+        _ = dependencies.selectionActionService
         logger.info("📋 [AppDelegate] SelectionActionService 已初始化")
         
         // 监听打开工具栏设置的通知
-        NotificationCenter.default.addObserver(
-            forName: .openToolbarSettings,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
+        installObserver(&toolbarSettingsObserver, forName: .openToolbarSettings) { [weak self] notification in
             let focusAddSkill = notification.userInfo?["focusAddSkill"] as? Bool ?? false
-            Task { @MainActor in
-                self?.showSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
-            }
+            self?.showSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
         }
         
         // 启动工具栏管理器 (根据设置决定是否自动启动)
-        let enabled = AppSettings.shared.selectionToolbarEnabled
+        let enabled = dependencies.appSettings.selectionToolbarEnabled
         logger.info("📋 [AppDelegate] selectionToolbarEnabled = \(enabled)")
         
         if enabled {
-            SelectionToolbarManager.shared.start()
+            dependencies.selectionToolbarManager.start(requestPermissionIfNeeded: false)
             logger.info("📋 [AppDelegate] ✅ Selection toolbar started")
         } else {
             logger.info("📋 [AppDelegate] ⏸️ Selection toolbar disabled in settings")
@@ -204,8 +192,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func setupTrackpadGesture() {
         NSLog("🖐️ 设置触控板手势 (公开 API)...")
-        let gesture = TrackpadSwipeService.shared
-        let panel = MessagePanelManager.shared
+        let gesture = dependencies.trackpadSwipeService
+        let panel = dependencies.messagePanelManager
         
         // 配置回调
         gesture.onOpenPanel = {
@@ -225,22 +213,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         // 启动监听 (需要 Accessibility 权限)
-        gesture.start()
+        gesture.start(requestPermissionIfNeeded: false)
     }
     
     private func performHistoryCleanup() {
-        let settings = AppSettings.shared
+        let settings = dependencies.appSettings
         guard settings.historyAutoCleanupEnabled else { return }
         
         Task {
             // 按天数清理
             if settings.historyKeepDays > 0 {
-                await HistoryManager.shared.performCleanup(policy: .keepDays(settings.historyKeepDays))
+                await self.dependencies.historyManager.performCleanup(policy: .keepDays(settings.historyKeepDays))
             }
             
             // 按条数清理
             if settings.historyMaxCount > 0 {
-                await HistoryManager.shared.performCleanup(policy: .keepCount(settings.historyMaxCount))
+                await self.dependencies.historyManager.performCleanup(policy: .keepCount(settings.historyMaxCount))
             }
         }
     }
@@ -248,18 +236,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func performOrphanCleanup() {
         Task {
             // 迁移旧版 today 记录为 todo
-            await HistoryManager.shared.migrateLegacyTodayRecords()
+            await self.dependencies.historyManager.migrateLegacyTodayRecords()
             // 清理孤儿音频文件（磁盘有文件但数据库无记录）
-            await HistoryManager.shared.cleanupOrphanedAudioFiles()
+            await self.dependencies.historyManager.cleanupOrphanedAudioFiles()
             // 限制普通记录数量为 50 条（todo/done/note 不受影响）
-            await HistoryManager.shared.enforceNormalRecordLimit(maxCount: 50)
+            await self.dependencies.historyManager.enforceNormalRecordLimit(maxCount: 50)
             // 限制音频总大小为 2GB
-            await HistoryManager.shared.enforceAudioSizeLimit(maxSizeMB: 2048)
+            await self.dependencies.historyManager.enforceAudioSizeLimit(maxSizeMB: 2048)
         }
     }
     
     private func setupResourceMonitor() {
-        let monitor = ResourceMonitor.shared
+        let monitor = dependencies.resourceMonitor
         
         // 阈值配置
         monitor.cpuThreshold = 150  // CPU 150%（多核可能超100%）
@@ -270,12 +258,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("⚠️ 资源超限！执行降级策略...")
             
             // 降级策略：停止非关键服务
-            Task { @MainActor in
+            self.runMainActorTask {
                 // 1. 停止剪贴板监控
-                ClipboardHistoryService.shared.stop()
+                self.dependencies.clipboardHistoryService.stop()
                 
                 // 2. 关闭 MessagePanel
-                MessagePanelManager.shared.hide()
+                self.dependencies.messagePanelManager.hide()
                 
                 NSLog("🔻 已降级：停止剪贴板监控、关闭面板")
             }
@@ -283,27 +271,184 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationWillTerminate(_ notification: Notification) {
-        RecordingController.shared.stop()
-        TrackpadSwipeService.shared.stop()
-        SelectionToolbarManager.shared.stop()
-        ResourceMonitor.shared.stop()
+        for step in buildShutdownSteps() {
+            step.action()
+        }
     }
     
     // MARK: - Private
     
     private func checkAccessibilityPermission() {
         let trusted = MainActor.assumeIsolated {
-            AccessibilityHelper.requestAccessibilityPermission()
+            AccessibilityHelper.hasAccessibilityPermission()
         }
 
         if trusted {
             print("✅ Accessibility permission granted")
         } else {
-            print("⚠️ Accessibility permission required for global hotkeys")
+            print("⚠️ Accessibility permission not granted (startup check only)")
         }
     }
     
     private var modeMenuItem: NSMenuItem?
+
+    private func runStartupPipeline(launchStart: CFAbsoluteTime, launchLogger: Logger) {
+        for step in buildStartupSteps() {
+            logLaunchStep(step.name, launchStart: launchStart, launchLogger: launchLogger)
+            step.action()
+        }
+    }
+
+    private func buildStartupSteps() -> [LifecycleStep] {
+        AppLifecyclePlan.startup(includeDebugAutomation: includeDebugAutomationStep)
+            .map { spec in
+                (spec.name, startupAction(for: spec.id))
+            }
+    }
+
+    private func buildShutdownSteps() -> [LifecycleStep] {
+        AppLifecyclePlan.shutdown(includeDebugAutomation: includeDebugAutomationStep)
+            .map { spec in
+                (spec.name, shutdownAction(for: spec.id))
+            }
+    }
+
+    private var includeDebugAutomationStep: Bool {
+#if DEBUG
+        true
+#else
+        false
+#endif
+    }
+
+    private func startupAction(for id: AppLifecycleStepID) -> () -> Void {
+        switch id {
+        case .installCrashLogger: return installCrashLogger
+        case .checkAccessibility: return checkAccessibilityPermission
+        case .setupMenuBar: return setupMenuBar
+        case .startClipboardService: return startClipboardService
+        case .startRecordingController: return startRecordingController
+        case .configureHistoryManager: return configureHistoryManager
+        case .performHistoryCleanup: return performHistoryCleanup
+        case .performOrphanCleanup: return performOrphanCleanup
+        case .prepareDictionary: return prepareDictionaryIfNeeded
+        case .warmupSpeechEngine: return warmupSpeechEngineInBackground
+        case .setupTrackpadGesture: return setupTrackpadGesture
+        case .setupResourceMonitor: return setupResourceMonitor
+        case .setupSelectionToolbar: return setupSelectionToolbar
+        case .setupScreenshotService: return setupScreenshotService
+        case .setupDictionaryPanel: return setupDictionaryPanel
+        case .setupDebugAutomationTrigger:
+#if DEBUG
+            return setupDebugAutomationTrigger
+#else
+            return {}
+#endif
+        case .stopRecordingController,
+             .stopTrackpadGesture,
+             .stopSelectionToolbar,
+             .stopResourceMonitor,
+             .removeNotificationObservers,
+             .stopDebugAutomationTrigger:
+            return {}
+        }
+    }
+
+    private func shutdownAction(for id: AppLifecycleStepID) -> () -> Void {
+        switch id {
+        case .stopRecordingController:
+            return { self.dependencies.recordingController.stop() }
+        case .stopTrackpadGesture:
+            return { self.dependencies.trackpadSwipeService.stop() }
+        case .stopSelectionToolbar:
+            return { self.dependencies.selectionToolbarManager.stop() }
+        case .stopResourceMonitor:
+            return { self.dependencies.resourceMonitor.stop() }
+        case .removeNotificationObservers:
+            return { self.removeAllObservers() }
+        case .stopDebugAutomationTrigger:
+#if DEBUG
+            return { self.dependencies.debugAutomationTrigger.stop() }
+#else
+            return {}
+#endif
+        case .installCrashLogger,
+             .checkAccessibility,
+             .setupMenuBar,
+             .startClipboardService,
+             .startRecordingController,
+             .configureHistoryManager,
+             .performHistoryCleanup,
+             .performOrphanCleanup,
+             .prepareDictionary,
+             .warmupSpeechEngine,
+             .setupTrackpadGesture,
+             .setupResourceMonitor,
+             .setupSelectionToolbar,
+             .setupScreenshotService,
+             .setupDictionaryPanel,
+             .setupDebugAutomationTrigger:
+            return {}
+        }
+    }
+
+    private func logLaunchStep(_ name: String, launchStart: CFAbsoluteTime, launchLogger: Logger) {
+        let envEnabled = ProcessInfo.processInfo.environment["SPOKE_STARTUP_LOG"] == "1"
+        let settingsEnabled = dependencies.appSettings.startupDiagnosticsEnabled
+        guard envEnabled || settingsEnabled else { return }
+
+        let totalTime = (CFAbsoluteTimeGetCurrent() - launchStart) * 1000
+        launchLogger.info("🚀 \(name) [\(String(format: "%.0f", totalTime))ms]")
+    }
+
+    private func installCrashLogger() {
+        dependencies.crashLogger.install()
+    }
+
+    private func startClipboardService() {
+        dependencies.clipboardHistoryService.start()
+    }
+
+    private func startRecordingController() {
+        dependencies.recordingController.start()
+    }
+
+    private func configureHistoryManager() {
+        dependencies.historyManager.configure(with: Self.sharedModelContainer.mainContext)
+    }
+
+    private func prepareDictionaryIfNeeded() {
+        // 双轨词典注入策略：
+        // 1. contextualStrings（轻量级）- 每次录音时实时注入，无需预编译
+        // 2. 预编译 LM（重量级）- 启动时后台准备，准备好后提供更强识别效果
+        // 只有当前选择的模型支持预编译 LM 时才执行
+        if #available(macOS 26.0, *) {
+            let config = dependencies.transcriptionModelManager.getProviderConfiguration()
+            if config.enablePrecompiledLM {
+                print("  → Starting dictionary precompilation (background)...")
+                Task.detached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
+                    await transcriptionManager.prepareDictionary()
+                }
+            } else {
+                print("  → Skipping (model doesn't support it)")
+            }
+            return
+        }
+
+        // macOS 25 及以下，使用 SFSpeechRecognizer，支持预编译
+        print("  → Starting dictionary precompilation (background)...")
+        Task.detached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
+            await transcriptionManager.prepareDictionary()
+        }
+    }
+
+    private func warmupSpeechEngineInBackground() {
+        // 预热语音引擎（后台）- 消除首次使用时的 ~2s 卡顿
+        // SpeechTranscriber assets 安装是主要耗时点
+        Task.detached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
+            await Self.warmupSpeechEngine(transcriptionManager: transcriptionManager)
+        }
+    }
     
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -318,7 +463,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         
         // 动态显示当前快捷键
-        let hotkeyItem = NSMenuItem(title: "快捷键: \(AppSettings.shared.shortcutDisplayString)", action: nil, keyEquivalent: "")
+        let hotkeyItem = NSMenuItem(title: "快捷键: \(dependencies.appSettings.shortcutDisplayString)", action: nil, keyEquivalent: "")
         hotkeyItem.isEnabled = false
         self.hotkeyMenuItem = hotkeyItem
         menu.addItem(hotkeyItem)
@@ -332,7 +477,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 选择工具栏
         let toolbarItem = NSMenuItem(title: "选择工具栏", action: #selector(toggleSelectionToolbar), keyEquivalent: "")
-        toolbarItem.state = AppSettings.shared.selectionToolbarEnabled ? .on : .off
+        toolbarItem.state = dependencies.appSettings.selectionToolbarEnabled ? .on : .off
         self.selectionToolbarMenuItem = toolbarItem
         menu.addItem(toolbarItem)
         
@@ -358,37 +503,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func setupShortcutObserver() {
-        shortcutObserver = NotificationCenter.default.addObserver(
-            forName: AppSettings.shortcutDidChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateHotkeyMenuItem()
-            }
+        installObserver(&shortcutObserver, forName: AppSettings.shortcutDidChangeNotification) { [weak self] _ in
+            self?.updateHotkeyMenuItem()
         }
     }
     
     private func updateHotkeyMenuItem() {
-        hotkeyMenuItem?.title = "快捷键: \(AppSettings.shared.shortcutDisplayString)"
+        hotkeyMenuItem?.title = "快捷键: \(dependencies.appSettings.shortcutDisplayString)"
     }
     
     @objc func toggleLiveCaption() {
-        LiveCaptionWindowManager.shared.toggle()
+        dependencies.liveCaptionWindowManager.toggle()
     }
     
     @objc func toggleSelectionToolbar() {
-        AppSettings.shared.selectionToolbarEnabled.toggle()
-        selectionToolbarMenuItem?.state = AppSettings.shared.selectionToolbarEnabled ? .on : .off
+        dependencies.appSettings.selectionToolbarEnabled.toggle()
+        selectionToolbarMenuItem?.state = dependencies.appSettings.selectionToolbarEnabled ? .on : .off
     }
     
     @objc func toggleDictionaryPanel() {
-        DictionaryPanelManager.shared.toggle()
+        dependencies.dictionaryPanelManager.toggle()
     }
     
     @objc func triggerScreenshot() {
-        Task { @MainActor in
-            await ScreenshotManager.shared.captureRegion()
+        runMainActorTask {
+            await self.dependencies.screenshotManager.captureRegion()
         }
     }
     
@@ -410,7 +549,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             if focusToolbar {
-                NotificationCenter.default.post(name: .settingsSwitchToToolbar, object: nil, userInfo: ["focusAddSkill": focusAddSkill])
+                postSettingsSwitchToToolbar(focusAddSkill: focusAddSkill)
             }
             return
         }
@@ -442,21 +581,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isReleasedWhenClosed = false
         
         // 监听窗口关闭，恢复 accessory 模式
-        settingsWindowObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.settingsWindow = nil
-                if let observer = self?.settingsWindowObserver {
-                    NotificationCenter.default.removeObserver(observer)
-                    self?.settingsWindowObserver = nil
-                }
-                // 恢复 accessory 模式（不显示在 Dock/Cmd+Tab）
-                if !AppSettings.shared.showInDock {
-                    NSApp.setActivationPolicy(.accessory)
-                }
+        installObserver(&settingsWindowObserver, forName: NSWindow.willCloseNotification, object: window) { [weak self] _ in
+            guard let self else { return }
+            self.settingsWindow = nil
+            self.removeObserver(&self.settingsWindowObserver)
+            // 恢复 accessory 模式（不显示在 Dock/Cmd+Tab）
+            if !self.dependencies.appSettings.showInDock {
+                NSApp.setActivationPolicy(.accessory)
             }
         }
         
@@ -465,16 +596,61 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    private func postSettingsSwitchToToolbar(focusAddSkill: Bool) {
+        dependencies.notificationCenter.post(
+            name: .settingsSwitchToToolbar,
+            object: nil,
+            userInfo: ["focusAddSkill": focusAddSkill]
+        )
+    }
+
+    private func runMainActorTask(_ action: @escaping @MainActor () async -> Void) {
+        Task { @MainActor in
+            await action()
+        }
+    }
+
+    private func installObserver(
+        _ observer: inout NSObjectProtocol?,
+        forName name: Notification.Name,
+        object: Any? = nil,
+        queue: OperationQueue? = .main,
+        using handler: @escaping @MainActor (Notification) -> Void
+    ) {
+        removeObserver(&observer)
+        observer = dependencies.notificationCenter.addObserver(
+            forName: name,
+            object: object,
+            queue: queue
+        ) { notification in
+            Task { @MainActor in
+                handler(notification)
+            }
+        }
+    }
+
+    private func removeAllObservers() {
+        removeObserver(&shortcutObserver)
+        removeObserver(&toolbarSettingsObserver)
+        removeObserver(&settingsWindowObserver)
+    }
+
+    private func removeObserver(_ observer: inout NSObjectProtocol?) {
+        guard let existingObserver = observer else { return }
+        dependencies.notificationCenter.removeObserver(existingObserver)
+        observer = nil
+    }
     
     // MARK: - Speech Engine Warmup
     
     /// 预热语音引擎，消除首次使用时的卡顿
     /// SpeechTranscriber assets 安装是主要耗时点（~1.8s）
-    private static func warmupSpeechEngine() async {
+    private static func warmupSpeechEngine(transcriptionManager: TranscriptionManager) async {
         do {
             // 1. 创建 provider（触发引擎选择）- 需要在 MainActor 上执行
             let provider = await MainActor.run {
-                TranscriptionManager.shared.createBestProvider()
+                transcriptionManager.createBestProvider()
             }
             
             // 2. 调用 prepare() 触发 assets 安装

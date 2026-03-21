@@ -20,6 +20,7 @@ typealias QuickAskAttachment = Attachment
 @Observable
 @MainActor
 final class QuickAskState {
+    private let attachmentManager: AttachmentManager
     
     // MARK: - Phase
     
@@ -78,6 +79,10 @@ final class QuickAskState {
         phase == .recording
     }
     
+    init(attachmentManager: AttachmentManager) {
+        self.attachmentManager = attachmentManager
+    }
+    
     // MARK: - Actions
     
     /// 开始 Quick Ask 会话
@@ -121,14 +126,14 @@ final class QuickAskState {
     
     /// 添加图片附件（通过 AttachmentManager）
     func addImage(_ image: NSImage) {
-        AttachmentManager.shared.addImage(image, source: .paste) { [weak self] attachment in
+        attachmentManager.addImage(image, source: .paste) { [weak self] attachment in
             self?.addAttachment(attachment)
         }
     }
     
     /// 添加截图附件
     func addScreenshot(_ image: NSImage) {
-        AttachmentManager.shared.addScreenshot(image) { [weak self] attachment in
+        attachmentManager.addScreenshot(image) { [weak self] attachment in
             self?.addAttachment(attachment)
         }
     }
@@ -136,7 +141,7 @@ final class QuickAskState {
     /// 添加文件附件
     func addFile(_ url: URL) {
         Task {
-            await AttachmentManager.shared.handleFileURL(url, source: .drop) { [weak self] attachment in
+            await attachmentManager.handleFileURL(url, source: .drop) { [weak self] attachment in
                 self?.addAttachment(attachment)
             }
         }

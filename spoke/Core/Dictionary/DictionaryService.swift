@@ -2,6 +2,16 @@ import Combine
 import Foundation
 import os
 
+@MainActor
+struct DictionaryServiceDependencies {
+    let notificationCenter: NotificationCenter
+}
+
+@MainActor
+extension DictionaryServiceDependencies {
+    static let live = DictionaryServiceDependencies(notificationCenter: .default)
+}
+
 // MARK: - Dictionary Service
 
 /// 词典服务
@@ -11,9 +21,10 @@ final class DictionaryService: ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = DictionaryService()
+    static let shared = DictionaryService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "DictionaryService")
+    private let dependencies: DictionaryServiceDependencies
     
     // MARK: - Published Properties
     
@@ -48,7 +59,10 @@ final class DictionaryService: ObservableObject {
     
     // MARK: - Init
     
-    private init() {
+    private init(
+        dependencies: DictionaryServiceDependencies
+    ) {
+        self.dependencies = dependencies
         loadEntries()
         loadPendingHotwords()
     }
@@ -198,7 +212,7 @@ final class DictionaryService: ObservableObject {
             logger.info("📝 Added training phrase to '\(self.entries[index].word)': \(trimmedPhrase.prefix(30))...")
             
             // 通知需要重新预编译 LM
-            NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+            postTrainingDataChanged()
         }
     }
     
@@ -226,7 +240,7 @@ final class DictionaryService: ObservableObject {
         saveEntries()
         logger.info("🗑️ Cleared training phrases for '\(self.entries[index].word)'")
         
-        NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+        postTrainingDataChanged()
     }
     
     /// 删除指定词条的单条训练短语
@@ -238,7 +252,7 @@ final class DictionaryService: ObservableObject {
         saveEntries()
         logger.info("🗑️ Removed training phrase from '\(self.entries[index].word)': \(removed.prefix(20))...")
         
-        NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+        postTrainingDataChanged()
     }
     
     /// 更新指定词条的单条训练短语
@@ -287,7 +301,7 @@ final class DictionaryService: ObservableObject {
         if removedCount > 0 {
             saveEntries()
             logger.info("🧹 Deduplicated \(removedCount) training phrases for '\(self.entries[index].word)'")
-            NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+            postTrainingDataChanged()
         }
     }
     
@@ -488,6 +502,10 @@ final class DictionaryService: ObservableObject {
         } catch {
             logger.error("❌ Failed to load pending hotwords: \(error)")
         }
+    }
+
+    private func postTrainingDataChanged() {
+        dependencies.notificationCenter.post(name: .dictionaryTrainingDataChanged, object: nil)
     }
     
     // MARK: - Export/Import

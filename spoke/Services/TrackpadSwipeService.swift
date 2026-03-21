@@ -85,15 +85,14 @@ final class TrackpadSwipeService {
     /// 启动手势监听
     /// 
     /// ⚠️ 需要 Accessibility 权限
-    func start() {
+    func start(requestPermissionIfNeeded: Bool = false) {
         guard !isRunning else { return }
         
         // 检查辅助功能权限
-        let trusted = AXIsProcessTrusted()
+        let trusted = AccessibilityHelper.hasAccessibilityPermission()
         if !trusted {
             logger.warning("⚠️ 需要辅助功能权限才能全局监听触控板")
-            // 提示用户开启权限
-            MainActor.assumeIsolated {
+            if requestPermissionIfNeeded {
                 _ = AccessibilityHelper.requestAccessibilityPermission()
             }
             return
