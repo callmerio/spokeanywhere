@@ -1,0 +1,26 @@
+{
+  "issue_id": "ORCH-QA-030",
+  "title": "QuickAsk HUD 窗口生命周期收敛",
+  "mode": "exec",
+  "goal": "继续收敛 QuickAskService / QuickAskHUDManager 中的窗口激活、隐藏恢复与失败收尾逻辑，降低 Quick Ask 运行时编排复杂度。",
+  "scope": [
+    "Services/QuickAskService.swift",
+    "Services/QuickAskHUDWindowRuntime.swift",
+    "Tests/QuickAskHUDWindowRuntimeTests.swift",
+    "Tests/AudioCallbackRouterTests.swift",
+    "Tests/UITests/SpokenAnyWhereUITests.swift"
+  ],
+  "metric": "quickask_runtime_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-QA-030",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests/testLiveCaptionAccessibilityIdentifierSmoke"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-QA-030",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "优先收敛窗口生命周期，不改 Quick Ask 用户可见行为。"
+}

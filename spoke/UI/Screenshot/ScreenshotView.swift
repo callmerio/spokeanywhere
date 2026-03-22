@@ -1,6 +1,14 @@
 import SwiftUI
 import Vision
 
+private struct ScreenshotContextMenuAction {
+    let id: String
+    let title: String
+    let systemImage: String
+    let role: ButtonRole?
+    let action: () -> Void
+}
+
 @MainActor
 struct ScreenshotActionDependencies {
     let togglePin: (ScreenshotItem) -> Void
@@ -22,130 +30,6 @@ struct ScreenshotActionDependencies {
     let saveWindowState: () -> Void
     let notificationCenter: NotificationCenter
     let copyText: (String) -> Void
-}
-
-@MainActor
-extension ScreenshotActionDependencies {
-    private static func toggleAction(
-        isEnabled: @escaping (ScreenshotItem) -> Bool,
-        enable: @escaping (ScreenshotManager, ScreenshotItem) -> Void,
-        disable: @escaping (ScreenshotManager, ScreenshotItem) -> Void,
-        manager: ScreenshotManager
-    ) -> (ScreenshotItem) -> Void {
-        { item in
-            if isEnabled(item) {
-                disable(manager, item)
-            } else {
-                enable(manager, item)
-            }
-        }
-    }
-
-    private static func copyImageToPasteboard(_ image: NSImage, pasteboard: NSPasteboard) {
-        pasteboard.clearContents()
-        pasteboard.writeObjects([image])
-    }
-
-    private static func copyTextToPasteboard(_ text: String, pasteboard: NSPasteboard) {
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-    }
-
-    private static func screenshotWindow(for itemID: UUID) -> ScreenshotWindow? {
-        NSApp.windows
-            .compactMap { $0 as? ScreenshotWindow }
-            .first(where: { $0.item.id == itemID })
-    }
-
-    private static func withWindow(_ itemID: UUID, perform update: (ScreenshotWindow) -> Void) {
-        guard let window = screenshotWindow(for: itemID) else {
-            return
-        }
-        update(window)
-    }
-
-    static let live: ScreenshotActionDependencies = {
-        let screenshotManager = ScreenshotManager.shared
-        let quickAskService = QuickAskService.shared
-        let imageEnhancementService = ImageEnhancementService.shared
-        let screenshotSettings = ScreenshotSettings.shared
-        let selectionToolbarState = SelectionToolbarState.shared
-        let selectionToolbarManager = SelectionToolbarManager.shared
-        let pasteboard = NSPasteboard.general
-
-        return ScreenshotActionDependencies(
-            togglePin: Self.toggleAction(
-                isEnabled: \.isPinned,
-                enable: { manager, item in manager.pin(item) },
-                disable: { manager, item in manager.unpin(item) },
-                manager: screenshotManager
-            ),
-            toggleLock: Self.toggleAction(
-                isEnabled: \.isLocked,
-                enable: { manager, item in manager.lock(item) },
-                disable: { manager, item in manager.unlock(item) },
-                manager: screenshotManager
-            ),
-            toggleMark: Self.toggleAction(
-                isEnabled: \.isMarked,
-                enable: { manager, item in manager.mark(item) },
-                disable: { manager, item in manager.unmark(item) },
-                manager: screenshotManager
-            ),
-            withWindow: { itemID, update in
-                Self.withWindow(itemID, perform: update)
-            },
-            updateWindowCollectionBehavior: { itemID in
-                Self.withWindow(itemID) { window in
-                    window.updateCollectionBehavior()
-                }
-            },
-            updateWindowMovable: { itemID in
-                Self.withWindow(itemID) { window in
-                    window.updateMovable()
-                }
-            },
-            copyImage: { item, enhancedImage in
-                screenshotManager.copyToClipboard(item, enhancedImage: enhancedImage)
-            },
-            copyRawImage: { image in
-                Self.copyImageToPasteboard(image, pasteboard: pasteboard)
-            },
-            closeWindow: { item in
-                screenshotManager.close(item)
-            },
-            startQuickAsk: { image in
-                quickAskService.startSession()
-                quickAskService.state.addScreenshot(image)
-            },
-            enhanceImage: { image, targetSize in
-                imageEnhancementService.enhance(image, to: targetSize)
-            },
-            enhanceBasic: { image, targetSize in
-                await imageEnhancementService.enhanceBasic(image, to: targetSize)
-            },
-            enhanceAIHighRes: { image in
-                await imageEnhancementService.enhanceAIHighResAsync(image)
-            },
-            scaleImage: { image, targetSize, backingScale in
-                imageEnhancementService.scaleNSImage(image, to: targetSize, backingScale: backingScale)
-            },
-            shouldShowEnhancedCopy: {
-                screenshotSettings.upscalingMode != .none
-            },
-            showSelectionToolbar: { context, point in
-                selectionToolbarState.show(with: context)
-                selectionToolbarManager.show(at: point)
-            },
-            saveWindowState: {
-                screenshotManager.saveAll()
-            },
-            notificationCenter: .default,
-            copyText: { text in
-                Self.copyTextToPasteboard(text, pasteboard: pasteboard)
-            }
-        )
-    }()
 }
 
 // MARK: - Screenshot View
@@ -228,51 +112,80 @@ struct ScreenshotView: View {
     
     @ViewBuilder
     private var contextMenuItems: some View {
-        contextMenuButton(pinMenuTitle, systemImage: pinMenuImage, action: togglePin)
-        
-        contextMenuButton(lockMenuTitle, systemImage: lockMenuImage, action: toggleLock)
-        
-        Divider()
-        
-        contextMenuButton("Copy Image", systemImage: "doc.on.doc", action: copyImage)
-        
-        contextMenuButton("OCR", systemImage: "text.viewfinder", action: performOCR)
-        
-        contextMenuButton("Quick Ask", systemImage: "sparkles", action: openQuickAsk)
-        
-        Divider()
-        
-        contextMenuButton("Close", systemImage: "xmark", role: .destructive, action: closeWindow)
+        let sections = contextMenuSections
+        ForEach(Array(sections.enumerated()), id: \.offset) { sectionIndex, actions in
+            if sectionIndex > 0 {
+                Divider()
+            }
+
+            ForEach(actions, id: \.id) { menuAction in
+                contextMenuButton(menuAction)
+            }
+        }
     }
     
     // MARK: - Actions
 
-    private var pinMenuTitle: String {
-        item.isPinned ? "Unpin" : "Pin to Space"
-    }
-
-    private var pinMenuImage: String {
-        item.isPinned ? "pin.slash" : "pin"
-    }
-
-    private var lockMenuTitle: String {
-        item.isLocked ? "Unlock" : "Lock"
-    }
-
-    private var lockMenuImage: String {
-        item.isLocked ? "lock.open" : "lock"
-    }
-
     @ViewBuilder
     private func contextMenuButton(
-        _ title: String,
-        systemImage: String,
-        role: ButtonRole? = nil,
-        action: @escaping () -> Void
+        _ action: ScreenshotContextMenuAction
     ) -> some View {
-        Button(role: role, action: action) {
-            Label(title, systemImage: systemImage)
+        Button(role: action.role, action: action.action) {
+            Label(action.title, systemImage: action.systemImage)
         }
+    }
+
+    private var contextMenuSections: [[ScreenshotContextMenuAction]] {
+        [
+            [
+                ScreenshotContextMenuAction(
+                    id: "pin",
+                    title: item.isPinned ? "Unpin" : "Pin to Space",
+                    systemImage: item.isPinned ? "pin.slash" : "pin",
+                    role: nil,
+                    action: togglePin
+                ),
+                ScreenshotContextMenuAction(
+                    id: "lock",
+                    title: item.isLocked ? "Unlock" : "Lock",
+                    systemImage: item.isLocked ? "lock.open" : "lock",
+                    role: nil,
+                    action: toggleLock
+                ),
+            ],
+            [
+                ScreenshotContextMenuAction(
+                    id: "copy",
+                    title: "Copy Image",
+                    systemImage: "doc.on.doc",
+                    role: nil,
+                    action: copyImage
+                ),
+                ScreenshotContextMenuAction(
+                    id: "ocr",
+                    title: "OCR",
+                    systemImage: "text.viewfinder",
+                    role: nil,
+                    action: performOCR
+                ),
+                ScreenshotContextMenuAction(
+                    id: "quick-ask",
+                    title: "Quick Ask",
+                    systemImage: "sparkles",
+                    role: nil,
+                    action: openQuickAsk
+                ),
+            ],
+            [
+                ScreenshotContextMenuAction(
+                    id: "close",
+                    title: "Close",
+                    systemImage: "xmark",
+                    role: .destructive,
+                    action: closeWindow
+                ),
+            ],
+        ]
     }
 
     private func setHoverState(_ hovering: Bool) {

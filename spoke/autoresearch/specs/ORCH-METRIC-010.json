@@ -1,0 +1,25 @@
+{
+  "issue_id": "ORCH-METRIC-010",
+  "title": "残余热点机械指标固化",
+  "mode": "exec",
+  "goal": "为 AppDelegate / QuickAskService / RecordingController 三个剩余热点建立可复算的机械指标入口，支持 round 3 持续治理。",
+  "scope": [
+    "scripts/autoresearch/verify_issue_metric.py",
+    "autoresearch/specs/ORCH-QA-030.json",
+    "autoresearch/specs/ORCH-APP-030.json",
+    "autoresearch/specs/ORCH-REC-030.json",
+    "issues/2026-03-22_04-46-21-orchestrator-hotspots-round-3.csv"
+  ],
+  "metric": "missing_round3_hotspot_metrics",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-METRIC-010",
+  "guard": [
+    "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-QA-030",
+    "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-APP-030",
+    "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-REC-030"
+  ],
+  "iterations": 6,
+  "run_tag": "ORCH-METRIC-010",
+  "stop_condition": "metric=0 且 guard 全通过",
+  "notes": "不改运行时代码行为，只固化可复算的热点计数与 spec 资产。"
+}

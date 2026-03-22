@@ -14,19 +14,6 @@ struct SelectionToolbarManagerDependencies {
     let openSystemSettings: (URL) -> Void
 }
 
-@MainActor
-extension SelectionToolbarManagerDependencies {
-    static func makeLive() -> SelectionToolbarManagerDependencies {
-        SelectionToolbarManagerDependencies(
-            state: .shared,
-            selectionMonitor: { .shared },
-            notificationCenter: .default,
-            configService: .shared,
-            openSystemSettings: { NSWorkspace.shared.open($0) }
-        )
-    }
-}
-
 /// 选择工具栏窗口管理器
 @MainActor
 final class SelectionToolbarManager {
@@ -100,7 +87,7 @@ final class SelectionToolbarManager {
         let dependencies = SelectionToolbarManagerDependencies.makeLive()
         self.dependencies = dependencies
         self.state = dependencies.state
-        self.selectionMonitor = dependencies.selectionMonitor()
+        self.selectionMonitor = Self.resolveSelectionMonitor(for: dependencies)
         setupBindings()
         setupSelectionMonitor()
     }
@@ -110,13 +97,13 @@ final class SelectionToolbarManager {
     ) {
         self.dependencies = dependencies
         self.state = dependencies.state
-        self.selectionMonitor = dependencies.selectionMonitor()
+        self.selectionMonitor = Self.resolveSelectionMonitor(for: dependencies)
         setupBindings()
         setupSelectionMonitor()
     }
 
     deinit {
-        permissionPollingTask?.cancel()
+        cancelSelectionToolbarTask(&permissionPollingTask)
         autoHideTimer?.invalidate()
         dictionaryAutoHideTimer?.invalidate()
         hoverCheckTimer?.invalidate()
@@ -183,9 +170,7 @@ final class SelectionToolbarManager {
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
             // 打开系统设置的辅助功能页面
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                dependencies.openSystemSettings(url)
-            }
+            openAccessibilitySettings()
             
             // 开始轮询检查权限状态
             startPermissionPolling()
@@ -211,24 +196,20 @@ final class SelectionToolbarManager {
     private func startPermissionPolling() {
         stopPermissionPolling()
 
-        // 使用 Task 轮询检查权限，授权后自动启动
-        permissionPollingTask = Task { [weak self] in
-            guard let self else { return }
-            while !Task.isCancelled {
-                // 每秒检查一次
-                try? await Task.sleep(nanoseconds: Timing.permissionPollingIntervalNs)
-                
-                if self.selectionMonitor.isAccessibilityEnabled {
-                    self.startSelectionMonitoring(requestPermissionIfNeeded: false)
-                    break
-                }
+        permissionPollingTask = makeSelectionToolbarPermissionPollingTask(
+            owner: self,
+            intervalNs: Timing.permissionPollingIntervalNs,
+            isPermissionGranted: { manager in
+                manager.selectionMonitor.isAccessibilityEnabled
+            },
+            onPermissionGranted: { manager in
+                manager.startSelectionMonitoring(requestPermissionIfNeeded: false)
             }
-        }
+        )
     }
 
     private func stopPermissionPolling() {
-        permissionPollingTask?.cancel()
-        permissionPollingTask = nil
+        cancelSelectionToolbarTask(&permissionPollingTask)
     }
     
     /// 停止服务
@@ -324,21 +305,7 @@ final class SelectionToolbarManager {
     /// 隐藏工具栏
     /// - Parameter force: 是否强制隐藏（忽略保护期和动作执行状态）
     func hide(force: Bool = false) {
-        // 🔥 检查保护期：如果还在保护期内且非强制隐藏，跳过
-        if !force && Date() < showProtectionEndTime {
-            logger.debug("📋 [ToolbarManager] 跳过隐藏（保护期内）")
-            return
-        }
-        
-        // 🔥 检查动作执行状态：如果正在执行动作且非强制隐藏，跳过
-        if !force && isExecutingAction {
-            logger.debug("📋 [ToolbarManager] 跳过隐藏（动作执行中）")
-            return
-        }
-        
-        // 🔥 检查词典结果显示状态：如果正在显示词典结果且非强制隐藏，跳过
-        if !force && state.phase == .showingDictionary {
-            logger.debug("📋 [ToolbarManager] 跳过隐藏（词典结果显示中）")
+        if shouldKeepVisible(force: force) {
             return
         }
         
@@ -368,8 +335,7 @@ final class SelectionToolbarManager {
     /// 获取工具栏窗口底部中心位置（用于在其下方显示面板）
     /// 返回 AppKit 坐标系下的位置（左下角原点）
     var toolbarBottomCenter: CGPoint? {
-        guard let window = toolbarWindow, window.isVisible else { return nil }
-        let frame = window.frame
+        guard let frame = selectionToolbarVisibleFrame(for: toolbarWindow) else { return nil }
         return CGPoint(x: frame.midX, y: frame.minY)
     }
     
@@ -555,6 +521,44 @@ final class SelectionToolbarManager {
     private func startSelectionMonitoring(requestPermissionIfNeeded: Bool) {
         selectionMonitor.startMonitoring(requestPermissionIfNeeded: requestPermissionIfNeeded)
     }
+
+    private static func resolveSelectionMonitor(
+        for dependencies: SelectionToolbarManagerDependencies
+    ) -> SelectionMonitorService {
+        dependencies.selectionMonitor()
+    }
+
+    private func openAccessibilitySettings() {
+        guard let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        ) else {
+            return
+        }
+        dependencies.openSystemSettings(url)
+    }
+
+    private func shouldKeepVisible(force: Bool) -> Bool {
+        guard !force else {
+            return false
+        }
+
+        if Date() < showProtectionEndTime {
+            logger.debug("📋 [ToolbarManager] 跳过隐藏（保护期内）")
+            return true
+        }
+
+        if isExecutingAction {
+            logger.debug("📋 [ToolbarManager] 跳过隐藏（动作执行中）")
+            return true
+        }
+
+        if state.phase == .showingDictionary {
+            logger.debug("📋 [ToolbarManager] 跳过隐藏（词典结果显示中）")
+            return true
+        }
+
+        return false
+    }
     
     /// 设置点击外部关闭监听
     private func setupClickOutsideMonitor() {
@@ -572,7 +576,7 @@ final class SelectionToolbarManager {
             let screenLocation = NSEvent.mouseLocation
             
             if !windowFrame.contains(screenLocation) {
-                Self.runOnMainActor { [weak self] in
+                runSelectionToolbarOnMain { [weak self] in
                     self?.hide(force: true)  // 🔥 点击外部强制隐藏（包括词典结果）
                 }
             }
@@ -591,15 +595,14 @@ final class SelectionToolbarManager {
     private func startAutoHideTimer() {
         stopAutoHideTimer()
         
-        autoHideTimer = Self.makeMainActorTimer(interval: state.config.autoHideDelay, owner: self) { manager in
+        autoHideTimer = makeSelectionToolbarTimer(interval: state.config.autoHideDelay, owner: self) { manager in
             manager.hide()
         }
     }
     
     /// 停止自动隐藏定时器
     private func stopAutoHideTimer() {
-        autoHideTimer?.invalidate()
-        autoHideTimer = nil
+        invalidateSelectionToolbarTimer(&autoHideTimer)
     }
     
     /// 重置自动隐藏定时器
@@ -614,15 +617,12 @@ final class SelectionToolbarManager {
         logger.info("📋 [ToolbarManager] 🕐 startDictionaryAutoHideTimer 被调用")
         stopDictionaryAutoHideTimer()
         
-        // 启动 hover 检测
-        startHoverCheckTimer()
-        restartDictionaryAutoHideTimer()
+        restartDictionaryHoverMonitoring()
     }
     
     /// 停止词典自动隐藏定时器
     private func stopDictionaryAutoHideTimer() {
-        dictionaryAutoHideTimer?.invalidate()
-        dictionaryAutoHideTimer = nil
+        invalidateSelectionToolbarTimer(&dictionaryAutoHideTimer)
         stopHoverCheckTimer()
     }
     
@@ -630,39 +630,34 @@ final class SelectionToolbarManager {
     private func startHoverCheckTimer() {
         stopHoverCheckTimer()
         
-        hoverCheckTimer = Self.makeMainActorTimer(interval: Timing.hoverCheckInterval, repeats: true, owner: self) { manager in
+        hoverCheckTimer = makeSelectionToolbarTimer(interval: Timing.hoverCheckInterval, repeats: true, owner: self) { manager in
             manager.checkHoverState()
         }
     }
     
     /// 停止 hover 检测定时器
     private func stopHoverCheckTimer() {
-        hoverCheckTimer?.invalidate()
-        hoverCheckTimer = nil
+        invalidateSelectionToolbarTimer(&hoverCheckTimer)
     }
     
     /// 检查 hover 状态，如果正在 hover 则重置定时器
     private func checkHoverState() {
-        guard let window = toolbarWindow, window.isVisible else { return }
-        
-        let mouseLocation = NSEvent.mouseLocation
-        let windowFrame = window.frame
-        
-        // 如果鼠标在窗口内，重置词典自动隐藏定时器
-        if windowFrame.contains(mouseLocation) {
+        guard let containsMouse = selectionToolbarMouseContainment(for: toolbarWindow) else {
+            return
+        }
+
+        if containsMouse {
             restartDictionaryAutoHideTimer()
         }
     }
     
     /// 检查并隐藏词典结果
     private func checkAndHideDictionary() {
-        guard let window = toolbarWindow, window.isVisible else { return }
-        
-        let mouseLocation = NSEvent.mouseLocation
-        let windowFrame = window.frame
-        
-        // 如果鼠标不在窗口内，强制隐藏
-        if !windowFrame.contains(mouseLocation) {
+        guard let containsMouse = selectionToolbarMouseContainment(for: toolbarWindow) else {
+            return
+        }
+
+        if !containsMouse {
             stopDictionaryAutoHideTimer()
             hide(force: true)  // 🔥 使用 force: true 绕过词典显示状态检查
             logger.debug("📋 [ToolbarManager] 词典结果自动隐藏（2秒无 hover）")
@@ -681,30 +676,15 @@ final class SelectionToolbarManager {
     }
 
     private func restartDictionaryAutoHideTimer() {
-        dictionaryAutoHideTimer?.invalidate()
-        dictionaryAutoHideTimer = Self.makeMainActorTimer(interval: Timing.dictionaryAutoHideDelay, owner: self) { manager in
+        invalidateSelectionToolbarTimer(&dictionaryAutoHideTimer)
+        dictionaryAutoHideTimer = makeSelectionToolbarTimer(interval: Timing.dictionaryAutoHideDelay, owner: self) { manager in
             logger.info("📋 [ToolbarManager] ⏰ 2秒定时器触发，检查是否隐藏")
             manager.checkAndHideDictionary()
         }
     }
 
-    nonisolated private static func runOnMainActor(_ operation: @escaping @MainActor () -> Void) {
-        Task { @MainActor in
-            operation()
-        }
-    }
-
-    nonisolated private static func makeMainActorTimer(
-        interval: TimeInterval,
-        repeats: Bool = false,
-        owner: SelectionToolbarManager,
-        action: @escaping @MainActor (SelectionToolbarManager) -> Void
-    ) -> Timer {
-        Timer.scheduledTimer(withTimeInterval: interval, repeats: repeats) { [weak owner] _ in
-            Self.runOnMainActor {
-                guard let owner else { return }
-                action(owner)
-            }
-        }
+    private func restartDictionaryHoverMonitoring() {
+        startHoverCheckTimer()
+        restartDictionaryAutoHideTimer()
     }
 }

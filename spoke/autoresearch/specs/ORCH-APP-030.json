@@ -1,0 +1,25 @@
+{
+  "issue_id": "ORCH-APP-030",
+  "title": "AppDelegate 设置窗口与菜单流拆分",
+  "mode": "exec",
+  "goal": "继续收敛 AppDelegate 中的设置窗口展示、复用和关闭恢复流，减少生命周期入口中的 UI 协调噪音。",
+  "scope": [
+    "App/AppDelegate.swift",
+    "App/SettingsWindowRuntime.swift",
+    "Tests/SettingsWindowRuntimeTests.swift",
+    "Tests/AppLifecyclePlanTests.swift",
+    "Tests/AppSettingsTests.swift"
+  ],
+  "metric": "appdelegate_settings_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-APP-030",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-APP-030",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收敛设置窗口与菜单相关流，不扩大到整个 AppDelegate 重写。"
+}

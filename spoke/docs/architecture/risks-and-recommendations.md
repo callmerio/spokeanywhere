@@ -11,7 +11,7 @@
 本次以当前仓库快照和 **2026-03-22** 的本地复算为基线，结论如下：
 
 - ✅ **代码可运行性**: Go
-  - `swift test` 通过，结果为 `137 tests / 25 suites`
+  - `swift test` 通过，结果为 `150 tests / 30 suites`
   - `bash Tests/run-concurrency-check.sh` 通过，结果为 `0 warnings`
 - ⚠️ **质量治理**: Conditional Go
   - 仓库中未发现版本化 `.github/workflows/*`，无法仅凭仓库内容证明自动化门禁已落地
@@ -38,7 +38,7 @@ bash Tests/run-concurrency-check.sh
 
 结果：
 
-- 测试：`137 tests / 25 suites` 通过
+- 测试：`150 tests / 30 suites` 通过
 - 严格并发检查：`0 warnings`
 
 ### 2.2 当前仓库事实
@@ -83,6 +83,8 @@ bash Tests/run-concurrency-check.sh
 - `RecordingController` 已抽出 `RecordingTranscriptionDecision`，把转写后的结果决策从 orchestrator 主流程中分离。
 - `AppDelegate` 已抽出 `AppLifecyclePlan`，将启动/关闭顺序固定为可测试 plan，而不是继续在方法里手写数组。
 - `QuickAskService` 已抽出 `QuickAskPromptAssembler`，减少 prompt 组装与运行时编排耦合。
+- `SelectionMonitorService` 已抽出 live/runtime helper，减少 debounce / AX bridge 的主文件噪音。
+- `WorkflowExecutor` 已抽出 `WorkflowProfileResolver` 并新增表征测试，profile fallback 不再直接写在 executor 主体里。
 
 **影响**:
 

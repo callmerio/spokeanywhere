@@ -170,7 +170,7 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 
 ### 4.2 2026-03-22 复算结果
 
-- `swift test`：`137 tests / 25 suites` 通过
+- `swift test`：`150 tests / 30 suites` 通过
 - `run-concurrency-check.sh`：`0 warnings`
 
 ### 4.3 当前仓库缺失项

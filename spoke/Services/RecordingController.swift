@@ -37,34 +37,7 @@ final class RecordingController {
     
     // MARK: - Singleton
     
-    static let shared = RecordingController(
-        dependencies: RecordingControllerDependencies(
-            hudManager: .shared,
-            contextService: .shared,
-            hotKeyService: .shared,
-            audioService: .shared,
-            inputService: .shared,
-            settings: .shared,
-            llmSettings: .shared,
-            llmPipeline: .shared,
-            historyManager: .shared,
-            quickAskService: .shared,
-            screenOCR: .shared,
-            messagePanelManager: .shared,
-            liveCaptionWindowManager: .shared,
-            clipboardPipelineService: .shared,
-            copyToClipboard: { text in
-                let pasteboard = NSPasteboard.general
-                pasteboard.clearContents()
-                pasteboard.setString(text, forType: .string)
-            },
-            openSettings: {
-                if !NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil) {
-                    assertionFailure("AppDelegate should handle openSettings via responder chain")
-                }
-            }
-        )
-    )
+    static let shared = RecordingController(dependencies: .makeLive())
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "Recording")
     
@@ -246,12 +219,8 @@ final class RecordingController {
         }
         
         // 启动计时器更新时长
-        let updateDuration = makeControllerAction { controller in
+        recordingTimer = makeRecordingDurationTimer(owner: self) { controller in
             controller.updateRecordingDuration()
-        }
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard self != nil else { return }
-            updateDuration()
         }
         
         // 启动音频录制（立即开始，引擎后台准备）
@@ -335,10 +304,7 @@ final class RecordingController {
         _ action: @escaping @MainActor (RecordingController) -> Void
     ) -> () -> Void {
         { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                action(self)
-            }
+            runRecordingControllerOnMain(self, action)
         }
     }
 
@@ -346,9 +312,8 @@ final class RecordingController {
         _ action: @escaping @MainActor (RecordingController, Value) -> Void
     ) -> (Value) -> Void {
         { [weak self] value in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                action(self, value)
+            runRecordingControllerOnMain(self) { controller in
+                action(controller, value)
             }
         }
     }
@@ -358,9 +323,7 @@ final class RecordingController {
     ) -> () -> Void {
         let dependencies = self.dependencies
         return {
-            Task { @MainActor in
-                action(dependencies)
-            }
+            runRecordingControllerDependenciesOnMain(dependencies, action)
         }
     }
 
@@ -416,104 +379,171 @@ final class RecordingController {
         appBundleId: String?,
         sourceApp: SourceAppInfo?
     ) {
-        Task {
+        runRecordingControllerAsync(self) { controller in
             let processStartTime = CFAbsoluteTimeGetCurrent()
             
             // 🚀 立即复制当前转录到剪贴板（用户可能急需）
             let immediateText = transcription
-            if !immediateText.isEmpty {
-                dependencies.copyToClipboard(immediateText)
-                logger.info("📋 剪贴板(即时): \(immediateText.prefix(50), privacy: .public)...")
-            }
+            controller.copyImmediateTranscriptionIfNeeded(immediateText)
             
             // 等待最终结果（最多等待 2 秒，新录音开始则立即中断）
-            var waitTime = 0
-            while waitTime < Self.maxWaitForFinalResult && !dependencies.hotKeyService.isRecording {
-                try? await Task.sleep(for: .milliseconds(Self.checkInterval))
-                waitTime += Self.checkInterval
-                if !dependencies.audioService.isProcessing { break }
-            }
-            
-            let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
-            logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed), privacy: .public)ms")
+            await controller.waitForTranscriptionPipeline(processStartTime: processStartTime)
             
             // 使用捕获的文本，避免访问可能被新录音覆盖的 lastTranscription
             let transcribedText = transcription
             
             if transcribedText.isEmpty {
-                // 仅在没有新录音时显示失败
-                withIdleRecordingState { hudManager in
-                    hudManager.fail(with: TranscriptionError.emptySpeech)
-                }
+                controller.handleEmptyTranscription()
                 return
             }
             
             // 仅当文本有更新时再次复制（避免重复写入剪贴板）
-            if transcribedText != immediateText {
-                dependencies.copyToClipboard(transcribedText)
-                logger.info("📋 剪贴板(最终): 文本已更新")
-            }
+            controller.refreshClipboardIfNeeded(finalText: transcribedText, immediateText: immediateText)
             
             // 发送 ASR 结果到 Message Panel（带来源应用）
-            dependencies.messagePanelManager.addASRResult(
-                model: "Apple Speech",
-                content: transcribedText,
-                sourceApp: sourceApp
-            )
+            controller.publishASRResult(transcribedText, sourceApp: sourceApp)
             
             // 检查是否需要 LLM 处理
-            guard dependencies.llmPipeline.shouldProcess else {
-                let decision = RecordingTranscriptionDecision.passthrough(
-                    rawText: transcribedText,
-                    isStillRecording: dependencies.hotKeyService.isRecording
-                )
-                applyDecision(decision)
-                
-                // 保存到历史记录
-                await persistRecording(
-                    rawText: transcribedText,
-                    processedText: decision.processedText,
+            guard controller.dependencies.llmPipeline.shouldProcess else {
+                await controller.handlePassthroughTranscription(
+                    transcribedText,
                     audioURL: audioURL,
                     appBundleId: appBundleId
                 )
-                
-                logger.info("✅ Transcription complete (no LLM): \(transcribedText, privacy: .public)")
+                controller.logger.info("✅ Transcription complete (no LLM): \(transcribedText, privacy: .public)")
                 return
             }
             
             // 调用 LLM 精炼
-            let result = await dependencies.llmPipeline.refine(transcribedText)
-            let decision = RecordingTranscriptionDecision.make(
-                rawText: transcribedText,
-                refineResult: result,
-                isStillRecording: dependencies.hotKeyService.isRecording
-            )
-
-            switch result {
-            case .success(let refinedText):
-                applyDecision(decision)
-                dependencies.messagePanelManager.addLLMResult(
-                    model: dependencies.llmPipeline.currentProviderName,
-                    content: refinedText,
-                    sourceApp: sourceApp
-                )
-                logger.info("✅ LLM refinement complete: \(refinedText, privacy: .public)")
-                
-            case .failure(let error):
-                applyDecision(decision)
-                // LLM 失败，保留原始文本
-                logger.error("❌ LLM failed: \(error.localizedDescription, privacy: .public)")
-                logger.info("⚠️ Fallback to transcribed text")
-            }
-            
-            // 保存到历史记录
-            await persistRecording(
-                rawText: transcribedText,
-                processedText: decision.processedText,
+            await controller.handleLLMRefinement(
+                transcribedText,
                 audioURL: audioURL,
-                appBundleId: appBundleId
+                appBundleId: appBundleId,
+                sourceApp: sourceApp
             )
         }
+    }
+
+    private func copyImmediateTranscriptionIfNeeded(_ text: String) {
+        guard !text.isEmpty else { return }
+        dependencies.copyToClipboard(text)
+        logger.info("📋 剪贴板(即时): \(text.prefix(50), privacy: .public)...")
+    }
+
+    private func waitForTranscriptionPipeline(processStartTime: CFAbsoluteTime) async {
+        var waitTime = 0
+        while waitTime < Self.maxWaitForFinalResult && !dependencies.hotKeyService.isRecording {
+            try? await Task.sleep(for: .milliseconds(Self.checkInterval))
+            waitTime += Self.checkInterval
+            if !dependencies.audioService.isProcessing { break }
+        }
+
+        let waitElapsed = (CFAbsoluteTimeGetCurrent() - processStartTime) * 1000
+        logger.info("⏱️ 等待完成: \(String(format: "%.0f", waitElapsed), privacy: .public)ms")
+    }
+
+    private func handleEmptyTranscription() {
+        withIdleRecordingState { hudManager in
+            hudManager.fail(with: TranscriptionError.emptySpeech)
+        }
+    }
+
+    private func refreshClipboardIfNeeded(finalText: String, immediateText: String) {
+        guard finalText != immediateText else { return }
+        dependencies.copyToClipboard(finalText)
+        logger.info("📋 剪贴板(最终): 文本已更新")
+    }
+
+    private func publishASRResult(_ text: String, sourceApp: SourceAppInfo?) {
+        dependencies.messagePanelManager.addASRResult(
+            model: "Apple Speech",
+            content: text,
+            sourceApp: sourceApp
+        )
+    }
+
+    private func publishLLMResult(_ text: String, sourceApp: SourceAppInfo?) {
+        dependencies.messagePanelManager.addLLMResult(
+            model: dependencies.llmPipeline.currentProviderName,
+            content: text,
+            sourceApp: sourceApp
+        )
+    }
+
+    private func makePassthroughDecision(for text: String) -> RecordingTranscriptionDecision {
+        RecordingTranscriptionDecision.passthrough(
+            rawText: text,
+            isStillRecording: dependencies.hotKeyService.isRecording
+        )
+    }
+
+    private func makeRefinementDecision(
+        rawText: String,
+        refineResult: Result<String, LLMError>
+    ) -> RecordingTranscriptionDecision {
+        RecordingTranscriptionDecision.make(
+            rawText: rawText,
+            refineResult: refineResult,
+            isStillRecording: dependencies.hotKeyService.isRecording
+        )
+    }
+
+    private func persistDecision(
+        rawText: String,
+        decision: RecordingTranscriptionDecision,
+        audioURL: URL?,
+        appBundleId: String?
+    ) async {
+        await persistRecording(
+            rawText: rawText,
+            processedText: decision.processedText,
+            audioURL: audioURL,
+            appBundleId: appBundleId
+        )
+    }
+
+    private func handlePassthroughTranscription(
+        _ transcribedText: String,
+        audioURL: URL?,
+        appBundleId: String?
+    ) async {
+        let decision = makePassthroughDecision(for: transcribedText)
+        applyDecision(decision)
+        await persistDecision(
+            rawText: transcribedText,
+            decision: decision,
+            audioURL: audioURL,
+            appBundleId: appBundleId
+        )
+    }
+
+    private func handleLLMRefinement(
+        _ transcribedText: String,
+        audioURL: URL?,
+        appBundleId: String?,
+        sourceApp: SourceAppInfo?
+    ) async {
+        let result = await dependencies.llmPipeline.refine(transcribedText)
+        let decision = makeRefinementDecision(rawText: transcribedText, refineResult: result)
+
+        switch result {
+        case .success(let refinedText):
+            applyDecision(decision)
+            publishLLMResult(refinedText, sourceApp: sourceApp)
+            logger.info("✅ LLM refinement complete: \(refinedText, privacy: .public)")
+
+        case .failure(let error):
+            applyDecision(decision)
+            logger.error("❌ LLM failed: \(error.localizedDescription, privacy: .public)")
+            logger.info("⚠️ Fallback to transcribed text")
+        }
+
+        await persistDecision(
+            rawText: transcribedText,
+            decision: decision,
+            audioURL: audioURL,
+            appBundleId: appBundleId
+        )
     }
 
     private func applyDecision(_ decision: RecordingTranscriptionDecision) {

@@ -1,0 +1,23 @@
+{
+  "issue_id": "DOC-ARCH-110",
+  "title": "架构文档测试基线同步到 150/30",
+  "mode": "exec",
+  "goal": "同步 docs/architecture 当前基线，更新测试套件口径、最后更新时间和当前状态描述，避免仓库再次出现事实漂移。",
+  "scope": [
+    "docs/architecture/current-state-audit.md",
+    "docs/architecture/overview.md",
+    "docs/architecture/quick-reference.md",
+    "docs/architecture/risks-and-recommendations.md"
+  ],
+  "metric": "architecture_doc_sync_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue DOC-ARCH-110",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "DOC-ARCH-110",
+  "stop_condition": "所有文档同步检查通过，或连续 3 次 discard 后 pivot",
+  "notes": "仅同步 current-state 文档，不改历史 roadmap / acceptance 文档时间边界。"
+}

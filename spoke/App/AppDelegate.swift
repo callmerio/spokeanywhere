@@ -23,29 +23,6 @@ struct AppDelegateDependencies {
     let transcriptionModelManager: TranscriptionModelManager
     let transcriptionManager: TranscriptionManager
     let crashLogger: CrashLogger
-
-    static func makeLive() -> Self {
-        .init(
-            notificationCenter: .default,
-            hotKeyService: .shared,
-            screenshotManager: .shared,
-            dictionaryPanelManager: .shared,
-            debugAutomationTrigger: .shared,
-            recordingController: .shared,
-            liveCaptionWindowManager: .shared,
-            selectionActionService: .shared,
-            appSettings: .shared,
-            selectionToolbarManager: .shared,
-            trackpadSwipeService: .shared,
-            messagePanelManager: .shared,
-            historyManager: .shared,
-            resourceMonitor: .shared,
-            clipboardHistoryService: .shared,
-            transcriptionModelManager: .shared,
-            transcriptionManager: .shared,
-            crashLogger: .shared
-        )
-    }
 }
 
 @MainActor
@@ -86,6 +63,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var shortcutObserver: NSObjectProtocol?
     private var toolbarSettingsObserver: NSObjectProtocol?
     private let dependencies: AppDelegateDependencies
+    private let settingsWindowRuntime = SettingsWindowRuntime.live
+    private lazy var screenshotRuntime = AppScreenshotRuntime(
+        makeWindow: { item in
+            ScreenshotWindow(item: item)
+        },
+        updateFrame: { [screenshotManager = dependencies.screenshotManager] frame, item in
+            screenshotManager.updateFrame(frame, for: item)
+        },
+        restoreAll: { [screenshotManager = dependencies.screenshotManager] in
+            await screenshotManager.restoreAll()
+        },
+        captureRegion: { [screenshotManager = dependencies.screenshotManager] in
+            await screenshotManager.captureRegion()
+        },
+        debugCaptureForAutomation: { [screenshotManager = dependencies.screenshotManager] in
+            await screenshotManager.debugCaptureForAutomation()
+        }
+    )
 
     private typealias LifecycleStep = (name: String, action: () -> Void)
 
@@ -118,18 +113,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         // 设置 ScreenshotManager 的窗口工厂
-        dependencies.screenshotManager.windowFactory = { [weak self] item in
-            let window = ScreenshotWindow(item: item)
-            window.onFrameChanged = { newFrame in
-                self?.dependencies.screenshotManager.updateFrame(newFrame, for: item)
-            }
-            return window
-        }
+        dependencies.screenshotManager.windowFactory = screenshotRuntime.makeWindowFactory()
         
         // 异步恢复之前 Pinned 的截图，避免启动阶段主线程阻塞
         Task(priority: .utility) { @MainActor [weak self] in
-            await self?.dependencies.screenshotManager.restoreAll()
-            self?.logger.info("📸 [AppDelegate] Pinned screenshot restore finished")
+            await self?.screenshotRuntime.restorePinnedScreenshots { message in
+                self?.logger.info("\(message, privacy: .public)")
+            }
         }
         
         logger.info("📸 [AppDelegate] ✅ Screenshot service setup complete")
@@ -153,7 +143,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.dependencies.liveCaptionWindowManager.toggle()
         }
         trigger.onScreenshotCapture = {
-            self.runMainActorTask {
+            runAppMainActorAsync {
                 await self.dependencies.screenshotManager.debugCaptureForAutomation()
             }
         }
@@ -175,7 +165,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 监听打开工具栏设置的通知
         installObserver(&toolbarSettingsObserver, forName: .openToolbarSettings) { [weak self] notification in
             let focusAddSkill = notification.userInfo?["focusAddSkill"] as? Bool ?? false
-            self?.showSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
+            self?.presentSettingsWindow(focusToolbar: true, focusAddSkill: focusAddSkill)
         }
         
         // 启动工具栏管理器 (根据设置决定是否自动启动)
@@ -218,31 +208,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func performHistoryCleanup() {
         let settings = dependencies.appSettings
-        guard settings.historyAutoCleanupEnabled else { return }
-        
-        Task {
-            // 按天数清理
-            if settings.historyKeepDays > 0 {
-                await self.dependencies.historyManager.performCleanup(policy: .keepDays(settings.historyKeepDays))
-            }
-            
-            // 按条数清理
-            if settings.historyMaxCount > 0 {
-                await self.dependencies.historyManager.performCleanup(policy: .keepCount(settings.historyMaxCount))
-            }
+        runAppMainActorAsync {
+            await self.makeHistoryMaintenanceRuntime().runAutoCleanup(
+                using: AppHistoryMaintenanceSettings(
+                    autoCleanupEnabled: settings.historyAutoCleanupEnabled,
+                    keepDays: settings.historyKeepDays,
+                    maxCount: settings.historyMaxCount
+                )
+            )
         }
     }
     
     private func performOrphanCleanup() {
-        Task {
-            // 迁移旧版 today 记录为 todo
-            await self.dependencies.historyManager.migrateLegacyTodayRecords()
-            // 清理孤儿音频文件（磁盘有文件但数据库无记录）
-            await self.dependencies.historyManager.cleanupOrphanedAudioFiles()
-            // 限制普通记录数量为 50 条（todo/done/note 不受影响）
-            await self.dependencies.historyManager.enforceNormalRecordLimit(maxCount: 50)
-            // 限制音频总大小为 2GB
-            await self.dependencies.historyManager.enforceAudioSizeLimit(maxSizeMB: 2048)
+        runAppMainActorAsync {
+            await self.makeHistoryMaintenanceRuntime().runOrphanMaintenance()
         }
     }
     
@@ -258,7 +237,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("⚠️ 资源超限！执行降级策略...")
             
             // 降级策略：停止非关键服务
-            self.runMainActorTask {
+            runAppMainActorAsync {
                 // 1. 停止剪贴板监控
                 self.dependencies.clipboardHistoryService.stop()
                 
@@ -526,28 +505,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func triggerScreenshot() {
-        runMainActorTask {
-            await self.dependencies.screenshotManager.captureRegion()
+        runAppMainActorAsync {
+            await self.screenshotRuntime.captureRegion()
         }
     }
     
     @objc func openSettings() {
-        showSettingsWindow(focusToolbar: false, focusAddSkill: false)
+        presentSettingsWindow(focusToolbar: false, focusAddSkill: false)
     }
     
     private var settingsWindowObserver: NSObjectProtocol?
     
-    private func showSettingsWindow(focusToolbar: Bool, focusAddSkill: Bool) {
+    private func presentSettingsWindow(focusToolbar: Bool, focusAddSkill: Bool) {
         print("⚙️ openSettings called, focusToolbar=\(focusToolbar), focusAddSkill=\(focusAddSkill)")
         
-        // 切换到 regular 模式，让窗口出现在 Cmd+Tab
-        NSApp.setActivationPolicy(.regular)
+        settingsWindowRuntime.prepareForPresentation()
         
         // 如果窗口已存在，直接显示（并发送通知切换 tab）
         if let window = settingsWindow {
             print("⚙️ Reusing existing window")
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            settingsWindowRuntime.reuseExistingWindow(window)
             if focusToolbar {
                 postSettingsSwitchToToolbar(focusAddSkill: focusAddSkill)
             }
@@ -585,16 +562,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.settingsWindow = nil
             self.removeObserver(&self.settingsWindowObserver)
-            // 恢复 accessory 模式（不显示在 Dock/Cmd+Tab）
-            if !self.dependencies.appSettings.showInDock {
-                NSApp.setActivationPolicy(.accessory)
-            }
+            self.settingsWindowRuntime.restoreAfterClose(showInDock: self.dependencies.appSettings.showInDock)
         }
         
         self.settingsWindow = window
         
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        settingsWindowRuntime.showNewWindow(window)
     }
 
     private func postSettingsSwitchToToolbar(focusAddSkill: Bool) {
@@ -603,12 +576,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             userInfo: ["focusAddSkill": focusAddSkill]
         )
-    }
-
-    private func runMainActorTask(_ action: @escaping @MainActor () async -> Void) {
-        Task { @MainActor in
-            await action()
-        }
     }
 
     private func installObserver(
@@ -624,7 +591,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: object,
             queue: queue
         ) { notification in
-            Task { @MainActor in
+            runAppMainActor {
                 handler(notification)
             }
         }
@@ -640,6 +607,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let existingObserver = observer else { return }
         dependencies.notificationCenter.removeObserver(existingObserver)
         observer = nil
+    }
+
+    private func makeHistoryMaintenanceRuntime() -> AppHistoryMaintenanceRuntime {
+        AppHistoryMaintenanceRuntime(
+            performCleanup: { [historyManager = dependencies.historyManager] policy in
+                await historyManager.performCleanup(policy: policy)
+            },
+            migrateLegacyTodayRecords: { [historyManager = dependencies.historyManager] in
+                await historyManager.migrateLegacyTodayRecords()
+            },
+            cleanupOrphanedAudioFiles: { [historyManager = dependencies.historyManager] in
+                await historyManager.cleanupOrphanedAudioFiles()
+            },
+            enforceNormalRecordLimit: { [historyManager = dependencies.historyManager] maxCount in
+                await historyManager.enforceNormalRecordLimit(maxCount: maxCount)
+            },
+            enforceAudioSizeLimit: { [historyManager = dependencies.historyManager] maxSizeMB in
+                await historyManager.enforceAudioSizeLimit(maxSizeMB: maxSizeMB)
+            }
+        )
     }
     
     // MARK: - Speech Engine Warmup

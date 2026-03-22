@@ -1,0 +1,24 @@
+{
+  "issue_id": "ORCH-REC-030",
+  "title": "RecordingController 后处理编排继续拆分",
+  "mode": "exec",
+  "goal": "继续收敛 RecordingController 中录音结束后的等待、ASR 推送、LLM 精炼与持久化编排，进一步缩小 processTranscription 热路径。",
+  "scope": [
+    "Services/RecordingController.swift",
+    "Services/RecordingTranscriptionDecision.swift",
+    "Tests/RecordingPipelineTests.swift",
+    "Tests/RecordingTranscriptionDecisionTests.swift"
+  ],
+  "metric": "recording_postprocess_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-REC-030",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-REC-030",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "保持空语音、无 LLM、LLM 成功、LLM 失败四条路径语义一致。"
+}

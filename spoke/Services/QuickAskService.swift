@@ -20,26 +20,6 @@ enum ContextSource: String, CaseIterable {
     }
 }
 
-private func runQuickAskServiceOnMain(
-    _ service: QuickAskService?,
-    _ action: @escaping @MainActor (QuickAskService) async -> Void
-) {
-    Task { @MainActor in
-        guard let service else { return }
-        await action(service)
-    }
-}
-
-private func runQuickAskHUDManagerOnMain(
-    _ manager: QuickAskHUDManager?,
-    _ action: @escaping @MainActor (QuickAskHUDManager) -> Void
-) {
-    Task { @MainActor in
-        guard let manager else { return }
-        action(manager)
-    }
-}
-
 @MainActor
 struct QuickAskCapsuleViewDependencies {
     let clipboardText: () -> String?
@@ -56,6 +36,7 @@ struct QuickAskHUDManagerDependencies {
     let workflowState: WorkflowState
     let attachmentManager: AttachmentManager
     let notificationCenter: NotificationCenter
+    let windowRuntime: QuickAskHUDWindowRuntime
     let clipboardText: () -> String?
     let showAnswerPanel: (_ question: String, _ attachments: [Attachment]) -> UUID
     let updateAnswer: (_ answer: String, _ panelId: UUID) -> Void
@@ -77,47 +58,6 @@ struct QuickAskServiceDependencies {
     let clipboardHistoryService: ClipboardHistoryService
     let liveCaptionManager: LiveCaptionManager
     let notificationCenter: NotificationCenter
-}
-
-@MainActor
-extension QuickAskHUDManagerDependencies {
-    static func makeLive(answerPanelManager: AnswerPanelManager) -> Self {
-        .init(
-            hotKeyService: .shared,
-            workflowState: .shared,
-            attachmentManager: .shared,
-            notificationCenter: .default,
-            clipboardText: { NSPasteboard.general.string(forType: .string) },
-            showAnswerPanel: { answerPanelManager.show(question: $0, attachments: $1) },
-            updateAnswer: { answerPanelManager.updateAnswer($0, for: $1) },
-            showAnswerError: { answerPanelManager.showError($0, for: $1) },
-            executeWorkflow: { workflow, context in
-                await WorkflowExecutor.shared.execute(workflow, context: context)
-            },
-            openSettings: {
-                _ = NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil)
-            }
-        )
-    }
-}
-
-@MainActor
-extension QuickAskServiceDependencies {
-    static func makeLive() -> Self {
-        .init(
-            hudManager: .shared,
-            contextService: .shared,
-            audioService: .shared,
-            llmPipeline: .shared,
-            llmSettings: .shared,
-            screenOCRService: .shared,
-            answerPanelManager: .shared,
-            hotKeyService: .shared,
-            clipboardHistoryService: .shared,
-            liveCaptionManager: .shared,
-            notificationCenter: .default
-        )
-    }
 }
 
 /// Quick Ask 服务
@@ -582,14 +522,7 @@ final class QuickAskHUDManager {
     func show(targetApp: TargetAppInfo?) {
         createPanelIfNeeded()
         
-        // 🔥 第一步：禁用 event tap，避免干扰输入法（必须在窗口激活前执行）
-        dependencies.hotKeyService.setQuickAskActive(true)
-        
-        // 启用按键调试日志
-        dependencies.hotKeyService.debugKeyEvents = true
-        
-        // 🔥 第二步：切换到普通应用模式以支持输入法
-        NSApp.setActivationPolicy(.regular)
+        dependencies.windowRuntime.prepareForPresentation()
         
         state.startSession(targetApp: targetApp)
         
@@ -605,11 +538,7 @@ final class QuickAskHUDManager {
     }
     
     func hide(restorePolicy: Bool = true) {
-        // 关闭按键调试日志
-        dependencies.hotKeyService.debugKeyEvents = false
-        
-        // 🔥 重新启用 event tap
-        dependencies.hotKeyService.setQuickAskActive(false)
+        dependencies.windowRuntime.restoreAfterDismissal(restorePolicy: restorePolicy)
         
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
@@ -673,10 +602,7 @@ final class QuickAskHUDManager {
     }
 
     private func activatePanelWindow() {
-        guard let panel else { return }
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
-        panel.makeMain()
+        dependencies.windowRuntime.activatePanelIfNeeded(panel)
     }
 
     private func finishHide(restorePolicy: Bool) {
@@ -688,10 +614,9 @@ final class QuickAskHUDManager {
     }
 
     private func scheduleFailureReset() {
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            self?.hide()
-            self?.state.reset()
+        runQuickAskHUDManagerAfterDelay(self, seconds: 2) { manager in
+            manager.hide()
+            manager.state.reset()
         }
     }
 }

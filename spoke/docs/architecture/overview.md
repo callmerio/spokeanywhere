@@ -114,7 +114,7 @@ UI
 - 分层边界基本清晰
 - 主要功能域已按目录拆分
 - 本地严格并发检查通过
-- 测试基线已在 2026-03-22 更新到 `137 tests / 25 suites`
+- 测试基线已在 2026-03-22 更新到 `150 tests / 30 suites`
 
 ### 5.2 主要约束
 
@@ -127,6 +127,7 @@ UI
 
 - `Services/RecordingTranscriptionDecision.swift` 已把录音转写后的 clipboard / HUD / processedText 决策从 `RecordingController` 中抽离。
 - `App/AppLifecyclePlan.swift` 已把启动/关闭步骤顺序提炼为显式 plan spec，并由 `AppDelegate` 映射到实际 side effect。
+- `Core/Workflow/WorkflowProfileResolver.swift` 已将 Workflow 的 profile fallback 选择从 `WorkflowExecutor` 中抽离，并新增表征测试。
 
 ### 5.3 当前判断
 

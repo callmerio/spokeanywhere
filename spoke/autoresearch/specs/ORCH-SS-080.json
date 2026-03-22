@@ -1,0 +1,23 @@
+{
+  "issue_id": "ORCH-SS-080",
+  "title": "ScreenshotView 交互残余继续收敛",
+  "mode": "exec",
+  "goal": "继续压缩 ScreenshotView 中 context menu 与 item action 残余逻辑，进一步降低 Screenshot 交互面的热点密度。",
+  "scope": [
+    "UI/Screenshot/ScreenshotView.swift",
+    "UI/Screenshot/ScreenshotLiveDependencies.swift",
+    "UI/Screenshot/ScreenshotWindow.swift"
+  ],
+  "metric": "screenshot_round8_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-SS-080",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-SS-080",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收 Screenshot 交互样板，不改截图渲染与 OCR 语义。"
+}

@@ -14,24 +14,34 @@ struct SelectionMonitorServiceDependencies {
     let hideToolbar: (_ force: Bool) -> Void
 }
 
-@MainActor
-extension SelectionMonitorServiceDependencies {
-    static func makeLive() -> SelectionMonitorServiceDependencies {
-        SelectionMonitorServiceDependencies(
-            workspace: .shared,
-            hasAccessibilityPermission: {
-                AccessibilityHelper.hasAccessibilityPermission()
-            },
-            requestAccessibilityPermission: {
-                AccessibilityHelper.requestAccessibilityPermission()
-            },
-            toolbarWindow: {
-                SelectionToolbarManager.shared.toolbarWindow
-            },
-            hideToolbar: { force in
-                SelectionToolbarManager.shared.hide(force: force)
-            }
-        )
+private enum MouseMonitorSource {
+    case global
+    case local
+
+    var doubleClickSource: String {
+        switch self {
+        case .global:
+            "Global doubleClick"
+        case .local:
+            "Local doubleClick"
+        }
+    }
+
+    var mouseUpSource: String {
+        switch self {
+        case .global:
+            "Global mouseUp"
+        case .local:
+            "Local mouseUp"
+        }
+    }
+
+    var shouldForceHideToolbar: Bool {
+        self == .local
+    }
+
+    var shouldIgnoreToolbarClicks: Bool {
+        self == .local
     }
 }
 
@@ -213,8 +223,7 @@ final class SelectionMonitorService {
             appActivationObserver = nil
         }
         
-        debounceTimer?.invalidate()
-        debounceTimer = nil
+        invalidateSelectionMonitorTimer(&debounceTimer)
         
         logger.info("📋 [SelectionMonitor] 停止监听")
     }
@@ -236,11 +245,9 @@ final class SelectionMonitorService {
         // 🔥 诊断：记录触发来源
         logger.debug("📋 [SelectionMonitor] checkSelection 触发 (source=\(source))")
         
-        debounceTimer?.invalidate()
-        debounceTimer = Timer.scheduledTimer(withTimeInterval: debounceDelay, repeats: false) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.performSelectionCheck()
-            }
+        invalidateSelectionMonitorTimer(&debounceTimer)
+        debounceTimer = makeSelectionMonitorDebounceTimer(interval: debounceDelay, owner: self) { service in
+            service.performSelectionCheck()
         }
     }
     
@@ -255,8 +262,8 @@ final class SelectionMonitorService {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateAXObserverForFrontmostApp()
+            runSelectionMonitorOnMain(self) { service in
+                service.updateAXObserverForFrontmostApp()
             }
         }
         logger.debug("📋 [SelectionMonitor] 应用切换监听已设置")
@@ -380,94 +387,28 @@ final class SelectionMonitorService {
     private func setupMouseMonitor() {
         // === Global Monitor (监听其他 App) ===
         mouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
-            Task { @MainActor [weak self] in
-                self?.isMouseDown = true
-                self?.mouseDownLocation = NSEvent.mouseLocation
-                // 🔥 记录 clickCount 用于过滤双击
-                self?.lastClickCount = event.clickCount
-                self?.lastClickTime = CFAbsoluteTimeGetCurrent()
+            runSelectionMonitorOnMain(self) { service in
+                service.handleMouseDown(clickCount: event.clickCount)
             }
         }
         
         mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                self.isMouseDown = false
-                
-                let mouseUpLocation = NSEvent.mouseLocation
-                let distance = hypot(mouseUpLocation.x - self.mouseDownLocation.x,
-                                   mouseUpLocation.y - self.mouseDownLocation.y)
-                
-                // 如果是单击（移动距离小于阈值）
-                if distance < self.dragThreshold {
-                    // 🔥 修复：双击选中英文单词是核心查词操作，应该触发工具栏
-                    if self.lastClickCount >= 2 {
-                        // 双击选中，检查是否有选中文本
-                        self.checkSelection(source: "Global doubleClick")
-                    } else {
-                        // 真正的单击，隐藏工具栏
-                        self.dependencies.hideToolbar(false)
-                    }
-                    self.didRecentMouseDrag = false
-                } else {
-                    // 🔥 标记：发生了鼠标拖动选择
-                    self.didRecentMouseDrag = true
-                    self.lastMouseDragTime = CFAbsoluteTimeGetCurrent()
-                    
-                    // 拖动选择，检查是否有选中文本
-                    self.checkSelection(source: "Global mouseUp")
-                }
+            runSelectionMonitorOnMain(self) { service in
+                service.handleMouseUp(source: .global)
             }
         }
         
         // === Local Monitor (监听自身 App) ===
         localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
-            Task { @MainActor [weak self] in
-                self?.isMouseDown = true
-                self?.mouseDownLocation = NSEvent.mouseLocation
-                // 🔥 记录 clickCount 用于过滤双击
-                self?.lastClickCount = event.clickCount
-                self?.lastClickTime = CFAbsoluteTimeGetCurrent()
+            runSelectionMonitorOnMain(self) { service in
+                service.handleMouseDown(clickCount: event.clickCount)
             }
             return event
         }
         
         localMouseUpMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] event in
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                self.isMouseDown = false
-                
-                let mouseUpLocation = NSEvent.mouseLocation
-                let distance = hypot(mouseUpLocation.x - self.mouseDownLocation.x,
-                                   mouseUpLocation.y - self.mouseDownLocation.y)
-                
-                // 🔥 检查点击是否在工具栏窗口内，如果是则不隐藏（让按钮事件处理）
-                if let toolbarWindow = self.dependencies.toolbarWindow(),
-                   toolbarWindow.isVisible,
-                   toolbarWindow.frame.contains(mouseUpLocation) {
-                    // 点击在工具栏内，不处理（让按钮 action 处理）
-                    return
-                }
-                
-                // 如果是单击（移动距离小于阈值）
-                if distance < self.dragThreshold {
-                    // 🔥 修复：双击选中英文单词是核心查词操作，应该触发工具栏
-                    if self.lastClickCount >= 2 {
-                        // 双击选中，检查是否有选中文本
-                        self.checkSelection(source: "Local doubleClick")
-                    } else {
-                        // 真正的单击，点击工具栏外部（本应用内），强制隐藏（包括词典结果）
-                        self.dependencies.hideToolbar(true)
-                    }
-                    self.didRecentMouseDrag = false
-                } else {
-                    // 🔥 标记：发生了鼠标拖动选择
-                    self.didRecentMouseDrag = true
-                    self.lastMouseDragTime = CFAbsoluteTimeGetCurrent()
-                    
-                    // 拖动选择，检查是否有选中文本
-                    self.checkSelection(source: "Local mouseUp")
-                }
+            runSelectionMonitorOnMain(self) { service in
+                service.handleMouseUp(source: .local)
             }
             return event
         }
@@ -485,8 +426,8 @@ final class SelectionMonitorService {
             let isSelectAll = event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "a"
             
             if isShiftPressed && isArrowKey || isSelectAll {
-                Task { @MainActor [weak self] in
-                    self?.checkSelection(source: "Keyboard")
+                runSelectionMonitorOnMain(self) { service in
+                    service.checkSelection(source: "Keyboard")
                 }
             }
         }
@@ -515,19 +456,56 @@ final class SelectionMonitorService {
         
         // 🔥 方案 C: 耗时的 AX 遍历移到后台线程，避免卡死主线程
         // AXUIElementCopyAttributeValue 是同步 IPC 调用，复杂 UI 应用（Chrome/Electron）会很慢
-        Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            
-            // 在后台线程执行耗时的 AX 操作
-            guard let (selectedText, bounds) = self.getSelectedTextAndBounds(for: frontApp) else {
-                return
+        runSelectionMonitorAXQuery(
+            frontApp: frontApp,
+            bundleId: bundleId,
+            appName: appName,
+            loadSelection: { [weak self] app in
+                self?.getSelectedTextAndBounds(for: app)
+            },
+            onResult: { [weak self] selectedText, bounds, bundleId, appName in
+                self?.handleSelectionResult(selectedText, bounds: bounds, bundleId: bundleId, appName: appName)
             }
-            
-            // 回到主线程处理结果
-            await MainActor.run {
-                self.handleSelectionResult(selectedText, bounds: bounds, bundleId: bundleId, appName: appName)
-            }
+        )
+    }
+
+    private func handleMouseDown(clickCount: Int) {
+        isMouseDown = true
+        mouseDownLocation = NSEvent.mouseLocation
+        lastClickCount = clickCount
+        lastClickTime = CFAbsoluteTimeGetCurrent()
+    }
+
+    private func handleMouseUp(source: MouseMonitorSource) {
+        isMouseDown = false
+
+        let mouseUpLocation = NSEvent.mouseLocation
+        let distance = hypot(
+            mouseUpLocation.x - mouseDownLocation.x,
+            mouseUpLocation.y - mouseDownLocation.y
+        )
+
+        if source.shouldIgnoreToolbarClicks,
+           selectionMonitorToolbarContainsMouse(
+               dependencies.toolbarWindow(),
+               at: mouseUpLocation
+           ) {
+            return
         }
+
+        if distance < dragThreshold {
+            if lastClickCount >= 2 {
+                checkSelection(source: source.doubleClickSource)
+            } else {
+                dependencies.hideToolbar(source.shouldForceHideToolbar)
+            }
+            didRecentMouseDrag = false
+            return
+        }
+
+        didRecentMouseDrag = true
+        lastMouseDragTime = CFAbsoluteTimeGetCurrent()
+        checkSelection(source: source.mouseUpSource)
     }
 
     private func removeMonitor(_ monitor: inout Any?) {
@@ -890,7 +868,7 @@ private func axObserverCallback(
     let service = Unmanaged<SelectionMonitorService>.fromOpaque(userData).takeUnretainedValue()
     
     // 在主线程处理
-    Task { @MainActor in
-        service.handleAXNotification()
+    runSelectionMonitorOnMain(service) { selectionMonitor in
+        selectionMonitor.handleAXNotification()
     }
 }

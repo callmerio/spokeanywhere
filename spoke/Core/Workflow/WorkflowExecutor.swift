@@ -17,54 +17,6 @@ struct WorkflowExecutorDependencies {
     let copyText: (String) -> Void
 }
 
-@MainActor
-extension WorkflowExecutorDependencies {
-    static let live = makeLive(
-        settings: .shared,
-        pipeline: .shared,
-        workflowConfigService: .shared,
-        pasteboard: .general,
-        dateProvider: Date.init,
-        localeProvider: { .current }
-    )
-
-    static func makeLive(
-        settings: LLMSettings,
-        pipeline: LLMPipeline,
-        workflowConfigService: WorkflowConfigService,
-        pasteboard: NSPasteboard,
-        dateProvider: @escaping () -> Date,
-        localeProvider: @escaping () -> Locale
-    ) -> WorkflowExecutorDependencies {
-        WorkflowExecutorDependencies(
-            availableProfiles: { settings.profiles },
-            chatProfileId: { settings.chatProfileId },
-            summaryProfileId: { settings.summaryProfileId },
-            selectedProfileId: { settings.selectedProfileId },
-            executeChat: { prompt, profile in
-                await pipeline.chat(prompt, profile: profile)
-            },
-            markAsRecent: { workflowId in
-                workflowConfigService.markAsRecent(workflowId)
-            },
-            currentDateString: { dateProvider().formatted() },
-            currentLocaleIdentifier: { localeProvider().identifier },
-            copyText: { text in
-                copyTextToPasteboard(text, pasteboard: pasteboard)
-            }
-        )
-    }
-
-    func profile(matching id: UUID) -> ProviderProfile? {
-        availableProfiles().first { $0.id == id }
-    }
-
-    private static func copyTextToPasteboard(_ text: String, pasteboard: NSPasteboard) {
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-    }
-}
-
 /// Workflow 执行器
 /// 负责变量替换、模型选择、LLM 调用、输出处理
 @MainActor
@@ -142,26 +94,12 @@ final class WorkflowExecutor {
     /// 选择 Profile
     /// 复用现有 LLMSettings + ProviderProfile 体系
     private func selectProfile(for workflow: WorkflowAction) -> ProviderProfile? {
-        // 1. 优先使用指定 Profile
-        if let profileId = workflow.profileId {
-            return dependencies.profile(matching: profileId)
-        }
-
-
-        if let preferredProfileId = preferredProfileID(for: workflow.modelHint) {
-            return dependencies.profile(matching: preferredProfileId)
-        }
-
-        if requiresExplicitProfile(for: workflow.modelHint) {
-            return nil
-        }
-
-        // 3. 回退到默认选中的 Profile
-        if let selectedProfileId = dependencies.selectedProfileId() {
-            return dependencies.profile(matching: selectedProfileId)
-        }
-
-        return dependencies.availableProfiles().first
+        WorkflowProfileResolver(
+            availableProfiles: dependencies.availableProfiles(),
+            chatProfileId: dependencies.chatProfileId(),
+            summaryProfileId: dependencies.summaryProfileId(),
+            selectedProfileId: dependencies.selectedProfileId()
+        ).resolve(for: workflow)
     }
     
     // MARK: - Prompt Building
@@ -200,26 +138,6 @@ final class WorkflowExecutor {
     ) async {
         dependencies.markAsRecent(workflow.id)
         await handleOutput(text, mode: workflow.outputMode, context: context)
-    }
-
-    private func preferredProfileID(for modelHint: WorkflowModelHint) -> UUID? {
-        switch modelHint {
-        case .fast:
-            return dependencies.chatProfileId()
-        case .advanced:
-            return dependencies.summaryProfileId()
-        case .default, .imageGen, .code:
-            return nil
-        }
-    }
-
-    private func requiresExplicitProfile(for modelHint: WorkflowModelHint) -> Bool {
-        switch modelHint {
-        case .imageGen, .code:
-            return true
-        case .default, .fast, .advanced:
-            return false
-        }
     }
 
     private func promptReplacements(

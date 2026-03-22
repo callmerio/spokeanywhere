@@ -15,7 +15,7 @@ SpokenAnyWhere 是一个原生 macOS 生产力应用，使用 SwiftUI + AppKit �
 - 当前仓库主代码位于 `App/`、`Core/`、`Services/`、`UI/`
 - `Package.swift` 仍以 Swift Package Manager 作为构建入口
 - 本地实测已于 **2026-03-22** 复算通过：
-  - `swift test` -> `137 tests / 25 suites` 通过
+  - `swift test` -> `150 tests / 30 suites` 通过
   - `bash Tests/run-concurrency-check.sh` -> `0 warnings`
 - `docs/architecture/` 已有较完整基础文档，但存在明显口径漂移
 - `Memory` 项目上下文已初始化为 `.memory/`，`Memgraph` 服务已恢复，可写入实体、卡片与关系
@@ -126,7 +126,7 @@ bash Tests/run-concurrency-check.sh
 
 结果：
 
-- `swift test`: `137 tests / 25 suites` 全部通过
+- `swift test`: `150 tests / 30 suites` 全部通过
 - `run-concurrency-check.sh`: `strict-concurrency build 通过 (0 warnings)`
 
 ### 4.2 结论边界
@@ -164,6 +164,12 @@ bash Tests/run-concurrency-check.sh
 - 依赖通道并存，缺少统一治理
 - 自动化门禁的版本化证据缺失
 - 文档与实际代码之间存在持续漂移
+
+本轮新增的结构收敛：
+
+- `SelectionMonitorService` 已拆出 `SelectionMonitorLiveDependencies` 与 `SelectionMonitorRuntimeHelpers`，将 debounce / AX bridge / live wiring 从主文件热路径中分离。
+- `WorkflowExecutor` 已拆出 `WorkflowExecutorLiveDependencies` 与 `WorkflowProfileResolver`，并新增 `WorkflowProfileResolverTests` 作为 profile fallback 的表征测试。
+- 若按最新测试口径计，当前本地基线已提升到 `150 tests / 30 suites`。
 
 ---
 

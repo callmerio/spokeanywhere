@@ -1,0 +1,23 @@
+{
+  "issue_id": "ORCH-SP-100",
+  "title": "SpeechAnalyzerProvider task/actor 桥接继续收敛",
+  "mode": "exec",
+  "goal": "继续压缩 SpeechAnalyzerProvider 中剩余 Task/actor 桥接和 provider 状态管理噪音，降低转录 provider 层热点密度。",
+  "scope": [
+    "Core/Transcription/Providers/SpeechAnalyzerProvider.swift",
+    "Core/Transcription/Providers/SpeechAnalyzerProviderLiveDependencies.swift",
+    "Core/Transcription/Providers/SpeechAnalyzerProviderRuntimeHelpers.swift"
+  ],
+  "metric": "speech_analyzer_round10_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-SP-100",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-SP-100",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只压 SpeechAnalyzerProvider 的 live/task/actor 桥接噪音，不改变转录时序。"
+}

@@ -42,36 +42,6 @@ struct SpeechAnalyzerProviderDependencies {
 
 @available(macOS 26.0, iOS 26.0, *)
 @MainActor
-extension SpeechAnalyzerProviderDependencies {
-    static let live = SpeechAnalyzerProviderDependencies(
-        dictionaryInjectionState: {
-            let manager = transcriptionManager()
-            return SpeechAnalyzerProviderDictionaryInjectionState(
-                isEnabled: manager.isDictionaryInjectionEnabled,
-                isPrepared: manager.isDictionaryPrepared,
-                injector: manager.dictionaryInjector
-            )
-        },
-        dictionaryLexicon: {
-            let dictionaryService = currentDictionaryService()
-            return SpeechAnalyzerProviderDictionaryLexicon(
-                words: Set(dictionaryService.getAllWords()),
-                trainingPhrases: dictionaryService.getAllTrainingPhrases()
-            )
-        }
-    )
-
-    private static func transcriptionManager() -> TranscriptionManager {
-        TranscriptionManager.shared
-    }
-
-    private static func currentDictionaryService() -> DictionaryService {
-        DictionaryService.shared
-    }
-}
-
-@available(macOS 26.0, iOS 26.0, *)
-@MainActor
 final class SpeechAnalyzerProvider: TranscriptionProvider {
     
     // MARK: - Properties
@@ -257,7 +227,8 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         resultsTask?.cancel()
         analyzeTask?.cancel()
         
-        Task {
+        let analyzer = analyzer
+        _ = makeSpeechAnalyzerTask {
             await analyzer?.cancelAndFinishNow()
         }
         
@@ -331,16 +302,16 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         try await analyzer.prepareToAnalyze(in: format)
         
         // Step 9: Start listening for results
-        resultsTask = Task { [weak self] in
+        resultsTask = makeSpeechAnalyzerTask { [weak self] in
             await self?.listenForDictationResults(transcriber: transcriber)
         }
         
         // Step 10: Start analysis
-        analyzeTask = Task { [weak self] in
+        analyzeTask = makeSpeechAnalyzerTask { [weak self] in
             do {
                 try await analyzer.start(inputSequence: inputSequence)
             } catch {
-                await MainActor.run { self?.onError?(error) }
+                await self?.handleAnalyzerStartFailure(error)
             }
         }
         
@@ -393,18 +364,20 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         logger.info("📌 [ST] Step 8: ✅ Analyzer prepared successfully")
         
         // Step 9: Start listening for results
-        resultsTask = Task { [weak self] in
+        resultsTask = makeSpeechAnalyzerTask { [weak self] in
             await self?.listenForSpeechTranscriberResults(transcriber: transcriber)
         }
         
         // Step 10: Start analysis
         logger.info("📌 [ST] Step 10: Starting analysis task...")
-        analyzeTask = Task { [weak self] in
+        analyzeTask = makeSpeechAnalyzerTask { [weak self] in
             do {
                 try await analyzer.start(inputSequence: inputSequence)
             } catch {
-                self?.logger.error("❌ [ST] analyzer.start failed: \(error.localizedDescription, privacy: .public)")
-                await MainActor.run { self?.onError?(error) }
+                await self?.handleAnalyzerStartFailure(
+                    error,
+                    logPrefix: "❌ [ST] analyzer.start failed"
+                )
             }
         }
         
@@ -548,10 +521,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
                 await handleDictationResult(result)
             }
         } catch {
-            await MainActor.run { [weak self] in
-                self?.logger.error("❌ Results error: \(error.localizedDescription)")
-                self?.onError?(error)
-            }
+            handleResultsError(error, prefix: "❌ Results error")
         }
     }
     
@@ -559,38 +529,12 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
     private func handleDictationResult(_ result: DictationTranscriber.Result) async {
         // 从 AttributedString 提取纯文本
         let segmentText = String(result.text.characters)
-        let isFinal = result.isFinal
-        
-        await MainActor.run { [weak self] in
-            guard let self = self else { return }
-            
-            if isFinal {
-                // Final 结果：累积到 finalizedText
-                self.finalizedText += segmentText
-                self.volatileText = ""  // 清空 volatile
-                
-                self.logger.info("📝 Finalized segment: \(segmentText)")
-                self.logger.info("📝 Total finalized: \(self.finalizedText)")
-            } else {
-                // Volatile 结果：更新预览（注意：volatile 会被后续结果覆盖，不会累积）
-                // 如果新 volatile 比旧的短，可能是识别引擎重新分析了音频
-                if !self.volatileText.isEmpty && segmentText.count < self.volatileText.count {
-                    self.logger.warning("⚠️ Volatile shrunk: '\(self.volatileText)' -> '\(segmentText)'")
-                }
-                self.volatileText = segmentText
-                
-                // 提升到 info 级别，便于调试识别问题
-                self.logger.info("📝 Volatile: \(segmentText)")
-            }
-            
-            // 使用新的构造器，分离 finalized 和 volatile
-            let transcriptionResult = TranscriptionResult(
-                finalizedText: self.finalizedText,
-                volatileText: self.volatileText,
-                type: .partial  // 录音未结束，始终是 partial
-            )
-            self.onResult?(transcriptionResult)
-        }
+        applySegmentResult(
+            segmentText,
+            isFinal: result.isFinal,
+            finalizedPrefix: "📝 Finalized segment",
+            volatilePrefix: "📝 Volatile"
+        )
     }
     
     // MARK: - SpeechTranscriber Results
@@ -601,39 +545,17 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
                 await handleSpeechTranscriberResult(result)
             }
         } catch {
-            await MainActor.run { [weak self] in
-                self?.logger.error("❌ SpeechTranscriber results error: \(error.localizedDescription)")
-                self?.onError?(error)
-            }
+            handleResultsError(error, prefix: "❌ SpeechTranscriber results error")
         }
     }
     
     private func handleSpeechTranscriberResult(_ result: SpeechTranscriber.Result) async {
-        let segmentText = String(result.text.characters)
-        let isFinal = result.isFinal
-        
-        await MainActor.run { [weak self] in
-            guard let self = self else { return }
-            
-            if isFinal {
-                self.finalizedText += segmentText
-                self.volatileText = ""
-                self.logger.info("📝 [ST] Finalized: \(segmentText)")
-            } else {
-                if !self.volatileText.isEmpty && segmentText.count < self.volatileText.count {
-                    self.logger.warning("⚠️ [ST] Volatile shrunk: '\(self.volatileText)' -> '\(segmentText)'")
-                }
-                self.volatileText = segmentText
-                self.logger.info("📝 [ST] Volatile: \(segmentText)")
-            }
-            
-            let transcriptionResult = TranscriptionResult(
-                finalizedText: self.finalizedText,
-                volatileText: self.volatileText,
-                type: .partial
-            )
-            self.onResult?(transcriptionResult)
-        }
+        applySegmentResult(
+            String(result.text.characters),
+            isFinal: result.isFinal,
+            finalizedPrefix: "📝 [ST] Finalized",
+            volatilePrefix: "📝 [ST] Volatile"
+        )
     }
     
     private func cleanup() {
@@ -645,6 +567,54 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         speechTranscriber = nil
         targetAudioFormat = nil
         audioConverter = nil
+    }
+
+    private func handleAnalyzerStartFailure(
+        _ error: Error,
+        logPrefix: String? = nil
+    ) {
+        if let logPrefix {
+            logger.error("\(logPrefix, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
+        onError?(error)
+    }
+
+    private func handleResultsError(
+        _ error: Error,
+        prefix: String
+    ) {
+        logger.error("\(prefix, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        onError?(error)
+    }
+
+    private func applySegmentResult(
+        _ segmentText: String,
+        isFinal: Bool,
+        finalizedPrefix: String,
+        volatilePrefix: String
+    ) {
+        if isFinal {
+            finalizedText += segmentText
+            volatileText = ""
+            logger.info("\(finalizedPrefix, privacy: .public): \(segmentText, privacy: .public)")
+            if !self.finalizedText.isEmpty {
+                logger.info("📝 Total finalized: \(self.finalizedText, privacy: .public)")
+            }
+        } else {
+            if !self.volatileText.isEmpty && segmentText.count < self.volatileText.count {
+                logger.warning("⚠️ Volatile shrunk: '\(self.volatileText, privacy: .public)' -> '\(segmentText, privacy: .public)'")
+            }
+            volatileText = segmentText
+            logger.info("\(volatilePrefix, privacy: .public): \(segmentText, privacy: .public)")
+        }
+
+        onResult?(
+            TranscriptionResult(
+                finalizedText: finalizedText,
+                volatileText: volatileText,
+                type: .partial
+            )
+        )
     }
 }
 

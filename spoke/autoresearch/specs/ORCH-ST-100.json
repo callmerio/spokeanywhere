@@ -1,0 +1,22 @@
+{
+  "issue_id": "ORCH-ST-100",
+  "title": "SelectionToolbarLiveDependencies 共享工厂继续收敛",
+  "mode": "exec",
+  "goal": "继续压缩 SelectionToolbarLiveDependencies 中的 `.shared` wiring 与外部系统依赖直连，减少工具栏 live factory 噪音。",
+  "scope": [
+    "Services/SelectionToolbarLiveDependencies.swift",
+    "Services/SelectionToolbarLiveHelpers.swift"
+  ],
+  "metric": "selection_toolbar_live_dependency_file_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-ST-100",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-ST-100",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "该 metric 只衡量 SelectionToolbarLiveDependencies 文件本体；helper sink 残余将由后续 helper-sink 队列继续处理。"
+}

@@ -1,0 +1,22 @@
+{
+  "issue_id": "ORCH-WF-110",
+  "title": "WorkflowExecutorLiveDependencies 共享工厂继续收敛",
+  "mode": "exec",
+  "goal": "继续压缩 WorkflowExecutorLiveDependencies 中残余 `.shared` wiring，减少 workflow 执行器 live factory 的机械噪音。",
+  "scope": [
+    "Core/Workflow/WorkflowExecutorLiveDependencies.swift",
+    "Core/Workflow/WorkflowExecutorLiveHelpers.swift"
+  ],
+  "metric": "workflow_live_dependency_file_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-WF-110",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-WF-110",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "该 metric 只衡量 WorkflowExecutorLiveDependencies 文件本体；helper sink 残余已拆到下一轮 helper-sink backlog。"
+}

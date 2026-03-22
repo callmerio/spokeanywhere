@@ -8,6 +8,11 @@ private enum SelectionActionServiceDefaults {
     static let questionPreviewLength = 50
 }
 
+private enum SelectionActionFinishOutcome {
+    case success(actionID: String)
+    case failure(Error)
+}
+
 @MainActor
 struct SelectionActionServiceDependencies {
     let state: SelectionToolbarState
@@ -21,34 +26,6 @@ struct SelectionActionServiceDependencies {
     let notificationCenter: NotificationCenter
     let copyText: (String) -> Void
     let scheduleToolbarHide: () -> Void
-}
-
-@MainActor
-extension SelectionActionServiceDependencies {
-    static func makeLive() -> Self {
-        let selectionToolbarManager = SelectionToolbarManager.shared
-        return SelectionActionServiceDependencies(
-            state: .shared,
-            ttsService: .shared,
-            screenOCR: .shared,
-            llmPipeline: .shared,
-            dictionaryAPI: .shared,
-            selectionToolbarManager: selectionToolbarManager,
-            answerPanelManager: .shared,
-            llmSettings: .shared,
-            notificationCenter: .default,
-            copyText: { text in
-                let pasteboard = NSPasteboard.general
-                pasteboard.clearContents()
-                pasteboard.setString(text, forType: .string)
-            },
-            scheduleToolbarHide: { [selectionToolbarManager] in
-                DispatchQueue.main.asyncAfter(deadline: .now() + SelectionActionServiceDefaults.autoHideDelay) {
-                    selectionToolbarManager.hide()
-                }
-            }
-        )
-    }
 }
 
 /// 选择工具栏动作执行服务
@@ -123,9 +100,9 @@ final class SelectionActionService {
                 try await executeCustomAction(action: action, prompt: action.effectivePrompt ?? prompt, context: context)
             }
             
-            completeAction(actionID: action.id)
+            finishAction(.success(actionID: action.id))
         } catch {
-            failAction(error)
+            finishAction(.failure(error))
         }
     }
     
@@ -165,13 +142,10 @@ final class SelectionActionService {
             with: ""  // 自定义动作暂不支持 context
         )
         
-        // 获取工具栏位置并隐藏
-        let anchorPoint = hideToolbarAndCaptureAnchor()
-        try await executePanelLLMAction(
+        try await executePanelAction(
             question: previewQuestion(context.selectedText),
             prompt: finalPrompt,
-            action: action,
-            anchorPoint: anchorPoint
+            action: action
         )
         
         logger.info("📋 [ActionService] 自定义动作完成")
@@ -253,17 +227,12 @@ final class SelectionActionService {
             ocrContext = await dependencies.screenOCR.getActiveWindowText(maxLength: dependencies.state.config.ocrContextMaxLength)
         }
         
-        // 3. 构建查询 Prompt（使用可配置的提示词）
-        let prompt = buildPromptFromTemplate(
+        // 3. 构建查询 Prompt（使用可配置的提示词）并显示 AnswerPanel
+        try await executeTemplatedPanelAction(
+            question: selectedText,
             template: action.effectivePrompt ?? ToolbarActionDefaults.lookupPrompt,
             selection: selectedText,
-            context: ocrContext
-        )
-        
-        // 4. 显示 AnswerPanel 并调用 LLM
-        try await executePanelLLMAction(
-            question: selectedText,
-            prompt: prompt,
+            context: ocrContext,
             action: action,
             anchorPoint: anchorPoint
         )
@@ -278,17 +247,12 @@ final class SelectionActionService {
         // 1. 获取工具栏位置并隐藏工具栏
         let anchorPoint = hideToolbarAndCaptureAnchor()
         
-        // 2. 构建提示词（使用可配置的提示词）
-        let prompt = buildPromptFromTemplate(
+        // 2. 构建提示词（使用可配置的提示词）并显示 AnswerPanel
+        try await executeTemplatedPanelAction(
+            question: previewQuestion(text, prefix: "翻译: "),
             template: action.effectivePrompt ?? ToolbarActionDefaults.translatePrompt,
             selection: text,
-            context: nil
-        )
-        
-        // 3. 显示 AnswerPanel 并调用 LLM
-        try await executePanelLLMAction(
-            question: previewQuestion(text, prefix: "翻译: "),
-            prompt: prompt,
+            context: nil,
             action: action,
             anchorPoint: anchorPoint
         )
@@ -303,17 +267,12 @@ final class SelectionActionService {
         // 1. 获取工具栏位置并隐藏工具栏
         let anchorPoint = hideToolbarAndCaptureAnchor()
         
-        // 2. 构建提示词（使用可配置的提示词）
-        let prompt = buildPromptFromTemplate(
+        // 2. 构建提示词（使用可配置的提示词）并显示 AnswerPanel
+        try await executeTemplatedPanelAction(
+            question: previewQuestion(context.selectedText, prefix: "总结: "),
             template: action.effectivePrompt ?? ToolbarActionDefaults.summarizePrompt,
             selection: context.selectedText,
-            context: nil
-        )
-        
-        // 3. 显示 AnswerPanel 并调用 LLM
-        try await executePanelLLMAction(
-            question: previewQuestion(context.selectedText, prefix: "总结: "),
-            prompt: prompt,
+            context: nil,
             action: action,
             anchorPoint: anchorPoint
         )
@@ -353,20 +312,56 @@ final class SelectionActionService {
         await executeAction(action, context: context)
     }
 
-    private func completeAction(actionID: String) {
-        dependencies.state.updateActionPhase(.completed)
-        dependencies.state.executingActionId = nil
-        dependencies.notificationCenter.post(
-            name: .selectionToolbarActionCompleted,
-            object: nil,
-            userInfo: ["actionId": actionID, "success": true]
+    private func finishAction(_ outcome: SelectionActionFinishOutcome) {
+        switch outcome {
+        case .success(let actionID):
+            dependencies.state.updateActionPhase(.completed)
+            dependencies.state.executingActionId = nil
+            dependencies.notificationCenter.post(
+                name: .selectionToolbarActionCompleted,
+                object: nil,
+                userInfo: ["actionId": actionID, "success": true]
+            )
+
+        case .failure(let error):
+            dependencies.state.updateActionPhase(.failed(message: error.localizedDescription))
+            dependencies.state.executingActionId = nil
+            logger.error("📋 [ActionService] 工具栏动作执行失败: \(error.localizedDescription)")
+        }
+    }
+
+    private func executeTemplatedPanelAction(
+        question: String,
+        template: String,
+        selection: String,
+        context: String?,
+        action: ToolbarAction,
+        anchorPoint: CGPoint?
+    ) async throws {
+        let prompt = buildPromptFromTemplate(
+            template: template,
+            selection: selection,
+            context: context
+        )
+        try await executePanelLLMAction(
+            question: question,
+            prompt: prompt,
+            action: action,
+            anchorPoint: anchorPoint
         )
     }
 
-    private func failAction(_ error: Error) {
-        dependencies.state.updateActionPhase(.failed(message: error.localizedDescription))
-        dependencies.state.executingActionId = nil
-        logger.error("📋 [ActionService] 工具栏动作执行失败: \(error.localizedDescription)")
+    private func executePanelAction(
+        question: String,
+        prompt: String,
+        action: ToolbarAction
+    ) async throws {
+        try await executePanelLLMAction(
+            question: question,
+            prompt: prompt,
+            action: action,
+            anchorPoint: hideToolbarAndCaptureAnchor()
+        )
     }
 
     private func executePanelLLMAction(

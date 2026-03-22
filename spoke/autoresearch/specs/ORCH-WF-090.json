@@ -1,0 +1,23 @@
+{
+  "issue_id": "ORCH-WF-090",
+  "title": "WorkflowExecutor profile 选择与 live factory 继续收敛",
+  "mode": "exec",
+  "goal": "继续压缩 WorkflowExecutor 中 live dependency 组装、profile 选择与输出处理残余样板，降低 workflow 编排层复杂度。",
+  "scope": [
+    "Core/Workflow/WorkflowExecutor.swift",
+    "Core/LLM/LLMSettings.swift",
+    "Services/WorkflowConfigService.swift"
+  ],
+  "metric": "workflow_round9_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-WF-090",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-WF-090",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只压 WorkflowExecutor 的 live factory / profile fallback 样板，不改变 prompt 替换与输出语义。"
+}
