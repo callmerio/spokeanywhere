@@ -128,11 +128,13 @@ struct ServiceContainerDependencies {
     let makeQuickAskHUDManager: () -> QuickAskHUDManager
     let makeAnswerPanelManager: () -> AnswerPanelManager
     let makeLiveCaptionManager: () -> LiveCaptionManager
+    let makeSelectionMonitorService: () -> SelectionMonitorService
     let makeFloatingHUDManager: () -> FloatingHUDManager
     let makeInputService: () -> InputService
     let makeMessagePanelManager: () -> MessagePanelManager
     let makeLiveCaptionWindowManager: () -> LiveCaptionWindowManager
     let makeSelectionToolbarState: () -> SelectionToolbarState
+    let makeToolbarConfigService: () -> ToolbarConfigService
     let makeTTSService: () -> TTSService
     let makeScreenOCR: () -> ScreenOCRService
     let makeDictionaryAPI: () -> DictionaryAPIService
@@ -167,11 +169,13 @@ extension ServiceContainerDependencies {
         makeQuickAskHUDManager: { QuickAskHUDManager.shared },
         makeAnswerPanelManager: { AnswerPanelManager.shared },
         makeLiveCaptionManager: { LiveCaptionManager.shared },
+        makeSelectionMonitorService: { SelectionMonitorService.shared },
         makeFloatingHUDManager: { FloatingHUDManager.shared },
         makeInputService: { InputService.shared },
         makeMessagePanelManager: { MessagePanelManager.shared },
         makeLiveCaptionWindowManager: { LiveCaptionWindowManager.shared },
         makeSelectionToolbarState: { SelectionToolbarState.shared },
+        makeToolbarConfigService: { ToolbarConfigService.shared },
         makeTTSService: { TTSService.shared },
         makeScreenOCR: { ScreenOCRService.shared },
         makeDictionaryAPI: { DictionaryAPIService.shared },
@@ -228,11 +232,13 @@ final class ServiceContainer: ObservableObject {
     private var _quickAskHUDManager: QuickAskHUDManager?
     private var _answerPanelManager: AnswerPanelManager?
     private var _liveCaptionManager: LiveCaptionManager?
+    private var _selectionMonitorService: SelectionMonitorService?
     private var _floatingHUDManager: FloatingHUDManager?
     private var _inputService: InputService?
     private var _messagePanelManager: MessagePanelManager?
     private var _liveCaptionWindowManager: LiveCaptionWindowManager?
     private var _selectionToolbarState: SelectionToolbarState?
+    private var _toolbarConfigService: ToolbarConfigService?
     private var _ttsService: TTSService?
     private var _screenOCR: ScreenOCRService?
     private var _dictionaryAPI: DictionaryAPIService?
@@ -343,6 +349,10 @@ final class ServiceContainer: ObservableObject {
         resolveService(storage: &_liveCaptionManager, provider: dependencies.makeLiveCaptionManager)
     }
 
+    var selectionMonitorService: SelectionMonitorService {
+        resolveService(storage: &_selectionMonitorService, provider: dependencies.makeSelectionMonitorService)
+    }
+
     var floatingHUDManager: FloatingHUDManager {
         resolveService(storage: &_floatingHUDManager, provider: dependencies.makeFloatingHUDManager)
     }
@@ -361,6 +371,10 @@ final class ServiceContainer: ObservableObject {
 
     var selectionToolbarState: SelectionToolbarState {
         resolveService(storage: &_selectionToolbarState, provider: dependencies.makeSelectionToolbarState)
+    }
+
+    var toolbarConfigService: ToolbarConfigService {
+        resolveService(storage: &_toolbarConfigService, provider: dependencies.makeToolbarConfigService)
     }
 
     var ttsService: TTSService {
@@ -487,6 +501,10 @@ final class ServiceContainer: ObservableObject {
         _liveCaptionManager = liveCaptionManager
     }
 
+    func register(selectionMonitorService: SelectionMonitorService) {
+        _selectionMonitorService = selectionMonitorService
+    }
+
     func register(floatingHUDManager: FloatingHUDManager) {
         _floatingHUDManager = floatingHUDManager
     }
@@ -505,6 +523,10 @@ final class ServiceContainer: ObservableObject {
 
     func register(selectionToolbarState: SelectionToolbarState) {
         _selectionToolbarState = selectionToolbarState
+    }
+
+    func register(toolbarConfigService: ToolbarConfigService) {
+        _toolbarConfigService = toolbarConfigService
     }
 
     func register(ttsService: TTSService) {
@@ -553,11 +575,13 @@ final class ServiceContainer: ObservableObject {
         _quickAskHUDManager = nil
         _answerPanelManager = nil
         _liveCaptionManager = nil
+        _selectionMonitorService = nil
         _floatingHUDManager = nil
         _inputService = nil
         _messagePanelManager = nil
         _liveCaptionWindowManager = nil
         _selectionToolbarState = nil
+        _toolbarConfigService = nil
         _ttsService = nil
         _screenOCR = nil
         _dictionaryAPI = nil

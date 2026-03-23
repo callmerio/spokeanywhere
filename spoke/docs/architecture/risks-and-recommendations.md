@@ -16,8 +16,8 @@
 - ⚠️ **质量治理**: Conditional Go
   - 仓库中未发现版本化 `.github/workflows/*`，无法仅凭仓库内容证明自动化门禁已落地
 - ⚠️ **架构可维护性**: Conditional Go
-  - 单例密度高
-  - UI 直连业务层较多
+  - 核心运行时仍建立在单例基础之上
+  - UI 直连业务层仍集中在部分高频视图
   - `NotificationCenter` / 直接调用 / `ServiceContainer` 三通道并存
 - ⚠️ **文档一致性**: Conditional Go
   - 历史口径与当前现状之间存在偏差
@@ -76,7 +76,7 @@ bash Tests/run-concurrency-check.sh
 
 - `RecordingController` 聚合多个核心服务
 - `AppDelegate` 启动阶段会触发多条单例初始化链
-- 多数高频功能仍以 `*.shared` 作为主调用入口
+- 仍有若干基础服务以 `*.shared` 作为默认入口，但高风险 live factory 已完成多轮收敛
 
 **当前缓解进展**:
 

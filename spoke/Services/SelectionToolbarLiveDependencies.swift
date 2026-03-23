@@ -3,7 +3,7 @@ import AppKit
 @MainActor
 extension SelectionToolbarManagerDependencies {
     static func makeLive() -> SelectionToolbarManagerDependencies {
-        let services = SelectionToolbarLiveServices.shared
+        let services = currentSelectionToolbarLiveServices()
         return SelectionToolbarManagerDependencies(
             state: services.state,
             selectionMonitor: { currentSelectionToolbarSelectionMonitor() },

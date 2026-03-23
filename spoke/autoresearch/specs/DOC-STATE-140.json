@@ -1,0 +1,22 @@
+{
+  "issue_id": "DOC-STATE-140",
+  "title": "current-state 文档口径再校准",
+  "mode": "exec",
+  "goal": "继续清理 architecture current-state 文档中偏旧的泛化表述，使其更贴近 round 12/13 后的当前现状。",
+  "scope": [
+    "docs/architecture/overview.md",
+    "docs/architecture/current-state-audit.md",
+    "docs/architecture/risks-and-recommendations.md"
+  ],
+  "metric": "current_state_doc_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue DOC-STATE-140",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "DOC-STATE-140",
+  "stop_condition": "文档校准检查通过，或连续 3 次 discard 后 pivot",
+  "notes": "只同步 current-state 文档，不修改历史 roadmap / acceptance 边界。"
+}

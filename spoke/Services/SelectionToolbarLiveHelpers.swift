@@ -2,23 +2,27 @@ import AppKit
 
 @MainActor
 struct SelectionToolbarLiveServices {
-    let state: SelectionToolbarState
-    let configService: ToolbarConfigService
+    let serviceContainer: ServiceContainer
 
-    static let shared = SelectionToolbarLiveServices(
-        state: .shared,
-        configService: .shared
-    )
+    var state: SelectionToolbarState { serviceContainer.selectionToolbarState }
+    var configService: ToolbarConfigService { serviceContainer.toolbarConfigService }
+    var selectionMonitorService: SelectionMonitorService { serviceContainer.selectionMonitorService }
+    var workspace: NSWorkspace { serviceContainer.workspace }
+}
+
+@MainActor
+func currentSelectionToolbarLiveServices() -> SelectionToolbarLiveServices {
+    SelectionToolbarLiveServices(serviceContainer: currentServiceContainer())
 }
 
 @MainActor
 func currentSelectionToolbarSelectionMonitor() -> SelectionMonitorService {
-    SelectionMonitorService.shared
+    currentSelectionToolbarLiveServices().selectionMonitorService
 }
 
+@MainActor
 func openSelectionToolbarSystemSettings(
-    _ url: URL,
-    workspace: NSWorkspace = .shared
+    _ url: URL
 ) {
-    workspace.open(url)
+    currentSelectionToolbarLiveServices().workspace.open(url)
 }

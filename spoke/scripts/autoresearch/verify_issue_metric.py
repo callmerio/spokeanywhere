@@ -500,6 +500,39 @@ def verify_orch_rcl_130() -> dict[str, Any]:
     )
 
 
+def verify_orch_sth_140() -> dict[str, Any]:
+    path = ROOT / "Services" / "SelectionToolbarLiveHelpers.swift"
+    return hotspot_metric(
+        path,
+        "selection_toolbar_helper_sink_hotspots",
+        {
+            "direct_service_shared_calls": r"\.shared\b",
+            "inline_workspace_singletons": r"NSWorkspace\.shared|workspace: \.shared",
+        },
+    )
+
+
+def verify_doc_state_140() -> dict[str, Any]:
+    overview = ROOT / "docs" / "architecture" / "overview.md"
+    current_state = ROOT / "docs" / "architecture" / "current-state-audit.md"
+    risks = ROOT / "docs" / "architecture" / "risks-and-recommendations.md"
+    checks = {
+        "overview_mentions_live_factory_convergence": contains_all(
+            overview, ["高风险 orchestrator 与 live factory 已完成多轮收敛"]
+        ),
+        "overview_mentions_quickask_recording_live_factories": contains_all(
+            overview, ["QuickAskLiveDependencies.swift", "RecordingControllerLiveDependencies.swift"]
+        ),
+        "current_state_mentions_live_factory_convergence": contains_all(
+            current_state, ["高频 orchestrator / live factory 已完成多轮收敛"]
+        ),
+        "risks_mentions_runtime_still_singleton_based": contains_all(
+            risks, ["核心运行时仍建立在单例基础之上"]
+        ),
+    }
+    return bool_metric(checks, "current_state_doc_gaps")
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -531,6 +564,8 @@ HANDLERS = {
     "ORCH-WFH-120": verify_orch_wfh_120,
     "ORCH-QAL-130": verify_orch_qal_130,
     "ORCH-RCL-130": verify_orch_rcl_130,
+    "ORCH-STH-140": verify_orch_sth_140,
+    "DOC-STATE-140": verify_doc_state_140,
 }
 
 
