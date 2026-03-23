@@ -671,6 +671,20 @@ def verify_messagepanel_200() -> dict[str, Any]:
     return bool_metric(checks, "messagepanel_cluster_gaps")
 
 
+def verify_screenshot_210() -> dict[str, Any]:
+    path = ROOT / "UI" / "Screenshot" / "ScreenshotContentView.swift"
+    checks = {
+        "raw_async_after_removed": count_occurrences(
+            path, r"DispatchQueue\.main\.asyncAfter"
+        ) == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "Screenshot" / "ScreenshotContentRuntimeHelpers.swift"
+        ).exists(),
+        "direct_runtime_task_count_reduced": count_occurrences(path, r"\bTask \{") <= 3,
+    }
+    return bool_metric(checks, "screenshot_runtime_tail_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -739,6 +753,7 @@ HANDLERS = {
     "UI-PREVIEW-180": verify_ui_preview_180,
     "UI-LIVECAP-190": verify_ui_livecaption_190,
     "MSGPANEL-200": verify_messagepanel_200,
+    "SCREENSHOT-210": verify_screenshot_210,
 }
 
 

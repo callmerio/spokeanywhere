@@ -184,9 +184,12 @@ extension ScreenshotContentView {
             logger.info("⚡ HighRes Cache Hit! Downscaling to \(targetSize.width)x\(targetSize.height)")
             
             // 异步执行 downscale 避免卡顿
-            Task {
+            runScreenshotTask {
                 let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
-                if let downscaled = self.dependencies.scaleImage(highRes, targetSize, backingScale) {
+                let downscaled = await MainActor.run {
+                    self.dependencies.scaleImage(highRes, targetSize, backingScale)
+                }
+                if let downscaled {
                     await MainActor.run {
                         self.imageView.image = downscaled
                         self.lastEnhancedSize = targetSize
@@ -202,12 +205,12 @@ extension ScreenshotContentView {
         // 🎯 Step 1: 立即执行 Basic 增强（不等 debounce！）
         // 用户放大的瞬间就能看到锐化后的图片
         // ======================================================
-        Task { [weak self] in
+        runScreenshotTask { [weak self] in
             guard let self = self else { return }
             
-            let basic = await Task.detached(priority: .userInitiated) {
+            let basic = await runScreenshotDetached {
                 await self.dependencies.enhanceBasic(original, targetSize)
-            }.value
+            }
             
             if let basic = basic {
                 await MainActor.run {
@@ -261,7 +264,7 @@ extension ScreenshotContentView {
         }
         
         self.enhanceDebounceTask = debounceTask
-        DispatchQueue.main.asyncAfter(deadline: .now() + enhanceDebounceDelay, execute: debounceTask)
+        scheduleScreenshotWorkItem(after: enhanceDebounceDelay, debounceTask)
     }
 
     func currentActionDependencies() -> ScreenshotActionDependencies {
@@ -283,8 +286,9 @@ extension ScreenshotContentView {
         addSubview(liveTextOverlay)
         
         // 后台预分析图片
-        Task {
-            await preanalyzeLiveText()
+        runScreenshotTask { [weak self] in
+            guard let self else { return }
+            await self.preanalyzeLiveText()
         }
     }
     
@@ -567,7 +571,7 @@ extension ScreenshotContentView {
             (self.window as? ScreenshotWindow)?.updateGlow(hovered: false)
         }
         hideActionBarWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        scheduleScreenshotWorkItem(after: 0.15, workItem)
     }
     
     /// 允许非活跃窗口响应首次点击（单击直接拖拽，无需先激活窗口）
@@ -613,7 +617,7 @@ extension ScreenshotContentView {
         
         // 如果是拖动选择，延迟检查 Live Text 选中状态
         if distance > 5 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            scheduleScreenshotMain(after: 0.1) { [weak self] in
                 self?.checkLiveTextSelection(at: mouseUpLocation)
             }
         }
