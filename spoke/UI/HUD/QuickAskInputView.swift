@@ -189,7 +189,7 @@ struct QuickAskTextEditor: NSViewRepresentable {
         
         // 🔥 使用更可靠的方式设置焦点
         // 等待视图完全加载后再设置焦点
-        DispatchQueue.main.async {
+        runQuickAskInputOnMain {
             // 第一次尝试
             self.tryMakeFirstResponder(textView, attempt: 1)
         }
@@ -202,7 +202,7 @@ struct QuickAskTextEditor: NSViewRepresentable {
         guard attempt <= 5, let window = textView.window else {
             if attempt <= 5 {
                 // 窗口还没准备好，延迟重试
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05 * Double(attempt)) {
+                scheduleQuickAskInputMain(after: 0.05 * Double(attempt)) {
                     self.tryMakeFirstResponder(textView, attempt: attempt + 1)
                 }
             }
@@ -211,7 +211,7 @@ struct QuickAskTextEditor: NSViewRepresentable {
         
         // 等待窗口成为 key window
         if !window.isKeyWindow {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            scheduleQuickAskInputMain(after: 0.1) {
                 self.tryMakeFirstResponder(textView, attempt: attempt + 1)
             }
             return
@@ -220,7 +220,7 @@ struct QuickAskTextEditor: NSViewRepresentable {
         if window.makeFirstResponder(textView) {
             textView.inputContext?.activate()
         } else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            scheduleQuickAskInputMain(after: 0.1) {
                 self.tryMakeFirstResponder(textView, attempt: attempt + 1)
             }
         }
@@ -534,10 +534,10 @@ typealias AttachmentThumbnail = AttachmentThumbnailView
 // MARK: - Preview
 
 #Preview {
-    let state = QuickAskState(attachmentManager: .shared)
+    let state = QuickAskState(attachmentManager: AttachmentManager.makePreview())
     state.phase = .recording
     
-    return QuickAskInputView(state: state, workflowState: .shared)
+    return QuickAskInputView(state: state, workflowState: WorkflowState.makePreview())
         .frame(width: 340, height: 150)
         .background(DesignTokens.Colors.settingsBackground)
 }
