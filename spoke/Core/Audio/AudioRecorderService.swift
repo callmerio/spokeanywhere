@@ -167,14 +167,11 @@ final class AudioRecorderService: NSObject {
     private func setupConfigurationChangeObserver() {
         guard configurationChangeObserver == nil else { return }
 
-        configurationChangeObserver = NotificationCenter.default.addObserver(
-            forName: .AVAudioEngineConfigurationChange,
-            object: audioEngine,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handleConfigurationChange()
-            }
+        configurationChangeObserver = makeAudioConfigurationObserver(
+            audioEngine: audioEngine,
+            owner: self
+        ) { service in
+            service.handleConfigurationChange()
         }
         logger.info("🔔 Audio configuration change observer registered")
     }
@@ -185,7 +182,7 @@ final class AudioRecorderService: NSObject {
         configurationChangeWorkItem = nil
 
         guard let observer = configurationChangeObserver else { return }
-        NotificationCenter.default.removeObserver(observer)
+        removeAudioConfigurationObserver(observer)
         configurationChangeObserver = nil
         logger.info("🔕 Audio configuration change observer removed")
     }
@@ -198,51 +195,42 @@ final class AudioRecorderService: NSObject {
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
 
-            Task { @MainActor in
-                self.logger.warning("⚠️ Audio configuration changed")
+            runAudioRecorderOnMain(self) { service in
+                service.logger.warning("⚠️ Audio configuration changed")
 
-                let decision = self.recoveryPolicy.configurationChangeDecision(
-                    isRecording: self.isRecording,
+                let decision = service.recoveryPolicy.configurationChangeDecision(
+                    isRecording: service.isRecording,
                     permissionStatus: AVCaptureDevice.authorizationStatus(for: .audio),
                     hasInputDevice: AudioDeviceManager.hasAvailableInputDevice()
                 )
 
                 switch decision {
                 case .ignore:
-                    self.logger.info("ℹ️ Not recording, ignoring configuration change")
+                    service.logger.info("ℹ️ Not recording, ignoring configuration change")
                     return
                 case .fail(let error):
-                    self.logger.error("❌ Configuration change entered non-recoverable state: \(error.localizedDescription)")
-                    self.handleRecoveryFailure(error, context: "configuration-policy")
+                    service.logger.error("❌ Configuration change entered non-recoverable state: \(error.localizedDescription)")
+                    service.handleRecoveryFailure(error, context: "configuration-policy")
                     return
                 case .attemptRecovery:
                     break
                 }
 
-                // 正在录音时，尝试恢复
-                self.logger.info("🔄 Attempting to recover recording after configuration change...")
+                service.logger.info("🔄 Attempting to recover recording after configuration change...")
 
                 do {
-                    // 1. 停止引擎
-                    self.resetAudioEngine()
-
-                    // 2. 重新配置并启动
-                    try self.reconfigureAndRestartEngine()
-
-                    self.logger.info("✅ Recording recovered after configuration change")
+                    service.resetAudioEngine()
+                    try service.reconfigureAndRestartEngine()
+                    service.logger.info("✅ Recording recovered after configuration change")
                 } catch {
-                    self.logger.error("❌ Failed to recover recording: \(error.localizedDescription)")
-                    self.handleRecoveryFailure(error, context: "configuration-change")
+                    service.logger.error("❌ Failed to recover recording: \(error.localizedDescription)")
+                    service.handleRecoveryFailure(error, context: "configuration-change")
                 }
             }
         }
 
         configurationChangeWorkItem = workItem
-        // 使用 async/await 替代 DispatchQueue.main.asyncAfter
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(500))
-            workItem.perform()
-        }
+        scheduleAudioConfigurationChange(workItem)
     }
     
     /// 重新配置并启动引擎 (配置变更后恢复)
@@ -523,25 +511,23 @@ final class AudioRecorderService: NSObject {
     /// 设置 Provider 回调
     private func setupProviderCallbacks(_ provider: TranscriptionProvider) {
         provider.onResult = { [weak self] result in
-            Task { @MainActor in
-                // 应用词典后处理
+            runAudioRecorderOnMain(self) { service in
                 let processedResult = TranscriptionPostProcessor.shared.process(result)
-                
+
                 switch processedResult.type {
                 case .partial:
-                    // 传递完整的 TranscriptionResult
-                    self?.callbackRouter.dispatchPartialResult(processedResult)
+                    service.callbackRouter.dispatchPartialResult(processedResult)
                 case .final:
-                    self?.callbackRouter.dispatchFinalResult(processedResult.text)
-                    self?.isProcessing = false
+                    service.callbackRouter.dispatchFinalResult(processedResult.text)
+                    service.isProcessing = false
                 }
             }
         }
         
         provider.onError = { [weak self] error in
-            Task { @MainActor in
-                self?.dispatchErrorThrottled(error, context: "provider")
-                self?.isProcessing = false
+            runAudioRecorderOnMain(self) { service in
+                service.dispatchErrorThrottled(error, context: "provider")
+                service.isProcessing = false
             }
         }
     }
@@ -747,8 +733,8 @@ final class AudioRecorderService: NSObject {
         
         let finalLevel = min(max(level, 0.02), 1.0)
         
-        Task { @MainActor in
-            callbackRouter.dispatchAudioLevel(finalLevel)
+        runAudioRecorderOnMain(self) { service in
+            service.callbackRouter.dispatchAudioLevel(finalLevel)
         }
     }
 }

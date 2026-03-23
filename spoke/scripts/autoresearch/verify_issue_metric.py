@@ -699,6 +699,25 @@ def verify_attach_audio_220() -> dict[str, Any]:
     return bool_metric(checks, "attachment_audio_cluster_gaps")
 
 
+def verify_audio_230() -> dict[str, Any]:
+    path = ROOT / "Core" / "Audio" / "AudioRecorderService.swift"
+    checks = {
+        "config_observer_raw_notification_removed": count_occurrences(
+            path, r"NotificationCenter\.default\.addObserver"
+        ) == 0,
+        "config_debounce_raw_task_removed": count_occurrences(
+            path, r"Task \{ @MainActor in\s*try\? await Task\.sleep\(for: \.milliseconds\(500\)\)"
+        ) == 0,
+        "provider_callback_raw_tasks_removed": count_occurrences(
+            path, r"provider\.onResult = \{ \[weak self\] result in\s*Task \{ @MainActor in|provider\.onError = \{ \[weak self\] error in\s*Task \{ @MainActor in"
+        ) == 0,
+        "audio_runtime_helper_exists": (
+            ROOT / "Core" / "Audio" / "AudioRecorderRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "audio_runtime_cluster_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -769,6 +788,7 @@ HANDLERS = {
     "MSGPANEL-200": verify_messagepanel_200,
     "SCREENSHOT-210": verify_screenshot_210,
     "ATTACH-AUDIO-220": verify_attach_audio_220,
+    "AUDIO-230": verify_audio_230,
 }
 
 
