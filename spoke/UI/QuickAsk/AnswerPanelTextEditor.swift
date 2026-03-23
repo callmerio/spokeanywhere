@@ -12,6 +12,8 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
     var onDragExited: (() -> Void)?
     var onDrop: (([NSItemProvider]) -> Void)?
     var onTextChange: ((String, Bool) -> Void)?
+    var onWorkflowKeyEvent: ((NSEvent) -> Bool)?
+    var isWorkflowPickerVisible: (() -> Bool)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -22,7 +24,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         
         scrollView.documentView = textView
         
-        DispatchQueue.main.async {
+        runAnswerPanelTextEditorOnMain {
             tryMakeFirstResponder(textView, attempt: 1)
         }
         
@@ -45,6 +47,8 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         textView.onDragEntered = onDragEntered
         textView.onDragExited = onDragExited
         textView.onDrop = onDrop
+        textView.onWorkflowKeyEvent = onWorkflowKeyEvent
+        textView.isWorkflowPickerVisible = isWorkflowPickerVisible
         
         if textView.placeholderString != placeholder {
             textView.placeholderString = placeholder
@@ -90,6 +94,8 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         textView.onDragEntered = onDragEntered
         textView.onDragExited = onDragExited
         textView.onDrop = onDrop
+        textView.onWorkflowKeyEvent = onWorkflowKeyEvent
+        textView.isWorkflowPickerVisible = isWorkflowPickerVisible
         textView.placeholderString = placeholder
     }
     
@@ -97,7 +103,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         guard attempt <= 5, let window = textView.window else {
             if attempt <= 5 {
                 let delay = 0.05 * Double(attempt)
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                scheduleAnswerPanelTextEditorMain(after: delay) {
                     tryMakeFirstResponder(textView, attempt: attempt + 1)
                 }
             }
@@ -105,7 +111,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         }
         
         if !window.isKeyWindow {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            scheduleAnswerPanelTextEditorMain(after: 0.1) {
                 tryMakeFirstResponder(textView, attempt: attempt + 1)
             }
             return
@@ -114,7 +120,7 @@ struct AnswerPanelTextEditor: NSViewRepresentable {
         if window.makeFirstResponder(textView) {
             textView.inputContext?.activate()
         } else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            scheduleAnswerPanelTextEditorMain(after: 0.1) {
                 tryMakeFirstResponder(textView, attempt: attempt + 1)
             }
         }
@@ -143,6 +149,8 @@ final class AnswerPanelNSTextView: NSTextView {
     var onDragEntered: (() -> Void)?
     var onDragExited: (() -> Void)?
     var onDrop: (([NSItemProvider]) -> Void)?
+    var onWorkflowKeyEvent: ((NSEvent) -> Bool)?
+    var isWorkflowPickerVisible: (() -> Bool)?
     
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)
@@ -221,7 +229,7 @@ final class AnswerPanelNSTextView: NSTextView {
     }
     
     override func keyDown(with event: NSEvent) {
-        if WorkflowState.shared.handleKeyEvent(event) {
+        if onWorkflowKeyEvent?(event) == true {
             return
         }
         super.keyDown(with: event)
@@ -237,7 +245,7 @@ final class AnswerPanelNSTextView: NSTextView {
             if markedRange().length > 0 {
                 // 有 marked text，让输入法确认
                 super.doCommand(by: selector)
-            } else if WorkflowState.shared.isPickerVisible {
+            } else if isWorkflowPickerVisible?() == true {
                 return
             } else if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
                 // Shift+Enter: 换行

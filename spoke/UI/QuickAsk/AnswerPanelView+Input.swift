@@ -78,7 +78,9 @@ extension AnswerPanelView {
                         text: text,
                         hasMarkedText: hasMarkedText
                     )
-                }
+                },
+                onWorkflowKeyEvent: { workflowState.handleKeyEvent($0) },
+                isWorkflowPickerVisible: { workflowState.isPickerVisible }
             )
             .frame(minHeight: 20, maxHeight: 60)
         }
