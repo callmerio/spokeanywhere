@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 func runQuickAskServiceOnMain(
@@ -30,4 +31,9 @@ func runQuickAskHUDManagerAfterDelay(
         guard let manager else { return }
         action(manager)
     }
+}
+
+@MainActor
+func triggerQuickAskOpenSettings() {
+    _ = NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil)
 }

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 func runRecordingControllerOnMain(
@@ -24,6 +25,13 @@ func runRecordingPostprocess(
 ) {
     Task {
         await operation()
+    }
+}
+
+@MainActor
+func triggerRecordingControllerOpenSettings() {
+    if !NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil) {
+        assertionFailure("AppDelegate should handle openSettings via responder chain")
     }
 }
 

@@ -108,18 +108,35 @@ struct ServiceContainerDependencies {
     let makeTranscription: () -> TranscriptionServiceProtocol
     let makeLLM: () -> LLMServiceProtocol
     let makeLLMPipeline: () -> LLMPipeline
+    let makeWorkflowExecutor: () -> WorkflowExecutor
     let makeAppSettings: () -> AppSettingsProtocol
+    let makeAppSettingsConcrete: () -> AppSettings
     let makeHistoryManager: () -> HistoryManagerProtocol
+    let makeHistoryManagerConcrete: () -> HistoryManager
     let makeQuickAsk: () -> QuickAskServiceProtocol
+    let makeQuickAskServiceConcrete: () -> QuickAskService
+    let makeAudioRecorderService: () -> AudioRecorderService
     let makeWorkspace: () -> NSWorkspace
     let makeWorkflowConfigService: () -> WorkflowConfigService
     let makePasteboard: () -> NSPasteboard
+    let makeContextService: () -> ContextService
+    let makeClipboardHistoryService: () -> ClipboardHistoryService
+    let makeClipboardPipelineService: () -> ClipboardPipelineService
+    let makeHotKeyService: () -> HotKeyService
+    let makeWorkflowState: () -> WorkflowState
+    let makeAttachmentManager: () -> AttachmentManager
+    let makeQuickAskHUDManager: () -> QuickAskHUDManager
+    let makeAnswerPanelManager: () -> AnswerPanelManager
+    let makeLiveCaptionManager: () -> LiveCaptionManager
+    let makeFloatingHUDManager: () -> FloatingHUDManager
+    let makeInputService: () -> InputService
+    let makeMessagePanelManager: () -> MessagePanelManager
+    let makeLiveCaptionWindowManager: () -> LiveCaptionWindowManager
     let makeSelectionToolbarState: () -> SelectionToolbarState
     let makeTTSService: () -> TTSService
     let makeScreenOCR: () -> ScreenOCRService
     let makeDictionaryAPI: () -> DictionaryAPIService
     let makeSelectionToolbarManager: () -> SelectionToolbarManager
-    let makeAnswerPanelManager: () -> AnswerPanelManager
     let makeLLMSettings: () -> LLMSettings
 }
 
@@ -130,18 +147,35 @@ extension ServiceContainerDependencies {
         makeTranscription: { TranscriptionManager.shared },
         makeLLM: { LLMPipeline.shared },
         makeLLMPipeline: { LLMPipeline.shared },
+        makeWorkflowExecutor: { WorkflowExecutor.shared },
         makeAppSettings: { AppSettings.shared },
+        makeAppSettingsConcrete: { AppSettings.shared },
         makeHistoryManager: { HistoryManager.shared },
+        makeHistoryManagerConcrete: { HistoryManager.shared },
         makeQuickAsk: { QuickAskService.shared },
+        makeQuickAskServiceConcrete: { QuickAskService.shared },
+        makeAudioRecorderService: { AudioRecorderService.shared },
         makeWorkspace: { .shared },
         makeWorkflowConfigService: { WorkflowConfigService.shared },
         makePasteboard: { .general },
+        makeContextService: { ContextService.shared },
+        makeClipboardHistoryService: { ClipboardHistoryService.shared },
+        makeClipboardPipelineService: { ClipboardPipelineService.shared },
+        makeHotKeyService: { HotKeyService.shared },
+        makeWorkflowState: { WorkflowState.shared },
+        makeAttachmentManager: { AttachmentManager.shared },
+        makeQuickAskHUDManager: { QuickAskHUDManager.shared },
+        makeAnswerPanelManager: { AnswerPanelManager.shared },
+        makeLiveCaptionManager: { LiveCaptionManager.shared },
+        makeFloatingHUDManager: { FloatingHUDManager.shared },
+        makeInputService: { InputService.shared },
+        makeMessagePanelManager: { MessagePanelManager.shared },
+        makeLiveCaptionWindowManager: { LiveCaptionWindowManager.shared },
         makeSelectionToolbarState: { SelectionToolbarState.shared },
         makeTTSService: { TTSService.shared },
         makeScreenOCR: { ScreenOCRService.shared },
         makeDictionaryAPI: { DictionaryAPIService.shared },
         makeSelectionToolbarManager: { SelectionToolbarManager.shared },
-        makeAnswerPanelManager: { AnswerPanelManager.shared },
         makeLLMSettings: { LLMSettings.shared }
     )
 }
@@ -174,18 +208,35 @@ final class ServiceContainer: ObservableObject {
     private var _transcription: TranscriptionServiceProtocol?
     private var _llm: LLMServiceProtocol?
     private var _llmPipeline: LLMPipeline?
+    private var _workflowExecutor: WorkflowExecutor?
     private var _appSettings: AppSettingsProtocol?
+    private var _appSettingsConcrete: AppSettings?
     private var _historyManager: HistoryManagerProtocol?
+    private var _historyManagerConcrete: HistoryManager?
     private var _quickAsk: QuickAskServiceProtocol?
+    private var _quickAskServiceConcrete: QuickAskService?
+    private var _audioRecorderService: AudioRecorderService?
     private var _workspace: NSWorkspace?
     private var _workflowConfigService: WorkflowConfigService?
     private var _pasteboard: NSPasteboard?
+    private var _contextService: ContextService?
+    private var _clipboardHistoryService: ClipboardHistoryService?
+    private var _clipboardPipelineService: ClipboardPipelineService?
+    private var _hotKeyService: HotKeyService?
+    private var _workflowState: WorkflowState?
+    private var _attachmentManager: AttachmentManager?
+    private var _quickAskHUDManager: QuickAskHUDManager?
+    private var _answerPanelManager: AnswerPanelManager?
+    private var _liveCaptionManager: LiveCaptionManager?
+    private var _floatingHUDManager: FloatingHUDManager?
+    private var _inputService: InputService?
+    private var _messagePanelManager: MessagePanelManager?
+    private var _liveCaptionWindowManager: LiveCaptionWindowManager?
     private var _selectionToolbarState: SelectionToolbarState?
     private var _ttsService: TTSService?
     private var _screenOCR: ScreenOCRService?
     private var _dictionaryAPI: DictionaryAPIService?
     private var _selectionToolbarManager: SelectionToolbarManager?
-    private var _answerPanelManager: AnswerPanelManager?
     private var _llmSettings: LLMSettings?
 
     // MARK: - Lazy Service Access
@@ -209,9 +260,17 @@ final class ServiceContainer: ObservableObject {
         resolveService(storage: &_llmPipeline, provider: dependencies.makeLLMPipeline)
     }
 
+    var workflowExecutor: WorkflowExecutor {
+        resolveService(storage: &_workflowExecutor, provider: dependencies.makeWorkflowExecutor)
+    }
+
     /// 应用设置服务
     var appSettings: AppSettingsProtocol {
         resolveService(storage: &_appSettings, provider: dependencies.makeAppSettings)
+    }
+
+    var appSettingsConcrete: AppSettings {
+        resolveService(storage: &_appSettingsConcrete, provider: dependencies.makeAppSettingsConcrete)
     }
 
     /// 历史记录服务
@@ -219,9 +278,21 @@ final class ServiceContainer: ObservableObject {
         resolveService(storage: &_historyManager, provider: dependencies.makeHistoryManager)
     }
 
+    var historyManagerConcrete: HistoryManager {
+        resolveService(storage: &_historyManagerConcrete, provider: dependencies.makeHistoryManagerConcrete)
+    }
+
     /// Quick Ask 服务
     var quickAsk: QuickAskServiceProtocol {
         resolveService(storage: &_quickAsk, provider: dependencies.makeQuickAsk)
+    }
+
+    var quickAskServiceConcrete: QuickAskService {
+        resolveService(storage: &_quickAskServiceConcrete, provider: dependencies.makeQuickAskServiceConcrete)
+    }
+
+    var audioRecorderService: AudioRecorderService {
+        resolveService(storage: &_audioRecorderService, provider: dependencies.makeAudioRecorderService)
     }
 
     var workspace: NSWorkspace {
@@ -234,6 +305,58 @@ final class ServiceContainer: ObservableObject {
 
     var pasteboard: NSPasteboard {
         resolveService(storage: &_pasteboard, provider: dependencies.makePasteboard)
+    }
+
+    var contextService: ContextService {
+        resolveService(storage: &_contextService, provider: dependencies.makeContextService)
+    }
+
+    var clipboardHistoryService: ClipboardHistoryService {
+        resolveService(storage: &_clipboardHistoryService, provider: dependencies.makeClipboardHistoryService)
+    }
+
+    var clipboardPipelineService: ClipboardPipelineService {
+        resolveService(storage: &_clipboardPipelineService, provider: dependencies.makeClipboardPipelineService)
+    }
+
+    var hotKeyService: HotKeyService {
+        resolveService(storage: &_hotKeyService, provider: dependencies.makeHotKeyService)
+    }
+
+    var workflowState: WorkflowState {
+        resolveService(storage: &_workflowState, provider: dependencies.makeWorkflowState)
+    }
+
+    var attachmentManager: AttachmentManager {
+        resolveService(storage: &_attachmentManager, provider: dependencies.makeAttachmentManager)
+    }
+
+    var quickAskHUDManager: QuickAskHUDManager {
+        resolveService(storage: &_quickAskHUDManager, provider: dependencies.makeQuickAskHUDManager)
+    }
+
+    var answerPanelManager: AnswerPanelManager {
+        resolveService(storage: &_answerPanelManager, provider: dependencies.makeAnswerPanelManager)
+    }
+
+    var liveCaptionManager: LiveCaptionManager {
+        resolveService(storage: &_liveCaptionManager, provider: dependencies.makeLiveCaptionManager)
+    }
+
+    var floatingHUDManager: FloatingHUDManager {
+        resolveService(storage: &_floatingHUDManager, provider: dependencies.makeFloatingHUDManager)
+    }
+
+    var inputService: InputService {
+        resolveService(storage: &_inputService, provider: dependencies.makeInputService)
+    }
+
+    var messagePanelManager: MessagePanelManager {
+        resolveService(storage: &_messagePanelManager, provider: dependencies.makeMessagePanelManager)
+    }
+
+    var liveCaptionWindowManager: LiveCaptionWindowManager {
+        resolveService(storage: &_liveCaptionWindowManager, provider: dependencies.makeLiveCaptionWindowManager)
     }
 
     var selectionToolbarState: SelectionToolbarState {
@@ -254,10 +377,6 @@ final class ServiceContainer: ObservableObject {
 
     var selectionToolbarManager: SelectionToolbarManager {
         resolveService(storage: &_selectionToolbarManager, provider: dependencies.makeSelectionToolbarManager)
-    }
-
-    var answerPanelManager: AnswerPanelManager {
-        resolveService(storage: &_answerPanelManager, provider: dependencies.makeAnswerPanelManager)
     }
 
     var llmSettings: LLMSettings {
@@ -285,9 +404,17 @@ final class ServiceContainer: ObservableObject {
         _llmPipeline = llmPipeline
     }
 
+    func register(workflowExecutor: WorkflowExecutor) {
+        _workflowExecutor = workflowExecutor
+    }
+
     /// 注册自定义应用设置服务（用于测试）
     func register(appSettings: AppSettingsProtocol) {
         _appSettings = appSettings
+    }
+
+    func register(appSettingsConcrete: AppSettings) {
+        _appSettingsConcrete = appSettingsConcrete
     }
 
     /// 注册自定义历史记录服务（用于测试）
@@ -295,9 +422,21 @@ final class ServiceContainer: ObservableObject {
         _historyManager = historyManager
     }
 
+    func register(historyManagerConcrete: HistoryManager) {
+        _historyManagerConcrete = historyManagerConcrete
+    }
+
     /// 注册自定义 Quick Ask 服务（用于测试）
     func register(quickAsk: QuickAskServiceProtocol) {
         _quickAsk = quickAsk
+    }
+
+    func register(quickAskServiceConcrete: QuickAskService) {
+        _quickAskServiceConcrete = quickAskServiceConcrete
+    }
+
+    func register(audioRecorderService: AudioRecorderService) {
+        _audioRecorderService = audioRecorderService
     }
 
     func register(workspace: NSWorkspace) {
@@ -310,6 +449,58 @@ final class ServiceContainer: ObservableObject {
 
     func register(pasteboard: NSPasteboard) {
         _pasteboard = pasteboard
+    }
+
+    func register(contextService: ContextService) {
+        _contextService = contextService
+    }
+
+    func register(clipboardHistoryService: ClipboardHistoryService) {
+        _clipboardHistoryService = clipboardHistoryService
+    }
+
+    func register(clipboardPipelineService: ClipboardPipelineService) {
+        _clipboardPipelineService = clipboardPipelineService
+    }
+
+    func register(hotKeyService: HotKeyService) {
+        _hotKeyService = hotKeyService
+    }
+
+    func register(workflowState: WorkflowState) {
+        _workflowState = workflowState
+    }
+
+    func register(attachmentManager: AttachmentManager) {
+        _attachmentManager = attachmentManager
+    }
+
+    func register(quickAskHUDManager: QuickAskHUDManager) {
+        _quickAskHUDManager = quickAskHUDManager
+    }
+
+    func register(answerPanelManager: AnswerPanelManager) {
+        _answerPanelManager = answerPanelManager
+    }
+
+    func register(liveCaptionManager: LiveCaptionManager) {
+        _liveCaptionManager = liveCaptionManager
+    }
+
+    func register(floatingHUDManager: FloatingHUDManager) {
+        _floatingHUDManager = floatingHUDManager
+    }
+
+    func register(inputService: InputService) {
+        _inputService = inputService
+    }
+
+    func register(messagePanelManager: MessagePanelManager) {
+        _messagePanelManager = messagePanelManager
+    }
+
+    func register(liveCaptionWindowManager: LiveCaptionWindowManager) {
+        _liveCaptionWindowManager = liveCaptionWindowManager
     }
 
     func register(selectionToolbarState: SelectionToolbarState) {
@@ -332,10 +523,6 @@ final class ServiceContainer: ObservableObject {
         _selectionToolbarManager = selectionToolbarManager
     }
 
-    func register(answerPanelManager: AnswerPanelManager) {
-        _answerPanelManager = answerPanelManager
-    }
-
     func register(llmSettings: LLMSettings) {
         _llmSettings = llmSettings
     }
@@ -346,18 +533,35 @@ final class ServiceContainer: ObservableObject {
         _transcription = nil
         _llm = nil
         _llmPipeline = nil
+        _workflowExecutor = nil
         _appSettings = nil
+        _appSettingsConcrete = nil
         _historyManager = nil
+        _historyManagerConcrete = nil
         _quickAsk = nil
+        _quickAskServiceConcrete = nil
+        _audioRecorderService = nil
         _workspace = nil
         _workflowConfigService = nil
         _pasteboard = nil
+        _contextService = nil
+        _clipboardHistoryService = nil
+        _clipboardPipelineService = nil
+        _hotKeyService = nil
+        _workflowState = nil
+        _attachmentManager = nil
+        _quickAskHUDManager = nil
+        _answerPanelManager = nil
+        _liveCaptionManager = nil
+        _floatingHUDManager = nil
+        _inputService = nil
+        _messagePanelManager = nil
+        _liveCaptionWindowManager = nil
         _selectionToolbarState = nil
         _ttsService = nil
         _screenOCR = nil
         _dictionaryAPI = nil
         _selectionToolbarManager = nil
-        _answerPanelManager = nil
         _llmSettings = nil
     }
 

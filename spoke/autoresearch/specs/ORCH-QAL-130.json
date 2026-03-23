@@ -1,0 +1,24 @@
+{
+  "issue_id": "ORCH-QAL-130",
+  "title": "QuickAskLiveDependencies 共享工厂收敛",
+  "mode": "exec",
+  "goal": "继续压缩 QuickAskLiveDependencies 中高密度 `.shared` wiring，减少 Quick Ask live factory 对全局单例的直接抓取。",
+  "scope": [
+    "Services/QuickAskLiveDependencies.swift",
+    "Services/QuickAskRuntimeHelpers.swift",
+    "Services/ServiceContainer.swift"
+  ],
+  "metric": "quickask_live_factory_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-QAL-130",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests/testLiveCaptionAccessibilityIdentifierSmoke"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-QAL-130",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只压 QuickAsk live factory 噪音，不改变 HUD / workflow / openSettings 语义。"
+}

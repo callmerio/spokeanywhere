@@ -473,6 +473,33 @@ def verify_orch_wfh_120() -> dict[str, Any]:
     )
 
 
+def verify_orch_qal_130() -> dict[str, Any]:
+    path = ROOT / "Services" / "QuickAskLiveDependencies.swift"
+    return hotspot_metric(
+        path,
+        "quickask_live_factory_hotspots",
+        {
+            "direct_service_shared_calls": r"\.shared\b",
+            "inline_send_action": r"NSApp\.sendAction",
+            "inline_general_pasteboard": r"\.general\b",
+        },
+    )
+
+
+def verify_orch_rcl_130() -> dict[str, Any]:
+    path = ROOT / "Services" / "RecordingControllerLiveDependencies.swift"
+    return hotspot_metric(
+        path,
+        "recording_live_factory_hotspots",
+        {
+            "direct_service_shared_calls": r"\.shared\b",
+            "inline_send_action": r"NSApp\.sendAction",
+            "inline_assertion_failure": r"assertionFailure\(",
+            "inline_general_pasteboard": r"\.general\b",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -502,6 +529,8 @@ HANDLERS = {
     "ORCH-SAH-120": verify_orch_sah_120,
     "ORCH-SMH-120": verify_orch_smh_120,
     "ORCH-WFH-120": verify_orch_wfh_120,
+    "ORCH-QAL-130": verify_orch_qal_130,
+    "ORCH-RCL-130": verify_orch_rcl_130,
 }
 
 
