@@ -8,14 +8,6 @@ struct HotKeyServiceDependencies {
     let notificationCenter: NotificationCenter
 }
 
-@MainActor
-extension HotKeyServiceDependencies {
-    static let live = HotKeyServiceDependencies(
-        appSettings: .shared,
-        notificationCenter: .default
-    )
-}
-
 /// 全局快捷键服务
 /// 管理录音快捷键的注册和触发
 @MainActor
@@ -189,16 +181,12 @@ final class HotKeyService {
         action: @escaping @MainActor @Sendable (HotKeyService) -> Void
     ) {
         shortcutObservers.append(
-            dependencies.notificationCenter.addObserver(
-                forName: name,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor in
-                    guard let self else { return }
-                    action(self)
-                }
-            }
+            makeHotKeyServiceObserver(
+                notificationCenter: dependencies.notificationCenter,
+                name: name,
+                owner: self,
+                action: action
+            )
         )
     }
     
@@ -440,7 +428,7 @@ final class HotKeyService {
             logger.info("🚩 [flagsChanged] 修饰键松开检测 | modifiersReleased=true")
         }
 
-        dispatchOnMain { service in
+        runHotKeyServiceOnMain(self) { service in
             if modifiersReleased && service.isRecording && !service.isQuickAskActive {
                 service.logger.info("🚩 [flagsChanged] 调度 scheduleModifierReleaseCheck")
                 service.scheduleModifierReleaseCheck()
@@ -452,19 +440,6 @@ final class HotKeyService {
 
     private func passThrough(_ event: CGEvent) -> Unmanaged<CGEvent>? {
         Unmanaged.passRetained(event)
-    }
-
-    private func dispatchOnMain(_ work: @escaping (HotKeyService) -> Void) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            work(self)
-        }
-    }
-
-    private func invokeCallbackOnMain(_ callback: @escaping (HotKeyService) -> (() -> Void)?) {
-        dispatchOnMain { service in
-            callback(service)?()
-        }
     }
     
     /// 检查当前按下的修饰键是否匹配目标配置（严格匹配）
@@ -569,7 +544,7 @@ final class HotKeyService {
     // MARK: - Settings Handler
     
     private func handleOpenSettings() {
-        invokeCallbackOnMain { $0.onOpenSettings }
+        invokeHotKeyServiceCallback(self) { $0.onOpenSettings }
     }
     
     // MARK: - Quick Ask Handlers
@@ -585,7 +560,7 @@ final class HotKeyService {
     }
     
     private func startQuickAsk() {
-        dispatchOnMain { service in
+        runHotKeyServiceOnMain(self) { service in
             service.isQuickAskActive = true
             service.onQuickAskStart?()
         }
@@ -593,7 +568,7 @@ final class HotKeyService {
     }
     
     private func sendQuickAsk() {
-        dispatchOnMain { service in
+        runHotKeyServiceOnMain(self) { service in
             service.isQuickAskActive = false
             service.onQuickAskSend?()
         }
@@ -621,34 +596,34 @@ final class HotKeyService {
     // MARK: - Message Panel Handler
     
     private func handleMessagePanelToggle() {
-        invokeCallbackOnMain { $0.onMessagePanelToggle }
+        invokeHotKeyServiceCallback(self) { $0.onMessagePanelToggle }
         logger.info("📋 Message Panel toggle triggered")
     }
     
     // MARK: - Live Caption Handler
     
     private func handleLiveCaptionToggle() {
-        invokeCallbackOnMain { $0.onLiveCaptionToggle }
+        invokeHotKeyServiceCallback(self) { $0.onLiveCaptionToggle }
         logger.info("🎬 Live Caption toggle triggered")
     }
     
     // MARK: - Clipboard Pipeline Handler
     
     private func handleClipboardPipelineTrigger() {
-        invokeCallbackOnMain { $0.onClipboardPipelineTrigger }
+        invokeHotKeyServiceCallback(self) { $0.onClipboardPipelineTrigger }
         logger.info("📋 Clipboard Pipeline triggered")
     }
     
     // MARK: - Screenshot Handler
     
     private func handleScreenshotTrigger() {
-        invokeCallbackOnMain { $0.onScreenshotTrigger }
+        invokeHotKeyServiceCallback(self) { $0.onScreenshotTrigger }
     }
     
     // MARK: - Recording Handlers
     
     private func handleKeyDown() {
-        dispatchOnMain { service in
+        runHotKeyServiceOnMain(self) { service in
             // 诊断日志：记录当前状态
             let taskStatus = service.delayedStopTask != nil ? "SET" : "nil"
             service.logger.info("⬇️ [keyDown] isRecording=\(service.isRecording), isToggleSession=\(service.isToggleSession), delayedStopTask=\(taskStatus, privacy: .public)")
@@ -730,7 +705,7 @@ final class HotKeyService {
     }
     
     private func handleKeyUp() {
-        dispatchOnMain { service in
+        runHotKeyServiceOnMain(self) { service in
             // keyUp 是明确的结束信号，取消任何待执行的防抖检查
             // 必须在主线程执行 cancel，否则与 scheduleModifierReleaseCheck 的 workItem 存在竞态条件
             service.flagsDebounceWorkItem?.cancel()
@@ -744,7 +719,7 @@ final class HotKeyService {
     /// 处理按键释放
     /// - Parameter fromKeyUp: true 表示来自 keyUp 事件，false 表示来自 flagsChanged 事件
     private func handleRelease(fromKeyUp: Bool) {
-        dispatchOnMain { service in
+        runHotKeyServiceOnMain(self) { service in
             // 调试日志：当前状态
             service.logger.debug("🔍 handleRelease: isRecording=\(service.isRecording), isToggleSession=\(service.isToggleSession), fromKeyUp=\(fromKeyUp)")
             
