@@ -43,18 +43,6 @@ struct LiveCaptionManagerDependencies {
     let postTranslationUpdate: () -> Void
 }
 
-@MainActor
-extension LiveCaptionManagerDependencies {
-    static let preview = LiveCaptionManagerDependencies(
-        translator: .makePreview(),
-        appCaptureService: .shared,
-        systemCaptureService: .shared,
-        transcriptionModelManager: .shared,
-        dictionaryService: .shared,
-        postTranslationUpdate: {}
-    )
-}
-
 /// 实时字幕管理器
 /// 整合音频捕获、转录、翻译
 /// 使用 SpeechAnalyzerProvider (macOS 26+) 获得最佳识别效果
@@ -63,18 +51,7 @@ final class LiveCaptionManager: ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = LiveCaptionManager(
-        dependencies: LiveCaptionManagerDependencies(
-            translator: .shared,
-            appCaptureService: .shared,
-            systemCaptureService: .shared,
-            transcriptionModelManager: .shared,
-            dictionaryService: .shared,
-            postTranslationUpdate: {
-                NotificationCenter.default.post(name: .translationUpdated, object: nil)
-            }
-        )
-    )
+    static let shared = LiveCaptionManager(dependencies: .live)
     
     // MARK: - Properties
     
@@ -226,8 +203,8 @@ final class LiveCaptionManager: ObservableObject {
         if let index = languages.firstIndex(of: current) {
             let nextIndex = (index + 1) % languages.count
             let nextLocale = languages[nextIndex]
-            Task {
-                await setLocale(nextLocale)
+            runLiveCaptionManagerAsync(self) { manager in
+                await manager.setLocale(nextLocale)
             }
         }
     }
@@ -405,8 +382,8 @@ final class LiveCaptionManager: ObservableObject {
             capture.onError = { [weak self] error in
                 guard let self = self else { return }
                 self.logger.error("❌ Audio capture error: \(error.localizedDescription)")
-                Task { @MainActor in
-                    await self.stop()
+                runLiveCaptionManagerAsync(self) { manager in
+                    await manager.stop()
                 }
             }
         }
@@ -705,9 +682,9 @@ final class LiveCaptionManager: ObservableObject {
                 lineBuffer.clearPending()
                 
                 // 触发翻译并更新 Buffer + 历史记录
-                Task {
-                    let translation = await translateAndUpdateBuffer(itemId: itemId, text: newText)
-                    await saveSegment(text: newText, translation: translation)
+                runLiveCaptionManagerAsync(self) { manager in
+                    let translation = await manager.translateAndUpdateBuffer(itemId: itemId, text: newText)
+                    await manager.saveSegment(text: newText, translation: translation)
                 }
             }
             
