@@ -653,6 +653,24 @@ def verify_ui_livecaption_190() -> dict[str, Any]:
     return bool_metric(checks, "livecaption_runtime_tail_gaps")
 
 
+def verify_messagepanel_200() -> dict[str, Any]:
+    manager = ROOT / "Services" / "MessagePanelManager.swift"
+    state = ROOT / "Core" / "MessagePanel" / "MessagePanelState.swift"
+    checks = {
+        "manager_raw_mainactor_tasks_removed": count_occurrences(
+            manager, r"Task \{ @MainActor"
+        ) == 0,
+        "manager_summary_task_wrapped": count_occurrences(
+            manager, r"Task \{ await summaryService"
+        ) == 0,
+        "state_summary_shared_removed": count_occurrences(
+            state, r"SummaryService\.shared"
+        ) == 0,
+        "runtime_helper_exists": (ROOT / "Services" / "MessagePanelRuntimeHelpers.swift").exists(),
+    }
+    return bool_metric(checks, "messagepanel_cluster_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -720,6 +738,7 @@ HANDLERS = {
     "DOC-ARCH-170": verify_doc_arch_170,
     "UI-PREVIEW-180": verify_ui_preview_180,
     "UI-LIVECAP-190": verify_ui_livecaption_190,
+    "MSGPANEL-200": verify_messagepanel_200,
 }
 
 

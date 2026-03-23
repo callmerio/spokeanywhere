@@ -93,6 +93,7 @@ struct MessagePanelStateDependencies {
     let attachmentImageCache: AttachmentImageCache
     let notificationCenter: NotificationCenter
     let llmSettings: LLMSettings
+    let generateSummary: @Sendable (UUID) async -> Void
 }
 
 @MainActor
@@ -102,7 +103,10 @@ extension MessagePanelStateDependencies {
         attachmentStorage: .shared,
         attachmentImageCache: .shared,
         notificationCenter: .default,
-        llmSettings: .shared
+        llmSettings: .shared,
+        generateSummary: { @Sendable cardId in
+            await runMessagePanelSummary(cardId: cardId)
+        }
     )
 }
 
@@ -816,8 +820,9 @@ final class MessagePanelState: ObservableObject {
         let isNewPinnedType = (type == .todo || type == .note) && previousType == .normal
         
         if shouldAutoSummary && isNewPinnedType && cards[index].summaryStatus == .none {
+            let generateSummary = dependencies.generateSummary
             Task {
-                await SummaryService.shared.generateSummary(for: cardId)
+                await generateSummary(cardId)
             }
         }
     }

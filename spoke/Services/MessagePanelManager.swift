@@ -87,9 +87,7 @@ final class MessagePanelManager {
     func hide() {
         state.hide()
 
-        // 动画结束后隐藏窗口 (使用 async/await 替代 DispatchQueue)
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(400))
+        runMessagePanelAfterDelay(seconds: 0.4) { [weak self] in
             self?.panel?.orderOut(nil)
         }
 
@@ -142,9 +140,8 @@ final class MessagePanelManager {
             hoverState: dependencies.hoverState,
             hidePanel: { [weak self] in self?.hide() },
             startQuickAsk: { [weak self] in
-                Task { @MainActor [weak self] in
-                    self?.hide()
-                    try? await Task.sleep(for: .milliseconds(100))
+                self?.hide()
+                runMessagePanelAfterDelay(seconds: 0.1) { [weak self] in
                     self?.dependencies.hotKeyService.isQuickAskActive = true
                     self?.dependencies.hotKeyService.onQuickAskStart?()
                 }
@@ -164,8 +161,7 @@ final class MessagePanelManager {
                         attachments: []
                     )
 
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(100))
+                    runMessagePanelAfterDelay(seconds: 0.1) {
                         if let state = self.dependencies.answerPanelManager.state(for: panelId) {
                             state.messages = chatMessages
                             state.isLoading = false
@@ -180,7 +176,9 @@ final class MessagePanelManager {
                 pasteImageFromClipboard: { self.state.pasteImageFromClipboard(to: $0) },
                 addAttachment: { image, id in self.state.addAttachment(image, to: id) },
                 generateSummary: { [summaryService = dependencies.summaryService] id, regenerate in
-                    Task { await summaryService.generateSummary(for: id, regenerate: regenerate) }
+                    runMessagePanelDetached {
+                        await summaryService.generateSummary(for: id, regenerate: regenerate)
+                    }
                 }
             )
         )
