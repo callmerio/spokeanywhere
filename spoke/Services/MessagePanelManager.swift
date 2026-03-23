@@ -12,7 +12,6 @@ struct MessagePanelManagerDependencies {
     let tagLibrary: TagLibrary
     let summaryService: SummaryService
     let answerPanelManager: AnswerPanelManager
-    let clipboardPipelineService: () -> ClipboardPipelineService
 }
 
 /// 消息面板管理器
@@ -48,8 +47,19 @@ final class MessagePanelManager {
                 addAttachmentToCard: { [weak self] image, id in
                     self?.state.addAttachment(image, to: id)
                 },
-                triggerClipboardPipeline: { [clipboardPipelineService = dependencies.clipboardPipelineService] in
-                    clipboardPipelineService().trigger()
+                triggerClipboardPipeline: { [weak self] in
+                    guard let self else { return }
+                    guard let payload = makeClipboardPipelinePayload(
+                        maxContentLength: 10000,
+                        pasteboardText: { NSPasteboard.general.string(forType: .string) },
+                        currentSourceApp: { SourceAppInfo.fromFrontmost() }
+                    ) else {
+                        return
+                    }
+                    self.addClipboardContent(content: payload.content, sourceApp: payload.sourceApp)
+                    if !self.isVisible {
+                        self.show()
+                    }
                 }
             )
         )

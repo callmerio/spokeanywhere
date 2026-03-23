@@ -10,7 +10,6 @@ extension MessagePanelManagerDependencies {
         hotKeyService: .shared,
         tagLibrary: .shared,
         summaryService: .shared,
-        answerPanelManager: .shared,
-        clipboardPipelineService: { .shared }
+        answerPanelManager: .shared
     )
 }

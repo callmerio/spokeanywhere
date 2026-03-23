@@ -1,6 +1,13 @@
 import AppKit
 import OSLog
 
+@MainActor
+struct ClipboardPipelineServiceDependencies {
+    let messagePanelManager: () -> MessagePanelManager
+    let currentSourceApp: () -> SourceAppInfo?
+    let pasteboardText: () -> String?
+}
+
 /// 剪贴板 Pipeline 服务
 /// 从剪贴板读取内容，处理后添加到 MessagePanel
 @MainActor
@@ -8,9 +15,10 @@ final class ClipboardPipelineService {
     
     // MARK: - Singleton
     
-    static let shared = ClipboardPipelineService()
+    static let shared = ClipboardPipelineService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ClipboardPipeline")
+    private let dependencies: ClipboardPipelineServiceDependencies
     
     // MARK: - Constants
     
@@ -19,7 +27,11 @@ final class ClipboardPipelineService {
     
     // MARK: - Init
     
-    private init() {}
+    private init(
+        dependencies: ClipboardPipelineServiceDependencies
+    ) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
@@ -28,50 +40,32 @@ final class ClipboardPipelineService {
     func trigger() {
         logger.info("📋 [ClipboardPipeline] 触发")
         
-        // 读取剪贴板文本内容
-        guard let content = readClipboardText() else {
+        guard let payload = makeClipboardPipelinePayload(
+            maxContentLength: maxContentLength,
+            pasteboardText: dependencies.pasteboardText,
+            currentSourceApp: dependencies.currentSourceApp
+        ) else {
             logger.warning("📋 [ClipboardPipeline] 剪贴板为空或不包含文本")
             return
         }
-        
-        // 检查内容长度
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedContent.isEmpty else {
-            logger.warning("📋 [ClipboardPipeline] 剪贴板内容为空")
-            return
-        }
-        
-        // 截断过长内容
-        let finalContent: String
-        if trimmedContent.count > maxContentLength {
-            finalContent = String(trimmedContent.prefix(maxContentLength)) + "..."
+
+        if payload.wasTruncated {
             logger.info("📋 [ClipboardPipeline] 内容过长，已截断至 \(self.maxContentLength) 字符")
-        } else {
-            finalContent = trimmedContent
         }
-        
-        // 获取当前聚焦应用作为来源
-        let sourceApp = SourceAppInfo.fromFrontmost()
-        
-        logger.info("📋 [ClipboardPipeline] 添加内容: \(finalContent.prefix(50))... | 来源: \(sourceApp?.name ?? "unknown")")
+
+        logger.info("📋 [ClipboardPipeline] 添加内容: \(payload.content.prefix(50))... | 来源: \(payload.sourceApp?.name ?? "unknown")")
+
+        let messagePanelManager = dependencies.messagePanelManager()
         
         // 添加到 MessagePanel
-        MessagePanelManager.shared.addClipboardContent(
-            content: finalContent,
-            sourceApp: sourceApp
+        messagePanelManager.addClipboardContent(
+            content: payload.content,
+            sourceApp: payload.sourceApp
         )
         
         // 显示 MessagePanel（如果未显示）
-        if !MessagePanelManager.shared.isVisible {
-            MessagePanelManager.shared.show()
+        if !messagePanelManager.isVisible {
+            messagePanelManager.show()
         }
-    }
-    
-    // MARK: - Private
-    
-    /// 从剪贴板读取文本内容
-    private func readClipboardText() -> String? {
-        let pasteboard = NSPasteboard.general
-        return pasteboard.string(forType: .string)
     }
 }
