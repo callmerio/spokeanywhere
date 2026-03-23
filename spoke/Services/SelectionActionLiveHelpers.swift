@@ -5,7 +5,7 @@ import Foundation
 struct SelectionActionLiveServices {
     let serviceContainer: ServiceContainer
 
-    static let shared = SelectionActionLiveServices(serviceContainer: .shared)
+    static let shared = SelectionActionLiveServices(serviceContainer: currentServiceContainer())
 
     var state: SelectionToolbarState { serviceContainer.selectionToolbarState }
     var ttsService: TTSService { serviceContainer.ttsService }

@@ -3,18 +3,24 @@ import Foundation
 
 @MainActor
 extension WorkflowExecutorDependencies {
-    static let live = makeLive(from: .shared)
+    static let live = makeLive(
+        from: .shared,
+        dateProvider: Date.init,
+        localeProvider: { .current }
+    )
 
     static func makeLive(
-        from services: WorkflowExecutorLiveServices
+        from services: WorkflowExecutorLiveServices,
+        dateProvider: @escaping () -> Date,
+        localeProvider: @escaping () -> Locale
     ) -> WorkflowExecutorDependencies {
         makeLive(
             settings: services.settings,
             pipeline: services.pipeline,
             workflowConfigService: services.workflowConfigService,
             pasteboard: services.pasteboard,
-            dateProvider: services.dateProvider,
-            localeProvider: services.localeProvider
+            dateProvider: dateProvider,
+            localeProvider: localeProvider
         )
     }
 
