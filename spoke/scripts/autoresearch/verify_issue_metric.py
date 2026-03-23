@@ -718,6 +718,25 @@ def verify_audio_230() -> dict[str, Any]:
     return bool_metric(checks, "audio_runtime_cluster_gaps")
 
 
+def verify_livecaption_240() -> dict[str, Any]:
+    path = ROOT / "Core" / "LiveCaption" / "LiveCaptionManager.swift"
+    checks = {
+        "app_picker_raw_mainactor_tasks_removed": count_occurrences(
+            path, r"appCapture\.onSelectionComplete = \{ \[weak self\] success in\s+guard let self = self, success else \{ return \}\s+Task \{ @MainActor in|appCapture\.onSelectionCancelled = \{ \[weak self\] in\s+Task \{ @MainActor in|appCapture\.onRetryStateChanged = \{ \[weak self\] isRetrying, retryCount in\s+Task \{ @MainActor in|appCapture\.onError = \{ \[weak self\] error in\s+Task \{ @MainActor in"
+        ) == 0,
+        "legacy_capture_raw_mainactor_tasks_removed": count_occurrences(
+            path, r"transcriber\.onTranscription = \{ \[weak self\] segment in\s+Task \{ @MainActor in|capture\.onError = \{ \[weak self\] error in\s+guard let self = self else \{ return \}\s+self\.logger\.error.*Task \{ @MainActor in"
+        ) == 0,
+        "volatile_translation_raw_task_removed": count_occurrences(
+            path, r"volatileTranslationTask = Task \{"
+        ) == 0,
+        "runtime_helper_exists": (
+            ROOT / "Core" / "LiveCaption" / "LiveCaptionManagerRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "livecaption_manager_cluster_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -789,6 +808,7 @@ HANDLERS = {
     "SCREENSHOT-210": verify_screenshot_210,
     "ATTACH-AUDIO-220": verify_attach_audio_220,
     "AUDIO-230": verify_audio_230,
+    "LIVECAP-240": verify_livecaption_240,
 }
 
 

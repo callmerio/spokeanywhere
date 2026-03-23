@@ -277,53 +277,47 @@ final class LiveCaptionManager: ObservableObject {
         // 设置选择完成回调
         appCapture.onSelectionComplete = { [weak self] success in
             guard let self = self, success else { return }
-            Task { @MainActor in
-                // 延迟更新 UI 状态，避免在 Display Cycle 中触发约束循环
-                DispatchQueue.main.async {
-                    self.currentAppName = appCapture.currentAppName
-                }
+            runLiveCaptionManagerAsync(self) { manager in
+                manager.currentAppName = appCapture.currentAppName
                 do {
-                    try await self.setupSpeechAnalyzer(withAppCapture: true)
+                    try await manager.setupSpeechAnalyzer(withAppCapture: true)
                 } catch {
-                    self.logger.error("❌ Failed to setup speech analyzer: \(error.localizedDescription)")
+                    manager.logger.error("❌ Failed to setup speech analyzer: \(error.localizedDescription)")
                 }
             }
         }
         
         appCapture.onSelectionCancelled = { [weak self] in
-            Task { @MainActor in
-                guard let self = self else { return }
-                self.logger.info("⚠️ User cancelled app selection, falling back to global mode")
+            runLiveCaptionManagerAsync(self) { manager in
+                manager.logger.info("⚠️ User cancelled app selection, falling back to global mode")
                 do {
-                    try await self.startWithGlobalCapture()
+                    try await manager.startWithGlobalCapture()
                 } catch {
-                    self.logger.error("❌ Failed to start global capture: \(error.localizedDescription)")
-                    self.isActive = false
+                    manager.logger.error("❌ Failed to start global capture: \(error.localizedDescription)")
+                    manager.isActive = false
                 }
             }
         }
         
         // 重试状态变化回调
         appCapture.onRetryStateChanged = { [weak self] isRetrying, retryCount in
-            Task { @MainActor in
-                guard let self = self else { return }
+            runLiveCaptionManagerOnMain(self) { manager in
                 if isRetrying {
-                    self.logger.info("🔄 [LiveCaption] App capture retrying (\(retryCount)/3)...")
+                    manager.logger.info("🔄 [LiveCaption] App capture retrying (\(retryCount)/3)...")
                 } else if retryCount > 0 {
-                    self.logger.info("✅ [LiveCaption] App capture reconnected!")
+                    manager.logger.info("✅ [LiveCaption] App capture reconnected!")
                     // 重连成功，恢复应用名
-                    self.currentAppName = appCapture.currentAppName
+                    manager.currentAppName = appCapture.currentAppName
                 }
             }
         }
         
         appCapture.onError = { [weak self] error in
-            Task { @MainActor in
-                guard let self = self else { return }
+            runLiveCaptionManagerAsync(self) { manager in
                 // 只有在非重试状态下才停止（重试失败后 isRetrying 为 false）
                 if !appCapture.isRetrying {
-                    self.logger.error("❌ App capture error (final): \(error.localizedDescription)")
-                    await self.stop()
+                    manager.logger.error("❌ App capture error (final): \(error.localizedDescription)")
+                    await manager.stop()
                 }
             }
         }
@@ -436,8 +430,8 @@ final class LiveCaptionManager: ObservableObject {
         
         // 设置回调
         transcriber.onTranscription = { [weak self] segment in
-            Task { @MainActor in
-                await self?.handleLegacyTranscription(segment)
+            runLiveCaptionManagerAsync(self) { manager in
+                await manager.handleLegacyTranscription(segment)
             }
         }
         
@@ -453,11 +447,9 @@ final class LiveCaptionManager: ObservableObject {
         }
         
         capture.onError = { [weak self] error in
-            guard let self = self else { return }
-            self.logger.error("❌ Audio capture error: \(error.localizedDescription)")
-            // 捕获错误时停止并更新状态
-            Task { @MainActor in
-                await self.stop()
+            runLiveCaptionManagerAsync(self) { manager in
+                manager.logger.error("❌ Audio capture error: \(error.localizedDescription)")
+                await manager.stop()
             }
         }
         
@@ -733,17 +725,12 @@ final class LiveCaptionManager: ObservableObject {
         // 取消之前的任务
         volatileTranslationTask?.cancel()
         
-        volatileTranslationTask = Task {
-            // 防抖延迟
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            
-            if let translated = await dependencies.translator.translate(text) {
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    lineBuffer.updatePendingTranslation(translated, version: currentVersion)
-                }
-            }
+        volatileTranslationTask = makeLiveCaptionVolatileTranslationTask(
+            text: text,
+            translator: dependencies.translator,
+            currentVersion: currentVersion
+        ) { [self] translated, version in
+            self.lineBuffer.updatePendingTranslation(translated, version: version)
         }
     }
     
