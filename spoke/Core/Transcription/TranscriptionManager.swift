@@ -8,15 +8,6 @@ struct TranscriptionManagerDependencies {
     let notificationCenter: NotificationCenter
 }
 
-@MainActor
-extension TranscriptionManagerDependencies {
-    static let live = TranscriptionManagerDependencies(
-        modelManager: .shared,
-        dictionaryService: .shared,
-        notificationCenter: .default
-    )
-}
-
 /// 转录引擎类型
 enum TranscriptionEngineType: String, CaseIterable {
     case speechAnalyzer = "speech_analyzer"     // macOS 26+ (优先)
@@ -98,9 +89,9 @@ final class TranscriptionManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.isDictionaryPrepared = false
-                self?.logger.info("📚 Dictionary changed, will re-prepare on next use")
+            runTranscriptionManagerOnMain(self) { manager in
+                manager.isDictionaryPrepared = false
+                manager.logger.info("📚 Dictionary changed, will re-prepare on next use")
             }
         })
         
@@ -110,18 +101,17 @@ final class TranscriptionManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
+            runTranscriptionManagerAsync(self) { manager in
                 // 检查当前模型是否支持预编译 LM
                 if #available(macOS 26.0, *) {
-                    let config = self.dependencies.modelManager.getProviderConfiguration()
+                    let config = manager.dependencies.modelManager.getProviderConfiguration()
                     guard config.enablePrecompiledLM else {
-                        self.logger.info("📚 训练数据变更，但当前模型不支持预编译 LM，跳过")
+                        manager.logger.info("📚 训练数据变更，但当前模型不支持预编译 LM，跳过")
                         return
                     }
                 }
-                self.logger.notice("📚 训练数据变更，后台预编译 LM...")
-                await self.prepareDictionary()
+                manager.logger.notice("📚 训练数据变更，后台预编译 LM...")
+                await manager.prepareDictionary()
             }
         })
         
@@ -131,9 +121,9 @@ final class TranscriptionManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.logger.notice("🔄 Transcription model changed, releasing provider")
-                self?.releaseProvider()
+            runTranscriptionManagerOnMain(self) { manager in
+                manager.logger.notice("🔄 Transcription model changed, releasing provider")
+                manager.releaseProvider()
             }
         })
     }
