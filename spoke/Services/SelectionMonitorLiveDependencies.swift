@@ -13,10 +13,10 @@ extension SelectionMonitorServiceDependencies {
                 AccessibilityHelper.requestAccessibilityPermission()
             },
             toolbarWindow: {
-                currentSelectionMonitorToolbarManager().toolbarWindow
+                services.selectionToolbarManager.toolbarWindow
             },
             hideToolbar: { force in
-                currentSelectionMonitorToolbarManager().hide(force: force)
+                services.selectionToolbarManager.hide(force: force)
             }
         )
     }

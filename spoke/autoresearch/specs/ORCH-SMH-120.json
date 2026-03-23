@@ -1,0 +1,22 @@
+{
+  "issue_id": "ORCH-SMH-120",
+  "title": "SelectionMonitorLiveHelpers helper sink 收敛",
+  "mode": "exec",
+  "goal": "继续压缩 SelectionMonitorLiveHelpers 中残余的 workspace / toolbar manager 单例抓取，避免 live factory 清零掩盖 helper 层耦合。",
+  "scope": [
+    "Services/SelectionMonitorLiveHelpers.swift",
+    "Services/SelectionMonitorLiveDependencies.swift"
+  ],
+  "metric": "selection_monitor_helper_sink_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-SMH-120",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-SMH-120",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只压 SelectionMonitor helper sink，不回退 factory 抽取。"
+}

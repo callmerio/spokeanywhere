@@ -3,19 +3,12 @@ import Foundation
 
 @MainActor
 struct WorkflowExecutorLiveServices {
-    let settings: LLMSettings
-    let pipeline: LLMPipeline
-    let workflowConfigService: WorkflowConfigService
-    let pasteboard: NSPasteboard
-    let dateProvider: () -> Date
-    let localeProvider: () -> Locale
+    let serviceContainer: ServiceContainer
 
-    static let shared = WorkflowExecutorLiveServices(
-        settings: .shared,
-        pipeline: .shared,
-        workflowConfigService: .shared,
-        pasteboard: .general,
-        dateProvider: Date.init,
-        localeProvider: { .current }
-    )
+    static let shared = WorkflowExecutorLiveServices(serviceContainer: .shared)
+
+    var settings: LLMSettings { serviceContainer.llmSettings }
+    var pipeline: LLMPipeline { serviceContainer.llm as! LLMPipeline }
+    var workflowConfigService: WorkflowConfigService { serviceContainer.workflowConfigService }
+    var pasteboard: NSPasteboard { serviceContainer.pasteboard }
 }

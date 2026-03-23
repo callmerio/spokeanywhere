@@ -9,6 +9,7 @@ private enum SelectionActionLiveDefaults {
 extension SelectionActionServiceDependencies {
     static func makeLive() -> Self {
         let services = SelectionActionLiveServices.shared
+        let pasteboard = NSPasteboard.general
         return SelectionActionServiceDependencies(
             state: services.state,
             ttsService: services.ttsService,
@@ -20,7 +21,7 @@ extension SelectionActionServiceDependencies {
             llmSettings: services.llmSettings,
             notificationCenter: .default,
             copyText: { text in
-                copySelectionActionTextToPasteboard(text)
+                copySelectionActionTextToPasteboard(text, pasteboard: pasteboard)
             },
             scheduleToolbarHide: { [selectionToolbarManager = services.selectionToolbarManager] in
                 scheduleSelectionActionToolbarHide(

@@ -110,6 +110,16 @@ struct ServiceContainerDependencies {
     let makeAppSettings: () -> AppSettingsProtocol
     let makeHistoryManager: () -> HistoryManagerProtocol
     let makeQuickAsk: () -> QuickAskServiceProtocol
+    let makeWorkspace: () -> NSWorkspace
+    let makeWorkflowConfigService: () -> WorkflowConfigService
+    let makePasteboard: () -> NSPasteboard
+    let makeSelectionToolbarState: () -> SelectionToolbarState
+    let makeTTSService: () -> TTSService
+    let makeScreenOCR: () -> ScreenOCRService
+    let makeDictionaryAPI: () -> DictionaryAPIService
+    let makeSelectionToolbarManager: () -> SelectionToolbarManager
+    let makeAnswerPanelManager: () -> AnswerPanelManager
+    let makeLLMSettings: () -> LLMSettings
 }
 
 @MainActor
@@ -120,7 +130,17 @@ extension ServiceContainerDependencies {
         makeLLM: { LLMPipeline.shared },
         makeAppSettings: { AppSettings.shared },
         makeHistoryManager: { HistoryManager.shared },
-        makeQuickAsk: { QuickAskService.shared }
+        makeQuickAsk: { QuickAskService.shared },
+        makeWorkspace: { .shared },
+        makeWorkflowConfigService: { WorkflowConfigService.shared },
+        makePasteboard: { .general },
+        makeSelectionToolbarState: { SelectionToolbarState.shared },
+        makeTTSService: { TTSService.shared },
+        makeScreenOCR: { ScreenOCRService.shared },
+        makeDictionaryAPI: { DictionaryAPIService.shared },
+        makeSelectionToolbarManager: { SelectionToolbarManager.shared },
+        makeAnswerPanelManager: { AnswerPanelManager.shared },
+        makeLLMSettings: { LLMSettings.shared }
     )
 }
 
@@ -154,6 +174,16 @@ final class ServiceContainer: ObservableObject {
     private var _appSettings: AppSettingsProtocol?
     private var _historyManager: HistoryManagerProtocol?
     private var _quickAsk: QuickAskServiceProtocol?
+    private var _workspace: NSWorkspace?
+    private var _workflowConfigService: WorkflowConfigService?
+    private var _pasteboard: NSPasteboard?
+    private var _selectionToolbarState: SelectionToolbarState?
+    private var _ttsService: TTSService?
+    private var _screenOCR: ScreenOCRService?
+    private var _dictionaryAPI: DictionaryAPIService?
+    private var _selectionToolbarManager: SelectionToolbarManager?
+    private var _answerPanelManager: AnswerPanelManager?
+    private var _llmSettings: LLMSettings?
 
     // MARK: - Lazy Service Access
 
@@ -185,6 +215,46 @@ final class ServiceContainer: ObservableObject {
     /// Quick Ask 服务
     var quickAsk: QuickAskServiceProtocol {
         resolveService(storage: &_quickAsk, provider: dependencies.makeQuickAsk)
+    }
+
+    var workspace: NSWorkspace {
+        resolveService(storage: &_workspace, provider: dependencies.makeWorkspace)
+    }
+
+    var workflowConfigService: WorkflowConfigService {
+        resolveService(storage: &_workflowConfigService, provider: dependencies.makeWorkflowConfigService)
+    }
+
+    var pasteboard: NSPasteboard {
+        resolveService(storage: &_pasteboard, provider: dependencies.makePasteboard)
+    }
+
+    var selectionToolbarState: SelectionToolbarState {
+        resolveService(storage: &_selectionToolbarState, provider: dependencies.makeSelectionToolbarState)
+    }
+
+    var ttsService: TTSService {
+        resolveService(storage: &_ttsService, provider: dependencies.makeTTSService)
+    }
+
+    var screenOCR: ScreenOCRService {
+        resolveService(storage: &_screenOCR, provider: dependencies.makeScreenOCR)
+    }
+
+    var dictionaryAPI: DictionaryAPIService {
+        resolveService(storage: &_dictionaryAPI, provider: dependencies.makeDictionaryAPI)
+    }
+
+    var selectionToolbarManager: SelectionToolbarManager {
+        resolveService(storage: &_selectionToolbarManager, provider: dependencies.makeSelectionToolbarManager)
+    }
+
+    var answerPanelManager: AnswerPanelManager {
+        resolveService(storage: &_answerPanelManager, provider: dependencies.makeAnswerPanelManager)
+    }
+
+    var llmSettings: LLMSettings {
+        resolveService(storage: &_llmSettings, provider: dependencies.makeLLMSettings)
     }
 
     // MARK: - Test Injection
@@ -219,6 +289,46 @@ final class ServiceContainer: ObservableObject {
         _quickAsk = quickAsk
     }
 
+    func register(workspace: NSWorkspace) {
+        _workspace = workspace
+    }
+
+    func register(workflowConfigService: WorkflowConfigService) {
+        _workflowConfigService = workflowConfigService
+    }
+
+    func register(pasteboard: NSPasteboard) {
+        _pasteboard = pasteboard
+    }
+
+    func register(selectionToolbarState: SelectionToolbarState) {
+        _selectionToolbarState = selectionToolbarState
+    }
+
+    func register(ttsService: TTSService) {
+        _ttsService = ttsService
+    }
+
+    func register(screenOCR: ScreenOCRService) {
+        _screenOCR = screenOCR
+    }
+
+    func register(dictionaryAPI: DictionaryAPIService) {
+        _dictionaryAPI = dictionaryAPI
+    }
+
+    func register(selectionToolbarManager: SelectionToolbarManager) {
+        _selectionToolbarManager = selectionToolbarManager
+    }
+
+    func register(answerPanelManager: AnswerPanelManager) {
+        _answerPanelManager = answerPanelManager
+    }
+
+    func register(llmSettings: LLMSettings) {
+        _llmSettings = llmSettings
+    }
+
     /// 重置为默认服务
     func resetToDefaults() {
         _audioCapture = nil
@@ -227,6 +337,16 @@ final class ServiceContainer: ObservableObject {
         _appSettings = nil
         _historyManager = nil
         _quickAsk = nil
+        _workspace = nil
+        _workflowConfigService = nil
+        _pasteboard = nil
+        _selectionToolbarState = nil
+        _ttsService = nil
+        _screenOCR = nil
+        _dictionaryAPI = nil
+        _selectionToolbarManager = nil
+        _answerPanelManager = nil
+        _llmSettings = nil
     }
 
     // MARK: - Init

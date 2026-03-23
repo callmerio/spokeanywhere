@@ -3,30 +3,23 @@ import Foundation
 
 @MainActor
 struct SelectionActionLiveServices {
-    let state: SelectionToolbarState
-    let ttsService: TTSService
-    let screenOCR: ScreenOCRService
-    let llmPipeline: LLMPipeline
-    let dictionaryAPI: DictionaryAPIService
-    let selectionToolbarManager: SelectionToolbarManager
-    let answerPanelManager: AnswerPanelManager
-    let llmSettings: LLMSettings
+    let serviceContainer: ServiceContainer
 
-    static let shared = SelectionActionLiveServices(
-        state: .shared,
-        ttsService: .shared,
-        screenOCR: .shared,
-        llmPipeline: .shared,
-        dictionaryAPI: .shared,
-        selectionToolbarManager: .shared,
-        answerPanelManager: .shared,
-        llmSettings: .shared
-    )
+    static let shared = SelectionActionLiveServices(serviceContainer: .shared)
+
+    var state: SelectionToolbarState { serviceContainer.selectionToolbarState }
+    var ttsService: TTSService { serviceContainer.ttsService }
+    var screenOCR: ScreenOCRService { serviceContainer.screenOCR }
+    var llmPipeline: LLMPipeline { serviceContainer.llm as! LLMPipeline }
+    var dictionaryAPI: DictionaryAPIService { serviceContainer.dictionaryAPI }
+    var selectionToolbarManager: SelectionToolbarManager { serviceContainer.selectionToolbarManager }
+    var answerPanelManager: AnswerPanelManager { serviceContainer.answerPanelManager }
+    var llmSettings: LLMSettings { serviceContainer.llmSettings }
 }
 
 func copySelectionActionTextToPasteboard(
     _ text: String,
-    pasteboard: NSPasteboard = .general
+    pasteboard: NSPasteboard
 ) {
     pasteboard.clearContents()
     pasteboard.setString(text, forType: .string)
@@ -36,7 +29,7 @@ func scheduleSelectionActionToolbarHide(
     _ manager: SelectionToolbarManager,
     delay: TimeInterval
 ) {
-    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+    runSelectionToolbarAfterDelay(seconds: delay) {
         manager.hide()
     }
 }

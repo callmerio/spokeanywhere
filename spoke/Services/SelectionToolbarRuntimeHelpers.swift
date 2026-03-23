@@ -9,6 +9,16 @@ func runSelectionToolbarOnMain(
     }
 }
 
+func runSelectionToolbarAfterDelay(
+    seconds: Double,
+    _ operation: @escaping @MainActor () -> Void
+) {
+    Task { @MainActor in
+        try? await Task.sleep(for: .seconds(seconds))
+        operation()
+    }
+}
+
 func makeSelectionToolbarTimer(
     interval: TimeInterval,
     repeats: Bool = false,

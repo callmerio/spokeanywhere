@@ -435,6 +435,44 @@ def verify_doc_arch_110() -> dict[str, Any]:
     return bool_metric(checks, "architecture_doc_sync_gaps")
 
 
+def verify_orch_sah_120() -> dict[str, Any]:
+    path = ROOT / "Services" / "SelectionActionLiveHelpers.swift"
+    return hotspot_metric(
+        path,
+        "selection_action_helper_sink_hotspots",
+        {
+            "direct_service_shared_calls": r"\.shared\b",
+            "inline_async_after": r"DispatchQueue\.main\.asyncAfter",
+            "inline_general_pasteboard": r"\.general\b",
+        },
+    )
+
+
+def verify_orch_smh_120() -> dict[str, Any]:
+    path = ROOT / "Services" / "SelectionMonitorLiveHelpers.swift"
+    return hotspot_metric(
+        path,
+        "selection_monitor_helper_sink_hotspots",
+        {
+            "direct_service_shared_calls": r"\.shared\b",
+            "toolbar_manager_singleton_calls": r"SelectionToolbarManager\.shared",
+        },
+    )
+
+
+def verify_orch_wfh_120() -> dict[str, Any]:
+    path = ROOT / "Core" / "Workflow" / "WorkflowExecutorLiveHelpers.swift"
+    return hotspot_metric(
+        path,
+        "workflow_helper_sink_hotspots",
+        {
+            "direct_service_shared_calls": r"\.shared\b",
+            "inline_general_pasteboard": r"\.general\b",
+            "inline_current_locale": r"\.current\b",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -461,6 +499,9 @@ HANDLERS = {
     "ORCH-SM-110": verify_orch_sm_110,
     "ORCH-WF-110": verify_orch_wf_110,
     "DOC-ARCH-110": verify_doc_arch_110,
+    "ORCH-SAH-120": verify_orch_sah_120,
+    "ORCH-SMH-120": verify_orch_smh_120,
+    "ORCH-WFH-120": verify_orch_wfh_120,
 }
 
 

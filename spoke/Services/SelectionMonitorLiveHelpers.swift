@@ -2,14 +2,10 @@ import AppKit
 
 @MainActor
 struct SelectionMonitorLiveServices {
-    let workspace: NSWorkspace
+    let serviceContainer: ServiceContainer
 
-    static let shared = SelectionMonitorLiveServices(
-        workspace: .shared
-    )
-}
+    static let shared = SelectionMonitorLiveServices(serviceContainer: .shared)
 
-@MainActor
-func currentSelectionMonitorToolbarManager() -> SelectionToolbarManager {
-    SelectionToolbarManager.shared
+    var workspace: NSWorkspace { serviceContainer.workspace }
+    var selectionToolbarManager: SelectionToolbarManager { serviceContainer.selectionToolbarManager }
 }

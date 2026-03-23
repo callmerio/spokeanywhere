@@ -1,0 +1,23 @@
+{
+  "issue_id": "ORCH-SAH-120",
+  "title": "SelectionActionLiveHelpers helper sink 收敛",
+  "mode": "exec",
+  "goal": "继续压缩 SelectionActionLiveHelpers 中承接下沉的 `.shared`、pasteboard 与 toolbar hide 调度样板，避免 live factory 重构只做横向搬家。",
+  "scope": [
+    "Services/SelectionActionLiveHelpers.swift",
+    "Services/SelectionActionLiveDependencies.swift",
+    "Services/SelectionToolbarRuntimeHelpers.swift"
+  ],
+  "metric": "selection_action_helper_sink_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-SAH-120",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 8,
+  "run_tag": "ORCH-SAH-120",
+  "stop_condition": "metric 下降且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只压 SelectionAction helper sink 内部耦合，不改变 live wiring 语义。"
+}
