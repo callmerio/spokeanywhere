@@ -107,6 +107,7 @@ struct ServiceContainerDependencies {
     let makeAudioCapture: () -> AudioCaptureServiceProtocol
     let makeTranscription: () -> TranscriptionServiceProtocol
     let makeLLM: () -> LLMServiceProtocol
+    let makeLLMPipeline: () -> LLMPipeline
     let makeAppSettings: () -> AppSettingsProtocol
     let makeHistoryManager: () -> HistoryManagerProtocol
     let makeQuickAsk: () -> QuickAskServiceProtocol
@@ -128,6 +129,7 @@ extension ServiceContainerDependencies {
         makeAudioCapture: { AudioRecorderService.shared },
         makeTranscription: { TranscriptionManager.shared },
         makeLLM: { LLMPipeline.shared },
+        makeLLMPipeline: { LLMPipeline.shared },
         makeAppSettings: { AppSettings.shared },
         makeHistoryManager: { HistoryManager.shared },
         makeQuickAsk: { QuickAskService.shared },
@@ -171,6 +173,7 @@ final class ServiceContainer: ObservableObject {
     private var _audioCapture: AudioCaptureServiceProtocol?
     private var _transcription: TranscriptionServiceProtocol?
     private var _llm: LLMServiceProtocol?
+    private var _llmPipeline: LLMPipeline?
     private var _appSettings: AppSettingsProtocol?
     private var _historyManager: HistoryManagerProtocol?
     private var _quickAsk: QuickAskServiceProtocol?
@@ -200,6 +203,10 @@ final class ServiceContainer: ObservableObject {
     /// LLM 服务
     var llm: LLMServiceProtocol {
         resolveService(storage: &_llm, provider: dependencies.makeLLM)
+    }
+
+    var llmPipeline: LLMPipeline {
+        resolveService(storage: &_llmPipeline, provider: dependencies.makeLLMPipeline)
     }
 
     /// 应用设置服务
@@ -274,6 +281,10 @@ final class ServiceContainer: ObservableObject {
         _llm = llm
     }
 
+    func register(llmPipeline: LLMPipeline) {
+        _llmPipeline = llmPipeline
+    }
+
     /// 注册自定义应用设置服务（用于测试）
     func register(appSettings: AppSettingsProtocol) {
         _appSettings = appSettings
@@ -334,6 +345,7 @@ final class ServiceContainer: ObservableObject {
         _audioCapture = nil
         _transcription = nil
         _llm = nil
+        _llmPipeline = nil
         _appSettings = nil
         _historyManager = nil
         _quickAsk = nil
@@ -391,6 +403,11 @@ extension View {
     func withServiceContainer(_ container: ServiceContainer) -> some View {
         environment(\.services, container)
     }
+}
+
+@MainActor
+func currentServiceContainer() -> ServiceContainer {
+    ServiceContainer.shared
 }
 
 // MARK: - Protocol Conformance

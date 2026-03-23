@@ -10,7 +10,7 @@ struct SelectionActionLiveServices {
     var state: SelectionToolbarState { serviceContainer.selectionToolbarState }
     var ttsService: TTSService { serviceContainer.ttsService }
     var screenOCR: ScreenOCRService { serviceContainer.screenOCR }
-    var llmPipeline: LLMPipeline { serviceContainer.llm as! LLMPipeline }
+    var llmPipeline: LLMPipeline { serviceContainer.llmPipeline }
     var dictionaryAPI: DictionaryAPIService { serviceContainer.dictionaryAPI }
     var selectionToolbarManager: SelectionToolbarManager { serviceContainer.selectionToolbarManager }
     var answerPanelManager: AnswerPanelManager { serviceContainer.answerPanelManager }
