@@ -1,0 +1,30 @@
+{
+  "issue_id": "UI-PREVIEW-180",
+  "title": "高频 UI preview/shared 入口整簇收敛",
+  "mode": "exec",
+  "goal": "把 MessagePanelView、LiveCaptionView、QuickAskCapsuleView 的 preview/shared 直连与默认 NotificationCenter 订阅从视图本体中拔掉，统一改为 preview factory 或显式依赖。",
+  "scope": [
+    "UI/MessagePanel/MessagePanelView.swift",
+    "UI/LiveCaption/LiveCaptionView.swift",
+    "UI/HUD/QuickAskCapsuleView.swift",
+    "Core/History/SessionHistoryService.swift",
+    "Core/LiveCaption/LiveCaptionManager.swift",
+    "Core/Translation/TranslationService.swift",
+    "Core/Workflow/WorkflowState.swift",
+    "Core/Attachment/AttachmentManager.swift",
+    "UI/Components/AddToDictionaryHandler.swift"
+  ],
+  "metric": "ui_preview_shared_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue UI-PREVIEW-180",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests/testLiveCaptionAccessibilityIdentifierSmoke"
+  ],
+  "iterations": 4,
+  "run_tag": "UI-PREVIEW-180",
+  "stop_condition": "三处高频 UI 视图不再直接访问 `.shared` 或 `NotificationCenter.default` 且全量门禁通过，或连续 3 次 discard 后 pivot",
+  "notes": "这是 UI 层边界收口，不改变生产行为；preview factory 可以继续依赖底层共享服务，但视图本体不再直接抓单例。"
+}

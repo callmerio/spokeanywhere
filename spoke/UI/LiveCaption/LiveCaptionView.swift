@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import os
 import SwiftUI
 @preconcurrency import Translation
@@ -22,6 +23,7 @@ struct LiveCaptionViewDependencies {
     let showSelectionToolbar: (SelectionContext, CGPoint) -> Void
     let showDictionaryResult: (DictionaryData, String, SelectionContext, CGPoint) async -> Void
     let showDictionaryError: (String, SelectionContext, CGPoint) async -> Void
+    let notificationCenter: NotificationCenter
 }
 
 @MainActor
@@ -50,7 +52,8 @@ extension LiveCaptionViewDependencies {
                 selectionToolbarState.showDictionaryError(.notFound, word: word)
                 try? await Task.sleep(for: .milliseconds(16))
                 selectionToolbarManager.show(at: point)
-            }
+            },
+            notificationCenter: .default
         )
     }
 
@@ -59,7 +62,8 @@ extension LiveCaptionViewDependencies {
         markVocabulary: { $0 },
         showSelectionToolbar: { _, _ in },
         showDictionaryResult: { _, _, _, _ in },
-        showDictionaryError: { _, _, _ in }
+        showDictionaryError: { _, _, _ in },
+        notificationCenter: NotificationCenter()
     )
 }
 
@@ -193,11 +197,11 @@ struct LiveCaptionView: View {
                 setupTranslation()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .vocabularyChanged)) { _ in
+        .onReceive(dependencies.notificationCenter.publisher(for: .vocabularyChanged)) { _ in
             // 生词列表变化时触发全量刷新（包括之前的内容）
             vocabularyRefreshTrigger += 1
         }
-        .onReceive(NotificationCenter.default.publisher(for: .translationUpdated)) { _ in
+        .onReceive(dependencies.notificationCenter.publisher(for: .translationUpdated)) { _ in
             // 翻译完成后强制触发滚动（解决放久了错位问题）
             // 🔥 关键修复：延迟触发滚动，等待 UI 布局完成
             // 当"一口气输出太多"时，布局更新是异步的，立即滚动会基于旧高度计算
@@ -788,9 +792,9 @@ struct TranslationTaskModifier15: ViewModifier {
         VStack {
             Spacer()
             LiveCaptionView(
-                manager: LiveCaptionManager.shared,
+                manager: LiveCaptionManager.makePreview(),
                 onClose: {},
-                translator: .shared,
+                translator: .makePreview(),
                 dependencies: .preview
             )
             .padding(.bottom, 60)

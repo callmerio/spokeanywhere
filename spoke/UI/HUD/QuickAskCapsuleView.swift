@@ -409,13 +409,15 @@ struct QuickAskCapsuleView: View {
 // MARK: - Preview
 
 #Preview {
-    let state = QuickAskState(attachmentManager: .shared)
+    let attachmentManager = AttachmentManager.makePreview()
+    let workflowState = WorkflowState.makePreview()
+    let state = QuickAskState(attachmentManager: attachmentManager)
     state.phase = .recording
     
     return QuickAskCapsuleView(
         state: state,
-        workflowState: .shared,
-        attachmentManager: .shared,
+        workflowState: workflowState,
+        attachmentManager: attachmentManager,
         dependencies: QuickAskCapsuleViewDependencies(
             clipboardText: { NSPasteboard.general.string(forType: .string) },
             hideHUD: { _ in },

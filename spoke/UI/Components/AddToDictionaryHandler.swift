@@ -18,6 +18,12 @@ extension AddToDictionaryHandlerDependencies {
         dictionaryService: .shared,
         messagePanelState: .shared
     )
+
+    static let preview = AddToDictionaryHandlerDependencies(
+        notificationCenter: NotificationCenter(),
+        dictionaryService: .shared,
+        messagePanelState: .shared
+    )
 }
 
 @MainActor
@@ -53,6 +59,10 @@ final class AddToDictionaryHandler: ObservableObject {
     ) {
         self.dependencies = dependencies
         setupObserver()
+    }
+
+    static func makePreview() -> AddToDictionaryHandler {
+        AddToDictionaryHandler(dependencies: .preview)
     }
     
     private func setupObserver() {

@@ -57,6 +57,10 @@ final class AttachmentManager: ObservableObject {
     // MARK: - Init
     
     private init() {}
+
+    static func makePreview() -> AttachmentManager {
+        AttachmentManager()
+    }
     
     // MARK: - Drop Handling
     

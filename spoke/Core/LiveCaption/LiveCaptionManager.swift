@@ -43,6 +43,18 @@ struct LiveCaptionManagerDependencies {
     let postTranslationUpdate: () -> Void
 }
 
+@MainActor
+extension LiveCaptionManagerDependencies {
+    static let preview = LiveCaptionManagerDependencies(
+        translator: .makePreview(),
+        appCaptureService: .shared,
+        systemCaptureService: .shared,
+        transcriptionModelManager: .shared,
+        dictionaryService: .shared,
+        postTranslationUpdate: {}
+    )
+}
+
 /// 实时字幕管理器
 /// 整合音频捕获、转录、翻译
 /// 使用 SpeechAnalyzerProvider (macOS 26+) 获得最佳识别效果
@@ -187,6 +199,10 @@ final class LiveCaptionManager: ObservableObject {
     ) {
         self.dependencies = dependencies
         loadSegments()
+    }
+
+    static func makePreview() -> LiveCaptionManager {
+        LiveCaptionManager(dependencies: .preview)
     }
     
     // MARK: - Public API

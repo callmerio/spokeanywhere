@@ -35,6 +35,10 @@ final class MessagePanelHoverState: ObservableObject {
     private init() {
         setupKeyboardMonitor()
     }
+
+    static func makePreview() -> MessagePanelHoverState {
+        MessagePanelHoverState()
+    }
     
     deinit {
         if let monitor = localMonitor {
@@ -439,18 +443,19 @@ struct MessagePanelView: View {
 
 #Preview {
     let state = MessagePanelState()
+    let historyService = SessionHistoryService.makePreview()
+    let dictionaryHandler = AddToDictionaryHandler.makePreview()
+    let hoverState = MessagePanelHoverState.makePreview()
     let previewDependencies = MessagePanelViewDependencies(
         restoreConversation: { _ in }
     )
     let previewCardDependencies = MessageCardViewDependencies(
-        hoverState: .shared,
-        resolveTags: { TagLibrary.shared.tags(for: $0) },
+        hoverState: hoverState,
+        resolveTags: { _ in [] },
         setRecordType: { state.setRecordType($0, type: $1) },
         pasteImageFromClipboard: { state.pasteImageFromClipboard(to: $0) },
         addAttachment: { image, id in state.addAttachment(image, to: id) },
-        generateSummary: { id, regenerate in
-            Task { await SummaryService.shared.generateSummary(for: id, regenerate: regenerate) }
-        }
+        generateSummary: { _, _ in }
     )
     
     // 添加测试数据
@@ -471,9 +476,9 @@ struct MessagePanelView: View {
     
     return MessagePanelView(
         state: state,
-        historyService: .shared,
-        dictionaryHandler: .shared,
-        hoverState: .shared,
+        historyService: historyService,
+        dictionaryHandler: dictionaryHandler,
+        hoverState: hoverState,
         hidePanel: {},
         startQuickAsk: {},
         dependencies: previewDependencies,

@@ -60,6 +60,10 @@ final class TranslationService: ObservableObject {
     // MARK: - Init
     
     private init() {}
+
+    static func makePreview() -> TranslationService {
+        TranslationService()
+    }
     
     // MARK: - Public API
     

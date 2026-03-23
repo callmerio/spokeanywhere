@@ -625,6 +625,22 @@ def verify_doc_arch_170() -> dict[str, Any]:
     return bool_metric(checks, "architecture_round17_sync_gaps")
 
 
+def verify_ui_preview_180() -> dict[str, Any]:
+    paths = [
+        ROOT / "UI" / "MessagePanel" / "MessagePanelView.swift",
+        ROOT / "UI" / "LiveCaption" / "LiveCaptionView.swift",
+        ROOT / "UI" / "HUD" / "QuickAskCapsuleView.swift",
+    ]
+    return hotspot_metric_paths(
+        paths,
+        "ui_preview_shared_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+            "default_notification_center_calls": r"NotificationCenter\.default",
+        },
+    )
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -690,6 +706,7 @@ HANDLERS = {
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,
     "DOC-ARCH-170": verify_doc_arch_170,
+    "UI-PREVIEW-180": verify_ui_preview_180,
 }
 
 

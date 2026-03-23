@@ -157,6 +157,13 @@ final class SessionHistoryService: ObservableObject {
         loadRecords()
         updateGroupedRecords()  // didSet 在 init 期间不触发，需手动调用
     }
+
+    static func makePreview(records: [SessionRecord] = []) -> SessionHistoryService {
+        let service = SessionHistoryService()
+        service.records = records
+        service.updateGroupedRecords()
+        return service
+    }
     
     // MARK: - Public API
     

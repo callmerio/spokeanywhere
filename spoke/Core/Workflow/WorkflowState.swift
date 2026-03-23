@@ -37,6 +37,10 @@ final class WorkflowState {
     private let configService = WorkflowConfigService.shared
     
     private init() {}
+
+    static func makePreview() -> WorkflowState {
+        WorkflowState()
+    }
     
     // MARK: - Actions
     
