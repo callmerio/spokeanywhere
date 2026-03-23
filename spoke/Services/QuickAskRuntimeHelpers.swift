@@ -33,6 +33,32 @@ func runQuickAskHUDManagerAfterDelay(
     }
 }
 
+func runQuickAskServiceAfterDelay(
+    _ service: QuickAskService?,
+    seconds: Double,
+    _ action: @escaping @MainActor (QuickAskService) -> Void
+) {
+    Task { @MainActor in
+        try? await Task.sleep(for: .seconds(seconds))
+        guard let service else { return }
+        action(service)
+    }
+}
+
+func makeQuickAskTimer(
+    interval: TimeInterval,
+    repeats: Bool = false,
+    owner: QuickAskService,
+    action: @escaping @MainActor (QuickAskService) -> Void
+) -> Timer {
+    Timer.scheduledTimer(withTimeInterval: interval, repeats: repeats) { [weak owner] _ in
+        Task { @MainActor in
+            guard let owner else { return }
+            action(owner)
+        }
+    }
+}
+
 @MainActor
 func triggerQuickAskOpenSettings() {
     _ = NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil)

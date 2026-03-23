@@ -1,0 +1,22 @@
+{
+  "issue_id": "ORCH-SAS-150",
+  "title": "SelectionActionService 尾部 runtime 样板收敛",
+  "mode": "exec",
+  "goal": "清除 SelectionActionService 中最后残留的 raw Task / Timer / asyncAfter 运行时样板，保持通知桥接统一走 runtime helper。",
+  "scope": [
+    "Services/SelectionActionService.swift",
+    "Services/SelectionActionRuntimeHelpers.swift"
+  ],
+  "metric": "selection_action_runtime_tail_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ORCH-SAS-150",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "ORCH-SAS-150",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收 SelectionActionService 尾部运行时样板，不改变行为。"
+}

@@ -533,6 +533,32 @@ def verify_doc_state_140() -> dict[str, Any]:
     return bool_metric(checks, "current_state_doc_gaps")
 
 
+def verify_orch_qas_150() -> dict[str, Any]:
+    path = ROOT / "Services" / "QuickAskService.swift"
+    return hotspot_metric(
+        path,
+        "quickask_runtime_tail_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+            "raw_timer_calls": r"Timer\.scheduledTimer",
+            "raw_async_after": r"DispatchQueue\.main\.asyncAfter",
+        },
+    )
+
+
+def verify_orch_sas_150() -> dict[str, Any]:
+    path = ROOT / "Services" / "SelectionActionService.swift"
+    return hotspot_metric(
+        path,
+        "selection_action_runtime_tail_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+            "raw_timer_calls": r"Timer\.scheduledTimer",
+            "raw_async_after": r"DispatchQueue\.main\.asyncAfter",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -566,6 +592,8 @@ HANDLERS = {
     "ORCH-RCL-130": verify_orch_rcl_130,
     "ORCH-STH-140": verify_orch_sth_140,
     "DOC-STATE-140": verify_doc_state_140,
+    "ORCH-QAS-150": verify_orch_qas_150,
+    "ORCH-SAS-150": verify_orch_sas_150,
 }
 
 

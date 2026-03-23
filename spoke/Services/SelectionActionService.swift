@@ -61,8 +61,8 @@ final class SelectionActionService {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor [weak self] in
-                await self?.handleActionRequest(notification)
+            runSelectionActionServiceOnMain(self) { service in
+                await service.handleActionRequest(notification)
             }
         }
     }

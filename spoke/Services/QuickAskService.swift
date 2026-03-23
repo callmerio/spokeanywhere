@@ -175,14 +175,13 @@ final class QuickAskService {
         startRecordingTimer()
         
         // 🔥 延迟启动录音，避免阻塞主线程导致输入法通信失败
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.recordingStartDelay) { [weak self] in
-            guard let self = self else { return }
+        runQuickAskServiceAfterDelay(self, seconds: Constants.recordingStartDelay) { service in
             do {
-                try self.startQuickAskRecording()
-                self.logger.info("🎙️ Quick Ask session started")
+                try service.startQuickAskRecording()
+                service.logger.info("🎙️ Quick Ask session started")
             } catch {
-                self.logger.error("❌ Failed to start Quick Ask recording: \(error)")
-                self.dependencies.hudManager.fail(with: "录音启动失败")
+                service.logger.error("❌ Failed to start Quick Ask recording: \(error)")
+                service.dependencies.hudManager.fail(with: "录音启动失败")
             }
         }
     }
@@ -370,11 +369,8 @@ final class QuickAskService {
     }
 
     private func startRecordingTimer() {
-        let updateDuration = makeAction { service in
+        recordingTimer = makeQuickAskTimer(interval: 0.1, repeats: true, owner: self) { service in
             service.updateRecordingDuration()
-        }
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            updateDuration()
         }
     }
 
