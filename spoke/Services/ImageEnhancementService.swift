@@ -3,6 +3,12 @@ import CoreImage
 import CoreML
 import os
 import Vision
+
+@MainActor
+struct ImageEnhancementServiceDependencies {
+    let upscalingMode: () -> UpscalingMode
+    let compiledModelURL: () -> URL?
+}
 // MARK: - Image Enhancement Service
 
 /// 图片增强服务
@@ -10,9 +16,10 @@ import Vision
 @MainActor
 final class ImageEnhancementService {
     
-    @MainActor static let shared = ImageEnhancementService()
+    @MainActor static let shared = ImageEnhancementService(dependencies: .live)
     private let context = CIContext()
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ImageEnhancementService")
+    private let dependencies: ImageEnhancementServiceDependencies
     /// P0 应急开关：先禁用 AI 放大，避免主线程长时间阻塞导致系统卡顿
     private let aiUpscalingEmergencyDisabled = true
     
@@ -20,14 +27,16 @@ final class ImageEnhancementService {
     private var loadedVNCoreMLModel: VNCoreMLModel?
     private var loadedMLModel: MLModel?
 
-    private init() {}
+    private init(dependencies: ImageEnhancementServiceDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
     /// 增强图片（同步版本）
     /// 根据 ScreenshotSettings 决定使用 AI 或 Basic 模式
     func enhance(_ image: NSImage, to targetSize: NSSize, sharpness: CGFloat = 0.6) -> NSImage? {
-        let mode = ScreenshotSettings.shared.upscalingMode
+        let mode = dependencies.upscalingMode()
         
         switch mode {
         case .none:
@@ -46,7 +55,7 @@ final class ImageEnhancementService {
     /// 增强图片（异步版本 - 推荐）
     /// 根据 ScreenshotSettings 决定使用 AI 或 Basic 模式
     func enhanceAsync(_ image: NSImage, to targetSize: NSSize, sharpness: CGFloat = 0.6) async -> NSImage? {
-        let mode = ScreenshotSettings.shared.upscalingMode
+        let mode = dependencies.upscalingMode()
         
         switch mode {
         case .none:
@@ -142,7 +151,7 @@ final class ImageEnhancementService {
         if aiUpscalingEmergencyDisabled {
             return nil
         }
-        guard let modelURL = ImageUpscalerModelManager.shared.getCompiledModelURL() else {
+        guard let modelURL = dependencies.compiledModelURL() else {
             logger.warning("AI model not compiled or ready")
             return nil
         }
