@@ -4,13 +4,31 @@ private typealias DS = DesignTokens
 
 // MARK: - TTS Settings
 
+@MainActor
+struct TTSSettingsContentDependencies {
+    let settings: TTSSettings
+    let ttsService: TTSService
+}
+
 struct TTSSettingsContent: View {
-    @ObservedObject private var settings = TTSSettings.shared
-    @ObservedObject private var ttsService = TTSService.shared
+    @ObservedObject private var settings: TTSSettings
+    @ObservedObject private var ttsService: TTSService
     @State private var isTesting = false
     @State private var testText = "你好，这是语音合成测试。Hello, this is a TTS test."
     @State private var testStartTime: Date?
     @State private var latencyMs: Int?
+
+    init(
+        dependencies: TTSSettingsContentDependencies
+    ) {
+        self.settings = dependencies.settings
+        self.ttsService = dependencies.ttsService
+    }
+
+    @MainActor
+    init() {
+        self.init(dependencies: .live)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -328,13 +346,13 @@ struct TTSSettingsContent: View {
     
     func testTTS() {
         if isTesting {
-            TTSService.shared.stop()
+            ttsService.stop()
             isTesting = false
             testStartTime = nil
         } else {
             isTesting = true
             testStartTime = Date()  // 记录开始时间
-            TTSService.shared.speak(testText)
+            ttsService.speak(testText)
         }
     }
 }
