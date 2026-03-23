@@ -4,8 +4,22 @@ private typealias DS = DesignTokens
 
 // MARK: - AI Settings (Screenium 风格单列布局)
 
+@MainActor
+struct AISettingsContentDependencies {
+    let llmSettings: LLMSettings
+    let appSettings: AppSettings
+    let runConnectionTest: AISettingsConnectionTestRunner
+}
+
+enum AISettingsConnectionTestResult {
+    case success
+    case failure(String)
+}
+
 struct AISettingsContent: View {
-    @State private var llmSettings = LLMSettings.shared
+    typealias TestResult = AISettingsConnectionTestResult
+
+    @State private var llmSettings: LLMSettings
     @State private var showingAPIKeyInput = false
     @State private var apiKeyInput = ""
     @State private var expandedProfileId: UUID?
@@ -15,11 +29,22 @@ struct AISettingsContent: View {
     @State private var showDeleteConfirm = false
     @State private var profileToDelete: UUID?
     @State private var modelRefreshTrigger = UUID() // 用于触发模型列表刷新
-    @ObservedObject var appSettings = AppSettings.shared
-    
-    enum TestResult {
-        case success
-        case failure(String)
+    @ObservedObject private var appSettings: AppSettings
+
+    private let runConnectionTest: AISettingsConnectionTestRunner
+
+    @MainActor
+    init(
+        dependencies: AISettingsContentDependencies
+    ) {
+        self._llmSettings = State(initialValue: dependencies.llmSettings)
+        self.appSettings = dependencies.appSettings
+        self.runConnectionTest = dependencies.runConnectionTest
+    }
+
+    @MainActor
+    init() {
+        self.init(dependencies: .live)
     }
     
     var body: some View {
@@ -199,32 +224,9 @@ struct AISettingsContent: View {
     }
     
     private func testConnection(for profile: ProviderProfile) {
-        guard let provider = llmSettings.createProvider(for: profile) else {
-            testResult = .failure("未配置")
-            return
-        }
-        
-        isTesting = true
-        testResult = nil
-        
-        Task {
-            do {
-                let success = try await provider.testConnection()
-                await MainActor.run {
-                    isTesting = false
-                    testResult = success ? .success : .failure("连接失败")
-                }
-            } catch let error as LLMError {
-                await MainActor.run {
-                    isTesting = false
-                    testResult = .failure(error.localizedDescription)
-                }
-            } catch {
-                await MainActor.run {
-                    isTesting = false
-                    testResult = .failure("未知错误: \(error.localizedDescription)")
-                }
-            }
+        runConnectionTest(profile, llmSettings) { isTesting, result in
+            self.isTesting = isTesting
+            self.testResult = result
         }
     }
 }
