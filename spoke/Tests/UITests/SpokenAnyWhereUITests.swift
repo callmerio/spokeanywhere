@@ -50,12 +50,23 @@ final class SpokenAnyWhereUITests: XCTestCase {
 
     private func resolvedAppURL() throws -> URL {
         let env = ProcessInfo.processInfo.environment
-        let path = env["APP_BUNDLE_PATH"] ?? ".build/bundler/SpokenAnyWhere.app"
-        let url = URL(fileURLWithPath: path)
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw XCTSkip("未找到可启动的 app bundle: \(url.path)")
+        let fileManager = FileManager.default
+
+        let candidates: [String] = [
+            env["APP_BUNDLE_PATH"],
+            NSString(string: "~/Applications/SpokenAnyWhere Dev.app").expandingTildeInPath,
+            ".build/bundler/SpokenAnyWhere.app"
+        ]
+        .compactMap { $0 }
+
+        for path in candidates {
+            let url = URL(fileURLWithPath: path)
+            if fileManager.fileExists(atPath: url.path) {
+                return url
+            }
         }
-        return url
+
+        throw XCTSkip("未找到可启动的 app bundle: \(candidates.joined(separator: ", "))")
     }
 
     private func launchApp(at url: URL) throws {
