@@ -15,27 +15,20 @@ final class ScreenshotHandler: HotKeyHandler {
     var onTrigger: (() -> Void)?
 
     init() {
-        let settings = AppSettings.shared
-        self.binding = HotKeyBinding(
-            keyCode: UInt32(settings.screenshotKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.screenshotModifiers))
-        )
+        self.binding = makeScreenshotHandlerBinding()
     }
 
     func handleKeyDown() -> Bool {
-        DispatchQueue.main.async { [weak self] in
-            self?.onTrigger?()
+        runHotKeyHandlerOnMain(self) { handler in
+            handler.onTrigger?()
         }
         logger.info("Screenshot triggered")
         return true
     }
 
     func reloadBinding() {
-        let settings = AppSettings.shared
-        binding = HotKeyBinding(
-            keyCode: UInt32(settings.screenshotKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.screenshotModifiers))
-        )
+        let settings = screenshotHandlerSettings()
+        binding = makeScreenshotHandlerBinding()
         logger.info("Screenshot shortcut reloaded: \(settings.screenshotShortcutDisplayString)")
     }
 }
@@ -53,27 +46,20 @@ final class MessagePanelHandler: HotKeyHandler {
     var onToggle: (() -> Void)?
 
     init() {
-        let settings = AppSettings.shared
-        self.binding = HotKeyBinding(
-            keyCode: UInt32(settings.messagePanelKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
-        )
+        self.binding = makeMessagePanelHandlerBinding()
     }
 
     func handleKeyDown() -> Bool {
-        DispatchQueue.main.async { [weak self] in
-            self?.onToggle?()
+        runHotKeyHandlerOnMain(self) { handler in
+            handler.onToggle?()
         }
         logger.info("Message Panel toggle triggered")
         return true
     }
 
     func reloadBinding() {
-        let settings = AppSettings.shared
-        binding = HotKeyBinding(
-            keyCode: UInt32(settings.messagePanelKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.messagePanelModifiers))
-        )
+        let settings = messagePanelHandlerSettings()
+        binding = makeMessagePanelHandlerBinding()
         logger.info("Message Panel shortcut reloaded: \(settings.messagePanelShortcutDisplayString)")
     }
 }
@@ -99,8 +85,8 @@ final class ClipboardPipelineHandler: HotKeyHandler {
     }
 
     func handleKeyDown() -> Bool {
-        DispatchQueue.main.async { [weak self] in
-            self?.onTrigger?()
+        runHotKeyHandlerOnMain(self) { handler in
+            handler.onTrigger?()
         }
         logger.info("Clipboard Pipeline triggered")
         return true
