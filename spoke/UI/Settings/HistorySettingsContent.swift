@@ -13,19 +13,6 @@ struct HistorySettingsDependencies {
     let copyText: (String) -> Void
 }
 
-@MainActor
-extension HistorySettingsDependencies {
-    static let live = HistorySettingsDependencies(
-        historyManager: .shared,
-        llmSettings: .shared,
-        audioPlayer: .shared,
-        copyText: { text in
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
-        }
-    )
-}
-
 // MARK: - History Settings
 
 struct HistorySettingsContent: View {
@@ -297,18 +284,16 @@ struct ReprocessSheet: View {
         errorMessage = nil
         resultText = nil
         
-        Task {
+        runHistorySettingsAsync {
             let prompt = customPrompt.isEmpty ? nil : customPrompt
             let result = await dependencies.historyManager.reprocess(item, with: prompt ?? dependencies.llmSettings.systemPrompt)
             
-            await MainActor.run {
-                isProcessing = false
-                switch result {
-                case .success(let text):
-                    resultText = text
-                case .failure(let error):
-                    errorMessage = error.localizedDescription
-                }
+            isProcessing = false
+            switch result {
+            case .success(let text):
+                resultText = text
+            case .failure(let error):
+                errorMessage = error.localizedDescription
             }
         }
     }
@@ -342,7 +327,7 @@ struct HistoryItemRow: View {
     /// 当前是否正在播放此条目的音频
     private var isPlayingThis: Bool {
         guard let audioPath = item.audioPath else { return false }
-        let url = HistoryManager.shared.audioStorageURL.appendingPathComponent(audioPath)
+        let url = dependencies.historyManager.audioStorageURL.appendingPathComponent(audioPath)
         return audioPlayer.isPlaying(url: url)
     }
     
@@ -464,7 +449,7 @@ struct HistoryItemRow: View {
             showCopied = true
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        scheduleHistorySettingsMain(after: 1.5) {
             withAnimation {
                 showCopied = false
             }
@@ -494,20 +479,18 @@ struct HistoryItemRow: View {
     private func reprocess() {
         isReprocessing = true
         
-        Task {
+        runHistorySettingsAsync {
             // 使用当前系统 Prompt 重处理
             let result = await dependencies.historyManager.reprocess(item, with: dependencies.llmSettings.systemPrompt)
             
-            await MainActor.run {
-                isReprocessing = false
-                
-                switch result {
-                case .success:
-                    // 成功后 item.processedText 已更新，SwiftData 会自动刷新 UI
-                    break
-                case .failure(let error):
-                    print("❌ 重处理失败: \(error.localizedDescription)")
-                }
+            isReprocessing = false
+
+            switch result {
+            case .success:
+                // 成功后 item.processedText 已更新，SwiftData 会自动刷新 UI
+                break
+            case .failure(let error):
+                print("❌ 重处理失败: \(error.localizedDescription)")
             }
         }
     }
