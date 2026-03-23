@@ -119,7 +119,7 @@ UI
 ### 5.2 主要约束
 
 - 仍以单例为主，初始化顺序较隐式
-- UI 层存在大量 `*.shared` 直接依赖
+- 高风险 orchestrator 与 live factory 已完成多轮收敛，但 UI 层仍存在 `*.shared` 直接依赖
 - `NotificationCenter`、直接调用、`ServiceContainer` 三条依赖通道并存
 - 文档需要持续校准，避免与代码现实脱节
 
@@ -128,6 +128,7 @@ UI
 - `Services/RecordingTranscriptionDecision.swift` 已把录音转写后的 clipboard / HUD / processedText 决策从 `RecordingController` 中抽离。
 - `App/AppLifecyclePlan.swift` 已把启动/关闭步骤顺序提炼为显式 plan spec，并由 `AppDelegate` 映射到实际 side effect。
 - `Core/Workflow/WorkflowProfileResolver.swift` 已将 Workflow 的 profile fallback 选择从 `WorkflowExecutor` 中抽离，并新增表征测试。
+- `QuickAskLiveDependencies.swift` 与 `RecordingControllerLiveDependencies.swift` 已收敛到容器化 live wiring，当前不再直接依赖成组 `*.shared`。
 
 ### 5.3 当前判断
 

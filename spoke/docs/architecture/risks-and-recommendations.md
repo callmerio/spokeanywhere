@@ -85,6 +85,7 @@ bash Tests/run-concurrency-check.sh
 - `QuickAskService` 已抽出 `QuickAskPromptAssembler`，减少 prompt 组装与运行时编排耦合。
 - `SelectionMonitorService` 已抽出 live/runtime helper，减少 debounce / AX bridge 的主文件噪音。
 - `WorkflowExecutor` 已抽出 `WorkflowProfileResolver` 并新增表征测试，profile fallback 不再直接写在 executor 主体里。
+- `QuickAskLiveDependencies` 与 `RecordingControllerLiveDependencies` 已完成一轮 live factory 收敛，当前主文件不再保留成组 `*.shared` / `NSApp.sendAction` 内联样板。
 
 **影响**:
 

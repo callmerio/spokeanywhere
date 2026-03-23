@@ -169,6 +169,7 @@ bash Tests/run-concurrency-check.sh
 
 - `SelectionMonitorService` 已拆出 `SelectionMonitorLiveDependencies` 与 `SelectionMonitorRuntimeHelpers`，将 debounce / AX bridge / live wiring 从主文件热路径中分离。
 - `WorkflowExecutor` 已拆出 `WorkflowExecutorLiveDependencies` 与 `WorkflowProfileResolver`，并新增 `WorkflowProfileResolverTests` 作为 profile fallback 的表征测试。
+- `QuickAskLiveDependencies` 与 `RecordingControllerLiveDependencies` 已完成 live factory 收敛，主文件不再保留成组 `*.shared` 与 responder-chain 内联样板。
 - 若按最新测试口径计，当前本地基线已提升到 `150 tests / 30 suites`。
 
 ---
