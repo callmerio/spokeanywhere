@@ -96,20 +96,6 @@ struct MessagePanelStateDependencies {
     let generateSummary: @Sendable (UUID) async -> Void
 }
 
-@MainActor
-extension MessagePanelStateDependencies {
-    static let live = MessagePanelStateDependencies(
-        tagLibrary: .shared,
-        attachmentStorage: .shared,
-        attachmentImageCache: .shared,
-        notificationCenter: .default,
-        llmSettings: .shared,
-        generateSummary: { @Sendable cardId in
-            await runMessagePanelSummary(cardId: cardId)
-        }
-    )
-}
-
 private enum MessagePanelCardMaintenance {
     static func persistableCards(from cards: IdentifiedArrayOf<MessageCard>) -> [MessageCard] {
         cards.filter { card in
@@ -140,10 +126,7 @@ struct SourceAppInfo: Codable, Equatable {
     
     /// 运行时从 bundleId 获取应用图标（不持久化）
     var icon: NSImage? {
-        guard let appURL = NSWorkspace.shared.urlForApplication(
-            withBundleIdentifier: bundleId
-        ) else { return nil }
-        return NSWorkspace.shared.icon(forFile: appURL.path)
+        messagePanelSourceAppIcon(bundleId: bundleId)
     }
     
     /// 从 NSRunningApplication 创建
@@ -156,7 +139,7 @@ struct SourceAppInfo: Codable, Equatable {
     
     /// 从当前聚焦应用创建
     static func fromFrontmost() -> SourceAppInfo? {
-        guard let app = NSWorkspace.shared.frontmostApplication,
+        guard let app = messagePanelFrontmostApplication(),
               app.bundleIdentifier != Bundle.main.bundleIdentifier else {
             return nil
         }
