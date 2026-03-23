@@ -1,0 +1,23 @@
+{
+  "issue_id": "UI-LIVECAP-190",
+  "title": "LiveCaption 生产路径 runtime tail 收敛",
+  "mode": "exec",
+  "goal": "收敛 LiveCaptionView 生产路径中的延时滚动追赶、新项出现动画和复制提示复位样板，统一改走 LiveCaptionRuntimeHelpers，避免继续在视图体内散落 DispatchQueue.main.asyncAfter 与重复滚动 guard。",
+  "scope": [
+    "UI/LiveCaption/LiveCaptionView.swift",
+    "UI/LiveCaption/LiveCaptionRuntimeHelpers.swift"
+  ],
+  "metric": "livecaption_runtime_tail_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue UI-LIVECAP-190",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests/testLiveCaptionAccessibilityIdentifierSmoke"
+  ],
+  "iterations": 4,
+  "run_tag": "UI-LIVECAP-190",
+  "stop_condition": "LiveCaptionView 生产路径不再保留 raw asyncAfter 与重复 auto-scroll guard，且门禁通过，或连续 3 次 discard 后 pivot",
+  "notes": "这是生产路径热区收敛，不触碰字幕功能语义与 UI 外观。"
+}

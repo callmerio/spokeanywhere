@@ -641,6 +641,18 @@ def verify_ui_preview_180() -> dict[str, Any]:
     )
 
 
+def verify_ui_livecaption_190() -> dict[str, Any]:
+    path = ROOT / "UI" / "LiveCaption" / "LiveCaptionView.swift"
+    checks = {
+        "raw_async_after_removed": count_occurrences(path, r"DispatchQueue\.main\.asyncAfter") == 0,
+        "inline_scroll_guard_removed": count_occurrences(
+            path, r"if isAtBottom && !isUserSelecting"
+        ) == 0,
+        "runtime_helper_exists": (ROOT / "UI" / "LiveCaption" / "LiveCaptionRuntimeHelpers.swift").exists(),
+    }
+    return bool_metric(checks, "livecaption_runtime_tail_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -707,6 +719,7 @@ HANDLERS = {
     "GOV-RB-170": verify_gov_rb_170,
     "DOC-ARCH-170": verify_doc_arch_170,
     "UI-PREVIEW-180": verify_ui_preview_180,
+    "UI-LIVECAP-190": verify_ui_livecaption_190,
 }
 
 

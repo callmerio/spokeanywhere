@@ -206,16 +206,15 @@ struct LiveCaptionView: View {
             // 🔥 关键修复：延迟触发滚动，等待 UI 布局完成
             // 当"一口气输出太多"时，布局更新是异步的，立即滚动会基于旧高度计算
             scrollLogger.debug("📜 翻译完成通知: isAtBottom=\(isAtBottom) isUserSelecting=\(isUserSelecting)")
-            if isAtBottom && !isUserSelecting {
-                // 立即触发一次
-                scrollTrigger += 1
-                // 延迟 100ms 再触发一次，确保布局完成后追赶
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if isAtBottom && !isUserSelecting {
-                        scrollTrigger += 1
-                    }
-                }
-            }
+            liveCaptionResyncScrollAfterTranslation(
+                shouldScroll: {
+                    liveCaptionShouldAutoScroll(
+                        isAtBottom: isAtBottom,
+                        isUserSelecting: isUserSelecting
+                    )
+                },
+                bump: { scrollTrigger += 1 }
+            )
         }
         .accessibilityIdentifier(UITestIdentifiers.Element.liveCaptionRoot)
     }
@@ -275,10 +274,8 @@ struct LiveCaptionView: View {
                             }
                             .opacity(isNew ? 0.7 : 1.0)
                             .animation(.easeOut(duration: 0.3), value: isNew)
-                            .onAppear { 
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                    appearedItemIDs.insert(item.id)
-                                }
+                            .onAppear {
+                                liveCaptionMarkAppeared(itemID: item.id) { appearedItemIDs.insert($0) }
                             }
                         }
                         
@@ -345,13 +342,18 @@ struct LiveCaptionView: View {
                     endPoint: .bottom
                 ))
                 .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
-                    // 用户选中文本时暂停自动滚动
-                    if isAtBottom && !isUserSelecting {
+                    liveCaptionBumpScrollIfNeeded(
+                        isAtBottom: isAtBottom,
+                        isUserSelecting: isUserSelecting
+                    ) {
                         scrollTrigger += 1
                     }
                 }
                 .onChange(of: manager.lineBuffer.pendingText) { _, _ in
-                    if isAtBottom && !isUserSelecting {
+                    liveCaptionBumpScrollIfNeeded(
+                        isAtBottom: isAtBottom,
+                        isUserSelecting: isUserSelecting
+                    ) {
                         scrollTrigger += 1
                     }
                 }
@@ -382,10 +384,8 @@ struct LiveCaptionView: View {
                     }
                     .opacity(isNew ? 0.7 : 1.0)
                     .animation(.easeOut(duration: 0.3), value: isNew)
-                    .onAppear { 
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            appearedItemIDs.insert(item.id)
-                        }
+                    .onAppear {
+                        liveCaptionMarkAppeared(itemID: item.id) { appearedItemIDs.insert($0) }
                     }
                 }
                 
@@ -439,10 +439,20 @@ struct LiveCaptionView: View {
         }
         .frame(height: 400)
         .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
-            if isAtBottom && !isUserSelecting { scrollTrigger += 1 }
+            liveCaptionBumpScrollIfNeeded(
+                isAtBottom: isAtBottom,
+                isUserSelecting: isUserSelecting
+            ) {
+                scrollTrigger += 1
+            }
         }
         .onChange(of: manager.lineBuffer.pendingText) { _, _ in
-            if isAtBottom && !isUserSelecting { scrollTrigger += 1 }
+            liveCaptionBumpScrollIfNeeded(
+                isAtBottom: isAtBottom,
+                isUserSelecting: isUserSelecting
+            ) {
+                scrollTrigger += 1
+            }
         }
     }
     
@@ -561,7 +571,7 @@ struct LiveCaptionView: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isCopied = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                liveCaptionResetCopiedIndicator {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isCopied = false
                     }
