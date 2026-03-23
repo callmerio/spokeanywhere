@@ -821,7 +821,7 @@ final class MessagePanelState: ObservableObject {
         
         if shouldAutoSummary && isNewPinnedType && cards[index].summaryStatus == .none {
             let generateSummary = dependencies.generateSummary
-            Task {
+            runMessagePanelStateAsync {
                 await generateSummary(cardId)
             }
         }
@@ -896,8 +896,8 @@ final class MessagePanelState: ObservableObject {
             queue: .main
         ) { [weak self] notification in
             guard let tagId = notification.userInfo?["tagId"] as? UUID else { return }
-            Task { @MainActor in
-                self?.removeDeletedTagFromAllCards(tagId)
+            runMessagePanelStateOnMain(owner: self) { state in
+                state.removeDeletedTagFromAllCards(tagId)
             }
         }
     }
@@ -1051,7 +1051,7 @@ final class MessagePanelState: ObservableObject {
         }
         
         // 动画结束后设置不可见
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+        scheduleMessagePanelStateMain(after: 0.35) { [weak self] in
             self?.isVisible = false
         }
     }
