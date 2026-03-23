@@ -3,6 +3,13 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "UnifiedDictionaryService")
 
+@MainActor
+struct UnifiedDictionaryServiceDependencies {
+    let localService: LocalDictionaryService
+    let remoteService: DictionaryAPIService
+    let parseDefinition: (String, String) -> ParsedDefinition
+}
+
 // MARK: - Unified Dictionary Result
 
 /// 统一查词结果 - 聚合本地和在线数据源
@@ -83,12 +90,11 @@ final class UnifiedDictionaryService {
     
     // MARK: - Singleton
     
-    static let shared = UnifiedDictionaryService()
+    static let shared = UnifiedDictionaryService(dependencies: .live)
     
     // MARK: - Dependencies
     
-    private let localService = LocalDictionaryService.shared
-    private let remoteService = DictionaryAPIService.shared
+    private let dependencies: UnifiedDictionaryServiceDependencies
     
     // MARK: - Cache
     
@@ -98,7 +104,11 @@ final class UnifiedDictionaryService {
     
     // MARK: - Init
     
-    private init() {}
+    private init(
+        dependencies: UnifiedDictionaryServiceDependencies
+    ) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
@@ -116,7 +126,7 @@ final class UnifiedDictionaryService {
         }
         
         // Step 1: 查询本地词典
-        if let localResult = localService.lookup(trimmed) {
+        if let localResult = dependencies.localService.lookup(trimmed) {
             let unified = convertLocalResult(localResult)
             
             // 如果有中文释义，直接返回
@@ -130,7 +140,7 @@ final class UnifiedDictionaryService {
         }
         
         // Step 2: 调用在线 API（词形还原 + 中文释义）
-        let remoteResult = await remoteService.lookup(trimmed)
+        let remoteResult = await dependencies.remoteService.lookup(trimmed)
         
         switch remoteResult {
         case .success(let data):
@@ -143,7 +153,7 @@ final class UnifiedDictionaryService {
             logger.warning("📖 [Unified] 在线查询失败: \(error.localizedDescription)")
             
             // Fallback: 返回本地结果（即使没有中文释义）
-            if let localResult = localService.lookup(trimmed) {
+            if let localResult = dependencies.localService.lookup(trimmed) {
                 let unified = convertLocalResult(localResult)
                 cacheResult(word: trimmed, result: unified)
                 return unified
@@ -156,7 +166,7 @@ final class UnifiedDictionaryService {
     /// 仅查询本地词典（同步，不调用网络）
     func lookupLocal(_ word: String) -> UnifiedDictionaryResult? {
         let trimmed = word.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard let localResult = localService.lookup(trimmed) else { return nil }
+        guard let localResult = dependencies.localService.lookup(trimmed) else { return nil }
         return convertLocalResult(localResult)
     }
     
@@ -171,7 +181,7 @@ final class UnifiedDictionaryService {
     
     private func convertLocalResult(_ local: LocalDictionaryResult) -> UnifiedDictionaryResult {
         // 解析本地词典的 definition 字段
-        let parsed = DictionaryDefinitionParser.shared.parse(word: local.word, definition: local.definition)
+        let parsed = dependencies.parseDefinition(local.word, local.definition)
         
         var senses: [UnifiedSense] = []
         for section in parsed.sections {
