@@ -18,14 +18,6 @@ struct ToolbarSettingsDependencies {
     let llmSettings: LLMSettings
 }
 
-@MainActor
-extension ToolbarSettingsDependencies {
-    static let live = ToolbarSettingsDependencies(
-        configService: .shared,
-        llmSettings: .shared
-    )
-}
-
 // MARK: - 工具栏设置视图
 
 struct ToolbarSettingsView: View {
@@ -40,6 +32,7 @@ struct ToolbarSettingsView: View {
         self.configService = dependencies.configService
     }
 
+    @MainActor
     init() {
         self.init(dependencies: .live)
     }
@@ -86,6 +79,7 @@ struct ToolbarSettingsView: View {
                 ForEach(configService.actions) { action in
                     ActionRowView(
                         action: action,
+                        llmSettings: dependencies.llmSettings,
                         onToggle: { configService.toggleAction(id: action.id) },
                         onDelete: { configService.removeAction(id: action.id) },
                         onEdit: { editingAction = action },
@@ -218,6 +212,7 @@ private struct ToolbarPreviewSection: View {
 
 private struct ActionRowView: View {
     let action: ToolbarAction
+    let llmSettings: LLMSettings
     let onToggle: () -> Void
     let onDelete: () -> Void
     let onEdit: () -> Void
@@ -253,7 +248,7 @@ private struct ActionRowView: View {
             } else if action.isAIAction {
                 // AI 动作显示模型名称
                 let modelName = action.profileId.flatMap { id in
-                    LLMSettings.shared.profiles.first { $0.id == id }?.name
+                    llmSettings.profiles.first { $0.id == id }?.name
                 } ?? "默认"
                 
                 HStack(spacing: DS.Spacing.xxs) {
