@@ -9,6 +9,8 @@ private let logger = Logger(subsystem: "com.spokeanywhere", category: "Dictionar
 /// 查词面板窗口 - 支持输入法
 /// 使用 .titled + .fullSizeContentView 欺骗系统获得完整输入法支持
 final class DictionaryPanelWindow: NSWindow {
+    var onEscape: (() -> Void)?
+
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
     
@@ -45,7 +47,7 @@ final class DictionaryPanelWindow: NSWindow {
         if case .detail = DictionaryPanelState.current?.viewMode {
             DictionaryPanelState.current?.backToList()
         } else {
-            DictionaryPanelManager.shared.hide()
+            onEscape?()
         }
     }
     
@@ -187,8 +189,8 @@ final class DictionaryPanelManager {
             let screenLocation = NSEvent.mouseLocation
             
             if !windowFrame.contains(screenLocation) {
-                Task { @MainActor in
-                    self.hide()
+                runDictionaryPanelManagerOnMain(self) { manager in
+                    manager.hide()
                 }
             }
         }
@@ -207,6 +209,9 @@ final class DictionaryPanelManager {
         let window = DictionaryPanelWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 420)
         )
+        window.onEscape = { [weak self] in
+            self?.hide()
+        }
         
         let contentView = DictionaryPanelView(state: state) { [weak self] in
             self?.hide()
@@ -238,16 +243,16 @@ extension DictionaryPanelManager {
     func registerShortcut() {
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.modifierFlags.contains(.option) && event.keyCode == 49 {
-                Task { @MainActor in
-                    self?.toggle()
+                runDictionaryPanelManagerOnMain(self) { manager in
+                    manager.toggle()
                 }
             }
         }
         
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.modifierFlags.contains(.option) && event.keyCode == 49 {
-                Task { @MainActor in
-                    self?.toggle()
+                runDictionaryPanelManagerOnMain(self) { manager in
+                    manager.toggle()
                 }
                 return nil
             }
