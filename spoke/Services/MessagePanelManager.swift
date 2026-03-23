@@ -22,19 +22,7 @@ final class MessagePanelManager {
     
     // MARK: - Singleton
     
-    static let shared = MessagePanelManager(
-        dependencies: MessagePanelManagerDependencies(
-            state: .shared,
-            historyService: .shared,
-            dictionaryHandler: .shared,
-            hoverState: .shared,
-            hotKeyService: .shared,
-            tagLibrary: .shared,
-            summaryService: .shared,
-            answerPanelManager: .shared,
-            clipboardPipelineService: .shared
-        )
-    )
+    static let shared = MessagePanelManager(dependencies: .live)
     
     // MARK: - Properties
     
