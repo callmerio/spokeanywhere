@@ -29,9 +29,10 @@ final class ScreenOCRService {
     
     // MARK: - Singleton
     
-    static let shared = ScreenOCRService()
+    static let shared = ScreenOCRService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenOCRService")
+    private let dependencies: ScreenOCRServiceDependencies
     
     // MARK: - Cache
     
@@ -43,7 +44,9 @@ final class ScreenOCRService {
     /// 预取任务
     private var prefetchTask: Task<String?, Never>?
     
-    private init() {}
+    private init(dependencies: ScreenOCRServiceDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
@@ -103,9 +106,9 @@ final class ScreenOCRService {
         
         logger.info("🔍 [OCR] 🚀 开始预取...")
         
-        prefetchTask = Task {
-            _ = await getActiveWindowText(maxLength: 1500)
-            return cachedText
+        prefetchTask = makeScreenOCRPrefetchTask(owner: self) { service in
+            _ = await service.getActiveWindowText(maxLength: 1500)
+            return service.cachedText
         }
     }
     
@@ -124,30 +127,13 @@ final class ScreenOCRService {
         // 超时 3 秒：OCR 没完成就放弃，继续 LLM
         let timeoutNanos: UInt64 = 3_000_000_000
         
-        return await withTaskGroup(of: String?.self) { group in
-            // OCR 任务
-            group.addTask {
-                return await task.value
-            }
-            
-            // 超时任务
-            group.addTask {
-                try? await Task.sleep(nanoseconds: timeoutNanos)
-                return nil
-            }
-            
-            // 谁先完成用谁的结果
-            if let result = await group.next() {
-                group.cancelAll()
-                if result != nil {
-                    self.logger.info("🔍 [OCR] ✅ 预取完成")
-                } else {
-                    self.logger.warning("🔍 [OCR] ⏰ 超时，跳过")
-                }
-                return result
-            }
-            return nil
+        let result = await awaitScreenOCRPrefetch(task: task, timeoutNanos: timeoutNanos)
+        if result != nil {
+            logger.info("🔍 [OCR] ✅ 预取完成")
+        } else {
+            logger.warning("🔍 [OCR] ⏰ 超时，跳过")
         }
+        return result
     }
     
     /// 清除缓存
@@ -162,7 +148,7 @@ final class ScreenOCRService {
     
     /// 捕获当前聚焦窗口（使用 ScreenCaptureKit）
     func captureActiveWindow() async -> CGImage? {
-        guard let frontApp = NSWorkspace.shared.frontmostApplication else {
+        guard let frontApp = dependencies.frontmostApplication() else {
             return nil
         }
         
@@ -229,45 +215,7 @@ final class ScreenOCRService {
     /// OCR 识别 - 在后台线程执行避免阻塞主线程
     /// 主线程阻塞会导致 CGEvent tap 超时被系统禁用，造成快捷键失效
     private func performOCR(on image: CGImage) async -> String? {
-        // 使用 nonisolated 在后台线程执行 OCR，避免阻塞主线程
-        // 这样 CGEvent tap 可以正常响应快捷键
-        await Task.detached(priority: .userInitiated) {
-            await withCheckedContinuation { continuation in
-                let request = VNRecognizeTextRequest { request, _ in
-                    if request.results == nil {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-                    
-                    guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-                    
-                    // 提取所有识别的文本
-                    let text = observations.compactMap { observation in
-                        observation.topCandidates(1).first?.string
-                    }.joined(separator: "\n")
-                    
-                    continuation.resume(returning: text.isEmpty ? nil : text)
-                }
-                
-                // 必须使用 Accurate 模式才能识别中文
-                // Fast: 1396ms, 11013字符, 中文0个 ❌
-                // Accurate: 2547ms, 3684字符, 中文269个 ✅
-                request.recognitionLevel = .accurate
-                request.usesLanguageCorrection = true
-                request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US"]
-                
-                let handler = VNImageRequestHandler(cgImage: image, options: [:])
-                
-                do {
-                    try handler.perform([request])
-                } catch {
-                    continuation.resume(returning: nil)
-                }
-            }
-        }.value
+        await runScreenOCRRecognition(on: image)
     }
     
     /// 调试：保存 OCR 文本到 .tmp_frames 目录
