@@ -1,5 +1,14 @@
 import Foundation
 
+func runLiveCaptionLocaleChange(
+    manager: LiveCaptionManager,
+    languageId: String
+) {
+    Task {
+        await manager.setLocale(languageId)
+    }
+}
+
 @MainActor
 func liveCaptionShouldAutoScroll(
     isAtBottom: Bool,
@@ -56,4 +65,67 @@ func liveCaptionResetCopiedIndicator(
     _ reset: @escaping @MainActor () -> Void
 ) {
     liveCaptionScheduleMain(after: 1.5, reset)
+}
+
+@MainActor
+func makeLiveCaptionSelectionContext(
+    text: String,
+    screenPoint: CGPoint
+) -> SelectionContext {
+    SelectionContext(
+        selectedText: text,
+        selectionBounds: CGRect(
+            x: screenPoint.x - 50,
+            y: screenPoint.y,
+            width: 100,
+            height: 20
+        ),
+        sourceAppBundleId: Bundle.main.bundleIdentifier ?? "",
+        sourceAppName: "SpokenAnyWhere"
+    )
+}
+
+@MainActor
+func makeLiveCaptionDictionaryData(
+    from result: UnifiedDictionaryResult
+) -> DictionaryData {
+    let senses = result.senses.map { sense in
+        DictionarySense(
+            pos: sense.pos,
+            chinese: sense.chinese,
+            english: sense.english,
+            examples: sense.examples.isEmpty ? nil : sense.examples
+        )
+    }
+
+    return DictionaryData(
+        word: result.word,
+        phonetic: result.phonetic,
+        senses: senses,
+        lemma: result.lemma,
+        lemmaInfo: nil
+    )
+}
+
+func runLiveCaptionWordLookup(
+    word: String,
+    screenPoint: CGPoint,
+    dependencies: LiveCaptionViewDependencies,
+    finishInteraction: @escaping @MainActor () -> Void
+) {
+    Task { @MainActor in
+        defer { finishInteraction() }
+
+        let context = makeLiveCaptionSelectionContext(
+            text: word,
+            screenPoint: screenPoint
+        )
+
+        if let result = await dependencies.lookupWord(word) {
+            let data = makeLiveCaptionDictionaryData(from: result)
+            await dependencies.showDictionaryResult(data, word, context, screenPoint)
+        } else {
+            await dependencies.showDictionaryError(word, context, screenPoint)
+        }
+    }
 }

@@ -28,35 +28,6 @@ struct LiveCaptionViewDependencies {
 
 @MainActor
 extension LiveCaptionViewDependencies {
-    static func live(
-        lookupWord: @escaping (String) async -> UnifiedDictionaryResult?,
-        markVocabulary: @escaping (String) -> String,
-        selectionToolbarState: SelectionToolbarState,
-        selectionToolbarManager: SelectionToolbarManager
-    ) -> Self {
-        LiveCaptionViewDependencies(
-            lookupWord: lookupWord,
-            markVocabulary: markVocabulary,
-            showSelectionToolbar: { context, point in
-                selectionToolbarState.show(with: context)
-                selectionToolbarManager.show(at: point)
-            },
-            showDictionaryResult: { data, word, context, point in
-                selectionToolbarState.currentContext = context
-                selectionToolbarState.showDictionaryResult(data, forText: word)
-                try? await Task.sleep(for: .milliseconds(16))
-                selectionToolbarManager.show(at: point)
-            },
-            showDictionaryError: { word, context, point in
-                selectionToolbarState.currentContext = context
-                selectionToolbarState.showDictionaryError(.notFound, word: word)
-                try? await Task.sleep(for: .milliseconds(16))
-                selectionToolbarManager.show(at: point)
-            },
-            notificationCenter: .default
-        )
-    }
-
     static let preview = LiveCaptionViewDependencies(
         lookupWord: { _ in nil },
         markVocabulary: { $0 },
@@ -125,9 +96,10 @@ struct LiveCaptionView: View {
                             Menu {
                                 ForEach(LiveCaptionManager.supportedLanguages, id: \.id) { lang in
                                     Button {
-                                        Task {
-                                            await manager.setLocale(lang.id)
-                                        }
+                                        runLiveCaptionLocaleChange(
+                                            manager: manager,
+                                            languageId: lang.id
+                                        )
                                     } label: {
                                         if manager.sourceLanguage == lang.id {
                                             Label(lang.name, systemImage: "checkmark")
@@ -507,46 +479,14 @@ struct LiveCaptionView: View {
         // 🔥 设置用户交互状态，防止 clearPending 时整行消失
         isUserSelecting = true
         manager.lineBuffer.setUserInteracting(true)
-        
-        // 🔥 在后台异步查词，查词完成后才显示窗口
-        Task { @MainActor in
-            defer {
-                // 🔥 交互结束，恢复状态
-                isUserSelecting = false
-                manager.lineBuffer.setUserInteracting(false)
-            }
 
-            // 创建选择上下文
-            let context = SelectionContext(
-                selectedText: word,
-                selectionBounds: CGRect(x: screenPoint.x - 50, y: screenPoint.y, width: 100, height: 20),
-                sourceAppBundleId: Bundle.main.bundleIdentifier ?? "",
-                sourceAppName: "SpokenAnyWhere"
-            )
-            
-            if let result = await dependencies.lookupWord(word) {
-                // 转换为 DictionaryData
-                let senses = result.senses.map { sense in
-                    DictionarySense(
-                        pos: sense.pos,
-                        chinese: sense.chinese,
-                        english: sense.english,
-                        examples: sense.examples.isEmpty ? nil : sense.examples
-                    )
-                }
-                
-                let data = DictionaryData(
-                    word: result.word,
-                    phonetic: result.phonetic,
-                    senses: senses,
-                    lemma: result.lemma,
-                    lemmaInfo: nil
-                )
-                
-                await dependencies.showDictionaryResult(data, word, context, screenPoint)
-            } else {
-                await dependencies.showDictionaryError(word, context, screenPoint)
-            }
+        runLiveCaptionWordLookup(
+            word: word,
+            screenPoint: screenPoint,
+            dependencies: dependencies
+        ) {
+            self.isUserSelecting = false
+            self.manager.lineBuffer.setUserInteracting(false)
         }
     }
     
@@ -723,9 +663,9 @@ struct LiveCaptionView: View {
     }
 }
 
-// MARK: - Translation Task Modifier
+// MARK: - Translation Modifier
 
-/// 翻译任务修饰符（macOS 15+）
+/// 翻译修饰符（macOS 15+）
 /// 封装 .translationTask 以处理版本兼容性
 struct TranslationTaskModifier: ViewModifier {
     @ObservedObject var manager: LiveCaptionManager
