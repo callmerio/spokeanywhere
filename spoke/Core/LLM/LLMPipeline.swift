@@ -11,18 +11,6 @@ struct LLMPipelineDependencies {
     let dictionaryEntries: () -> [DictionaryEntry]
 }
 
-@MainActor
-extension LLMPipelineDependencies {
-    static let live = LLMPipelineDependencies(
-        settings: .shared,
-        contextService: .shared,
-        clipboardHistory: .shared,
-        screenOCR: .shared,
-        shouldUseLLMForCorrection: { UserDefaults.standard.useLLMForCorrection },
-        dictionaryEntries: { DictionaryService.shared.entries }
-    )
-}
-
 /// LLM 处理管线
 /// 负责协调转写文本的 LLM 精炼处理
 @MainActor
