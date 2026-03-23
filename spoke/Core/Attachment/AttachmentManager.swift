@@ -99,7 +99,7 @@ final class AttachmentManager: ObservableObject {
                     
                     self.logger.info("📂 Handling dropped file: \(fileURL.path)")
                     
-                    Task { @MainActor in
+                    runAttachmentTask { [self] in
                         await self.handleFileURL(fileURL, source: .drop, onAdd: onAdd)
                     }
                 }
@@ -115,8 +115,8 @@ final class AttachmentManager: ObservableObject {
                     }
                     
                     if let image = image as? NSImage {
-                        Task { @MainActor in
-                            self.addImage(image, source: .drop, onAdd: onAdd)
+                        runAttachmentOnMain(owner: self) { manager in
+                            manager.addImage(image, source: .drop, onAdd: onAdd)
                         }
                     }
                 }
@@ -186,19 +186,15 @@ final class AttachmentManager: ObservableObject {
         onAdd(attachmentType)
         
         // 后台生成缩略图
-        Task.detached(priority: .userInitiated) {
-            let thumbnail = Attachment.makeThumbnail(from: image)
+        runAttachmentTask {
+            let thumbnail = await runAttachmentDetached {
+                Attachment.makeThumbnail(from: image)
+            }
             await MainActor.run {
-                // 通知更新缩略图（需要外部实现更新逻辑）
                 let updated: Attachment = source == .screenshot
                     ? .screenshot(image, thumbnail, id)
                     : .image(image, thumbnail, id)
-                // 这里通过 NotificationCenter 通知更新
-                NotificationCenter.default.post(
-                    name: .attachmentThumbnailUpdated,
-                    object: nil,
-                    userInfo: ["id": id, "attachment": updated]
-                )
+                postAttachmentThumbnailUpdated(id: id, attachment: updated)
             }
         }
     }
@@ -226,8 +222,8 @@ final class AttachmentManager: ObservableObject {
         processingState = .processing(current: 0, total: 1, fileName: url.lastPathComponent)
         
         let result = await textExtractor.extractFromFolder(url) { [weak self] progress in
-            Task { @MainActor in
-                self?.processingState = .processing(
+            runAttachmentOnMain(owner: self) { manager in
+                manager.processingState = .processing(
                     current: progress.current,
                     total: progress.total,
                     fileName: progress.currentFile
@@ -296,8 +292,8 @@ final class AttachmentManager: ObservableObject {
         
         if panel.runModal() == .OK {
             for url in panel.urls {
-                Task {
-                    await handleFileURL(url, source: .picker, onAdd: onAdd)
+                runAttachmentTask { [self] in
+                    await self.handleFileURL(url, source: .picker, onAdd: onAdd)
                 }
             }
         }
@@ -312,8 +308,8 @@ final class AttachmentManager: ObservableObject {
         panel.message = "选择要导入的文件夹（将提取所有文本文件）"
         
         if panel.runModal() == .OK, let url = panel.url {
-            Task {
-                await handleFolder(url, onAdd: onAdd)
+            runAttachmentTask { [self] in
+                await self.handleFolder(url, onAdd: onAdd)
             }
         }
     }
@@ -328,8 +324,8 @@ final class AttachmentManager: ObservableObject {
         panel.message = "选择要导入的 ZIP 文件（将解压并提取所有文本文件）"
         
         if panel.runModal() == .OK, let url = panel.url {
-            Task {
-                await handleZIP(url, onAdd: onAdd)
+            runAttachmentTask { [self] in
+                await self.handleZIP(url, onAdd: onAdd)
             }
         }
     }
@@ -338,9 +334,11 @@ final class AttachmentManager: ObservableObject {
     
     /// 截取当前屏幕
     func captureScreen(onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
-        Task {
-            if let image = await screenCapture.captureCurrentScreen() {
-                addScreenshot(image, onAdd: onAdd)
+        runAttachmentTask { [self] in
+            if let image = await self.screenCapture.captureCurrentScreen() {
+                await MainActor.run {
+                    self.addScreenshot(image, onAdd: onAdd)
+                }
             }
         }
     }

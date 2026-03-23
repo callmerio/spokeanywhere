@@ -685,6 +685,20 @@ def verify_screenshot_210() -> dict[str, Any]:
     return bool_metric(checks, "screenshot_runtime_tail_gaps")
 
 
+def verify_attach_audio_220() -> dict[str, Any]:
+    attachment = ROOT / "Core" / "Attachment" / "AttachmentManager.swift"
+    checks = {
+        "attachment_raw_task_reduced": count_occurrences(attachment, r"\bTask \{|\bTask\.detached") <= 2,
+        "attachment_default_notification_removed": count_occurrences(
+            attachment, r"NotificationCenter\.default"
+        ) == 0,
+        "attachment_runtime_helper_exists": (
+            ROOT / "Core" / "Attachment" / "AttachmentRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "attachment_audio_cluster_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -754,6 +768,7 @@ HANDLERS = {
     "UI-LIVECAP-190": verify_ui_livecaption_190,
     "MSGPANEL-200": verify_messagepanel_200,
     "SCREENSHOT-210": verify_screenshot_210,
+    "ATTACH-AUDIO-220": verify_attach_audio_220,
 }
 
 

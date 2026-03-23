@@ -1,0 +1,24 @@
+{
+  "issue_id": "ATTACH-AUDIO-220",
+  "title": "Attachment / Audio 生产路径簇收敛",
+  "mode": "exec",
+  "goal": "继续压缩 AttachmentManager 与 AudioRecorderService 中的后台任务、通知与运行时桥接样板，先从附件缩略图更新和 picker/capture 路径入手，再视情况扩展到音频配置变更恢复链。",
+  "scope": [
+    "Core/Attachment/AttachmentManager.swift",
+    "Core/Attachment/AttachmentRuntimeHelpers.swift",
+    "Core/Audio/AudioRecorderService.swift"
+  ],
+  "metric": "attachment_audio_cluster_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ATTACH-AUDIO-220",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests/testLiveCaptionAccessibilityIdentifierSmoke"
+  ],
+  "iterations": 5,
+  "run_tag": "ATTACH-AUDIO-220",
+  "stop_condition": "AttachmentManager 直连任务/通知样板明显下降且 helper 落地，随后再视音频恢复链收口情况继续推进；如连续 3 次 discard 则 pivot",
+  "notes": "本轮先拿附件路径做低风险切口，保持截图/拖拽/导入行为不变。"
+}
