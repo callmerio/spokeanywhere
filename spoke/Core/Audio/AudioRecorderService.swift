@@ -3,6 +3,12 @@ import CoreAudio
 import os
 import Speech
 
+@MainActor
+struct AudioRecorderServiceDependencies {
+    let transcriptionManager: TranscriptionManager
+    let postProcess: (TranscriptionResult) -> TranscriptionResult
+}
+
 /// 音频录制服务
 /// 负责麦克风录音、流式写入磁盘、实时转写
 /// 使用 TranscriptionManager 自动选择最佳转录引擎
@@ -16,14 +22,14 @@ final class AudioRecorderService: NSObject {
     
     // MARK: - Singleton
     
-    static let shared = AudioRecorderService()
+    static let shared = AudioRecorderService(dependencies: .live)
     private static let warmupEnvKey = "SPOKE_AUDIO_WARMUP"
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "Audio")
     
     // MARK: - Dependencies
     
-    private let transcriptionManager = TranscriptionManager.shared
+    private let dependencies: AudioRecorderServiceDependencies
     private let recoveryPolicy = AudioRecoveryPolicy()
     
     // MARK: - Properties
@@ -108,16 +114,19 @@ final class AudioRecorderService: NSObject {
     
     /// 当前使用的引擎类型（用于 UI 展示）
     var currentEngineType: TranscriptionEngineType? {
-        transcriptionManager.currentEngineType
+        dependencies.transcriptionManager.currentEngineType
     }
     
     // MARK: - Init
     
-    private override init() {
+    private init(
+        dependencies: AudioRecorderServiceDependencies
+    ) {
+        self.dependencies = dependencies
         super.init()
         
         // 打印调试信息
-        transcriptionManager.printDebugInfo()
+        dependencies.transcriptionManager.printDebugInfo()
 
         // legacy session 保持旧行为；后续迁移到独立 session
         callbackRouter.ensureSession(legacyCallbackSessionID)
@@ -272,7 +281,7 @@ final class AudioRecorderService: NSObject {
     }
 
     private func createTranscriptionProvider() -> TranscriptionProvider {
-        let provider = transcriptionManager.createBestProvider()
+        let provider = dependencies.transcriptionManager.createBestProvider()
         transcriptionProvider = provider
         setupProviderCallbacks(provider)
         return provider
@@ -362,23 +371,17 @@ final class AudioRecorderService: NSObject {
     }
 
     private func prepareTranscriptionEngine(_ provider: TranscriptionProvider) {
-        Task { [weak self] in
-            guard let self else { return }
-
+        runAudioRecorderAsync(self) { service in
             do {
-                self.enginePrepareStartTime = CFAbsoluteTimeGetCurrent()
-                self.logger.info("⏳ Preparing transcription engine...")
+                service.enginePrepareStartTime = CFAbsoluteTimeGetCurrent()
+                service.logger.info("⏳ Preparing transcription engine...")
                 try await provider.prepare()
 
-                await MainActor.run {
-                    self.flushBufferedAudioAfterEngineReady()
-                    self.isEngineReady = true
-                }
+                service.flushBufferedAudioAfterEngineReady()
+                service.isEngineReady = true
             } catch {
-                await MainActor.run {
-                    self.logger.error("❌ Engine prepare failed: \(error)")
-                    self.handleRecoveryFailure(error, context: "engine-prepare")
-                }
+                service.logger.error("❌ Engine prepare failed: \(error)")
+                service.handleRecoveryFailure(error, context: "engine-prepare")
             }
         }
     }
@@ -445,7 +448,7 @@ final class AudioRecorderService: NSObject {
     
     /// 请求麦克风和语音识别权限
     func requestPermissions() async -> Bool {
-        await transcriptionManager.requestPermissions()
+        await dependencies.transcriptionManager.requestPermissions()
     }
 
     /// 创建独立回调会话（用于后续入口隔离改造）
@@ -512,7 +515,7 @@ final class AudioRecorderService: NSObject {
     private func setupProviderCallbacks(_ provider: TranscriptionProvider) {
         provider.onResult = { [weak self] result in
             runAudioRecorderOnMain(self) { service in
-                let processedResult = TranscriptionPostProcessor.shared.process(result)
+                let processedResult = service.dependencies.postProcess(result)
 
                 switch processedResult.type {
                 case .partial:
@@ -548,22 +551,19 @@ final class AudioRecorderService: NSObject {
         audioFile = nil
         
         // 通知 Provider 结束处理（异步执行，完成后更新状态）
-        Task {
+        runAudioRecorderAsync(self) { service in
             let startTime = CFAbsoluteTimeGetCurrent()
-            logger.info("⏳ Waiting for transcription finalization...")
+            service.logger.info("⏳ Waiting for transcription finalization...")
             
             do {
-                try await transcriptionProvider?.finishProcessing()
+                try await service.transcriptionProvider?.finishProcessing()
             } catch {
-                logger.warning("⚠️ finishProcessing error: \(error.localizedDescription)")
+                service.logger.warning("⚠️ finishProcessing error: \(error.localizedDescription)")
             }
             
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            logger.info("✅ Transcription finalized in \(String(format: "%.0f", elapsed))ms")
-            
-            await MainActor.run {
-                self.isProcessing = false
-            }
+            service.logger.info("✅ Transcription finalized in \(String(format: "%.0f", elapsed))ms")
+            service.isProcessing = false
         }
         
         return tempAudioFileURL?.path
