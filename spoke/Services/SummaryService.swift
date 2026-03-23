@@ -3,26 +3,11 @@ import Foundation
 import OSLog
 
 @MainActor
-private func resolveSharedMessagePanelState() -> MessagePanelState {
-    MessagePanelState.shared
-}
-
-@MainActor
 struct SummaryServiceDependencies {
     let messagePanelState: () -> MessagePanelState
     let attachmentStorage: CardAttachmentStorage
     let llmSettings: LLMSettings
     let urlSession: URLSession
-}
-
-@MainActor
-extension SummaryServiceDependencies {
-    static let live = SummaryServiceDependencies(
-        messagePanelState: { resolveSharedMessagePanelState() },
-        attachmentStorage: .shared,
-        llmSettings: .shared,
-        urlSession: .shared
-    )
 }
 
 /// 总结服务
