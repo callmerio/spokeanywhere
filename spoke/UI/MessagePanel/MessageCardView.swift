@@ -243,26 +243,20 @@ extension MessageCardView {
         for provider in providers {
             // 尝试加载图片
             if provider.canLoadObject(ofClass: NSImage.self) {
-                _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
-                    if let image = image as? NSImage {
-                        Task { @MainActor in
-                            dependencies.addAttachment(image, card.id)
-                        }
-                    }
-                }
+                runMessageCardImageDrop(
+                    provider: provider,
+                    cardId: card.id,
+                    addAttachment: dependencies.addAttachment
+                )
                 handled = true
             }
             // 尝试加载文件 URL
             else if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
-                    if let data = data as? Data,
-                       let url = URL(dataRepresentation: data, relativeTo: nil),
-                       let image = NSImage(contentsOf: url) {
-                        Task { @MainActor in
-                            dependencies.addAttachment(image, card.id)
-                        }
-                    }
-                }
+                runMessageCardFileDrop(
+                    provider: provider,
+                    cardId: card.id,
+                    addAttachment: dependencies.addAttachment
+                )
                 handled = true
             }
         }
@@ -537,19 +531,18 @@ extension MessageCardView {
             showCopied = true
         }
 
-        // 恢复卡片大小
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(150))
-            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                copyScale = 1.0
+        runMessageCardCopyFeedback(
+            resetScale: {
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                    copyScale = 1.0
+                }
+            },
+            hideCopied: {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    showCopied = false
+                }
             }
-
-            // 1.2秒后隐藏提示
-            try? await Task.sleep(for: .milliseconds(1200))
-            withAnimation(.easeOut(duration: 0.25)) {
-                showCopied = false
-            }
-        }
+        )
     }
 
     /// 复制成功浮动提示（紧凑 + 半透明）
