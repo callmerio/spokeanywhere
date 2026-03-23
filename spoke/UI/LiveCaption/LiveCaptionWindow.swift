@@ -11,24 +11,6 @@ struct LiveCaptionWindowManagerDependencies {
     let viewDependencies: LiveCaptionViewDependencies
 }
 
-@MainActor
-extension LiveCaptionWindowManagerDependencies {
-    static let live = LiveCaptionWindowManagerDependencies(
-        manager: .shared,
-        translator: .shared,
-        viewDependencies: .live(
-            lookupWord: { word in
-                await UnifiedDictionaryService.shared.lookup(word)
-            },
-            markVocabulary: { text in
-                VocabularyService.shared.markVocabulary(in: text)
-            },
-            selectionToolbarState: .shared,
-            selectionToolbarManager: .shared
-        )
-    )
-}
-
 /// 实时字幕窗口管理器
 @MainActor
 final class LiveCaptionWindowManager {
@@ -208,7 +190,7 @@ enum LiveCaptionAvailability {
     
     /// 翻译功能可用性
     static var isTranslationAvailable: Bool {
-        TranslationService.shared.isAvailable
+        liveCaptionAvailabilityIsTranslationAvailable()
     }
     
     /// 完整功能可用性描述
