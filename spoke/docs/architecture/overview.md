@@ -131,6 +131,8 @@ UI
 - `QuickAskLiveDependencies.swift` 与 `RecordingControllerLiveDependencies.swift` 已收敛到容器化 live wiring，当前不再直接依赖成组 `*.shared`。
 - `SelectionActionLiveHelpers.swift`、`SelectionMonitorLiveHelpers.swift` 与 `WorkflowExecutorLiveHelpers.swift` 已在 round 12 完成 helper-sink 清零。
 - `ServiceContainerLiveDependencies.swift` 已承接容器默认 live defaults，`ServiceContainer.swift` 回到协议、缓存与环境入口本身。
+- `UI/MessagePanel/MessagePanelView.swift`、`UI/LiveCaption/LiveCaptionView.swift` 与 `UI/HUD/QuickAskCapsuleView.swift` 已在 round 18 去除 preview/shared 入口直连，预览与视图本体不再直接抓单例。
+- `Services/MessagePanelRuntimeHelpers.swift`、`UI/Screenshot/ScreenshotContentRuntimeHelpers.swift`、`Core/Attachment/AttachmentRuntimeHelpers.swift`、`Core/Audio/AudioRecorderRuntimeHelpers.swift` 与 `Core/LiveCaption/LiveCaptionManagerRuntimeHelpers.swift` 已在 round 19-24 陆续落地，把生产路径中的延时、回调和主线程桥接样板进一步集中。
 
 ### 5.3 当前判断
 

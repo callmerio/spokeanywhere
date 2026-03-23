@@ -172,6 +172,8 @@ bash Tests/run-concurrency-check.sh
 - `QuickAskLiveDependencies` 与 `RecordingControllerLiveDependencies` 已完成 live factory 收敛，主文件不再保留成组 `*.shared` 与 responder-chain 内联样板。
 - `ServiceContainerLiveDependencies` 已承接 `ServiceContainerDependencies.live` 的默认装配，容器主文件不再内联整段默认 wiring。
 - `Services/RuntimeBridgeHelpers.swift` 已成为 Recording / Quick Ask / Selection 系列 runtime helper 的共享主线程、定时器与轮询桥接入口。
+- `Services/MessagePanelRuntimeHelpers.swift`、`UI/Screenshot/ScreenshotContentRuntimeHelpers.swift`、`Core/Attachment/AttachmentRuntimeHelpers.swift`、`Core/Audio/AudioRecorderRuntimeHelpers.swift` 与 `Core/LiveCaption/LiveCaptionManagerRuntimeHelpers.swift` 已把 MessagePanel / Screenshot / Attachment / Audio / LiveCaptionManager 的生产路径桥接样板继续从主文件中剥离。
+- `MessagePanelView`、`LiveCaptionView` 与 `QuickAskCapsuleView` 的 preview/shared 入口已在 round 18 改为 preview factory 或显式依赖，不再把视图本体直接系在 `.shared` 上。
 - 若按最新测试口径计，当前本地基线已提升到 `150 tests / 30 suites`。
 
 ---

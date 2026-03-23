@@ -88,6 +88,8 @@ bash Tests/run-concurrency-check.sh
 - `QuickAskLiveDependencies` 与 `RecordingControllerLiveDependencies` 已完成一轮 live factory 收敛，当前主文件不再保留成组 `*.shared` / `NSApp.sendAction` 内联样板。
 - `ServiceContainerLiveDependencies` 已承接容器默认 live defaults，容器主文件回到协议与缓存边界本身。
 - Recording / Quick Ask / Selection 系列 runtime helper 已开始统一到 `RuntimeBridgeHelpers.swift`，减少重复的主线程/定时器桥接样板。
+- `MessagePanelRuntimeHelpers.swift`、`ScreenshotContentRuntimeHelpers.swift`、`AttachmentRuntimeHelpers.swift`、`AudioRecorderRuntimeHelpers.swift` 与 `LiveCaptionManagerRuntimeHelpers.swift` 已继续把生产路径中的窗口、增强、附件、音频恢复与字幕管理回调样板从主文件抽离。
+- `MessagePanelView`、`LiveCaptionView` 与 `QuickAskCapsuleView` 的 preview/shared 入口已在 round 18 收口，UI 预览边界相比之前明显更干净。
 
 **影响**:
 
@@ -105,7 +107,7 @@ bash Tests/run-concurrency-check.sh
 - `ActionBarView`
 - `ScreenshotContentView`
 
-这些高频视图仍直接访问 Service/Core 单例。
+这些高频视图曾是主要热点；当前 preview/shared 入口已在部分视图收口，但生产路径上仍存在少量高频直连和通知链，后续应继续按 inventory 中的 P1/P2 项推进。
 
 **影响**:
 

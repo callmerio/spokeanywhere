@@ -178,6 +178,8 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 - `Services/ServiceContainerLiveDependencies.swift` 已承接 `ServiceContainerDependencies.live` 的默认装配，`ServiceContainer.swift` 不再内联整段 live defaults。
 - `QuickAskLiveDependencies.swift`、`RecordingControllerLiveDependencies.swift`、`SelectionMonitorLiveDependencies.swift` 与 `WorkflowExecutorLiveDependencies.swift` 已完成多轮收敛。
 - `Services/RuntimeBridgeHelpers.swift` 现为 Recording / Quick Ask / Selection 系列 runtime helper 的共享主线程与定时器桥接入口。
+- `Services/MessagePanelRuntimeHelpers.swift`、`UI/Screenshot/ScreenshotContentRuntimeHelpers.swift`、`Core/Attachment/AttachmentRuntimeHelpers.swift`、`Core/Audio/AudioRecorderRuntimeHelpers.swift` 与 `Core/LiveCaption/LiveCaptionManagerRuntimeHelpers.swift` 已覆盖 round 19-24 的生产路径桥接收敛。
+- `UI/MessagePanel/MessagePanelView.swift`、`UI/LiveCaption/LiveCaptionView.swift` 与 `UI/HUD/QuickAskCapsuleView.swift` 的 preview/shared 入口已收口，后续不应再把 preview 视图直接绑到 `.shared`。
 ### 4.4 当前仓库缺失项
 
 以下路径在本次仓库快照中不存在，不应继续作为导航入口引用：
