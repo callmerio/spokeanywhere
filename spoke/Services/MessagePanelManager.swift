@@ -12,7 +12,7 @@ struct MessagePanelManagerDependencies {
     let tagLibrary: TagLibrary
     let summaryService: SummaryService
     let answerPanelManager: AnswerPanelManager
-    let clipboardPipelineService: ClipboardPipelineService
+    let clipboardPipelineService: () -> ClipboardPipelineService
 }
 
 /// 消息面板管理器
@@ -49,7 +49,7 @@ final class MessagePanelManager {
                     self?.state.addAttachment(image, to: id)
                 },
                 triggerClipboardPipeline: { [clipboardPipelineService = dependencies.clipboardPipelineService] in
-                    clipboardPipelineService.trigger()
+                    clipboardPipelineService().trigger()
                 }
             )
         )

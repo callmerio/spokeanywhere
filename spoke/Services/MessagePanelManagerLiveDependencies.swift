@@ -11,7 +11,6 @@ extension MessagePanelManagerDependencies {
         tagLibrary: .shared,
         summaryService: .shared,
         answerPanelManager: .shared,
-        clipboardPipelineService: .shared
+        clipboardPipelineService: { .shared }
     )
 }
-
