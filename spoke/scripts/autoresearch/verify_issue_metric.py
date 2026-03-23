@@ -533,6 +533,34 @@ def verify_doc_state_140() -> dict[str, Any]:
     return bool_metric(checks, "current_state_doc_gaps")
 
 
+def verify_gov_sc_160() -> dict[str, Any]:
+    path = ROOT / "Services" / "ServiceContainer.swift"
+    return hotspot_metric(
+        path,
+        "service_container_file_hotspots",
+        {
+            "direct_service_shared_calls": r"AudioRecorderService\.shared|TranscriptionManager\.shared|LLMPipeline\.shared|AppSettings\.shared|HistoryManager\.shared|QuickAskService\.shared|SelectionToolbarManager\.shared",
+            "inline_live_defaults_block": r"static let live = ServiceContainerDependencies\(",
+        },
+    )
+
+
+def verify_doc_mod_160() -> dict[str, Any]:
+    core_modules = ROOT / "docs" / "architecture" / "core-modules.md"
+    ui_components = ROOT / "docs" / "architecture" / "ui-components.md"
+    checks = {
+        "core_modules_updated_date": contains_all(core_modules, ["**更新时间**: 2026-03-23"]),
+        "ui_components_updated_date": contains_all(ui_components, ["**更新时间**: 2026-03-23"]),
+        "core_modules_mentions_live_factory_convergence": contains_all(
+            core_modules, ["高风险 orchestrator 与 live factory 已完成多轮收敛"]
+        ),
+        "ui_components_mentions_ui_direct_access_is_partial": contains_all(
+            ui_components, ["仍保留若干直接访问 `*.shared` 的高频入口"]
+        ),
+    }
+    return bool_metric(checks, "module_doc_sync_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -594,6 +622,8 @@ HANDLERS = {
     "DOC-STATE-140": verify_doc_state_140,
     "ORCH-QAS-150": verify_orch_qas_150,
     "ORCH-SAS-150": verify_orch_sas_150,
+    "GOV-SC-160": verify_gov_sc_160,
+    "DOC-MOD-160": verify_doc_mod_160,
 }
 
 

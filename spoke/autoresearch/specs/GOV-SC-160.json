@@ -1,0 +1,22 @@
+{
+  "issue_id": "GOV-SC-160",
+  "title": "ServiceContainer live defaults 外移",
+  "mode": "exec",
+  "goal": "将 ServiceContainer 的 ServiceContainerDependencies.live 从主文件中外移到单独 helper，降低容器边界文件的实现噪音。",
+  "scope": [
+    "Services/ServiceContainer.swift",
+    "Services/ServiceContainerLiveDependencies.swift"
+  ],
+  "metric": "service_container_file_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue GOV-SC-160",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "GOV-SC-160",
+  "stop_condition": "主文件内联 live defaults 消失且门禁通过，或连续 3 次 discard 后 pivot",
+  "notes": "这是边界文件整洁度收敛，不改变 ServiceContainer 对外 API。"
+}

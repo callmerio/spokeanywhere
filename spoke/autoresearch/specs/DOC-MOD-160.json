@@ -1,0 +1,21 @@
+{
+  "issue_id": "DOC-MOD-160",
+  "title": "模块文档日期与现状同步",
+  "mode": "exec",
+  "goal": "同步 core-modules.md 与 ui-components.md 的旧日期和现状表述，使模块文档与 round 13 之后的仓库状态一致。",
+  "scope": [
+    "docs/architecture/core-modules.md",
+    "docs/architecture/ui-components.md"
+  ],
+  "metric": "module_doc_sync_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue DOC-MOD-160",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 3,
+  "run_tag": "DOC-MOD-160",
+  "stop_condition": "模块文档同步检查通过，或连续 3 次 discard 后 pivot",
+  "notes": "只同步模块文档现状，不修改历史文档边界。"
+}
