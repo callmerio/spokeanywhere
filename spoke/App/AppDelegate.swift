@@ -116,9 +116,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         dependencies.screenshotManager.windowFactory = screenshotRuntime.makeWindowFactory()
         
         // 异步恢复之前 Pinned 的截图，避免启动阶段主线程阻塞
-        Task(priority: .utility) { @MainActor [weak self] in
-            await self?.screenshotRuntime.restorePinnedScreenshots { message in
-                self?.logger.info("\(message, privacy: .public)")
+        runAppDelegateUtilityTask(self) { delegate in
+            await delegate.screenshotRuntime.restorePinnedScreenshots { message in
+                delegate.logger.info("\(message, privacy: .public)")
             }
         }
         
@@ -405,7 +405,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let config = dependencies.transcriptionModelManager.getProviderConfiguration()
             if config.enablePrecompiledLM {
                 print("  → Starting dictionary precompilation (background)...")
-                Task.detached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
+                runAppDetached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
                     await transcriptionManager.prepareDictionary()
                 }
             } else {
@@ -416,7 +416,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // macOS 25 及以下，使用 SFSpeechRecognizer，支持预编译
         print("  → Starting dictionary precompilation (background)...")
-        Task.detached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
+        runAppDetached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
             await transcriptionManager.prepareDictionary()
         }
     }
@@ -424,7 +424,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func warmupSpeechEngineInBackground() {
         // 预热语音引擎（后台）- 消除首次使用时的 ~2s 卡顿
         // SpeechTranscriber assets 安装是主要耗时点
-        Task.detached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
+        runAppDetached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in
             await Self.warmupSpeechEngine(transcriptionManager: transcriptionManager)
         }
     }

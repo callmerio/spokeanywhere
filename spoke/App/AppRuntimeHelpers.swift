@@ -15,3 +15,22 @@ func runAppMainActor(
         operation()
     }
 }
+
+func runAppDelegateUtilityTask(
+    _ delegate: AppDelegate?,
+    _ operation: @escaping @MainActor (AppDelegate) async -> Void
+) {
+    Task(priority: .utility) { @MainActor [weak delegate] in
+        guard let delegate else { return }
+        await operation(delegate)
+    }
+}
+
+func runAppDetached(
+    priority: TaskPriority = .background,
+    _ operation: @escaping @Sendable () async -> Void
+) {
+    Task.detached(priority: priority) {
+        await operation()
+    }
+}
