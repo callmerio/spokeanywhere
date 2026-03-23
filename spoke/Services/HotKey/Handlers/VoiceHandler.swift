@@ -109,19 +109,15 @@ final class VoiceHandler: HotKeyHandler {
             let sessionToStop = currentSessionId
             delayedStopTask?.cancel()
 
-            delayedStopTask = Task {
-                try? await Task.sleep(for: .milliseconds(800))
-                await MainActor.run { [weak self] in
-                    guard let self = self else { return }
-                    self.delayedStopTask = nil
+            delayedStopTask = makeHotKeyDelayedTask(after: 0.8, owner: self) { handler in
+                handler.delayedStopTask = nil
 
-                    guard self.isRecording, self.currentSessionId == sessionToStop else {
-                        self.logger.debug("Delayed stop skipped: session changed")
-                        return
-                    }
-
-                    self.stopRecording()
+                guard handler.isRecording, handler.currentSessionId == sessionToStop else {
+                    handler.logger.debug("Delayed stop skipped: session changed")
+                    return
                 }
+
+                handler.stopRecording()
             }
         } else if delayedStopTask != nil {
             // 延迟停止期间按下：取消并开始新录音
@@ -175,21 +171,17 @@ final class VoiceHandler: HotKeyHandler {
 
             let sessionToStop = currentSessionId
 
-            delayedStopTask = Task {
-                try? await Task.sleep(for: .milliseconds(800))
-                await MainActor.run { [weak self] in
-                    guard let self = self else { return }
-                    self.delayedStopTask = nil
+            delayedStopTask = makeHotKeyDelayedTask(after: 0.8, owner: self) { handler in
+                handler.delayedStopTask = nil
 
-                    guard self.isRecording,
-                          self.currentSessionId == sessionToStop,
-                          !self.isToggleSession else {
-                        self.logger.debug("Long press delayed stop skipped")
-                        return
-                    }
-
-                    self.stopRecording()
+                guard handler.isRecording,
+                      handler.currentSessionId == sessionToStop,
+                      !handler.isToggleSession else {
+                    handler.logger.debug("Long press delayed stop skipped")
+                    return
                 }
+
+                handler.stopRecording()
             }
         }
     }
@@ -238,7 +230,7 @@ final class VoiceHandler: HotKeyHandler {
         }
 
         flagsDebounceWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
+        scheduleHotKeyWorkItem(after: 0.1, workItem)
     }
 
     // MARK: - Reset

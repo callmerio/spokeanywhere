@@ -563,7 +563,7 @@ final class HotKeyService {
         }
         
         flagsDebounceWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
+        scheduleHotKeyWorkItem(after: 0.1, workItem)
     }
     
     // MARK: - Settings Handler
@@ -685,24 +685,21 @@ final class HotKeyService {
                     service.delayedStopTask?.cancel()
                     
                     // 延迟 0.8 秒再停止录音，让语音识别处理尾音
-                    service.delayedStopTask = Task {
-                        try? await Task.sleep(for: .milliseconds(800))
-                        await MainActor.run {
-                            // Task 完成后清空引用
-                            service.delayedStopTask = nil
-                            
-                            // 确保是同一个会话，且仍在录音中
-                            guard service.isRecording,
-                                  service.currentSessionId == sessionToStop else {
-                                service.logger.debug("🔍 Delayed stop skipped: session changed or not recording")
-                                return
-                            }
-                            
-                            service.isRecording = false
-                            service.recordingStartTime = nil
-                            service.currentSessionId = nil
-                            service.onRecordingStop?()
+                    service.delayedStopTask = makeHotKeyDelayedTask(after: 0.8, owner: service) { service in
+                        // Task 完成后清空引用
+                        service.delayedStopTask = nil
+
+                        // 确保是同一个会话，且仍在录音中
+                        guard service.isRecording,
+                              service.currentSessionId == sessionToStop else {
+                            service.logger.debug("🔍 Delayed stop skipped: session changed or not recording")
+                            return
                         }
+
+                        service.isRecording = false
+                        service.recordingStartTime = nil
+                        service.currentSessionId = nil
+                        service.onRecordingStop?()
                     }
                 } else if service.delayedStopTask != nil {
                     // ⚠️ 在延迟停止期间再次按下：用户想开始新录音
@@ -797,25 +794,22 @@ final class HotKeyService {
                 let sessionToStop = service.currentSessionId
                 
                 // 延迟 0.8 秒再停止录音，让语音识别处理尾音
-                service.delayedStopTask = Task {
-                    try? await Task.sleep(for: .milliseconds(800))
-                    await MainActor.run {
-                        // Task 完成后清空引用
-                        service.delayedStopTask = nil
-                        
-                        // 确保是同一个会话，且仍在录音中，且不是 Toggle 模式
-                        guard service.isRecording,
-                              service.currentSessionId == sessionToStop,
-                              !service.isToggleSession else {
-                            service.logger.debug("🔍 Long press delayed stop skipped: session changed or state invalid")
-                            return
-                        }
-                        
-                        service.isRecording = false
-                        service.recordingStartTime = nil
-                        service.currentSessionId = nil
-                        service.onRecordingStop?()
+                service.delayedStopTask = makeHotKeyDelayedTask(after: 0.8, owner: service) { service in
+                    // Task 完成后清空引用
+                    service.delayedStopTask = nil
+
+                    // 确保是同一个会话，且仍在录音中，且不是 Toggle 模式
+                    guard service.isRecording,
+                          service.currentSessionId == sessionToStop,
+                          !service.isToggleSession else {
+                        service.logger.debug("🔍 Long press delayed stop skipped: session changed or state invalid")
+                        return
                     }
+
+                    service.isRecording = false
+                    service.recordingStartTime = nil
+                    service.currentSessionId = nil
+                    service.onRecordingStop?()
                 }
             }
         }
