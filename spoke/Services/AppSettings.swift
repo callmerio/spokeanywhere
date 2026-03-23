@@ -1,5 +1,4 @@
 import Carbon.HIToolbox
-import ServiceManagement
 import SwiftUI
 
 // MARK: - Key Combo Formatter
@@ -56,36 +55,6 @@ struct AppSettingsDependencies {
     let updateLoginItemRegistration: (Bool) -> Void
     let applyDockVisibility: (Bool) -> Void
     let updateSelectionToolbarEnabled: (Bool) -> Void
-}
-
-@MainActor
-extension AppSettingsDependencies {
-    static let live = AppSettingsDependencies(
-        notificationCenter: .default,
-        updateLoginItemRegistration: { enabled in
-            if #available(macOS 13.0, *) {
-                if enabled {
-                    try? SMAppService.mainApp.register()
-                } else {
-                    try? SMAppService.mainApp.unregister()
-                }
-            }
-        },
-        applyDockVisibility: { showInDock in
-            if showInDock {
-                NSApp.setActivationPolicy(.regular)
-            } else {
-                NSApp.setActivationPolicy(.accessory)
-            }
-        },
-        updateSelectionToolbarEnabled: { enabled in
-            if enabled {
-                SelectionToolbarManager.shared.start(requestPermissionIfNeeded: true)
-            } else {
-                SelectionToolbarManager.shared.stop()
-            }
-        }
-    )
 }
 
 @MainActor
@@ -210,9 +179,7 @@ class AppSettings: ObservableObject {
     /// 选择工具栏是否启用
     @AppStorage("SelectionToolbarEnabled") var selectionToolbarEnabled: Bool = true {
         didSet {
-            Task { @MainActor in
-                self.dependencies.updateSelectionToolbarEnabled(self.selectionToolbarEnabled)
-            }
+            dependencies.updateSelectionToolbarEnabled(selectionToolbarEnabled)
         }
     }
     
