@@ -197,39 +197,36 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
 extension AppAudioCaptureService: SCContentSharingPickerObserver {
     
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
-        Task { @MainActor in
-            self.isWaitingForSelection = false
-            let appName = self.extractAppName(from: filter) ?? "Selected App"
-            
+        runAppAudioCaptureAsync(self) { capture in
+            capture.isWaitingForSelection = false
+            let appName = capture.extractAppName(from: filter) ?? "Selected App"
+
             do {
-                try await self.startCapture(with: filter)
-                // 延迟更新 UI 状态，避免在 Display Cycle 中触发约束循环
-                DispatchQueue.main.async {
-                    self.currentAppName = appName
-                    self.lastAppName = appName  // 保存用于重连
-                    self.onSelectionComplete?(true)
-                }
+                try await capture.startCapture(with: filter)
+                capture.currentAppName = appName
+                capture.lastAppName = appName
+                capture.onSelectionComplete?(true)
             } catch {
-                self.logger.error("❌ Failed to start capture: \(error.localizedDescription)")
-                self.onError?(error)
-                self.onSelectionComplete?(false)
+                capture.logger.error("❌ Failed to start capture: \(error.localizedDescription)")
+                capture.onError?(error)
+                capture.onSelectionComplete?(false)
             }
         }
     }
     
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
-        Task { @MainActor in
-            self.logger.info("❌ User cancelled app selection")
-            self.isWaitingForSelection = false
-            self.onSelectionCancelled?()
+        runAppAudioCaptureOnMain(self) { capture in
+            capture.logger.info("❌ User cancelled app selection")
+            capture.isWaitingForSelection = false
+            capture.onSelectionCancelled?()
         }
     }
     
     nonisolated func contentSharingPickerStartDidFailWithError(_ error: any Error) {
-        Task { @MainActor in
-            self.logger.error("❌ Picker failed to start: \(error.localizedDescription)")
-            self.isWaitingForSelection = false
-            self.onError?(error)
+        runAppAudioCaptureOnMain(self) { capture in
+            capture.logger.error("❌ Picker failed to start: \(error.localizedDescription)")
+            capture.isWaitingForSelection = false
+            capture.onError?(error)
         }
     }
 }
@@ -317,9 +314,7 @@ extension AppAudioCaptureService: SCStreamOutput {
         // M2 战术豁免：使用显式 unsafe transfer box 封装单次转移所有权语义
         // AVAudioPCMBuffer 在此路径下仅用于读取并立即处理，逻辑上安全
         let transferred = UnsafeTransferBox(value: outputBuffer)
-        Task { @MainActor [transferred] in
-            self.onPCMBuffer?(transferred.value)
-        }
+        deliverAppAudioPCMBuffer(transferred.value, to: self)
     }
 
     /// 显式 unsafe transfer box：封装单次跨隔离边界转移所有权的语义
@@ -331,28 +326,25 @@ extension AppAudioCaptureService: SCStreamOutput {
 extension AppAudioCaptureService: SCStreamDelegate {
     
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
-        Task { @MainActor in
+        runAppAudioCaptureOnMain(self) { capture in
             let nsError = error as NSError
-            self.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
-            
-            self.isCapturing = false
-            self.stream = nil  // 🔥 释放 stream 资源（橙色指示器消失）
-            
-            // 用户主动停止，不触发重试
-            guard !self.isUserInitiatedStop else {
-                self.logger.info("🛑 User initiated stop, skipping retry")
+            capture.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
+
+            capture.isCapturing = false
+            capture.stream = nil
+
+            guard !capture.isUserInitiatedStop else {
+                capture.logger.info("🛑 User initiated stop, skipping retry")
                 return
             }
-            
-            // 判断是否可恢复
-            if self.isRecoverableError(error) && self.lastFilter != nil {
-                self.scheduleRetry()
+
+            if capture.isRecoverableError(error) && capture.lastFilter != nil {
+                capture.scheduleRetry()
             } else {
-                // 不可恢复，清理状态
-                self.currentAppName = nil
-                self.lastFilter = nil
-                self.lastAppName = nil
-                self.onError?(error)
+                capture.currentAppName = nil
+                capture.lastFilter = nil
+                capture.lastAppName = nil
+                capture.onError?(error)
             }
         }
     }
@@ -403,9 +395,8 @@ extension AppAudioCaptureService: SCStreamDelegate {
         logger.info("🔄 Scheduling retry \(self.retryCount)/\(self.maxRetryCount) in \(delay)s")
         onRetryStateChanged?(true, retryCount)
         
-        Task {
-            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            await self.attemptReconnect()
+        _ = makeAppAudioCaptureRetryTask(delay: delay, service: self) { capture in
+            await capture.attemptReconnect()
         }
     }
     
