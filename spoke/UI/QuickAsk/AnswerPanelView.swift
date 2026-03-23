@@ -9,20 +9,6 @@ struct AnswerPanelViewDependencies {
     let openSettings: () -> Void
 }
 
-@MainActor
-extension AnswerPanelViewDependencies {
-    static let live = AnswerPanelViewDependencies(
-        workflowState: .shared,
-        ttsService: .shared,
-        ttsSettings: .shared,
-        openSettings: {
-            if let appDelegate = NSApp.delegate as? AppDelegate {
-                appDelegate.openSettings()
-            }
-        }
-    )
-}
-
 /// Quick Ask 回答面板视图
 struct AnswerPanelView: View {
     @Bindable var state: AnswerPanelState
@@ -89,6 +75,7 @@ struct AnswerPanelView: View {
         self.onRegenerate = onRegenerate
     }
 
+    @MainActor
     init(
         state: AnswerPanelState,
         onClose: (() -> Void)? = nil,
