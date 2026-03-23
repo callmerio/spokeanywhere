@@ -82,7 +82,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         context.coordinator.scrollView = scrollView
         // 使用 boundsDidChangeNotification 监听滚动，比 didLiveScroll 更灵敏（包含弹性动画）
         scrollView.contentView.postsBoundsChangedNotifications = true
-        NotificationCenter.default.addObserver(
+        addAppKitScrollObserver(
             context.coordinator,
             selector: #selector(Coordinator.scrollViewDidScroll(_:)),
             name: NSView.boundsDidChangeNotification,
@@ -91,7 +91,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         
         // 方案 A：监听 documentView 的 frame 变化
         documentView.postsFrameChangedNotifications = true
-        NotificationCenter.default.addObserver(
+        addAppKitScrollObserver(
             context.coordinator,
             selector: #selector(Coordinator.documentViewFrameChanged(_:)),
             name: NSView.frameDidChangeNotification,
@@ -122,7 +122,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         if shouldScroll && isAtBottom {
             let coordinator = context.coordinator
             // 下一个 RunLoop 执行
-            DispatchQueue.main.async { [weak scrollView, weak coordinator] in
+            runAppKitScrollOnMain { [weak scrollView, weak coordinator] in
                 guard let scrollView = scrollView, let coordinator = coordinator else { return }
                 Self.scrollToBottom(scrollView, coordinator: coordinator)
             }
@@ -162,7 +162,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
 
         // 🔥 避免 Sendable closure 捕获泛型 Coordinator：使用 asyncAfter 替代 completion handler
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) { [weak scrollView, weak coordinator] in
+        scheduleAppKitScrollMain(after: 0.13) { [weak scrollView, weak coordinator] in
             guard let scrollView = scrollView, let coordinator = coordinator else { return }
 
             scrollView.reflectScrolledClipView(scrollView.contentView)
@@ -177,7 +177,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
 
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
         coordinator.stopPolling()
-        NotificationCenter.default.removeObserver(coordinator)
+        removeAppKitScrollObserver(coordinator)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -214,11 +214,8 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
         
         func startPolling() {
-            scrollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-                // 🔥 Timer 在主 runloop 执行，使用 assumeIsolated 避免 Sendable closure 捕获问题
-                MainActor.assumeIsolated {
-                    self?.checkAndScrollToBottom()
-                }
+            scrollTimer = makeAppKitScrollTimer(interval: 2.0) { [weak self] in
+                self?.checkAndScrollToBottom()
             }
         }
         
@@ -250,7 +247,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                 isScrollingProgrammatically = true
                 scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
                 scrollView.reflectScrolledClipView(scrollView.contentView)
-                DispatchQueue.main.async {
+                runAppKitScrollOnMain {
                     self.isScrollingProgrammatically = false
                 }
             }
@@ -281,7 +278,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                     scrollLogger.debug("📐 Content grew, triggering catch-up scroll (maxScrollY: \(self.lastMaxScrollY) -> \(maxScrollY))")
                     lastScrollY = scrollY
                     lastMaxScrollY = maxScrollY
-                    DispatchQueue.main.async { [weak self] in
+                    runAppKitScrollOnMain { [weak self] in
                         self?.forceScrollToBottom()
                     }
                     return
@@ -293,7 +290,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             lastScrollY = scrollY
             lastMaxScrollY = maxScrollY
             
-            DispatchQueue.main.async {
+            runAppKitScrollOnMain {
                 if self.isAtBottomBinding.wrappedValue != atBottom {
                     self.isAtBottomBinding.wrappedValue = atBottom
                 }
@@ -311,7 +308,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                     NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
                     
                     // 强制触发一次布局重算和滚动
-                    DispatchQueue.main.async { [weak self] in
+                    runAppKitScrollOnMain { [weak self] in
                         self?.checkAndScrollToBottom()
                     }
                 }
@@ -364,7 +361,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                 return
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + catchUpInterval) { [weak self, weak scrollView] in
+            scheduleAppKitScrollMain(after: catchUpInterval) { [weak self, weak scrollView] in
                 guard let self = self, let scrollView = scrollView else { return }
                 guard let documentView = scrollView.documentView else {
                     self.isScrollingProgrammatically = false
