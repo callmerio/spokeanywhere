@@ -9,15 +9,6 @@ struct DictionarySettingsDependencies {
     let vocabularyService: VocabularyService
 }
 
-@MainActor
-extension DictionarySettingsDependencies {
-    static let live = DictionarySettingsDependencies(
-        dictionaryService: .shared,
-        transcriptionManager: .shared,
-        vocabularyService: .shared
-    )
-}
-
 // MARK: - Dictionary Settings Content
 
 /// 词典设置页面
@@ -149,7 +140,7 @@ struct DictionarySettingsContent: View {
                             dependencies.transcriptionManager.isDictionaryInjectionEnabled = newValue
                             if newValue {
                                 // 开启时重新准备词典
-                                Task {
+                                runDictionarySettingsAsync {
                                     await dependencies.transcriptionManager.prepareDictionary()
                                 }
                             }
@@ -201,7 +192,7 @@ struct DictionarySettingsContent: View {
                         set: { newValue in
                             UserDefaults.standard.dictionaryWeightLevel = newValue
                             // 权重变化需要重新准备词典
-                            Task {
+                            runDictionarySettingsAsync {
                                 await dependencies.transcriptionManager.prepareDictionary()
                             }
                         }
