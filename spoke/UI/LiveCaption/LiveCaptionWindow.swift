@@ -65,8 +65,8 @@ final class LiveCaptionWindowManager {
         window?.orderFront(nil)
         
         // 启动字幕
-        Task {
-            try? await manager.start()
+        runLiveCaptionWindowAsync(self) { windowManager in
+            try? await windowManager.manager.start()
         }
         
         logger.info("🎬 Live Caption window shown")
@@ -77,8 +77,8 @@ final class LiveCaptionWindowManager {
         window?.orderOut(nil)
         
         // 停止字幕
-        Task {
-            await manager.stop()
+        runLiveCaptionWindowAsync(self) { windowManager in
+            await windowManager.manager.stop()
         }
         
         logger.info("🛑 Live Caption window hidden")
@@ -92,7 +92,7 @@ final class LiveCaptionWindowManager {
             show()
         }
         
-        NotificationCenter.default.post(name: .liveCaptionDidToggle, object: nil)
+        postLiveCaptionWindowToggle()
     }
     
     // MARK: - Private
