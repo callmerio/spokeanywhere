@@ -2,6 +2,11 @@ import AVFoundation
 import CryptoKit
 import Foundation
 
+@MainActor
+struct TTSServiceDependencies {
+    let settings: TTSSettings
+}
+
 // MARK: - Edge TTS 常量
 
 private enum EdgeTTSConstants {
@@ -224,7 +229,7 @@ final class TTSService: NSObject, ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = TTSService()
+    static let shared = TTSService(dependencies: .live)
     
     // MARK: - Properties
     
@@ -233,8 +238,10 @@ final class TTSService: NSObject, ObservableObject {
     @Published var currentChunkIndex: Int = 0
     @Published var totalChunks: Int = 0
     @Published var error: String?
+
+    private var settings: TTSSettings { dependencies.settings }
     
-    private let settings = TTSSettings.shared
+    private let dependencies: TTSServiceDependencies
     private let edgeClient = EdgeTTSClient()
     
     // 系统 TTS
@@ -249,7 +256,10 @@ final class TTSService: NSObject, ObservableObject {
     
     // MARK: - Init
     
-    private override init() {
+    private init(
+        dependencies: TTSServiceDependencies
+    ) {
+        self.dependencies = dependencies
         super.init()
         synthesizer.delegate = self
     }
@@ -282,8 +292,8 @@ final class TTSService: NSObject, ObservableObject {
         
         isPlaying = true
         
-        speakTask = Task {
-            await speakChunks()
+        speakTask = makeTTSServiceTask(owner: self) { service in
+            await service.speakChunks()
         }
     }
     
@@ -335,7 +345,9 @@ final class TTSService: NSObject, ObservableObject {
         synthesizer.stopSpeaking(at: .immediate)
         audioPlayer?.stop()
         audioPlayer = nil
-        Task { await edgeClient.cancel() }
+        runTTSServiceAsync(self) { service in
+            await service.edgeClient.cancel()
+        }
         chunks = []
         isPlaying = false
         isSynthesizing = false
@@ -483,17 +495,17 @@ final class TTSService: NSObject, ObservableObject {
 
 extension TTSService: AVSpeechSynthesizerDelegate {
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        Task { @MainActor in
-            systemContinuation?.resume()
-            systemContinuation = nil
+        runTTSServiceOnMain(self) { service in
+            service.systemContinuation?.resume()
+            service.systemContinuation = nil
         }
     }
     
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        Task { @MainActor in
-            systemContinuation?.resume()
-            systemContinuation = nil
-            isPlaying = false
+        runTTSServiceOnMain(self) { service in
+            service.systemContinuation?.resume()
+            service.systemContinuation = nil
+            service.isPlaying = false
         }
     }
 }
@@ -502,9 +514,9 @@ extension TTSService: AVSpeechSynthesizerDelegate {
 
 extension TTSService: AVAudioPlayerDelegate {
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        Task { @MainActor in
-            audioContinuation?.resume()
-            audioContinuation = nil
+        runTTSServiceOnMain(self) { service in
+            service.audioContinuation?.resume()
+            service.audioContinuation = nil
         }
     }
 }
