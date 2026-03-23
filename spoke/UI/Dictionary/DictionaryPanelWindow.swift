@@ -118,7 +118,7 @@ final class DictionaryPanelManager {
     // MARK: - Properties
     
     private var window: DictionaryPanelWindow?
-    private let state = DictionaryPanelState()
+    private let state = DictionaryPanelState(dependencies: .live)
     private var clickOutsideMonitor: Any?
     
     var isVisible: Bool {

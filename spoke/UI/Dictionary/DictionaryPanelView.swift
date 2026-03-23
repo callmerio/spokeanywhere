@@ -6,9 +6,33 @@ private let logger = Logger(subsystem: "com.spokeanywhere", category: "Dictionar
 
 // MARK: - Dictionary Panel View
 
+@MainActor
+struct DictionaryPanelViewDependencies {
+    let parseDefinition: (String, String) -> ParsedDefinition
+}
+
 struct DictionaryPanelView: View {
     @Bindable var state: DictionaryPanelState
     let onDismiss: () -> Void
+    private let dependencies: DictionaryPanelViewDependencies
+
+    init(
+        state: DictionaryPanelState,
+        onDismiss: @escaping () -> Void,
+        dependencies: DictionaryPanelViewDependencies
+    ) {
+        self.state = state
+        self.onDismiss = onDismiss
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init(
+        state: DictionaryPanelState,
+        onDismiss: @escaping () -> Void
+    ) {
+        self.init(state: state, onDismiss: onDismiss, dependencies: .live)
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -28,7 +52,7 @@ struct DictionaryPanelView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.xl))
         .onAppear {
-            Task {
+            runDictionaryPanelAsync {
                 await state.performSearch("")
             }
         }
@@ -61,7 +85,8 @@ struct DictionaryPanelView: View {
                     set: { state.search($0) }
                 ),
                 placeholder: "Search word...",
-                onSubmit: { state.confirmSelection() }
+                onSubmit: { state.confirmSelection() },
+                onCancel: onDismiss
             )
         }
         .padding(.horizontal, DesignTokens.Spacing.xl)
@@ -83,7 +108,8 @@ struct DictionaryPanelView: View {
                             WordResultRow(
                                 result: result,
                                 isSelected: index == state.selectedIndex,
-                                isVocabulary: state.isVocabulary(result.word)
+                                isVocabulary: state.isVocabulary(result.word),
+                                parseDefinition: dependencies.parseDefinition
                             )
                             .id("\(index)-\(state.refreshTrigger)") // 加入 refreshTrigger 强制刷新
                             .onTapGesture {
@@ -201,7 +227,7 @@ struct DictionaryPanelView: View {
                     // 跳转查询新单词
                     state.searchText = word
                     state.viewMode = .list
-                    Task {
+                    runDictionaryPanelAsync {
                         await state.performSearch(word)
                         // 如果有结果，直接进入详情
                         if let firstResult = state.results.first {
@@ -247,6 +273,7 @@ struct WordResultRow: View {
     let result: LocalDictionaryResult
     let isSelected: Bool
     let isVocabulary: Bool
+    let parseDefinition: (String, String) -> ParsedDefinition
     
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.lg) {
@@ -273,7 +300,7 @@ struct WordResultRow: View {
     }
     
     private var briefDefinitionText: Text {
-        let parsed = DictionaryDefinitionParser.shared.parse(word: result.word, definition: result.definition)
+        let parsed = parseDefinition(result.word, result.definition)
         let posAbbr: [String: String] = [
             "adjective": "adj.", "noun": "n.", "verb": "v.", 
             "adverb": "adv.", "preposition": "prep.", "pronoun": "pron.",
@@ -325,6 +352,7 @@ struct DictionarySearchField: NSViewRepresentable {
     @Binding var text: String
     let placeholder: String
     var onSubmit: (() -> Void)?
+    var onCancel: (() -> Void)?
     
     func makeNSView(context: Context) -> NSTextField {
         let textField = NSTextField()
@@ -337,7 +365,7 @@ struct DictionarySearchField: NSViewRepresentable {
         textField.placeholderString = placeholder
         textField.cell?.sendsActionOnEndEditing = false
         
-        DispatchQueue.main.async {
+        runDictionaryPanelAsync {
             textField.window?.makeFirstResponder(textField)
         }
         
@@ -384,7 +412,7 @@ struct DictionarySearchField: NSViewRepresentable {
                 return true
             }
             if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-                DictionaryPanelManager.shared.hide()
+                parent.onCancel?()
                 return true
             }
             if commandSelector == #selector(NSResponder.moveUp(_:)) {
