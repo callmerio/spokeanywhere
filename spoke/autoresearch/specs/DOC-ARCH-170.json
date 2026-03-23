@@ -1,0 +1,23 @@
+{
+  "issue_id": "DOC-ARCH-170",
+  "title": "架构导航与当前状态文档同步到 round 17",
+  "mode": "exec",
+  "goal": "统一 overview/current-state-audit/quick-reference/risks-and-recommendations 的更新时间与 round 16 之后的当前事实，补入 ServiceContainer live defaults 外移、RuntimeBridgeHelpers 收口以及当前 memory 基线。",
+  "scope": [
+    "docs/architecture/overview.md",
+    "docs/architecture/current-state-audit.md",
+    "docs/architecture/quick-reference.md",
+    "docs/architecture/risks-and-recommendations.md"
+  ],
+  "metric": "architecture_round17_sync_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue DOC-ARCH-170",
+  "guard": [
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 3,
+  "run_tag": "DOC-ARCH-170",
+  "stop_condition": "四份文档全部同步到 2026-03-23 当前事实且验证通过，或连续 3 次 discard 后 pivot",
+  "notes": "只更新当前事实基线，不改写历史验收文档。"
+}

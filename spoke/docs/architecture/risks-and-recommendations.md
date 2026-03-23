@@ -1,14 +1,14 @@
 # SpokenAnyWhere 风险评估与改进建议
 
-**版本**: 1.2
-**更新时间**: 2026-03-22
+**版本**: 1.3
+**更新时间**: 2026-03-23
 **结论**: **Conditional Go**
 
 ---
 
 ## 一、执行摘要
 
-本次以当前仓库快照和 **2026-03-22** 的本地复算为基线，结论如下：
+本次以当前仓库快照和 **2026-03-23** 的本地复核为基线，结论如下：
 
 - ✅ **代码可运行性**: Go
   - `swift test` 通过，结果为 `150 tests / 30 suites`
@@ -86,6 +86,8 @@ bash Tests/run-concurrency-check.sh
 - `SelectionMonitorService` 已抽出 live/runtime helper，减少 debounce / AX bridge 的主文件噪音。
 - `WorkflowExecutor` 已抽出 `WorkflowProfileResolver` 并新增表征测试，profile fallback 不再直接写在 executor 主体里。
 - `QuickAskLiveDependencies` 与 `RecordingControllerLiveDependencies` 已完成一轮 live factory 收敛，当前主文件不再保留成组 `*.shared` / `NSApp.sendAction` 内联样板。
+- `ServiceContainerLiveDependencies` 已承接容器默认 live defaults，容器主文件回到协议与缓存边界本身。
+- Recording / Quick Ask / Selection 系列 runtime helper 已开始统一到 `RuntimeBridgeHelpers.swift`，减少重复的主线程/定时器桥接样板。
 
 **影响**:
 
@@ -147,7 +149,7 @@ bash Tests/run-concurrency-check.sh
 
 - 以 `current-state-audit.md` 作为当前事实基线
 - 旧文档保留历史属性，不再承担“最新状态”职责
-- 所有后续结论优先引用 2026-03-22 的复算结果
+- 所有后续结论优先引用 2026-03-23 的复算结果
 
 ### 4.2 冻结新增坏味道
 
@@ -214,4 +216,4 @@ bash Tests/run-concurrency-check.sh
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-22
+**最后更新**: 2026-03-23

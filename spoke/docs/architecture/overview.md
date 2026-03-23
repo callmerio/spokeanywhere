@@ -1,7 +1,7 @@
 # SpokenAnyWhere 项目架构全景
 
-**版本**: 1.2
-**更新时间**: 2026-03-22
+**版本**: 1.3
+**更新时间**: 2026-03-23
 **定位**: 架构首页与阅读导航
 
 ---
@@ -114,7 +114,7 @@ UI
 - 分层边界基本清晰
 - 主要功能域已按目录拆分
 - 本地严格并发检查通过
-- 测试基线已在 2026-03-22 更新到 `150 tests / 30 suites`
+- 测试基线已在 2026-03-23 复核保持为 `150 tests / 30 suites`
 
 ### 5.2 主要约束
 
@@ -130,6 +130,7 @@ UI
 - `Core/Workflow/WorkflowProfileResolver.swift` 已将 Workflow 的 profile fallback 选择从 `WorkflowExecutor` 中抽离，并新增表征测试。
 - `QuickAskLiveDependencies.swift` 与 `RecordingControllerLiveDependencies.swift` 已收敛到容器化 live wiring，当前不再直接依赖成组 `*.shared`。
 - `SelectionActionLiveHelpers.swift`、`SelectionMonitorLiveHelpers.swift` 与 `WorkflowExecutorLiveHelpers.swift` 已在 round 12 完成 helper-sink 清零。
+- `ServiceContainerLiveDependencies.swift` 已承接容器默认 live defaults，`ServiceContainer.swift` 回到协议、缓存与环境入口本身。
 
 ### 5.3 当前判断
 
@@ -152,4 +153,4 @@ UI
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-22
+**最后更新**: 2026-03-23

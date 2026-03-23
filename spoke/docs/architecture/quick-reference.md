@@ -1,7 +1,7 @@
 # SpokenAnyWhere 快速导航索引
 
-**版本**: 1.2
-**更新时间**: 2026-03-22
+**版本**: 1.3
+**更新时间**: 2026-03-23
 
 本文档提供“功能 -> 入口文件 -> 主链路 -> 验证命令”的快速映射。
 
@@ -168,12 +168,17 @@ rg -n "\.shared\." App Core Services UI
 rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 ```
 
-### 4.2 2026-03-22 复算结果
+### 4.2 2026-03-23 复算结果
 
 - `swift test`：`150 tests / 30 suites` 通过
 - `run-concurrency-check.sh`：`0 warnings`
 
-### 4.3 当前仓库缺失项
+### 4.3 当前补充事实
+
+- `Services/ServiceContainerLiveDependencies.swift` 已承接 `ServiceContainerDependencies.live` 的默认装配，`ServiceContainer.swift` 不再内联整段 live defaults。
+- `QuickAskLiveDependencies.swift`、`RecordingControllerLiveDependencies.swift`、`SelectionMonitorLiveDependencies.swift` 与 `WorkflowExecutorLiveDependencies.swift` 已完成多轮收敛。
+- `Services/RuntimeBridgeHelpers.swift` 现为 Recording / Quick Ask / Selection 系列 runtime helper 的共享主线程与定时器桥接入口。
+### 4.4 当前仓库缺失项
 
 以下路径在本次仓库快照中不存在，不应继续作为导航入口引用：
 
@@ -197,4 +202,4 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-22
+**最后更新**: 2026-03-23

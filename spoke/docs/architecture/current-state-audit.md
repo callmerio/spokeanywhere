@@ -1,7 +1,7 @@
 # SpokenAnyWhere 当前状态审计
 
-**版本**: 1.1
-**审计日期**: 2026-03-22
+**版本**: 1.2
+**审计日期**: 2026-03-23
 **审计范围**: 仓库结构、架构分层、文档一致性、测试与并发门禁、记忆落地状态
 
 ---
@@ -14,7 +14,7 @@ SpokenAnyWhere 是一个原生 macOS 生产力应用，使用 SwiftUI + AppKit �
 
 - 当前仓库主代码位于 `App/`、`Core/`、`Services/`、`UI/`
 - `Package.swift` 仍以 Swift Package Manager 作为构建入口
-- 本地实测已于 **2026-03-22** 复算通过：
+- 本地实测已于 **2026-03-23** 复算保持通过：
   - `swift test` -> `150 tests / 30 suites` 通过
   - `bash Tests/run-concurrency-check.sh` -> `0 warnings`
 - `docs/architecture/` 已有较完整基础文档，但存在明显口径漂移
@@ -117,7 +117,7 @@ UI
 
 ### 4.1 本地复算结果
 
-复算日期：**2026-03-22**
+复算日期：**2026-03-23**
 
 ```bash
 swift test
@@ -170,6 +170,8 @@ bash Tests/run-concurrency-check.sh
 - `SelectionMonitorService` 已拆出 `SelectionMonitorLiveDependencies` 与 `SelectionMonitorRuntimeHelpers`，将 debounce / AX bridge / live wiring 从主文件热路径中分离。
 - `WorkflowExecutor` 已拆出 `WorkflowExecutorLiveDependencies` 与 `WorkflowProfileResolver`，并新增 `WorkflowProfileResolverTests` 作为 profile fallback 的表征测试。
 - `QuickAskLiveDependencies` 与 `RecordingControllerLiveDependencies` 已完成 live factory 收敛，主文件不再保留成组 `*.shared` 与 responder-chain 内联样板。
+- `ServiceContainerLiveDependencies` 已承接 `ServiceContainerDependencies.live` 的默认装配，容器主文件不再内联整段默认 wiring。
+- `Services/RuntimeBridgeHelpers.swift` 已成为 Recording / Quick Ask / Selection 系列 runtime helper 的共享主线程、定时器与轮询桥接入口。
 - 若按最新测试口径计，当前本地基线已提升到 `150 tests / 30 suites`。
 
 ---
@@ -180,13 +182,13 @@ bash Tests/run-concurrency-check.sh
 
 - `.memory/` 已初始化
 - 本地文本化记忆容器已可用
-- `Memgraph` 服务已恢复，实体、卡片、关系可写入
-- `memory add` 任务接口仍返回 `404`，因此任务级记录保留本地导入稿兜底
+- 当前会话下 `memory search` 仍提示 `Memgraph 服务不可用`
+- 因此图数据库写入不应视为当前稳定基线
 
-因此本轮采用双轨落地：
+因此当前应以仓库内本地产物为准：
 
-- 将高价值实体、卡片、关系直接写入 Memory
-- 在 `.memory/` 中补齐项目审计导入稿、时间线快照与代码图谱文件
+- `.memory/` 继续承担项目审计导入稿、时间线快照与代码图谱文件
+- 图数据库实体/关系写入仅作为可选增强，不再写成“当前已稳定恢复”的事实
 
 ---
 
@@ -203,4 +205,4 @@ bash Tests/run-concurrency-check.sh
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-22
+**最后更新**: 2026-03-23

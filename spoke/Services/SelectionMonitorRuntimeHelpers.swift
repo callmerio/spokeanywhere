@@ -5,10 +5,7 @@ func runSelectionMonitorOnMain(
     _ service: SelectionMonitorService?,
     _ action: @escaping @MainActor (SelectionMonitorService) -> Void
 ) {
-    Task { @MainActor in
-        guard let service else { return }
-        action(service)
-    }
+    runtimeRunOnMain(owner: service, action)
 }
 
 func makeSelectionMonitorDebounceTimer(
@@ -16,16 +13,13 @@ func makeSelectionMonitorDebounceTimer(
     owner: SelectionMonitorService,
     action: @escaping @MainActor (SelectionMonitorService) -> Void
 ) -> Timer {
-    Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak owner] _ in
-        runSelectionMonitorOnMain(owner, action)
-    }
+    runtimeMakeOwnedTimer(interval: interval, owner: owner, action: action)
 }
 
 func invalidateSelectionMonitorTimer(
     _ timer: inout Timer?
 ) {
-    timer?.invalidate()
-    timer = nil
+    runtimeInvalidateTimer(&timer)
 }
 
 func selectionMonitorToolbarContainsMouse(
@@ -45,13 +39,10 @@ func runSelectionMonitorAXQuery(
     loadSelection: @escaping @Sendable (NSRunningApplication) -> (String, CGRect)?,
     onResult: @escaping @MainActor (String, CGRect, String, String?) -> Void
 ) {
-    Task.detached(priority: .userInitiated) {
-        guard let (selectedText, bounds) = loadSelection(frontApp) else {
-            return
-        }
-
-        await MainActor.run {
-            onResult(selectedText, bounds, bundleId, appName)
-        }
+    runtimeRunDetachedValue(
+        priority: .userInitiated,
+        operation: { loadSelection(frontApp).map { ($0.0, $0.1, bundleId, appName) } }
+    ) { result in
+        onResult(result.0, result.1, result.2, result.3)
     }
 }

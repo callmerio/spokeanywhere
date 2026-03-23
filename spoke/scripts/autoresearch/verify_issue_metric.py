@@ -42,6 +42,22 @@ def hotspot_metric(path: Path, metric_name: str, patterns: dict[str, str]) -> di
     }
 
 
+def hotspot_metric_paths(
+    paths: list[Path], metric_name: str, patterns: dict[str, str]
+) -> dict[str, Any]:
+    counts = {
+        name: sum(count_occurrences(path, pattern) for path in paths)
+        for name, pattern in patterns.items()
+    }
+    return {
+        "metric_name": metric_name,
+        "metric": sum(counts.values()),
+        "direction": "lower",
+        "paths": [str(path.relative_to(ROOT)) for path in paths],
+        "counts": counts,
+    }
+
+
 def load_status() -> dict[str, Any]:
     path = ROOT / "autoresearch" / "status" / "conditional-go-architecture.json"
     if not path.exists():
@@ -561,6 +577,54 @@ def verify_doc_mod_160() -> dict[str, Any]:
     return bool_metric(checks, "module_doc_sync_gaps")
 
 
+def verify_gov_rb_170() -> dict[str, Any]:
+    paths = [
+        ROOT / "Services" / "QuickAskRuntimeHelpers.swift",
+        ROOT / "Services" / "SelectionActionRuntimeHelpers.swift",
+        ROOT / "Services" / "SelectionToolbarRuntimeHelpers.swift",
+        ROOT / "Services" / "RecordingControllerRuntimeHelpers.swift",
+        ROOT / "Services" / "SelectionMonitorRuntimeHelpers.swift",
+    ]
+    return hotspot_metric_paths(
+        paths,
+        "runtime_bridge_helper_duplication_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+            "raw_timer_calls": r"Timer\.scheduledTimer",
+            "raw_mainactor_run_calls": r"MainActor\.run",
+            "raw_sleep_calls": r"Task\.sleep",
+        },
+    )
+
+
+def verify_doc_arch_170() -> dict[str, Any]:
+    overview = ROOT / "docs" / "architecture" / "overview.md"
+    current_state = ROOT / "docs" / "architecture" / "current-state-audit.md"
+    quick_reference = ROOT / "docs" / "architecture" / "quick-reference.md"
+    risks = ROOT / "docs" / "architecture" / "risks-and-recommendations.md"
+    checks = {
+        "overview_updated_date": contains_all(overview, ["**更新时间**: 2026-03-23"]),
+        "current_state_updated_date": contains_all(current_state, ["**审计日期**: 2026-03-23"]),
+        "quick_reference_updated_date": contains_all(
+            quick_reference, ["**更新时间**: 2026-03-23"]
+        ),
+        "risks_updated_date": contains_all(risks, ["**更新时间**: 2026-03-23"]),
+        "quick_reference_mentions_runtime_bridge_helpers": contains_all(
+            quick_reference, ["RuntimeBridgeHelpers.swift"]
+        ),
+        "overview_mentions_service_container_live_defaults": contains_all(
+            overview, ["ServiceContainerLiveDependencies.swift"]
+        ),
+        "current_state_mentions_memory_unavailable": contains_all(
+            current_state, ["Memgraph 服务不可用"]
+        ),
+        "risks_mentions_runtime_bridge_helpers": contains_all(
+            risks, ["RuntimeBridgeHelpers.swift"]
+        ),
+    }
+    return bool_metric(checks, "architecture_round17_sync_gaps")
+
+
 def verify_orch_qas_150() -> dict[str, Any]:
     path = ROOT / "Services" / "QuickAskService.swift"
     return hotspot_metric(
@@ -624,6 +688,8 @@ HANDLERS = {
     "ORCH-SAS-150": verify_orch_sas_150,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
+    "GOV-RB-170": verify_gov_rb_170,
+    "DOC-ARCH-170": verify_doc_arch_170,
 }
 
 

@@ -5,27 +5,20 @@ func runRecordingControllerOnMain(
     _ controller: RecordingController?,
     _ action: @escaping @MainActor (RecordingController) -> Void
 ) {
-    Task { @MainActor in
-        guard let controller else { return }
-        action(controller)
-    }
+    runtimeRunOnMain(owner: controller, action)
 }
 
 func runRecordingControllerDependenciesOnMain(
     _ dependencies: RecordingControllerDependencies,
     _ action: @escaping @MainActor (RecordingControllerDependencies) -> Void
 ) {
-    Task { @MainActor in
-        action(dependencies)
-    }
+    runtimeRunOnMainValue(dependencies, action)
 }
 
 func runRecordingPostprocess(
     _ operation: @escaping @Sendable () async -> Void
 ) {
-    Task {
-        await operation()
-    }
+    runtimeRunAsync(operation)
 }
 
 @MainActor
@@ -39,10 +32,7 @@ func runRecordingControllerAsync(
     _ controller: RecordingController?,
     _ action: @escaping @MainActor (RecordingController) async -> Void
 ) {
-    Task { @MainActor in
-        guard let controller else { return }
-        await action(controller)
-    }
+    runtimeRunOnMainAsync(owner: controller, action)
 }
 
 func makeRecordingDurationTimer(
@@ -50,7 +40,5 @@ func makeRecordingDurationTimer(
     owner: RecordingController?,
     action: @escaping @MainActor (RecordingController) -> Void
 ) -> Timer {
-    Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-        runRecordingControllerOnMain(owner, action)
-    }
+    runtimeMakeOwnedTimer(interval: interval, repeats: true, owner: owner, action: action)
 }

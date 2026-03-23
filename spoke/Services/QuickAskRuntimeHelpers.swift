@@ -5,20 +5,14 @@ func runQuickAskServiceOnMain(
     _ service: QuickAskService?,
     _ action: @escaping @MainActor (QuickAskService) async -> Void
 ) {
-    Task { @MainActor in
-        guard let service else { return }
-        await action(service)
-    }
+    runtimeRunOnMainAsync(owner: service, action)
 }
 
 func runQuickAskHUDManagerOnMain(
     _ manager: QuickAskHUDManager?,
     _ action: @escaping @MainActor (QuickAskHUDManager) -> Void
 ) {
-    Task { @MainActor in
-        guard let manager else { return }
-        action(manager)
-    }
+    runtimeRunOnMain(owner: manager, action)
 }
 
 func runQuickAskHUDManagerAfterDelay(
@@ -26,11 +20,7 @@ func runQuickAskHUDManagerAfterDelay(
     seconds: Double,
     _ action: @escaping @MainActor (QuickAskHUDManager) -> Void
 ) {
-    Task { @MainActor in
-        try? await Task.sleep(for: .seconds(seconds))
-        guard let manager else { return }
-        action(manager)
-    }
+    runtimeRunOnMain(after: seconds, owner: manager, action)
 }
 
 func runQuickAskServiceAfterDelay(
@@ -38,11 +28,7 @@ func runQuickAskServiceAfterDelay(
     seconds: Double,
     _ action: @escaping @MainActor (QuickAskService) -> Void
 ) {
-    Task { @MainActor in
-        try? await Task.sleep(for: .seconds(seconds))
-        guard let service else { return }
-        action(service)
-    }
+    runtimeRunOnMain(after: seconds, owner: service, action)
 }
 
 func makeQuickAskTimer(
@@ -51,12 +37,7 @@ func makeQuickAskTimer(
     owner: QuickAskService,
     action: @escaping @MainActor (QuickAskService) -> Void
 ) -> Timer {
-    Timer.scheduledTimer(withTimeInterval: interval, repeats: repeats) { [weak owner] _ in
-        Task { @MainActor in
-            guard let owner else { return }
-            action(owner)
-        }
-    }
+    runtimeMakeOwnedTimer(interval: interval, repeats: repeats, owner: owner, action: action)
 }
 
 @MainActor

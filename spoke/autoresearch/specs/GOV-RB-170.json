@@ -1,0 +1,26 @@
+{
+  "issue_id": "GOV-RB-170",
+  "title": "运行时桥接 helper 统一收口",
+  "mode": "exec",
+  "goal": "将 QuickAsk / Recording / Selection 系列 runtime helper 中重复的主线程、延时、定时器与轮询桥接样板统一到共享工具层，避免继续在多个 helper 文件里复制 Task/Timer 模板。",
+  "scope": [
+    "Services/RuntimeBridgeHelpers.swift",
+    "Services/QuickAskRuntimeHelpers.swift",
+    "Services/SelectionActionRuntimeHelpers.swift",
+    "Services/SelectionToolbarRuntimeHelpers.swift",
+    "Services/RecordingControllerRuntimeHelpers.swift",
+    "Services/SelectionMonitorRuntimeHelpers.swift"
+  ],
+  "metric": "runtime_bridge_helper_duplication_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue GOV-RB-170",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "GOV-RB-170",
+  "stop_condition": "重复 Task/Timer/主线程桥接样板从 helper 文件消失且门禁通过，或连续 3 次 discard 后 pivot",
+  "notes": "这次是横向统一运行时桥接层，不改变业务行为或公开 API。"
+}
