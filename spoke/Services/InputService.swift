@@ -100,19 +100,11 @@ final class InputService {
         lastSeenText = fullText
         
         // 启动新的延迟计时器
-        stabilityTimer = Task { [weak self] in
-            do {
-                // 等待 500ms
-                try await Task.sleep(nanoseconds: (self?.stabilityDelayMs ?? 500) * 1_000_000)
-                
-                // 检查是否被取消
-                if Task.isCancelled { return }
-                
-                // 500ms 过去了，文本稳定，可以输入
-                self?.flushPendingText()
-            } catch {
-                // Task 被取消，正常情况
-            }
+        stabilityTimer = makeInputServiceStabilityTask(
+            owner: self,
+            delayMs: stabilityDelayMs
+        ) { service in
+            service.flushPendingText()
         }
     }
     
