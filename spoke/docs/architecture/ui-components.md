@@ -1,7 +1,7 @@
 # SpokenAnyWhere UI 组件体系
 
-**版本**: 1.1
-**更新时间**: 2026-03-19
+**版本**: 1.2
+**更新时间**: 2026-03-23
 
 ---
 
@@ -36,7 +36,7 @@ UI 层按场景目录组织，核心样式来源仍为 `UI/Theme/DesignTokens.sw
 
 ### 2.2 依赖方式
 
-UI 层当前仍大量直接访问 `*.shared` 单例，例如：
+UI 层当前仍保留若干直接访问 `*.shared` 的高频入口，例如：
 
 - `MessagePanelView`
 - `QuickAskCapsuleView`
@@ -44,7 +44,7 @@ UI 层当前仍大量直接访问 `*.shared` 单例，例如：
 - `ActionBarView`
 - `ScreenshotContentView`
 
-因此 UI 层虽然目录结构清晰，但测试替换与预览隔离成本仍高。
+因此 UI 层虽然目录结构清晰，但测试替换与预览隔离成本仍高；近期的收敛主要集中在 service/live factory 一侧，尚未系统性压到所有视图层。
 
 ### 2.3 样式系统
 
