@@ -130,17 +130,17 @@ final class ImageUpscalerModelManager: NSObject, ObservableObject {
                     try? FileManager.default.removeItem(at: URL(fileURLWithPath: zipPath))
                     
                     // 2. Compile
-                    Task { @MainActor in
-                        self.compileModel()
+                    runImageUpscalerModelManagerOnMain(self) { manager in
+                        manager.compileModel()
                     }
                 } else {
-                    Task { @MainActor in
-                        self.state = .failed(error: "Unzip failed with code \(process.terminationStatus)")
+                    runImageUpscalerModelManagerOnMain(self) { manager in
+                        manager.state = .failed(error: "Unzip failed with code \(process.terminationStatus)")
                     }
                 }
             } catch {
-                Task { @MainActor in
-                    self.state = .failed(error: "Unzip error: \(error.localizedDescription)")
+                runImageUpscalerModelManagerOnMain(self) { manager in
+                    manager.state = .failed(error: "Unzip error: \(error.localizedDescription)")
                 }
             }
         }
@@ -166,14 +166,14 @@ final class ImageUpscalerModelManager: NSObject, ObservableObject {
                 // Move to permanent location
                 try FileManager.default.moveItem(at: tempCompiledURL, to: targetURL)
                 
-                Task { @MainActor in
-                    self.state = .compiled
-                    self.logger.info("✅ Model compiled and ready")
+                runImageUpscalerModelManagerOnMain(self) { manager in
+                    manager.state = .compiled
+                    manager.logger.info("✅ Model compiled and ready")
                 }
             } catch {
-                Task { @MainActor in
-                    self.state = .failed(error: "Compilation failed: \(error.localizedDescription)")
-                    self.logger.error("❌ Compilation error: \(error.localizedDescription)")
+                runImageUpscalerModelManagerOnMain(self) { manager in
+                    manager.state = .failed(error: "Compilation failed: \(error.localizedDescription)")
+                    manager.logger.error("❌ Compilation error: \(error.localizedDescription)")
                 }
             }
         }
@@ -192,32 +192,32 @@ extension ImageUpscalerModelManager: URLSessionDownloadDelegate {
     
     nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         // Move file to destination (ZIP)
-        Task { @MainActor in
+        runImageUpscalerModelManagerOnMain(self) { manager in
             do {
-                if FileManager.default.fileExists(atPath: zipFileURL.path) {
-                    try FileManager.default.removeItem(at: zipFileURL)
+                if FileManager.default.fileExists(atPath: manager.zipFileURL.path) {
+                    try FileManager.default.removeItem(at: manager.zipFileURL)
                 }
-                try FileManager.default.moveItem(at: location, to: zipFileURL)
+                try FileManager.default.moveItem(at: location, to: manager.zipFileURL)
                 
-                self.logger.info("✅ Download complete, starting unzip...")
-                self.unzipAndCompile()
+                manager.logger.info("✅ Download complete, starting unzip...")
+                manager.unzipAndCompile()
             } catch {
-                self.state = .failed(error: "Move file failed: \(error.localizedDescription)")
+                manager.state = .failed(error: "Move file failed: \(error.localizedDescription)")
             }
         }
     }
     
     nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        Task { @MainActor in
-            self.state = .downloading(progress: progress)
+        runImageUpscalerModelManagerOnMain(self) { manager in
+            manager.state = .downloading(progress: progress)
         }
     }
     
     nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
-            Task { @MainActor in
-                self.state = .failed(error: error.localizedDescription)
+            runImageUpscalerModelManagerOnMain(self) { manager in
+                manager.state = .failed(error: error.localizedDescription)
             }
         }
     }
