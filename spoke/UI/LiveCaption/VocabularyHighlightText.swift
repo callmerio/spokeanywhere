@@ -6,16 +6,8 @@ private typealias DS = DesignTokens
 
 private let vocabTextLogger = Logger(subsystem: "com.spokeanywhere", category: "VocabularyText")
 
-private func runVocabularyHighlightMainActor(
-    _ operation: @escaping @MainActor () async -> Void
-) {
-    Task { @MainActor in
-        await operation()
-    }
-}
-
 @MainActor
-private final class VocabularyTranslationStore {
+final class VocabularyTranslationStore {
     private var translations: [String: String] = [:]
     private var loadingWords: Set<String> = []
 
@@ -66,33 +58,7 @@ struct VocabularyHighlightDependencies {
     let addVocabulary: (String) -> Void
     let removeVocabulary: (String) -> Void
     let lookupDictionary: (String) async -> Result<DictionaryData, DictionaryAPIError>
-    fileprivate let translationStore: VocabularyTranslationStore
-}
-
-@MainActor
-extension VocabularyHighlightDependencies {
-    static let live: VocabularyHighlightDependencies = {
-        let vocabularyService = VocabularyService.shared
-        let dictionaryService = DictionaryAPIService.shared
-        let translationStore = VocabularyTranslationStore()
-
-        return VocabularyHighlightDependencies(
-            highlightRanges: { vocabularyService.highlightRanges(in: $0) },
-            containsVocabulary: { vocabularyService.contains($0) },
-            addVocabulary: { _ = vocabularyService.add($0) },
-            removeVocabulary: { word in
-                if let item = vocabularyService.items.first(where: {
-                    $0.word.lowercased() == word.lowercased()
-                }) {
-                    vocabularyService.remove(item.id)
-                }
-            },
-            lookupDictionary: { word in
-                await dictionaryService.lookup(word)
-            },
-            translationStore: translationStore
-        )
-    }()
+    let translationStore: VocabularyTranslationStore
 }
 
 // MARK: - Vocabulary Highlight Text
