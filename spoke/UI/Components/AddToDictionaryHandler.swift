@@ -12,32 +12,9 @@ struct AddToDictionaryHandlerDependencies {
 }
 
 @MainActor
-extension AddToDictionaryHandlerDependencies {
-    static let live = AddToDictionaryHandlerDependencies(
-        notificationCenter: .default,
-        dictionaryService: .shared,
-        messagePanelState: .shared
-    )
-
-    static let preview = AddToDictionaryHandlerDependencies(
-        notificationCenter: NotificationCenter(),
-        dictionaryService: .shared,
-        messagePanelState: .shared
-    )
-}
-
-@MainActor
 struct AddToDictionarySheetDependencies {
     let dictionaryService: DictionaryService
     let addHighlight: (TextHighlight) -> Void
-}
-
-@MainActor
-extension AddToDictionarySheetDependencies {
-    static let live = AddToDictionarySheetDependencies(
-        dictionaryService: .shared,
-        addHighlight: { MessagePanelState.shared.addHighlightToLatestCard($0) }
-    )
 }
 
 /// 处理「添加到词典」请求的管理器
@@ -101,12 +78,10 @@ final class AddToDictionaryHandler: ObservableObject {
     
     /// 快速添加（不显示弹窗，直接添加）+ 记录训练短语
     func quickAdd(_ word: String, trainingPhrase: String? = nil) {
-        Task { @MainActor in
-            if let entry = dependencies.dictionaryService.addEntry(word: word) {
-                // 如果有训练短语，记录下来
-                if let phrase = trainingPhrase, !phrase.isEmpty {
-                    dependencies.dictionaryService.addTrainingPhrase(phrase, to: entry.id)
-                }
+        if let entry = dependencies.dictionaryService.addEntry(word: word) {
+            // 如果有训练短语，记录下来
+            if let phrase = trainingPhrase, !phrase.isEmpty {
+                dependencies.dictionaryService.addTrainingPhrase(phrase, to: entry.id)
             }
         }
     }
