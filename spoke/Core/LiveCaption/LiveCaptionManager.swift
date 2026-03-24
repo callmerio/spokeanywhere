@@ -154,10 +154,10 @@ final class LiveCaptionManager: ObservableObject {
     private let maxSegmentsInFile = 2000
     
     /// 当前翻译任务
-    private var translationTask: Task<Void, Never>?
+    private var translationTask: LiveCaptionAsyncTask?
     
     /// 流式翻译任务（带防抖）
-    private var volatileTranslationTask: Task<Void, Never>?
+    private var volatileTranslationTask: LiveCaptionAsyncTask?
     
     /// 上次的 finalizedText 长度（用于计算增量）
     private var lastFinalizedLength: Int = 0
@@ -715,34 +715,21 @@ final class LiveCaptionManager: ObservableObject {
     /// - Returns: 翻译结果，用于复用到历史记录
     private func translateAndUpdateBuffer(itemId: UUID, text: String) async -> String? {
         guard translationEnabled, dependencies.translator.isAvailable else { return nil }
-        
-        // 最多重试 3 次
-        for attempt in 1...3 {
-            // 检查任务是否被取消（如用户关闭字幕窗口）
-            guard !Task.isCancelled else { return nil }
-            
-            if let translated = await dependencies.translator.translate(text) {
-                await MainActor.run {
-                    lineBuffer.updateTranslation(id: itemId, translation: translated)
-                    // 🔥 翻译完成后发送通知，触发强制滚动
-                    dependencies.postTranslationUpdate()
-                }
-                return translated
-            }
-            
-            // 重试前等待一小段时间，同时检查取消状态
-            if attempt < 3 {
-                do {
-                    try await Task.sleep(for: .milliseconds(200 * attempt))
-                } catch {
-                    // Task 被取消
-                    return nil
-                }
-            }
+
+        let translated = await runLiveCaptionTranslationRetry(
+            text: text,
+            translator: dependencies.translator
+        ) { [self] translated in
+            lineBuffer.updateTranslation(id: itemId, translation: translated)
+            // 🔥 翻译完成后发送通知，触发强制滚动
+            dependencies.postTranslationUpdate()
         }
-        
-        logger.warning("⚠️ 翻译失败（已重试3次）: \(text.prefix(30))...")
-        return nil
+
+        if translated == nil {
+            logger.warning("⚠️ 翻译失败（已重试3次）: \(text.prefix(30))...")
+        }
+
+        return translated
     }
     
     /// 处理旧版 LiveCaptionTranscriber 的结果 (macOS < 26)
