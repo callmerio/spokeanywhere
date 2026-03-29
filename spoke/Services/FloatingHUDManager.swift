@@ -107,10 +107,10 @@ final class FloatingHUDManager {
             context.duration = 0.3
             panel?.animator().alphaValue = 0
         } completionHandler: { [weak self] in
-            Task { @MainActor in
-                self?.panel?.orderOut(nil)
-                self?.panel?.alphaValue = 1
-                self?.state.reset()
+            runFloatingHUDManagerOnMain(self) { manager in
+                manager.panel?.orderOut(nil)
+                manager.panel?.alphaValue = 1
+                manager.state.reset()
             }
         }
     }
@@ -153,10 +153,6 @@ final class FloatingHUDManager {
     
     private func scheduleHide(after delay: TimeInterval) {
         hideTimer?.invalidate()
-        hideTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                self?.hide()
-            }
-        }
+        hideTimer = makeFloatingHUDHideTimer(delay: delay, owner: self)
     }
 }
