@@ -3,6 +3,11 @@ import Foundation
 import os
 import SwiftData
 
+@MainActor
+struct HistoryManagerDependencies {
+    let llmPipeline: LLMPipeline
+}
+
 /// 历史记录管理器
 /// 负责录音记录的持久化、检索、重处理
 @MainActor
@@ -10,14 +15,14 @@ final class HistoryManager {
     
     // MARK: - Singleton
     
-    static let shared = HistoryManager()
+    static let shared = HistoryManager(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "HistoryManager")
     
     // MARK: - Dependencies
     
     private var modelContext: ModelContext?
-    private let llmPipeline = LLMPipeline.shared
+    private let dependencies: HistoryManagerDependencies
     
     // MARK: - Properties
     
@@ -36,7 +41,9 @@ final class HistoryManager {
     
     // MARK: - Init
     
-    private init() {}
+    private init(dependencies: HistoryManagerDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Configuration
     
@@ -75,9 +82,9 @@ final class HistoryManager {
             
             do {
                 // 后台执行文件操作
-                try await Task.detached(priority: .utility) {
+                try await runHistoryManagerDetachedThrowing(priority: .utility) {
                     try FileManager.default.moveItem(at: tempURL, to: permanentURL)
-                }.value
+                }
                 
                 audioPath = fileName
                 audioDuration = await getAudioDuration(url: permanentURL)
@@ -109,7 +116,10 @@ final class HistoryManager {
         _ item: HistoryItem,
         with customPrompt: String
     ) async -> Result<String, LLMError> {
-        let result = await llmPipeline.refine(item.rawText, customSystemPrompt: customPrompt)
+        let result = await dependencies.llmPipeline.refine(
+            item.rawText,
+            customSystemPrompt: customPrompt
+        )
         
         switch result {
         case .success(let text):
@@ -400,7 +410,7 @@ final class HistoryManager {
     // MARK: - Private
     
     private func getAudioDuration(url: URL) async -> TimeInterval? {
-        await Task.detached(priority: .utility) {
+        await runHistoryManagerDetached(priority: .utility) {
             let asset = AVURLAsset(url: url)
             do {
                 let duration = try await asset.load(.duration)
@@ -408,6 +418,6 @@ final class HistoryManager {
             } catch {
                 return nil
             }
-        }.value
+        }
     }
 }
