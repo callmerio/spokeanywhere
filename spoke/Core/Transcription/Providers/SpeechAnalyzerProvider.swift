@@ -228,9 +228,7 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         analyzeTask?.cancel()
         
         let analyzer = analyzer
-        _ = makeSpeechAnalyzerTask {
-            await analyzer?.cancelAndFinishNow()
-        }
+        _ = makeSpeechAnalyzerCancelOperation(analyzer)
         
         cleanup()
         logger.info("🚫 SpeechAnalyzerProvider cancelled")
@@ -302,12 +300,12 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         try await analyzer.prepareToAnalyze(in: format)
         
         // Step 9: Start listening for results
-        resultsTask = makeSpeechAnalyzerTask { [weak self] in
-            await self?.listenForDictationResults(transcriber: transcriber)
+        resultsTask = makeSpeechAnalyzerProviderOperation(owner: self) { provider in
+            await provider.listenForDictationResults(transcriber: transcriber)
         }
         
         // Step 10: Start analysis
-        analyzeTask = makeSpeechAnalyzerTask { [weak self] in
+        analyzeTask = makeSpeechAnalyzerOperation { [weak self] in
             do {
                 try await analyzer.start(inputSequence: inputSequence)
             } catch {
@@ -364,13 +362,13 @@ final class SpeechAnalyzerProvider: TranscriptionProvider {
         logger.info("📌 [ST] Step 8: ✅ Analyzer prepared successfully")
         
         // Step 9: Start listening for results
-        resultsTask = makeSpeechAnalyzerTask { [weak self] in
-            await self?.listenForSpeechTranscriberResults(transcriber: transcriber)
+        resultsTask = makeSpeechAnalyzerProviderOperation(owner: self) { provider in
+            await provider.listenForSpeechTranscriberResults(transcriber: transcriber)
         }
         
         // Step 10: Start analysis
         logger.info("📌 [ST] Step 10: Starting analysis task...")
-        analyzeTask = makeSpeechAnalyzerTask { [weak self] in
+        analyzeTask = makeSpeechAnalyzerOperation { [weak self] in
             do {
                 try await analyzer.start(inputSequence: inputSequence)
             } catch {
