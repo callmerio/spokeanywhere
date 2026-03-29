@@ -12,6 +12,12 @@ private enum ModelSettingsColors {
     static let infoBackground = DS.Colors.accentInfo.opacity(0.1)
 }
 
+@MainActor
+struct TranscriptionModelSettingsDependencies {
+    let modelManager: TranscriptionModelManager
+    let downloadModel: (String) -> Void
+}
+
 // MARK: - Transcription Model Settings View
 
 /// 转录模型设置视图
@@ -20,9 +26,23 @@ private enum ModelSettingsColors {
 /// - 显示模型能力评级
 @available(macOS 26.0, *)
 struct TranscriptionModelSettingsView: View {
-    private let modelManager = TranscriptionModelManager.shared
+    private let dependencies: TranscriptionModelSettingsDependencies
     @State private var showDownloadAlert = false
     @State private var modelToDownload: TranscriptionModelDefinition?
+
+    private var modelManager: TranscriptionModelManager {
+        dependencies.modelManager
+    }
+
+    @MainActor
+    init(dependencies: TranscriptionModelSettingsDependencies) {
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init() {
+        self.init(dependencies: .live)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -90,9 +110,7 @@ struct TranscriptionModelSettingsView: View {
         .alert("下载模型", isPresented: $showDownloadAlert) {
             Button("下载") {
                 if let model = modelToDownload {
-                    Task {
-                        await modelManager.downloadModel(model.id)
-                    }
+                    dependencies.downloadModel(model.id)
                 }
             }
             Button("取消", role: .cancel) {}
