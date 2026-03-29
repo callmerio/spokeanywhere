@@ -49,7 +49,7 @@ func runScreenshotEnhancedCopy(
     enhance: @escaping @MainActor (NSImage, CGSize) -> NSImage?,
     complete: @escaping @MainActor (NSImage?) -> Void
 ) {
-    Task { @MainActor in
+    runtimeRunOnMain {
         let enhanced = enhance(original, targetSize)
         complete(enhanced)
     }
