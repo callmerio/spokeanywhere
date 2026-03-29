@@ -1182,6 +1182,119 @@ def verify_msgpview_2400() -> dict[str, Any]:
     return bool_metric(checks, "message_panel_view_tail_gaps")
 
 
+def verify_dictcore_2500() -> dict[str, Any]:
+    service_path = ROOT / "Core" / "Dictionary" / "DictionaryService.swift"
+    injector_path = ROOT / "Core" / "Dictionary" / "DictionaryInjector.swift"
+    attachment_path = ROOT / "Core" / "MessagePanel" / "CardAttachment.swift"
+    checks = {
+        "dictionary_service_notification_removed": count_occurrences(
+            service_path, r"NotificationCenter\.default\.post"
+        ) == 0,
+        "dictionary_injector_shared_hash_removed": count_occurrences(
+            injector_path, r"DictionaryService\.shared\.entries\.hashValue"
+        ) == 0,
+        "card_attachment_shared_storage_removed": count_occurrences(
+            attachment_path, r"CardAttachmentStorage\.shared\.(loadThumbnail|loadOriginal)"
+        ) == 0,
+        "card_attachment_default_live_removed": count_occurrences(
+            attachment_path, r"AttachmentImageCacheDependencies\s*=\s*\.live"
+        ) == 0,
+        "injector_live_dependencies_exists": (
+            ROOT / "Core" / "Dictionary" / "DictionaryInjectorLiveDependencies.swift"
+        ).exists(),
+        "card_attachment_live_dependencies_exists": (
+            ROOT / "Core" / "MessagePanel" / "CardAttachmentLiveDependencies.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "dictionary_core_residual_gaps")
+
+
+def verify_dictui_2500() -> dict[str, Any]:
+    drop_path = ROOT / "UI" / "Components" / "AttachmentDropOverlay.swift"
+    picker_path = ROOT / "UI" / "Components" / "AttachmentPickerMenu.swift"
+    formatted_path = ROOT / "UI" / "Dictionary" / "FormattedDefinitionView.swift"
+    add_path = ROOT / "UI" / "Settings" / "Dictionary" / "AddDictionaryEntrySheet.swift"
+    edit_path = ROOT / "UI" / "Settings" / "Dictionary" / "EditDictionaryEntrySheet.swift"
+    vocab_path = ROOT / "UI" / "Settings" / "Dictionary" / "VocabularyListSheet.swift"
+    checks = {
+        "drop_overlay_default_live_removed": count_occurrences(
+            drop_path, r"AttachmentDropHandlerDependencies\s*=\s*\.live"
+        ) == 0,
+        "picker_menu_default_live_removed": count_occurrences(
+            picker_path, r"AttachmentPickerMenuDependencies\s*=\s*\.live"
+        ) == 0,
+        "formatted_definition_default_live_removed": count_occurrences(
+            formatted_path, r"FormattedDefinitionViewDependencies\s*=\s*\.live"
+        ) == 0,
+        "add_sheet_default_live_removed": count_occurrences(
+            add_path, r"AddDictionaryEntrySheetDependencies\s*=\s*\.live"
+        ) == 0,
+        "edit_sheet_default_live_removed": count_occurrences(
+            edit_path, r"EditDictionaryEntrySheetDependencies\s*=\s*\.live"
+        ) == 0,
+        "vocabulary_sheet_default_live_removed": count_occurrences(
+            vocab_path, r"VocabularyListSheetDependencies\s*=\s*\.live"
+        ) == 0,
+        "drop_overlay_live_dependencies_exists": (
+            ROOT / "UI" / "Components" / "AttachmentDropOverlayLiveDependencies.swift"
+        ).exists(),
+        "picker_menu_live_dependencies_exists": (
+            ROOT / "UI" / "Components" / "AttachmentPickerMenuLiveDependencies.swift"
+        ).exists(),
+        "formatted_definition_live_dependencies_exists": (
+            ROOT / "UI" / "Dictionary" / "FormattedDefinitionViewLiveDependencies.swift"
+        ).exists(),
+        "dictionary_sheets_live_dependencies_exists": (
+            ROOT / "UI" / "Settings" / "Dictionary" / "DictionarySheetsLiveDependencies.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "dictionary_ui_residual_gaps")
+
+
+def verify_shotocr_2500() -> dict[str, Any]:
+    action_strip_path = ROOT / "UI" / "Screenshot" / "ActionStripView.swift"
+    screenshot_view_path = ROOT / "UI" / "Screenshot" / "ScreenshotView.swift"
+    checks = {
+        "action_strip_task_detached_removed": count_occurrences(
+            action_strip_path, r"Task\.detached"
+        ) == 0,
+        "screenshot_view_task_detached_removed": count_occurrences(
+            screenshot_view_path, r"Task\.detached"
+        ) == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "Screenshot" / "ScreenshotOCRRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "screenshot_ocr_residual_gaps")
+
+
+def verify_uinotify_2500() -> dict[str, Any]:
+    settings_path = ROOT / "UI" / "Settings" / "SettingsView.swift"
+    panel_path = ROOT / "UI" / "HUD" / "FloatingPanel.swift"
+    crash_logger_path = ROOT / "Core" / "Debug" / "CrashLogger.swift"
+    checks = {
+        "settings_default_publisher_removed": count_occurrences(
+            settings_path, r"NotificationCenter\.default\.publisher"
+        ) == 0,
+        "floating_panel_default_post_removed": count_occurrences(
+            panel_path, r"NotificationCenter\.default\.post"
+        ) == 0,
+        "crash_logger_direct_shared_removed": count_occurrences(
+            crash_logger_path, r"CrashLogger\.shared\.logException"
+        ) == 0,
+        "settings_live_dependencies_exists": (
+            ROOT / "UI" / "Settings" / "SettingsViewLiveDependencies.swift"
+        ).exists(),
+        "floating_panel_live_dependencies_exists": (
+            ROOT / "UI" / "HUD" / "FloatingPanelLiveDependencies.swift"
+        ).exists(),
+        "crash_logger_live_dependencies_exists": (
+            ROOT / "Core" / "Debug" / "CrashLoggerLiveDependencies.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "ui_notify_residual_gaps")
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1254,6 +1367,10 @@ HANDLERS = {
     "AICARD-2400": verify_aicard_2400,
     "MICTEST-2400": verify_mictest_2400,
     "MSGPVIEW-2400": verify_msgpview_2400,
+    "DICTCORE-2500": verify_dictcore_2500,
+    "DICTUI-2500": verify_dictui_2500,
+    "SHOTOCR-2500": verify_shotocr_2500,
+    "UINOTIFY-2500": verify_uinotify_2500,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

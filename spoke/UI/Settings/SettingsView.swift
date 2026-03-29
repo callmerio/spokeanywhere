@@ -9,12 +9,26 @@ struct SettingsView: View {
     @StateObject private var audioManager = AudioDeviceManager()
     @StateObject private var appSettings = AppSettings()
     @StateObject private var micTester = MicrophoneTester()
+    private let dependencies: SettingsViewDependencies
 
     let focusAddSkill: Bool
 
-    init(initialTab: SettingsTab? = nil, focusAddSkill: Bool = false) {
+    init(
+        initialTab: SettingsTab? = nil,
+        focusAddSkill: Bool = false
+    ) {
+        self.init(initialTab: initialTab, focusAddSkill: focusAddSkill, dependencies: .live)
+    }
+
+    @MainActor
+    init(
+        initialTab: SettingsTab? = nil,
+        focusAddSkill: Bool = false,
+        dependencies: SettingsViewDependencies
+    ) {
         self._selectedTab = State(initialValue: initialTab ?? .general)
         self.focusAddSkill = focusAddSkill
+        self.dependencies = dependencies
     }
 
     enum SettingsTab: String, CaseIterable {
@@ -53,7 +67,7 @@ struct SettingsView: View {
         }
         .frame(minWidth: 820, minHeight: 580)
         .background(DS.Colors.settingsBackground)
-        .onReceive(NotificationCenter.default.publisher(for: .settingsSwitchToToolbar)) { _ in
+        .onReceive(dependencies.settingsSwitchToToolbarPublisher()) { _ in
             withAnimation(.easeInOut(duration: 0.15)) {
                 selectedTab = .toolbar
             }

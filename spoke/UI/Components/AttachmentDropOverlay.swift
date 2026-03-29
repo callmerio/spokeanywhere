@@ -61,8 +61,26 @@ struct AttachmentDropHandler: ViewModifier {
     var cornerRadius: CGFloat = 16
     
     @State private var isDragOver = false
-    
-    private let attachmentManager = AttachmentManager.shared
+    private let dependencies: AttachmentDropHandlerDependencies
+
+    @MainActor
+    init(
+        onAdd: @escaping @MainActor @Sendable (Attachment) -> Void,
+        cornerRadius: CGFloat = 16
+    ) {
+        self.init(onAdd: onAdd, cornerRadius: cornerRadius, dependencies: .live)
+    }
+
+    @MainActor
+    init(
+        onAdd: @escaping @MainActor @Sendable (Attachment) -> Void,
+        cornerRadius: CGFloat = 16,
+        dependencies: AttachmentDropHandlerDependencies
+    ) {
+        self.onAdd = onAdd
+        self.cornerRadius = cornerRadius
+        self.dependencies = dependencies
+    }
     
     func body(content: Content) -> some View {
         content
@@ -84,7 +102,7 @@ struct AttachmentDropHandler: ViewModifier {
     }
     
     private func handleDrop(providers: [NSItemProvider]) {
-        attachmentManager.handleDrop(providers: providers) { [onAdd] attachment in
+        dependencies.attachmentManager.handleDrop(providers: providers) { [onAdd] attachment in
             onAdd(attachment)
         }
     }

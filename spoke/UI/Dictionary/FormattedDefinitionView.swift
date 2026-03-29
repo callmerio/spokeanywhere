@@ -5,10 +5,37 @@ import SwiftUI
 struct FormattedDefinitionView: View {
     let result: LocalDictionaryResult
     let isVocabulary: Bool
+    private let dependencies: FormattedDefinitionViewDependencies
     var onWordTap: ((String) -> Void)?
     
     private var parsedDefinition: ParsedDefinition {
-        DictionaryDefinitionParser.shared.parse(word: result.word, definition: result.definition)
+        dependencies.parse(result.word, result.definition)
+    }
+
+    init(
+        result: LocalDictionaryResult,
+        isVocabulary: Bool,
+        onWordTap: ((String) -> Void)? = nil
+    ) {
+        self.init(
+            result: result,
+            isVocabulary: isVocabulary,
+            dependencies: .live,
+            onWordTap: onWordTap
+        )
+    }
+
+    @MainActor
+    init(
+        result: LocalDictionaryResult,
+        isVocabulary: Bool,
+        dependencies: FormattedDefinitionViewDependencies,
+        onWordTap: ((String) -> Void)? = nil
+    ) {
+        self.result = result
+        self.isVocabulary = isVocabulary
+        self.dependencies = dependencies
+        self.onWordTap = onWordTap
     }
     
     var body: some View {

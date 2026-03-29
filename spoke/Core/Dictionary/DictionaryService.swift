@@ -278,7 +278,7 @@ final class DictionaryService: ObservableObject {
         }
         
         saveEntries()
-        NotificationCenter.default.post(name: .dictionaryTrainingDataChanged, object: nil)
+        postTrainingDataChanged()
     }
     
     /// 去重训练短语（清理已有的重复项）

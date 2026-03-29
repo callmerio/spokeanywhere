@@ -123,7 +123,7 @@ final class QuickAskPanel: NSWindow {
     // 处理 ESC 键
     override func cancelOperation(_ sender: Any?) {
         // 发送取消通知
-        NotificationCenter.default.post(name: .quickAskCancelRequested, object: nil)
+        postFloatingPanelQuickAskCancel()
     }
 }
 

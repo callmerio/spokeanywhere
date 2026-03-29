@@ -6,8 +6,24 @@ private typealias DS = DesignTokens
 
 struct VocabularyListSheet: View {
     @Binding var isPresented: Bool
-    @ObservedObject private var vocabularyService = VocabularyService.shared
+    @ObservedObject private var vocabularyService: VocabularyService
     @State private var searchText = ""
+
+    @MainActor
+    init(
+        isPresented: Binding<Bool>
+    ) {
+        self.init(isPresented: isPresented, dependencies: .live)
+    }
+
+    @MainActor
+    init(
+        isPresented: Binding<Bool>,
+        dependencies: VocabularyListSheetDependencies
+    ) {
+        self._isPresented = isPresented
+        self._vocabularyService = ObservedObject(wrappedValue: dependencies.vocabularyService)
+    }
     
     private var filteredItems: [VocabularyItem] {
         if searchText.isEmpty {

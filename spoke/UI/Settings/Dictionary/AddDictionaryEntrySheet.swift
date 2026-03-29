@@ -6,12 +6,28 @@ private typealias DS = DesignTokens
 
 struct AddDictionaryEntrySheet: View {
     @Binding var isPresented: Bool
-    @ObservedObject private var dictionaryService = DictionaryService.shared
+    @ObservedObject private var dictionaryService: DictionaryService
     
     @State private var word = ""
     @State private var correctionsText = ""
     @State private var showError = false
     @State private var errorMessage = ""
+
+    @MainActor
+    init(
+        isPresented: Binding<Bool>
+    ) {
+        self.init(isPresented: isPresented, dependencies: .live)
+    }
+
+    @MainActor
+    init(
+        isPresented: Binding<Bool>,
+        dependencies: AddDictionaryEntrySheetDependencies
+    ) {
+        self._isPresented = isPresented
+        self._dictionaryService = ObservedObject(wrappedValue: dependencies.dictionaryService)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxl) {

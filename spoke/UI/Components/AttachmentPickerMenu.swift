@@ -16,19 +16,30 @@ struct AttachmentPickerMenu: View {
     var buttonSize: CGFloat = 24
     
     @State private var isHovering = false
-    @ObservedObject private var attachmentManager = AttachmentManager.shared
+    @ObservedObject private var attachmentManager: AttachmentManager
     
     /// 是否正在处理
     private var isProcessing: Bool {
         attachmentManager.processingState.isProcessing
     }
 
+    @MainActor
     init(
         onAdd: @escaping @MainActor @Sendable (Attachment) -> Void,
         buttonSize: CGFloat = 24
     ) {
+        self.init(onAdd: onAdd, buttonSize: buttonSize, dependencies: .live)
+    }
+
+    @MainActor
+    init(
+        onAdd: @escaping @MainActor @Sendable (Attachment) -> Void,
+        buttonSize: CGFloat = 24,
+        dependencies: AttachmentPickerMenuDependencies
+    ) {
         self.onAdd = onAdd
         self.buttonSize = buttonSize
+        self._attachmentManager = ObservedObject(wrappedValue: dependencies.attachmentManager)
     }
     
     var body: some View {

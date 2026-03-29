@@ -7,7 +7,7 @@ private typealias DS = DesignTokens
 struct EditDictionaryEntrySheet: View {
     let entryId: UUID
     @Binding var isPresented: Bool
-    @ObservedObject private var dictionaryService = DictionaryService.shared
+    @ObservedObject private var dictionaryService: DictionaryService
     
     @State private var word: String
     @State private var correctionsText: String
@@ -17,9 +17,23 @@ struct EditDictionaryEntrySheet: View {
         dictionaryService.entries.first { $0.id == entryId }
     }
     
-    init(entry: DictionaryEntry, isPresented: Binding<Bool>) {
+    @MainActor
+    init(
+        entry: DictionaryEntry,
+        isPresented: Binding<Bool>
+    ) {
+        self.init(entry: entry, isPresented: isPresented, dependencies: .live)
+    }
+
+    @MainActor
+    init(
+        entry: DictionaryEntry,
+        isPresented: Binding<Bool>,
+        dependencies: EditDictionaryEntrySheetDependencies
+    ) {
         self.entryId = entry.id
         self._isPresented = isPresented
+        self._dictionaryService = ObservedObject(wrappedValue: dependencies.dictionaryService)
         self._word = State(initialValue: entry.word)
         self._correctionsText = State(initialValue: entry.corrections.joined(separator: "\n"))
     }

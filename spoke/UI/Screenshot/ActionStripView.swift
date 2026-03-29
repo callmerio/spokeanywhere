@@ -132,14 +132,7 @@ struct ActionStripView: View {
             return
         }
         
-        Task.detached {
-            let text = await Self.extractText(from: cgImage)
-            await MainActor.run {
-                if !text.isEmpty {
-                    dependencies.copyText(text)
-                }
-            }
-        }
+        runScreenshotOCR(cgImage, copyText: dependencies.copyText)
     }
     
     private static func extractText(from image: CGImage) async -> String {

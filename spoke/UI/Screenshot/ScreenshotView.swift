@@ -232,14 +232,7 @@ struct ScreenshotView: View {
     
     private func performOCR() {
         withLoadedCGImage { cgImage in
-            Task.detached {
-                let text = await Self.extractText(from: cgImage)
-                await MainActor.run {
-                    if !text.isEmpty {
-                        dependencies.copyText(text)
-                    }
-                }
-            }
+            runScreenshotOCR(cgImage, copyText: dependencies.copyText)
         }
     }
     

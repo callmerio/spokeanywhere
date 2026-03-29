@@ -164,12 +164,16 @@ final class CardAttachmentStorage {
 /// 图片缓存（避免重复加载）
 @MainActor
 final class AttachmentImageCache {
-    static let shared = AttachmentImageCache()
+    static let shared = AttachmentImageCache(dependencies: .live)
+    private let dependencies: AttachmentImageCacheDependencies
     
     private var thumbnailCache: [UUID: NSImage] = [:]
     private var originalCache: [UUID: NSImage] = [:]
     
-    private init() {}
+    @MainActor
+    private init(dependencies: AttachmentImageCacheDependencies) {
+        self.dependencies = dependencies
+    }
     
     /// 获取缩略图（带缓存）
     func thumbnail(for attachment: CardAttachment, maxSize: CGFloat = 200) -> NSImage? {
@@ -177,7 +181,7 @@ final class AttachmentImageCache {
             return cached
         }
         
-        if let image = CardAttachmentStorage.shared.loadThumbnail(for: attachment, maxSize: maxSize) {
+        if let image = dependencies.storage.loadThumbnail(for: attachment, maxSize: maxSize) {
             thumbnailCache[attachment.id] = image
             return image
         }
@@ -191,7 +195,7 @@ final class AttachmentImageCache {
             return cached
         }
         
-        if let image = CardAttachmentStorage.shared.loadOriginal(for: attachment) {
+        if let image = dependencies.storage.loadOriginal(for: attachment) {
             originalCache[attachment.id] = image
             return image
         }

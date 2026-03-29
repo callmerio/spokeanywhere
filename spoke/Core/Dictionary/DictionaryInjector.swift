@@ -182,7 +182,7 @@ final class AppleSpeechDictionaryInjector: DictionaryInjector {
     // MARK: - Private
     
     private func hasEntriesChanged() -> Bool {
-        let currentHash = DictionaryService.shared.entries.hashValue
+        let currentHash = currentDictionaryEntriesHash()
         return currentHash != currentEntriesHash
     }
     

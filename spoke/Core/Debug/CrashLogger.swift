@@ -34,7 +34,7 @@ final class CrashLogger {
         CrashLogger.signalLogger = self
         // 1. 捕获 NSException
         NSSetUncaughtExceptionHandler { exception in
-            CrashLogger.shared.logException(exception)
+            currentCrashLogger().logException(exception)
         }
         
         // 2. 捕获信号 (SIGSEGV, SIGABRT, SIGILL, SIGFPE)
@@ -48,7 +48,7 @@ final class CrashLogger {
     }
     
     /// 记录异常
-    private func logException(_ exception: NSException) {
+    func logException(_ exception: NSException) {
         let crashInfo = """
         ========================================
         CRASH REPORT

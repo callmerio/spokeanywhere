@@ -1,0 +1,30 @@
+{
+  "issue_id": "DICTUI-2500",
+  "title": "词典相关 UI shared 入口与默认 live 参数收口",
+  "mode": "exec",
+  "goal": "移除 AttachmentDropOverlay、AttachmentPickerMenu、FormattedDefinitionView 和词典 sheets 主文件里的 shared/default live 入口，保持现有 UI 交互和主线程语义不变。",
+  "scope": [
+    "UI/Components/AttachmentDropOverlay.swift",
+    "UI/Components/AttachmentDropOverlayLiveDependencies.swift",
+    "UI/Components/AttachmentPickerMenu.swift",
+    "UI/Components/AttachmentPickerMenuLiveDependencies.swift",
+    "UI/Dictionary/FormattedDefinitionView.swift",
+    "UI/Dictionary/FormattedDefinitionViewLiveDependencies.swift",
+    "UI/Settings/Dictionary/AddDictionaryEntrySheet.swift",
+    "UI/Settings/Dictionary/EditDictionaryEntrySheet.swift",
+    "UI/Settings/Dictionary/VocabularyListSheet.swift",
+    "UI/Settings/Dictionary/DictionarySheetsLiveDependencies.swift"
+  ],
+  "metric": "dictionary_ui_residual_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue DICTUI-2500",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "DICTUI-2500",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "这轮同时消除 main actor 默认参数告警，不改词典 UI 行为。"
+}
