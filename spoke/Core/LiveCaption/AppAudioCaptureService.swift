@@ -16,7 +16,7 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = AppAudioCaptureService()
+    static let shared = AppAudioCaptureService(dependencies: .live)
     
     // MARK: - Properties
     
@@ -24,7 +24,7 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     
     private var stream: SCStream?
     private let audioQueue = DispatchQueue(label: "com.spokeanywhere.appaudio", qos: .userInteractive)
-    private let picker = SCContentSharingPicker.shared
+    private let dependencies: AppAudioCaptureServiceDependencies
     
     /// 是否正在捕获
     @Published private(set) var isCapturing: Bool = false
@@ -69,7 +69,8 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     
     // MARK: - Init
     
-    private override init() {
+    private init(dependencies: AppAudioCaptureServiceDependencies) {
+        self.dependencies = dependencies
         super.init()
         configurePicker()
     }
@@ -85,9 +86,9 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
             config.excludedBundleIDs = [bundleId]
         }
         
-        picker.defaultConfiguration = config
-        picker.add(self)
-        picker.isActive = true
+        dependencies.picker.defaultConfiguration = config
+        dependencies.picker.add(self)
+        dependencies.picker.isActive = true
     }
     
     // MARK: - Public API
@@ -96,8 +97,8 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     func presentPicker() {
         logger.info("📱 Presenting app picker")
         isWaitingForSelection = true
-        picker.isActive = true
-        picker.present()
+        dependencies.picker.isActive = true
+        dependencies.picker.present()
     }
     
     /// 停止捕获
@@ -130,9 +131,9 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         isWaitingForSelection = true
         
         if let existingStream = stream {
-            picker.present(for: existingStream)
+            dependencies.picker.present(for: existingStream)
         } else {
-            picker.present()
+            dependencies.picker.present()
         }
     }
     

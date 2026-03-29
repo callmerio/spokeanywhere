@@ -12,9 +12,10 @@ final class ScreenCaptureService {
     
     // MARK: - Singleton
     
-    static let shared = ScreenCaptureService()
+    static let shared = ScreenCaptureService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenCapture")
+    private let dependencies: ScreenCaptureServiceDependencies
     
     // MARK: - Content Cache
     
@@ -52,7 +53,9 @@ final class ScreenCaptureService {
     
     // MARK: - Init
     
-    private init() {}
+    private init(dependencies: ScreenCaptureServiceDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Capture Current Screen
     
@@ -199,10 +202,7 @@ final class ScreenCaptureService {
     
     /// 请求屏幕录制权限
     func requestPermission() {
-        // 打开系统偏好设置的屏幕录制权限页面
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-            NSWorkspace.shared.open(url)
-        }
+        dependencies.openScreenCaptureSettings()
     }
 
     private func finishRegionCapture(

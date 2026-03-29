@@ -1077,6 +1077,41 @@ def verify_qasvc_2200() -> dict[str, Any]:
     )
 
 
+def verify_screencap_2300() -> dict[str, Any]:
+    path = ROOT / "Core" / "Attachment" / "ScreenCaptureService.swift"
+    return hotspot_metric(
+        path,
+        "screen_capture_service_hotspots",
+        {
+            "workspace_shared_calls": r"NSWorkspace\.shared",
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_appaudio_2300() -> dict[str, Any]:
+    path = ROOT / "Core" / "LiveCaption" / "AppAudioCaptureService.swift"
+    return hotspot_metric(
+        path,
+        "app_audio_capture_service_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_mdparser_2300() -> dict[str, Any]:
+    path = ROOT / "UI" / "Components" / "SimpleMarkdownParser.swift"
+    return hotspot_metric(
+        path,
+        "simple_markdown_parser_hotspots",
+        {
+            "font_manager_shared_calls": r"NSFontManager\.shared",
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1140,6 +1175,9 @@ HANDLERS = {
     "DICTTEXT-2200": verify_dicttext_2200,
     "TMODEL-2200": verify_tmodel_2200,
     "QASVC-2200": verify_qasvc_2200,
+    "SCREENCAP-2300": verify_screencap_2300,
+    "APPAUDIO-2300": verify_appaudio_2300,
+    "MDPARSER-2300": verify_mdparser_2300,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

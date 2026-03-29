@@ -1,0 +1,22 @@
+{
+  "issue_id": "SCREENCAP-2300",
+  "title": "ScreenCaptureService 权限入口与 singleton 尾项收口",
+  "mode": "exec",
+  "goal": "移除 ScreenCaptureService 主文件中的 NSWorkspace.shared 权限入口噪音，保留截图和权限页面跳转语义不变。",
+  "scope": [
+    "Core/Attachment/ScreenCaptureService.swift",
+    "Core/Attachment/ScreenCaptureServiceLiveDependencies.swift"
+  ],
+  "metric": "screen_capture_service_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue SCREENCAP-2300",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 6,
+  "run_tag": "SCREENCAP-2300",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收权限入口和默认 wiring，不改截图流程。"
+}

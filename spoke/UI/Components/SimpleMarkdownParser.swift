@@ -16,7 +16,7 @@ enum SimpleMarkdownParser {
     private static func cachedBoldFont(for font: NSFont) -> NSFont {
         let key = "bold-\(font.fontName)-\(font.pointSize)"
         if let cached = fontCache[key] { return cached }
-        let bold = NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask)
+        let bold = makeSimpleMarkdownBoldFont(from: font)
         fontCache[key] = bold
         return bold
     }
@@ -24,7 +24,7 @@ enum SimpleMarkdownParser {
     private static func cachedItalicFont(for font: NSFont) -> NSFont {
         let key = "italic-\(font.fontName)-\(font.pointSize)"
         if let cached = fontCache[key] { return cached }
-        let italic = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
+        let italic = makeSimpleMarkdownItalicFont(from: font)
         fontCache[key] = italic
         return italic
     }

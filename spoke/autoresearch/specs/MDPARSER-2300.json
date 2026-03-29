@@ -1,0 +1,22 @@
+{
+  "issue_id": "MDPARSER-2300",
+  "title": "SimpleMarkdownParser 字体管理 helper 收口",
+  "mode": "exec",
+  "goal": "移除 SimpleMarkdownParser 主文件里的 NSFontManager.shared 直连，让 Markdown 解析主文件只保留缓存和解析逻辑。",
+  "scope": [
+    "UI/Components/SimpleMarkdownParser.swift",
+    "UI/Components/SimpleMarkdownParserLiveHelpers.swift"
+  ],
+  "metric": "simple_markdown_parser_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue MDPARSER-2300",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 6,
+  "run_tag": "MDPARSER-2300",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收字体转换 helper，不改 markdown 解析语义。"
+}
