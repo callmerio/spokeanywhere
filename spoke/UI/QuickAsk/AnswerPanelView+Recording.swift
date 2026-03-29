@@ -63,13 +63,11 @@ extension AnswerPanelView {
     }
     
     func startWaveformAnimation() {
-        // 使用 Task 替代 Timer 以支持 Swift 6 并发安全
-        Task { @MainActor in
-            while isRecording {
-                withAnimation(.easeInOut(duration: 0.1)) {
-                    self.audioLevels = self.audioLevels.map { _ in Float.random(in: 0.1...1.0) }
-                }
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        runAnswerPanelRecordingWaveform(
+            isRecording: { isRecording }
+        ) { levels in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                self.audioLevels = levels
             }
         }
     }
