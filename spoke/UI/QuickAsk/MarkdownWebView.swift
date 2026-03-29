@@ -78,7 +78,7 @@ struct MarkdownWebView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             webView.evaluateJavaScript("document.body.scrollHeight") { result, _ in
                 if let height = result as? CGFloat {
-                    DispatchQueue.main.async {
+                    runMarkdownWebViewOnMain {
                         self.parent.dynamicHeight = height
                     }
                 }
@@ -90,7 +90,7 @@ struct MarkdownWebView: NSViewRepresentable {
             didReceive message: WKScriptMessage
         ) {
             if message.name == "heightHandler", let height = message.body as? CGFloat {
-                DispatchQueue.main.async {
+                runMarkdownWebViewOnMain {
                     self.parent.dynamicHeight = height
                 }
             }
