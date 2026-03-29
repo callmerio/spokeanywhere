@@ -115,6 +115,7 @@ struct QuickAskInputView: View {
             )
             .frame(minHeight: 20, maxHeight: 200)
         }
+        .accessibilityIdentifier(UITestIdentifiers.Element.quickAskInput)
     }
 }
 
@@ -146,6 +147,8 @@ struct QuickAskTextEditor: NSViewRepresentable {
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
+        scrollView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.quickAskInput)
+        scrollView.setAccessibilityIdentifier(UITestIdentifiers.Element.quickAskInput)
         scrollView.hasVerticalScroller = true  // 开启垂直滚动
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true   // 自动隐藏滚动条
@@ -154,6 +157,8 @@ struct QuickAskTextEditor: NSViewRepresentable {
         scrollView.scrollerStyle = .overlay    // 覆盖式滚动条，不占空间
         
         let textView = QuickAskNSTextView()
+        textView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.quickAskInput)
+        textView.setAccessibilityIdentifier(UITestIdentifiers.Element.quickAskInput)
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true

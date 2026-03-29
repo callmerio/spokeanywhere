@@ -16,6 +16,8 @@ final class DebugAutomationTriggerService {
         case recordingToggle = "recording.toggle"
         case captionToggle = "caption.toggle"
         case screenshotCapture = "screenshot.capture"
+        case messagePanelToggle = "messagePanel.toggle"
+        case quickAskTrigger = "quickAsk.trigger"
     }
 
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "DebugAutomation")
@@ -25,6 +27,8 @@ final class DebugAutomationTriggerService {
     var onRecordingToggle: (() -> Void)?
     var onCaptionToggle: (() -> Void)?
     var onScreenshotCapture: (() -> Void)?
+    var onMessagePanelToggle: (() -> Void)?
+    var onQuickAskTrigger: (() -> Void)?
 
     private init(dependencies: DebugAutomationTriggerServiceDependencies) {
         self.dependencies = dependencies
@@ -78,7 +82,7 @@ final class DebugAutomationTriggerService {
     }
 
     private func handle(_ notification: Notification) {
-        guard let raw = notification.userInfo?["action"] as? String,
+        guard let raw = (notification.userInfo?["action"] as? String) ?? (notification.object as? String),
               let action = Action(rawValue: raw) else {
             logger.warning("⚠️ [DebugAutomation] invalid action payload")
             return
@@ -97,6 +101,12 @@ final class DebugAutomationTriggerService {
         case .screenshotCapture:
             logger.info("🧪 [DebugAutomation] action=screenshot.capture")
             onScreenshotCapture?()
+        case .messagePanelToggle:
+            logger.info("🧪 [DebugAutomation] action=messagePanel.toggle")
+            onMessagePanelToggle?()
+        case .quickAskTrigger:
+            logger.info("🧪 [DebugAutomation] action=quickAsk.trigger")
+            onQuickAskTrigger?()
         }
     }
 }

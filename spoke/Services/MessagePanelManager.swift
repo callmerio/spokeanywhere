@@ -181,6 +181,8 @@ final class MessagePanelManager {
             )
         )
         let hostingView = NSHostingView(rootView: contentView)
+        hostingView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.messagePanelRoot)
+        hostingView.setAccessibilityIdentifier(UITestIdentifiers.Element.messagePanelRoot)
         
         // 获取屏幕尺寸
         let screen = screenWithMouse() ?? NSScreen.main ?? NSScreen.screens.first!
@@ -202,6 +204,8 @@ final class MessagePanelManager {
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
         
+        newPanel.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.messagePanel)
+        newPanel.setAccessibilityIdentifier(UITestIdentifiers.Window.messagePanel)
         self.panel = newPanel
         logger.info("📋 Message Panel created")
     }

@@ -430,8 +430,13 @@ final class SelectionToolbarManager {
         )
             .environmentObject(state)
         
-        panel.contentView = NSHostingView(rootView: contentView)
+        let hostingView = NSHostingView(rootView: contentView)
+        hostingView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.selectionToolbarRoot)
+        hostingView.setAccessibilityIdentifier(UITestIdentifiers.Element.selectionToolbarRoot)
+        panel.contentView = hostingView
         
+        panel.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.selectionToolbar)
+        panel.setAccessibilityIdentifier(UITestIdentifiers.Window.selectionToolbar)
         toolbarWindow = panel
         
         logger.debug("📋 [ToolbarManager] 工具栏窗口已创建")

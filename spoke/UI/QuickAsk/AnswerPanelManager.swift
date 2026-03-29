@@ -289,7 +289,12 @@ final class AnswerPanelManager {
         let contentView = makeContentView(panelId: panelId, state: instance.state)
         let panel = makePanel()
 
-        panel.contentView = NSHostingView(rootView: contentView)
+        let hostingView = NSHostingView(rootView: contentView)
+        hostingView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.answerPanelRoot)
+        hostingView.setAccessibilityIdentifier(UITestIdentifiers.Element.answerPanelRoot)
+        panel.contentView = hostingView
+        panel.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.answerPanel)
+        panel.setAccessibilityIdentifier(UITestIdentifiers.Window.answerPanel)
         applyWindowCascade(panel)
         instance.window = panel
     }

@@ -105,6 +105,14 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    override func isAccessibilityElement() -> Bool {
+        true
+    }
+
+    override func accessibilityRole() -> NSAccessibility.Role? {
+        .group
+    }
 }
 
 extension ScreenshotContentView {

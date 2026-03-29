@@ -6,6 +6,7 @@ extension AppDelegateDependencies {
         .init(
             notificationCenter: .default,
             hotKeyService: .shared,
+            quickAskService: .shared,
             screenshotManager: .shared,
             dictionaryPanelManager: .shared,
             debugAutomationTrigger: .shared,

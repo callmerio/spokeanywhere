@@ -587,6 +587,8 @@ final class QuickAskHUDManager {
             .frame(width: Self.fixedWindowWidth, height: Self.fixedWindowHeight, alignment: .bottom)
         
         let hostingView = NSHostingView(rootView: framedView)
+        hostingView.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Element.quickAskCapsuleRoot)
+        hostingView.setAccessibilityIdentifier(UITestIdentifiers.Element.quickAskCapsuleRoot)
         
         let frame = NSRect(
             origin: .zero,
@@ -594,6 +596,8 @@ final class QuickAskHUDManager {
         )
         
         let newPanel = QuickAskPanel(contentRect: frame)
+        newPanel.identifier = NSUserInterfaceItemIdentifier(UITestIdentifiers.Window.quickAskCapsule)
+        newPanel.setAccessibilityIdentifier(UITestIdentifiers.Window.quickAskCapsule)
         newPanel.contentView = hostingView
         
         self.panel = newPanel

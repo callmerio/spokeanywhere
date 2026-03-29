@@ -7,6 +7,7 @@ import SwiftUI
 struct AppDelegateDependencies {
     let notificationCenter: NotificationCenter
     let hotKeyService: HotKeyService
+    let quickAskService: QuickAskService
     let screenshotManager: ScreenshotManager
     let dictionaryPanelManager: DictionaryPanelManager
     let debugAutomationTrigger: DebugAutomationTriggerService
@@ -146,6 +147,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             runAppMainActorAsync {
                 await self.dependencies.screenshotManager.debugCaptureForAutomation()
             }
+        }
+        trigger.onMessagePanelToggle = {
+            self.dependencies.messagePanelManager.toggle()
+        }
+        trigger.onQuickAskTrigger = {
+            self.dependencies.quickAskService.startSession()
         }
         if trigger.start() {
             logger.info("🧪 [AppDelegate] Debug automation trigger ready")
