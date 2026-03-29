@@ -2,6 +2,18 @@ import AVFoundation
 import os
 import Speech
 
+@MainActor
+struct SFSpeechProviderDictionaryInjectionState {
+    let isEnabled: Bool
+    let isPrepared: Bool
+    let injector: DictionaryInjector?
+}
+
+@MainActor
+struct SFSpeechProviderDependencies {
+    let dictionaryInjectionState: () -> SFSpeechProviderDictionaryInjectionState
+}
+
 /// SFSpeechRecognizer 实现
 /// 适用于 macOS 15+ / iOS 10+
 /// 回退方案，当 SpeechAnalyzer 不可用时使用
@@ -42,12 +54,21 @@ final class SFSpeechProvider: TranscriptionProvider {
     private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private let dependencies: SFSpeechProviderDependencies
     
     // MARK: - Init
     
-    init(locale: Locale = Locale(identifier: "zh-CN")) {
+    init(
+        locale: Locale = Locale(identifier: "zh-CN"),
+        dependencies: SFSpeechProviderDependencies
+    ) {
         self.locale = locale
         self.speechRecognizer = SFSpeechRecognizer(locale: locale)
+        self.dependencies = dependencies
+    }
+
+    convenience init(locale: Locale = Locale(identifier: "zh-CN")) {
+        self.init(locale: locale, dependencies: .live)
     }
     
     // MARK: - TranscriptionProvider
@@ -76,10 +97,10 @@ final class SFSpeechProvider: TranscriptionProvider {
         request.taskHint = .dictation
         
         // 应用词典注入（如果启用且已准备好）
-        let manager = TranscriptionManager.shared
-        if manager.isDictionaryInjectionEnabled,
-           manager.isDictionaryPrepared,
-           let injector = manager.dictionaryInjector {
+        let dictionaryInjectionState = dependencies.dictionaryInjectionState()
+        if dictionaryInjectionState.isEnabled,
+           dictionaryInjectionState.isPrepared,
+           let injector = dictionaryInjectionState.injector {
             do {
                 try injector.apply(to: &request)
                 logger.info("📚 Dictionary applied to recognition request")
@@ -93,8 +114,8 @@ final class SFSpeechProvider: TranscriptionProvider {
         
         // 启动识别任务
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor in
-                self?.handleRecognitionResult(result: result, error: error)
+            runSFSpeechProviderOnMain(self) { provider in
+                provider.handleRecognitionResult(result: result, error: error)
             }
         }
         
