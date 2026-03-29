@@ -134,7 +134,7 @@ final class DictionaryAPIService {
             request.timeoutInterval = 10
             request.setValue("application/json", forHTTPHeaderField: "Accept")
             
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await remoteDictionaryResponse(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 return .failure(.networkError("无效的响应"))

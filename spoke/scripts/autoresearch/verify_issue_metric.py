@@ -1295,6 +1295,54 @@ def verify_uinotify_2500() -> dict[str, Any]:
     return bool_metric(checks, "ui_notify_residual_gaps")
 
 
+def verify_localdict_2600() -> dict[str, Any]:
+    path = ROOT / "Core" / "Dictionary" / "Providers" / "LocalDictionaryService.swift"
+    checks = {
+        "parser_shared_removed": count_occurrences(
+            path, r"DictionaryDefinitionParser\.shared"
+        ) == 0,
+        "spellchecker_shared_removed": count_occurrences(
+            path, r"NSSpellChecker\.shared"
+        ) == 0,
+        "live_helper_exists": (
+            ROOT
+            / "Core"
+            / "Dictionary"
+            / "Providers"
+            / "LocalDictionaryServiceLiveDependencies.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "local_dictionary_residual_gaps")
+
+
+def verify_remotedict_2600() -> dict[str, Any]:
+    path = ROOT / "Core" / "Dictionary" / "Providers" / "RemoteProvider.swift"
+    checks = {
+        "urlsession_shared_removed": count_occurrences(path, r"URLSession\.shared") == 0,
+        "live_helper_exists": (
+            ROOT
+            / "Core"
+            / "Dictionary"
+            / "Providers"
+            / "RemoteProviderLiveDependencies.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "remote_dictionary_residual_gaps")
+
+
+def verify_taglib_2600() -> dict[str, Any]:
+    path = ROOT / "Core" / "Tags" / "TagLibrary.swift"
+    checks = {
+        "notification_default_removed": count_occurrences(
+            path, r"NotificationCenter\.default"
+        ) == 0,
+        "live_helper_exists": (
+            ROOT / "Core" / "Tags" / "TagLibraryLiveDependencies.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "tag_library_residual_gaps")
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1371,6 +1419,9 @@ HANDLERS = {
     "DICTUI-2500": verify_dictui_2500,
     "SHOTOCR-2500": verify_shotocr_2500,
     "UINOTIFY-2500": verify_uinotify_2500,
+    "LOCALDICT-2600": verify_localdict_2600,
+    "REMOTEDICT-2600": verify_remotedict_2600,
+    "TAGLIB-2600": verify_taglib_2600,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

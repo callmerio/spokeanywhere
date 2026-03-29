@@ -139,7 +139,7 @@ final class TagLibrary: ObservableObject {
         logger.info("🗑️ 删除标签: \(name)")
         
         // 通知 MessagePanelState 移除相关引用
-        NotificationCenter.default.post(name: .tagDeleted, object: nil, userInfo: ["tagId": id])
+        postTagDeletedNotification(id: id)
     }
     
     // MARK: - Recent Tags

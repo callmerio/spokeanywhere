@@ -25,7 +25,7 @@ struct LocalDictionaryResult: Identifiable, Equatable {
     var briefDefinition: String {
         // 格式: adj. 好的；健康的  v. 很好  adv. 非常
         // 每个词性后跟该词性的释义
-        let parsed = DictionaryDefinitionParser.shared.parse(word: word, definition: definition)
+        let parsed = parseLocalDictionaryBriefDefinition(word: word, definition: definition)
         
         // 按词性分组收集释义
         var posMeanings: [(pos: String, meanings: [String])] = []
@@ -201,13 +201,7 @@ final class LocalDictionaryService: @unchecked Sendable {
         }
         
         // 2. 使用 NSSpellChecker 获取单词补全建议（核心：实现前缀搜索）
-        let spellChecker = NSSpellChecker.shared
-        let completions = spellChecker.completions(
-            forPartialWordRange: NSRange(location: 0, length: trimmed.count),
-            in: trimmed,
-            language: "en",
-            inSpellDocumentWithTag: 0
-        ) ?? []
+        let completions = localDictionaryCompletions(for: trimmed)
         
         for completion in completions.prefix(8) {
             let word = completion.lowercased()
