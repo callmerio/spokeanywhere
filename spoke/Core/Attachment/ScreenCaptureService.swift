@@ -165,32 +165,19 @@ final class ScreenCaptureService {
             process.standardError = errorPipe
             
             process.terminationHandler = { _ in
-                Task { @MainActor in
-                    // 读取 stderr
-                    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-                    let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-                    if !errorOutput.isEmpty {
-                        self.logger.warning("📸 stderr: \(errorOutput)")
-                    }
-                    
-                    defer {
-                        try? FileManager.default.removeItem(at: tempFile)
-                    }
-                    
-                    let fileExists = FileManager.default.fileExists(atPath: tempFile.path)
-                    
-                    if fileExists {
-                        if let image = NSImage(contentsOf: tempFile) {
-                            self.logger.info("✅ Region captured: \(Int(image.size.width))x\(Int(image.size.height))")
-                            continuation.resume(returning: image)
-                        } else {
-                            self.logger.error("❌ Failed to load captured image")
-                            continuation.resume(returning: nil)
-                        }
-                    } else {
-                        self.logger.debug("🚫 Region capture cancelled")
-                        continuation.resume(returning: nil)
-                    }
+                let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+                let image = NSImage(contentsOf: tempFile)
+                let fileExists = FileManager.default.fileExists(atPath: tempFile.path)
+
+                runScreenCaptureServiceOnMain(self) { service in
+                    service.finishRegionCapture(
+                        tempFile: tempFile,
+                        errorOutput: errorOutput,
+                        fileExists: fileExists,
+                        image: image,
+                        continuation: continuation
+                    )
                 }
             }
             
@@ -215,6 +202,35 @@ final class ScreenCaptureService {
         // 打开系统偏好设置的屏幕录制权限页面
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func finishRegionCapture(
+        tempFile: URL,
+        errorOutput: String,
+        fileExists: Bool,
+        image: NSImage?,
+        continuation: CheckedContinuation<NSImage?, Never>
+    ) {
+        if !errorOutput.isEmpty {
+            logger.warning("📸 stderr: \(errorOutput)")
+        }
+
+        defer {
+            try? FileManager.default.removeItem(at: tempFile)
+        }
+
+        if fileExists {
+            if let image {
+                logger.info("✅ Region captured: \(Int(image.size.width))x\(Int(image.size.height))")
+                continuation.resume(returning: image)
+            } else {
+                logger.error("❌ Failed to load captured image")
+                continuation.resume(returning: nil)
+            }
+        } else {
+            logger.debug("🚫 Region capture cancelled")
+            continuation.resume(returning: nil)
         }
     }
 }
