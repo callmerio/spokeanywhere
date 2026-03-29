@@ -2,6 +2,11 @@ import Foundation
 import os
 import SwiftUI
 
+@MainActor
+struct SessionHistoryServiceDependencies {
+    let generateAITitle: (String) async -> String?
+}
+
 // MARK: - Session Record Type
 
 /// 会话记录类型
@@ -125,7 +130,7 @@ final class SessionHistoryService: ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = SessionHistoryService()
+    static let shared = SessionHistoryService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "SessionHistory")
     
@@ -137,6 +142,7 @@ final class SessionHistoryService: ObservableObject {
     
     /// 按类型分组的记录（每组内按时间倒序，新的在上）
     @Published private(set) var groupedRecords: [SessionRecordType: [SessionRecord]] = [:]
+    private let dependencies: SessionHistoryServiceDependencies
     
     /// 更新分组缓存
     private func updateGroupedRecords() {
@@ -153,13 +159,14 @@ final class SessionHistoryService: ObservableObject {
     
     // MARK: - Init
     
-    private init() {
+    private init(dependencies: SessionHistoryServiceDependencies) {
+        self.dependencies = dependencies
         loadRecords()
         updateGroupedRecords()  // didSet 在 init 期间不触发，需手动调用
     }
 
     static func makePreview(records: [SessionRecord] = []) -> SessionHistoryService {
-        let service = SessionHistoryService()
+        let service = SessionHistoryService(dependencies: .live)
         service.records = records
         service.updateGroupedRecords()
         return service
@@ -209,17 +216,15 @@ final class SessionHistoryService: ObservableObject {
             logger.info("💬 Conversation saved: \(fallbackTitle)")
             
             // 异步生成 AI 标题（如果启用）
-            Task {
-                await generateAITitleIfNeeded(for: panelId, content: firstUserMessage)
+            runSessionHistoryAsync(self) { service in
+                await service.generateAITitleIfNeeded(for: panelId, content: firstUserMessage)
             }
         }
     }
     
     /// 异步生成 AI 标题
     private func generateAITitleIfNeeded(for recordId: UUID, content: String) async {
-        let llmSettings = LLMSettings.shared
-        
-        guard let aiTitle = await llmSettings.generateTitle(from: content) else {
+        guard let aiTitle = await dependencies.generateAITitle(content) else {
             return
         }
         

@@ -123,8 +123,8 @@ final class QuickAskService {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            runQuickAskServiceOnMain(self) { service in
-                await service.handleFollowUpRequest(notification)
+            MainActor.assumeIsolated {
+                self?.handleFollowUpNotification(notification)
             }
         }
     }
@@ -301,7 +301,7 @@ final class QuickAskService {
         }
     }
 
-    private func handleFollowUpRequest(_ notification: Notification) async {
+    private func handleFollowUpNotification(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let panelId = userInfo["panelId"] as? UUID,
               let prompt = userInfo["prompt"] as? String,
@@ -309,7 +309,9 @@ final class QuickAskService {
             return
         }
 
-        await handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
+        Task { [weak self] in
+            await self?.handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
+        }
     }
     
     /// 处理追问
