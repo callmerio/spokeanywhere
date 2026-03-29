@@ -53,18 +53,18 @@ extension ScreenshotContentView {
 
         logger.info("🎨 Enhancing image before copy...")
 
-        Task {
-            let enhanced = actionDependencies.enhanceImage(original, targetSize)
-
-            await MainActor.run {
-                if let enhanced = enhanced {
-                    self.copyImageToClipboard(enhanced)
-                    self.logger.info("✅ Enhanced image copied to clipboard")
-                } else {
-                    // 增强失败，复制原图
-                    self.copyImageToClipboard(original)
-                    self.logger.warning("⚠️ Enhancement failed, copied original image")
-                }
+        runScreenshotEnhancedCopy(
+            original: original,
+            targetSize: targetSize,
+            enhance: actionDependencies.enhanceImage
+        ) { enhanced in
+            if let enhanced = enhanced {
+                self.copyImageToClipboard(enhanced)
+                self.logger.info("✅ Enhanced image copied to clipboard")
+            } else {
+                // 增强失败，复制原图
+                self.copyImageToClipboard(original)
+                self.logger.warning("⚠️ Enhancement failed, copied original image")
             }
         }
     }
@@ -78,12 +78,12 @@ extension ScreenshotContentView {
         if #available(macOS 13.0, *) { return }
         guard let image = item.loadImage(),
               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
-        Task.detached {
-            let text = await Self.extractText(from: cgImage)
-            await MainActor.run {
-                if !text.isEmpty {
-                    self.actionDependencies.copyText(text)
-                }
+        runScreenshotLegacyOCR(
+            cgImage: cgImage,
+            extractText: Self.extractText
+        ) { text in
+            if !text.isEmpty {
+                self.actionDependencies.copyText(text)
             }
         }
     }

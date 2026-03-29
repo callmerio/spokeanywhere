@@ -45,7 +45,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     private var enhanceDebounceTask: DispatchWorkItem?
     
     /// 当前正在执行的增强任务 (可取消)
-    private var currentEnhanceTask: Task<Void, Never>?
+    private var currentEnhanceTask: ScreenshotAsyncTask?
     
     /// 上次增强时的尺寸，避免微小变动重复计算
     private var lastEnhancedSize: CGSize = .zero
@@ -231,16 +231,17 @@ extension ScreenshotContentView {
         let debounceTask = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
             
-            self.currentEnhanceTask = Task { [weak self] in
+            self.currentEnhanceTask = makeScreenshotAsyncTask { [weak self] in
                 guard let self = self else { return }
                 
                 // 启动 AI 增强 (High Res)
-                let aiTask = Task.detached(priority: .userInitiated) {
-                    await self.dependencies.enhanceAIHighRes(original)
+                let aiTask = await runScreenshotDetached(priority: .userInitiated) {
+                    let enhanceAIHighRes = await MainActor.run { self.dependencies.enhanceAIHighRes }
+                    return await enhanceAIHighRes(original)
                 }
                 
                 // 等待 AI 结果
-                if let highResResult = await aiTask.value {
+                if let highResResult = aiTask {
                     if !Task.isCancelled {
                         // 缓存 4x 大图
                         await MainActor.run {
@@ -251,7 +252,10 @@ extension ScreenshotContentView {
                         
                         // Downscale 到当前需要的尺寸
                         let backingScale = await MainActor.run { NSScreen.main?.backingScaleFactor ?? 2.0 }
-                        if let finalResult = self.dependencies.scaleImage(highResResult, targetSize, backingScale) {
+                        let finalResult = await MainActor.run {
+                            self.dependencies.scaleImage(highResResult, targetSize, backingScale)
+                        }
+                        if let finalResult {
                             await MainActor.run {
                                 self.imageView.image = finalResult
                                 self.lastEnhancedSize = targetSize

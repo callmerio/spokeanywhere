@@ -14,11 +14,20 @@ struct ScreenshotManagerPerformanceTests {
 
     /// 生成测试用的 ScreenshotItem 数组
     private func generateFixture(count: Int) -> [ScreenshotItem] {
-        (0..<count).map { index in
-            ScreenshotItem(
+        var items: [ScreenshotItem] = []
+        items.reserveCapacity(count)
+
+        for index in 0..<count {
+            let frame = CGRect(
+                x: 100 + Double(index * 10),
+                y: 100,
+                width: 800,
+                height: 600
+            )
+            let item = ScreenshotItem(
                 id: UUID(),
                 imagePath: "/tmp/screenshot_\(index).png",
-                frame: CGRect(x: 100 + Double(index * 10), y: 100, width: 800, height: 600),
+                frame: frame,
                 originalSize: CGSize(width: 800, height: 600),
                 isPinned: true,
                 isLocked: index % 3 == 0,
@@ -29,7 +38,10 @@ struct ScreenshotManagerPerformanceTests {
                 screenLocalizedName: "Built-in Retina Display",
                 createdAt: Date()
             )
+            items.append(item)
         }
+
+        return items
     }
 
     // MARK: - JSON Encoding Performance
