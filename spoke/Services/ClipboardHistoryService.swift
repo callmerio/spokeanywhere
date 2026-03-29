@@ -1,5 +1,11 @@
 import AppKit
+import Foundation
 import os
+
+@MainActor
+struct ClipboardHistoryDependencies {
+    let historyLimit: () -> Int
+}
 
 /// 剪贴板历史服务
 /// 底层静默保存用户剪贴板历史，作为 LLM 上下文
@@ -8,7 +14,7 @@ final class ClipboardHistoryService {
     
     // MARK: - Singleton
     
-    static let shared = ClipboardHistoryService()
+    static let shared = ClipboardHistoryService(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "ClipboardHistory")
     
@@ -36,10 +42,13 @@ final class ClipboardHistoryService {
     
     /// 是否正在运行
     private(set) var isRunning = false
+
+    private let dependencies: ClipboardHistoryDependencies
     
     // MARK: - Init
     
-    private init() {
+    private init(dependencies: ClipboardHistoryDependencies) {
+        self.dependencies = dependencies
         loadHistory()
     }
     
@@ -51,10 +60,8 @@ final class ClipboardHistoryService {
         isRunning = true
         lastChangeCount = NSPasteboard.general.changeCount
         
-        timer = Timer.scheduledTimer(withTimeInterval: Self.checkInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.checkClipboard()
-            }
+        timer = makeClipboardHistoryTimer(interval: Self.checkInterval, owner: self) { service in
+            service.checkClipboard()
         }
         
         logger.info("📋 ClipboardHistoryService started")
@@ -138,7 +145,7 @@ final class ClipboardHistoryService {
         history.insert(item, at: 0)
         
         // 限制条数
-        let limit = AppSettings.shared.clipboardHistoryLimit
+        let limit = dependencies.historyLimit()
         if history.count > limit {
             history = Array(history.prefix(limit))
         }
