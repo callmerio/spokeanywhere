@@ -6,7 +6,7 @@ import os
 /// 通过 NSDistributedNotificationCenter 接收外部脚本触发指令。
 @MainActor
 final class DebugAutomationTriggerService {
-    static let shared = DebugAutomationTriggerService()
+    static let shared = DebugAutomationTriggerService(dependencies: .live)
 
     static let notificationName = Notification.Name("com.spokeanywhere.debug.automation.trigger")
     static let enableEnvKey = "SPOKE_DEBUG_AUTOMATION"
@@ -19,13 +19,16 @@ final class DebugAutomationTriggerService {
     }
 
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "DebugAutomation")
+    private let dependencies: DebugAutomationTriggerServiceDependencies
     private var observer: NSObjectProtocol?
 
     var onRecordingToggle: (() -> Void)?
     var onCaptionToggle: (() -> Void)?
     var onScreenshotCapture: (() -> Void)?
 
-    private init() {}
+    private init(dependencies: DebugAutomationTriggerServiceDependencies) {
+        self.dependencies = dependencies
+    }
 
     /// Debug 启动参数：
     /// - `SPOKE_DEBUG_AUTOMATION=1|true|yes|on` => 启用
@@ -53,13 +56,13 @@ final class DebugAutomationTriggerService {
 
         guard observer == nil else { return true }
 
-        observer = DistributedNotificationCenter.default().addObserver(
-            forName: Self.notificationName,
-            object: nil,
-            queue: .main
+        observer = dependencies.addObserver(
+            Self.notificationName,
+            nil,
+            .main
         ) { [weak self] notification in
-            Task { @MainActor in
-                self?.handle(notification)
+            runDebugAutomationTriggerOnMain(self) { service in
+                service.handle(notification)
             }
         }
 
@@ -69,7 +72,7 @@ final class DebugAutomationTriggerService {
 
     func stop() {
         guard let observer else { return }
-        DistributedNotificationCenter.default().removeObserver(observer)
+        dependencies.removeObserver(observer)
         self.observer = nil
         logger.info("🧪 [DebugAutomation] listener stopped")
     }

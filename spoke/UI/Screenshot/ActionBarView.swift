@@ -110,15 +110,11 @@ final class ActionBarView: NSView {
         
         button.startSpinner()
         
-        Task.detached {
+        runActionBarOCR(button: button, owner: self, onText: { [dependencies] text in
+            dependencies.copyText(text)
+        }) {
             let text = await ScreenshotContentView.extractText(from: cgImage)
-            await MainActor.run {
-                button.stopSpinner()
-                if !text.isEmpty {
-                    self.dependencies.copyText(text)
-                    button.showFeedback()
-                }
-            }
+            return text
         }
     }
     
@@ -385,11 +381,11 @@ final class ActionBarButton: NSView {
         iconView.contentTintColor = .green
         
         // 1.5秒后恢复
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            guard let self = self else { return }
-            self.iconView.image = originalIcon
+        runActionBarFeedbackReset(after: 1.5, owner: self) { button in
+            guard let originalIcon else { return }
+            button.iconView.image = originalIcon
             // 恢复 hover 状态（会自动设置正确的颜色）
-            self.updateHoverState(animated: true)
+            button.updateHoverState(animated: true)
         }
     }
 }

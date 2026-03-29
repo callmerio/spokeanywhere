@@ -21,6 +21,7 @@ typealias QuickAskAttachment = Attachment
 @MainActor
 final class QuickAskState {
     private let attachmentManager: AttachmentManager
+    private let dependencies: QuickAskStateDependencies
     
     // MARK: - Phase
     
@@ -79,8 +80,12 @@ final class QuickAskState {
         phase == .recording
     }
     
-    init(attachmentManager: AttachmentManager) {
+    init(
+        attachmentManager: AttachmentManager,
+        dependencies: QuickAskStateDependencies? = nil
+    ) {
         self.attachmentManager = attachmentManager
+        self.dependencies = dependencies ?? .live
     }
     
     // MARK: - Actions
@@ -140,8 +145,8 @@ final class QuickAskState {
     
     /// 添加文件附件
     func addFile(_ url: URL) {
-        Task {
-            await attachmentManager.handleFileURL(url, source: .drop) { [weak self] attachment in
+        runQuickAskStateTask { [self] in
+            await self.attachmentManager.handleFileURL(url, source: .drop) { [weak self] attachment in
                 self?.addAttachment(attachment)
             }
         }
@@ -151,18 +156,17 @@ final class QuickAskState {
     private func setupThumbnailObserverIfNeeded() {
         guard thumbnailObserver == nil else { return }
         
-        thumbnailObserver = NotificationCenter.default.addObserver(
+        thumbnailObserver = dependencies.notificationCenter.addObserver(
             forName: .attachmentThumbnailUpdated,
             object: nil,
             queue: .main
         ) { [weak self] notification in
             guard let id = notification.userInfo?["id"] as? UUID,
                   let updated = notification.userInfo?["attachment"] as? Attachment else { return }
-            
-            // 确保在 MainActor 上下文中更新
-            Task { @MainActor in
-                if let index = self?.attachments.firstIndex(where: { $0.id == id }) {
-                    self?.attachments[index] = updated
+
+            runQuickAskStateOnMain(self) { state in
+                if let index = state.attachments.firstIndex(where: { $0.id == id }) {
+                    state.attachments[index] = updated
                 }
             }
         }
