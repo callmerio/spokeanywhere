@@ -1,0 +1,22 @@
+{
+  "issue_id": "FLOATCAP-2400",
+  "title": "FloatingCapsuleView 自动滚动延时收口",
+  "mode": "exec",
+  "goal": "移除 FloatingCapsuleView 主文件里的 DispatchQueue.main.asyncAfter，统一改走 runtime helper，不改变滚动防抖行为。",
+  "scope": [
+    "UI/HUD/FloatingCapsuleView.swift",
+    "UI/HUD/FloatingCapsuleRuntimeHelpers.swift"
+  ],
+  "metric": "floating_capsule_tail_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue FLOATCAP-2400",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "FLOATCAP-2400",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收滚动延时，不改 HUD 文本滚动语义。"
+}

@@ -263,8 +263,8 @@ struct VocabularyHighlightText: NSViewRepresentable {
         private var isSelecting = false
         
         /// 🔥 选中防抖：选中变化停止 300ms 后触发工具栏
-        private var selectionDebounceTimer: Timer?
-        private weak var lastTextView: NSTextView?
+        private var selectionDebounceTask: Task<Void, Never>?
+        weak var lastTextView: NSTextView?
         
         init(
             dependencies: VocabularyHighlightDependencies,
@@ -346,15 +346,10 @@ struct VocabularyHighlightText: NSViewRepresentable {
             }
             
             // 🔥 选中防抖：有选中时启动定时器，300ms 后触发工具栏
-            selectionDebounceTimer?.invalidate()
+            selectionDebounceTask?.cancel()
             if hasSelection {
                 lastTextView = textView
-                selectionDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
-                    runVocabularyHighlightMainActor {
-                        guard let textView = self?.lastTextView else { return }
-                        self?.handleSelectionCompleted(in: textView)
-                    }
-                }
+                selectionDebounceTask = makeVocabularySelectionDebounceTask(self)
             }
         }
         

@@ -51,8 +51,6 @@ class MicrophoneTester: ObservableObject {
         let rms = sqrt(sumSquares / Float(frameLength / 4))
         let newLevel = min((rms * 5.0) + (sqrt(rms) * 2.0), 1.0)
         
-        Task { @MainActor in
-            self.level = newLevel
-        }
+        runMicrophoneTesterOnMain(self, level: newLevel)
     }
 }

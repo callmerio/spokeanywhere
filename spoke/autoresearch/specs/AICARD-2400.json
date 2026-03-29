@@ -1,0 +1,22 @@
+{
+  "issue_id": "AICARD-2400",
+  "title": "AISettingsServiceCardRow 复制提示延时收口",
+  "mode": "exec",
+  "goal": "移除 AISettingsServiceCardRow 主文件里的 DispatchQueue.main.asyncAfter，统一改走 runtime helper，不改变复制提示的复位时机。",
+  "scope": [
+    "UI/Settings/AISettingsServiceCardRow.swift",
+    "UI/Settings/AISettingsServiceCardRowRuntimeHelpers.swift"
+  ],
+  "metric": "ai_service_card_tail_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue AICARD-2400",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "AICARD-2400",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收复制状态复位延时，不改 UI 行为。"
+}

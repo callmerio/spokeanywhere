@@ -1,0 +1,22 @@
+{
+  "issue_id": "MICTEST-2400",
+  "title": "MicrophoneTester 电平更新 Task 收口",
+  "mode": "exec",
+  "goal": "移除 MicrophoneTester 主文件里的 raw MainActor Task，统一改走 runtime helper，不改变麦克风电平刷新语义。",
+  "scope": [
+    "UI/Settings/MicrophoneTester.swift",
+    "UI/Settings/MicrophoneTesterRuntimeHelpers.swift"
+  ],
+  "metric": "microphone_tester_tail_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue MICTEST-2400",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "MICTEST-2400",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收电平回跳样板，不改测试器行为。"
+}

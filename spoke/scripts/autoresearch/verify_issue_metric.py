@@ -1112,6 +1112,76 @@ def verify_mdparser_2300() -> dict[str, Any]:
     )
 
 
+def verify_lctrans_2400() -> dict[str, Any]:
+    path = ROOT / "Core" / "LiveCaption" / "LiveCaptionTranscriber.swift"
+    checks = {
+        "raw_task_removed": count_occurrences(path, r"\bTask \{ @MainActor") == 0,
+        "runtime_helper_exists": (
+            ROOT / "Core" / "LiveCaption" / "LiveCaptionTranscriberRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "live_caption_transcriber_tail_gaps")
+
+
+def verify_floatcap_2400() -> dict[str, Any]:
+    path = ROOT / "UI" / "HUD" / "FloatingCapsuleView.swift"
+    checks = {
+        "raw_async_after_removed": count_occurrences(
+            path, r"DispatchQueue\.main\.asyncAfter"
+        ) == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "HUD" / "FloatingCapsuleRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "floating_capsule_tail_gaps")
+
+
+def verify_vocabtxt_2400() -> dict[str, Any]:
+    path = ROOT / "UI" / "LiveCaption" / "VocabularyHighlightText.swift"
+    checks = {
+        "raw_timer_removed": count_occurrences(path, r"Timer\.scheduledTimer") == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "LiveCaption" / "VocabularyHighlightTextRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "vocabulary_highlight_tail_gaps")
+
+
+def verify_aicard_2400() -> dict[str, Any]:
+    path = ROOT / "UI" / "Settings" / "AISettingsServiceCardRow.swift"
+    checks = {
+        "raw_async_after_removed": count_occurrences(
+            path, r"DispatchQueue\.main\.asyncAfter"
+        ) == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "Settings" / "AISettingsServiceCardRowRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "ai_service_card_tail_gaps")
+
+
+def verify_mictest_2400() -> dict[str, Any]:
+    path = ROOT / "UI" / "Settings" / "MicrophoneTester.swift"
+    checks = {
+        "raw_task_removed": count_occurrences(path, r"\bTask \{ @MainActor") == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "Settings" / "MicrophoneTesterRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "microphone_tester_tail_gaps")
+
+
+def verify_msgpview_2400() -> dict[str, Any]:
+    path = ROOT / "UI" / "MessagePanel" / "MessagePanelView.swift"
+    checks = {
+        "raw_task_removed": count_occurrences(path, r"\bTask \{ @MainActor") == 0,
+        "runtime_helper_exists": (
+            ROOT / "UI" / "MessagePanel" / "MessagePanelViewRuntimeHelpers.swift"
+        ).exists(),
+    }
+    return bool_metric(checks, "message_panel_view_tail_gaps")
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1178,6 +1248,12 @@ HANDLERS = {
     "SCREENCAP-2300": verify_screencap_2300,
     "APPAUDIO-2300": verify_appaudio_2300,
     "MDPARSER-2300": verify_mdparser_2300,
+    "LCTRANS-2400": verify_lctrans_2400,
+    "FLOATCAP-2400": verify_floatcap_2400,
+    "VOCABTXT-2400": verify_vocabtxt_2400,
+    "AICARD-2400": verify_aicard_2400,
+    "MICTEST-2400": verify_mictest_2400,
+    "MSGPVIEW-2400": verify_msgpview_2400,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

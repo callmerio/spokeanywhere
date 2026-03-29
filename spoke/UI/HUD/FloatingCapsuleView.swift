@@ -296,7 +296,7 @@ struct FloatingCapsuleView: View {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
                 pendingAutoScrollWorkItem = workItem
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: workItem)
+                scheduleFloatingCapsuleWorkItem(after: 0.08, workItem)
             }
             .onDisappear {
                 pendingAutoScrollWorkItem?.cancel()

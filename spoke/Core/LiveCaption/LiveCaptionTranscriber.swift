@@ -76,9 +76,7 @@ final class LiveCaptionTranscriber: ObservableObject {
         
         // 启动识别任务
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor in
-                self?.handleRecognitionResult(result, error: error)
-            }
+            runLiveCaptionTranscriberOnMain(self, result: result, error: error)
         }
         
         isTranscribing = true
@@ -130,7 +128,7 @@ final class LiveCaptionTranscriber: ObservableObject {
         speechRecognizer = SFSpeechRecognizer(locale: locale)
     }
     
-    private func handleRecognitionResult(_ result: SFSpeechRecognitionResult?, error: Error?) {
+    func handleRecognitionResult(_ result: SFSpeechRecognitionResult?, error: Error?) {
         if let error = error {
             // 忽略取消错误
             if (error as NSError).code != 203 {

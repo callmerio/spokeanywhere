@@ -414,7 +414,7 @@ struct ServiceCardExpandedContent: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(key, forType: .string)
             copiedAPIKey = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            scheduleAISettingsServiceCardRowMain(after: 1.5) {
                 copiedAPIKey = false
             }
         }

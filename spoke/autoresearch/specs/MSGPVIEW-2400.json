@@ -1,0 +1,22 @@
+{
+  "issue_id": "MSGPVIEW-2400",
+  "title": "MessagePanelView 预览种子 Task 收口",
+  "mode": "exec",
+  "goal": "移除 MessagePanelView 预览里的 raw MainActor Task，统一改走 runtime helper，保持预览数据种子不变。",
+  "scope": [
+    "UI/MessagePanel/MessagePanelView.swift",
+    "UI/MessagePanel/MessagePanelViewRuntimeHelpers.swift"
+  ],
+  "metric": "message_panel_view_tail_gaps",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue MSGPVIEW-2400",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "MSGPVIEW-2400",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收 preview 种子任务，不改生产逻辑。"
+}
