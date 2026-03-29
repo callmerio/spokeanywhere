@@ -54,9 +54,7 @@ final class SystemAudioCaptureService: NSObject, ObservableObject {
     
     /// 请求屏幕录制权限 - 打开系统设置
     static func openScreenCaptureSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-            NSWorkspace.shared.open(url)
-        }
+        openSystemAudioCaptureSettings()
     }
     
     /// 开始捕获系统音频
@@ -149,12 +147,12 @@ extension SystemAudioCaptureService: SCStreamOutput {
         let transferred = UnsafeTransferBox(value: sampleBuffer)
         
         // 转发到主线程处理
-        Task { @MainActor [transferred] in
-            self.onAudioBuffer?(transferred.value)
-            
+        runSystemAudioCaptureOnMain(self) { service in
+            service.onAudioBuffer?(transferred.value)
+
             // 转换为 PCM 并回调（用于 SpeechAnalyzerProvider）
-            if self.onPCMBuffer != nil, let pcmBuffer = self.convertToPCMBuffer(transferred.value) {
-                self.onPCMBuffer?(pcmBuffer)
+            if service.onPCMBuffer != nil, let pcmBuffer = service.convertToPCMBuffer(transferred.value) {
+                service.onPCMBuffer?(pcmBuffer)
             }
         }
     }
@@ -251,11 +249,11 @@ extension SystemAudioCaptureService: SCStreamOutput {
 extension SystemAudioCaptureService: SCStreamDelegate {
     
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
-        Task { @MainActor in
+        runSystemAudioCaptureOnMain(self) { service in
             let nsError = error as NSError
-            self.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
-            self.isCapturing = false
-            self.onError?(error)
+            service.logger.error("❌ Stream stopped with error: \(error.localizedDescription, privacy: .public) [domain: \(nsError.domain, privacy: .public), code: \(nsError.code)]")
+            service.isCapturing = false
+            service.onError?(error)
         }
     }
 }
