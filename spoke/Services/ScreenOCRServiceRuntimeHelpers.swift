@@ -5,7 +5,7 @@ func makeScreenOCRPrefetchTask(
     owner: ScreenOCRService,
     action: @escaping @MainActor (ScreenOCRService) async -> String?
 ) -> Task<String?, Never> {
-    Task { @MainActor in
+    runtimeMakeValueTask {
         await action(owner)
     }
 }
@@ -33,8 +33,8 @@ func awaitScreenOCRPrefetch(
 }
 
 func runScreenOCRRecognition(on image: CGImage) async -> String? {
-    await Task.detached(priority: .userInitiated) {
-        await withCheckedContinuation { continuation in
+    await runtimeRunDetachedAsync(priority: .userInitiated) {
+        await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
             let request = VNRecognizeTextRequest { request, _ in
                 if request.results == nil {
                     continuation.resume(returning: nil)
@@ -65,5 +65,5 @@ func runScreenOCRRecognition(on image: CGImage) async -> String? {
                 continuation.resume(returning: nil)
             }
         }
-    }.value
+    }
 }

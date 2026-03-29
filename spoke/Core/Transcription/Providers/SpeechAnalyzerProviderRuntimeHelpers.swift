@@ -4,9 +4,7 @@ import Speech
 func makeSpeechAnalyzerOperation(
     _ operation: @escaping @Sendable () async -> Void
 ) -> Task<Void, Never> {
-    Task {
-        await operation()
-    }
+    runtimeMakeTask(operation)
 }
 
 @available(macOS 26.0, iOS 26.0, *)
@@ -15,10 +13,7 @@ func makeSpeechAnalyzerProviderOperation(
     owner: SpeechAnalyzerProvider?,
     _ action: @escaping @MainActor (SpeechAnalyzerProvider) async -> Void
 ) -> Task<Void, Never> {
-    makeSpeechAnalyzerOperation {
-        guard let owner else { return }
-        await action(owner)
-    }
+    runtimeMakeMainActorTask(owner: owner, action)
 }
 
 @available(macOS 26.0, iOS 26.0, *)

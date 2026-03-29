@@ -763,6 +763,39 @@ def verify_orch_sas_150() -> dict[str, Any]:
     )
 
 
+def verify_shothelp_1600() -> dict[str, Any]:
+    path = ROOT / "UI" / "Screenshot" / "ScreenshotContentRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "screenshot_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_screenocr_1600() -> dict[str, Any]:
+    path = ROOT / "Services" / "ScreenOCRServiceRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "screenocr_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_spanhelp_1600() -> dict[str, Any]:
+    path = ROOT / "Core" / "Transcription" / "Providers" / "SpeechAnalyzerProviderRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "speech_analyzer_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -798,6 +831,9 @@ HANDLERS = {
     "DOC-STATE-140": verify_doc_state_140,
     "ORCH-QAS-150": verify_orch_qas_150,
     "ORCH-SAS-150": verify_orch_sas_150,
+    "SHOTHELP-1600": verify_shothelp_1600,
+    "SCREENOCR-1600": verify_screenocr_1600,
+    "SPANHELP-1600": verify_spanhelp_1600,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

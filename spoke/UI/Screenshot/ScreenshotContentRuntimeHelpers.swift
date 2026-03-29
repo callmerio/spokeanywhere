@@ -12,18 +12,14 @@ func runScreenshotTask(
 func makeScreenshotAsyncTask(
     _ operation: @escaping @Sendable () async -> Void
 ) -> ScreenshotAsyncTask {
-    Task {
-        await operation()
-    }
+    runtimeMakeTask(operation)
 }
 
 func runScreenshotDetached<Value: Sendable>(
     priority: TaskPriority = .userInitiated,
     _ operation: @escaping @Sendable () async -> Value
 ) async -> Value {
-    await Task.detached(priority: priority) {
-        await operation()
-    }.value
+    await runtimeRunDetachedAsync(priority: priority, operation)
 }
 
 func scheduleScreenshotWorkItem(
@@ -60,9 +56,11 @@ func runScreenshotLegacyOCR(
     extractText: @escaping (CGImage) async -> String,
     complete: @escaping @MainActor (String) -> Void
 ) {
-    Task.detached {
-        let text = await extractText(cgImage)
-        await MainActor.run {
+    runtimeRunAsync {
+        let text = await runtimeRunDetachedAsync {
+            await extractText(cgImage)
+        }
+        runtimeRunOnMain {
             complete(text)
         }
     }

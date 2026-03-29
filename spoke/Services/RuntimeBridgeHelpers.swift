@@ -53,6 +53,41 @@ func runtimeRunAsync(
     }
 }
 
+func runtimeMakeTask(
+    _ operation: @escaping @Sendable () async -> Void
+) -> Task<Void, Never> {
+    Task {
+        await operation()
+    }
+}
+
+func runtimeMakeValueTask<Result: Sendable>(
+    _ operation: @escaping @Sendable () async -> Result
+) -> Task<Result, Never> {
+    Task {
+        await operation()
+    }
+}
+
+func runtimeMakeMainActorTask<Owner: AnyObject>(
+    owner: Owner?,
+    _ action: @escaping @MainActor (Owner) async -> Void
+) -> Task<Void, Never> {
+    runtimeMakeTask {
+        guard let owner else { return }
+        await action(owner)
+    }
+}
+
+func runtimeRunDetachedAsync<Result: Sendable>(
+    priority: TaskPriority = .userInitiated,
+    _ operation: @escaping @Sendable () async -> Result
+) async -> Result {
+    await Task.detached(priority: priority) {
+        await operation()
+    }.value
+}
+
 func runtimeRunOnMain(
     after seconds: Double,
     _ operation: @escaping @MainActor () -> Void
