@@ -28,7 +28,7 @@ final class WorkflowConfigService {
     private(set) var recentIds: [String] = []
     
     /// 保存防抖
-    private var saveTask: Task<Void, Never>?
+    private var saveTask: WorkflowConfigAsyncTask?
     
     // MARK: - Init
     
@@ -189,10 +189,8 @@ final class WorkflowConfigService {
     
     private func scheduleSave() {
         saveTask?.cancel()
-        saveTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            save()
+        saveTask = makeWorkflowConfigSaveTask(owner: self) { service in
+            service.save()
         }
     }
     
