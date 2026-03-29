@@ -147,6 +147,10 @@ final class SelectionToolbarState: ObservableObject {
         self.dependencies = dependencies
         loadConfig()
     }
+
+    static func makePreview() -> SelectionToolbarState {
+        SelectionToolbarState(dependencies: .live)
+    }
     
     // MARK: - Public API
     

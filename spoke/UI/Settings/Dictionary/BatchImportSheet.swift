@@ -6,10 +6,21 @@ private typealias DS = DesignTokens
 
 struct BatchImportSheet: View {
     @Binding var isPresented: Bool
-    @ObservedObject private var dictionaryService = DictionaryService.shared
+    @ObservedObject private var dictionaryService: DictionaryService
+    private let dependencies: BatchImportSheetDependencies
     
     @State private var importText = ""
     @State private var importResult: DictionaryImportResult?
+
+    init(
+        isPresented: Binding<Bool>,
+        dependencies: BatchImportSheetDependencies? = nil
+    ) {
+        self._isPresented = isPresented
+        let resolvedDependencies = dependencies ?? .live
+        self.dependencies = resolvedDependencies
+        self.dictionaryService = resolvedDependencies.dictionaryService
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
@@ -87,7 +98,7 @@ struct BatchImportSheet: View {
                 Button("导入") {
                     importResult = dictionaryService.batchImport(from: importText)
                     if importResult?.successCount ?? 0 > 0 {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        dependencies.scheduleDismiss(1) {
                             isPresented = false
                         }
                     }

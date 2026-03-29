@@ -13,7 +13,7 @@ struct SelectionToolbarViewDependencies {
 
 @MainActor
 extension SelectionToolbarViewDependencies {
-    static let preview = SelectionToolbarViewDependencies.preview(configService: .shared)
+    static let preview = SelectionToolbarViewDependencies.preview(configService: .makePreview())
 
     static func preview(
         configService: ToolbarConfigService
@@ -452,7 +452,7 @@ struct ToolbarErrorView: View {
 
 @MainActor
 private enum SelectionToolbarPreviewFixtures {
-    static let state = SelectionToolbarState.shared
+    static let state = SelectionToolbarState.makePreview()
     static let dependencies = SelectionToolbarViewDependencies.preview
 }
 

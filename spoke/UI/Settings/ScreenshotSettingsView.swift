@@ -3,8 +3,15 @@ import SwiftUI
 private typealias DS = DesignTokens
 
 struct ScreenshotSettingsView: View {
-    @ObservedObject private var settings = ScreenshotSettings.shared
-    @ObservedObject private var modelManager = ImageUpscalerModelManager.shared
+    @ObservedObject private var settings: ScreenshotSettings
+    @ObservedObject private var modelManager: ImageUpscalerModelManager
+
+    @MainActor
+    init(dependencies: ScreenshotSettingsViewDependencies? = nil) {
+        let resolvedDependencies = dependencies ?? .live
+        self.settings = resolvedDependencies.settings
+        self.modelManager = resolvedDependencies.modelManager
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xxl) {

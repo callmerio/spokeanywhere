@@ -69,6 +69,28 @@ final class ToolbarConfigService: ObservableObject {
     private init() {
         load()
     }
+
+    private init(
+        previewActions: [ToolbarAction],
+        visibleCount: Int,
+        isEnabled: Bool
+    ) {
+        self.actions = previewActions
+        self.visibleCount = visibleCount
+        self.isEnabled = isEnabled
+    }
+
+    static func makePreview(
+        actions: [ToolbarAction] = ToolbarAction.defaults,
+        visibleCount: Int = 5,
+        isEnabled: Bool = true
+    ) -> ToolbarConfigService {
+        ToolbarConfigService(
+            previewActions: actions,
+            visibleCount: visibleCount,
+            isEnabled: isEnabled
+        )
+    }
     
     // MARK: - Persistence
     
