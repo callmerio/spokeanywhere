@@ -1,6 +1,10 @@
 import Foundation
 import OSLog
 
+struct VocabularyServiceDependencies {
+    let notificationCenter: NotificationCenter
+}
+
 // MARK: - Vocabulary Item
 
 /// 生词条目
@@ -47,6 +51,7 @@ final class VocabularyService: ObservableObject {
     
     /// 存储路径
     private let storageURL: URL
+    private let dependencies: VocabularyServiceDependencies
 
     nonisolated private static func defaultStorageURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -57,10 +62,12 @@ final class VocabularyService: ObservableObject {
     // MARK: - Init
     
     init(
+        dependencies: VocabularyServiceDependencies = .live,
         storageURL: URL = VocabularyService.defaultStorageURL(),
         maxVocabularySize: Int = 200,
         loadPersistedItems: Bool = true
     ) {
+        self.dependencies = dependencies
         self.storageURL = storageURL
         self.maxVocabularySize = max(1, maxVocabularySize)
 
@@ -107,7 +114,7 @@ final class VocabularyService: ObservableObject {
         logger.info("[VOCAB] 添加: \(trimmed)")
         
         // 发送通知
-        NotificationCenter.default.post(name: .vocabularyChanged, object: nil)
+        dependencies.notificationCenter.post(name: .vocabularyChanged, object: nil)
         
         return item
     }
@@ -124,7 +131,7 @@ final class VocabularyService: ObservableObject {
         rebuildRegex()
         
         logger.info("[VOCAB] 删除: \(word)")
-        NotificationCenter.default.post(name: .vocabularyChanged, object: nil)
+        dependencies.notificationCenter.post(name: .vocabularyChanged, object: nil)
     }
     
     /// 检查是否是生词
@@ -170,7 +177,7 @@ final class VocabularyService: ObservableObject {
         saveItems()
         
         logger.info("[VOCAB] 清空所有生词")
-        NotificationCenter.default.post(name: .vocabularyChanged, object: nil)
+        dependencies.notificationCenter.post(name: .vocabularyChanged, object: nil)
     }
     
     // MARK: - Private Methods
