@@ -62,7 +62,7 @@ final class ToolbarConfigService: ObservableObject {
     
     private let storageKey = "toolbar.config.v1"
     private let backupKey = "toolbar.config.v1.backup"
-    private var saveTask: Task<Void, Never>?
+    private var saveTask: ToolbarConfigAsyncTask?
     
     // MARK: - Init
     
@@ -124,10 +124,8 @@ final class ToolbarConfigService: ObservableObject {
     /// 保存配置 (带防抖)
     private func scheduleSave() {
         saveTask?.cancel()
-        saveTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms 防抖
-            guard !Task.isCancelled else { return }
-            self.saveImmediately()
+        saveTask = makeToolbarConfigSaveTask(owner: self) { service in
+            service.saveImmediately()
         }
     }
     

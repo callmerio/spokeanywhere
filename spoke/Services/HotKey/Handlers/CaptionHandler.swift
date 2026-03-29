@@ -15,27 +15,20 @@ final class CaptionHandler: HotKeyHandler {
     var onToggle: (() -> Void)?
 
     init() {
-        let settings = AppSettings.shared
-        self.binding = HotKeyBinding(
-            keyCode: UInt32(settings.liveCaptionKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
-        )
+        self.binding = makeCaptionHandlerBinding()
     }
 
     func handleKeyDown() -> Bool {
-        DispatchQueue.main.async { [weak self] in
-            self?.onToggle?()
+        runHotKeyHandlerOnMain(self) { handler in
+            handler.onToggle?()
         }
         logger.info("Live Caption toggle triggered")
         return true
     }
 
     func reloadBinding() {
-        let settings = AppSettings.shared
-        binding = HotKeyBinding(
-            keyCode: UInt32(settings.liveCaptionKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.liveCaptionModifiers))
-        )
+        let settings = captionHandlerSettings()
+        binding = makeCaptionHandlerBinding()
         logger.info("Live Caption shortcut reloaded: \(settings.liveCaptionShortcutDisplayString)")
     }
 }

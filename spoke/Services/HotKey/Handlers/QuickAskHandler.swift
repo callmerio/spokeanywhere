@@ -20,26 +20,22 @@ final class QuickAskHandler: HotKeyHandler {
     var onSend: (() -> Void)?
 
     init() {
-        let settings = AppSettings.shared
-        self.binding = HotKeyBinding(
-            keyCode: UInt32(settings.quickAskKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
-        )
+        self.binding = makeQuickAskHandlerBinding()
     }
 
     func handleKeyDown() -> Bool {
         if !isActive {
             // 开始 Quick Ask
-            DispatchQueue.main.async { [weak self] in
-                self?.isActive = true
-                self?.onStart?()
+            runHotKeyHandlerOnMain(self) { handler in
+                handler.isActive = true
+                handler.onStart?()
             }
             logger.info("Quick Ask started")
         } else {
             // 已经在 Quick Ask 中，再按一次触发发送
-            DispatchQueue.main.async { [weak self] in
-                self?.isActive = false
-                self?.onSend?()
+            runHotKeyHandlerOnMain(self) { handler in
+                handler.isActive = false
+                handler.onSend?()
             }
             logger.info("Quick Ask sending")
         }
@@ -47,11 +43,8 @@ final class QuickAskHandler: HotKeyHandler {
     }
 
     func reloadBinding() {
-        let settings = AppSettings.shared
-        binding = HotKeyBinding(
-            keyCode: UInt32(settings.quickAskKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.quickAskModifiers))
-        )
+        let settings = quickAskHandlerSettings()
+        binding = makeQuickAskHandlerBinding()
         logger.info("Quick Ask shortcut reloaded: \(settings.quickAskShortcutDisplayString)")
     }
 

@@ -43,11 +43,7 @@ final class VoiceHandler: HotKeyHandler {
     // MARK: - Init
 
     init() {
-        let settings = AppSettings.shared
-        self.binding = HotKeyBinding(
-            keyCode: UInt32(settings.shortcutKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers))
-        )
+        self.binding = makeVoiceHandlerBinding()
     }
 
     // MARK: - HotKeyHandler
@@ -75,11 +71,8 @@ final class VoiceHandler: HotKeyHandler {
     }
 
     func reloadBinding() {
-        let settings = AppSettings.shared
-        binding = HotKeyBinding(
-            keyCode: UInt32(settings.shortcutKeyCode),
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers))
-        )
+        let settings = voiceHandlerSettings()
+        binding = makeVoiceHandlerBinding()
         logger.info("Recording shortcut reloaded: \(settings.shortcutDisplayString)")
     }
 

@@ -12,6 +12,21 @@ func messagePanelHandlerSettings() -> AppSettings {
 }
 
 @MainActor
+func quickAskHandlerSettings() -> AppSettings {
+    AppSettings.shared
+}
+
+@MainActor
+func captionHandlerSettings() -> AppSettings {
+    AppSettings.shared
+}
+
+@MainActor
+func voiceHandlerSettings() -> AppSettings {
+    AppSettings.shared
+}
+
+@MainActor
 func makeHotKeyBinding(keyCode: Int, modifiers: Int) -> HotKeyBinding {
     HotKeyBinding(
         keyCode: UInt32(keyCode),
@@ -34,6 +49,33 @@ func makeMessagePanelHandlerBinding() -> HotKeyBinding {
     return makeHotKeyBinding(
         keyCode: settings.messagePanelKeyCode,
         modifiers: settings.messagePanelModifiers
+    )
+}
+
+@MainActor
+func makeQuickAskHandlerBinding() -> HotKeyBinding {
+    let settings = quickAskHandlerSettings()
+    return makeHotKeyBinding(
+        keyCode: settings.quickAskKeyCode,
+        modifiers: settings.quickAskModifiers
+    )
+}
+
+@MainActor
+func makeCaptionHandlerBinding() -> HotKeyBinding {
+    let settings = captionHandlerSettings()
+    return makeHotKeyBinding(
+        keyCode: settings.liveCaptionKeyCode,
+        modifiers: settings.liveCaptionModifiers
+    )
+}
+
+@MainActor
+func makeVoiceHandlerBinding() -> HotKeyBinding {
+    let settings = voiceHandlerSettings()
+    return makeHotKeyBinding(
+        keyCode: settings.shortcutKeyCode,
+        modifiers: settings.shortcutModifiers
     )
 }
 
