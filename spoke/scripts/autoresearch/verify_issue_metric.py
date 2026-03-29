@@ -953,6 +953,50 @@ def verify_aicomphelp_1900() -> dict[str, Any]:
     )
 
 
+def verify_ansinput_2000() -> dict[str, Any]:
+    path = ROOT / "UI" / "QuickAsk" / "AnswerPanelView+Input.swift"
+    return hotspot_metric(
+        path,
+        "answer_panel_input_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_workflowstate_2000() -> dict[str, Any]:
+    path = ROOT / "Core" / "Workflow" / "WorkflowState.swift"
+    return hotspot_metric(
+        path,
+        "workflow_state_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_tagbubble_2000() -> dict[str, Any]:
+    path = ROOT / "UI" / "Components" / "TagBubbleView.swift"
+    return hotspot_metric(
+        path,
+        "tag_bubble_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_postproc_2000() -> dict[str, Any]:
+    path = ROOT / "Core" / "Transcription" / "TranscriptionPostProcessor.swift"
+    return hotspot_metric(
+        path,
+        "transcription_post_processor_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1005,6 +1049,10 @@ HANDLERS = {
     "SHOTMGRHELP-1900": verify_shotmgrhelp_1900,
     "AISETHELP-1900": verify_aisethelp_1900,
     "AICOMPHELP-1900": verify_aicomphelp_1900,
+    "ANSINPUT-2000": verify_ansinput_2000,
+    "WORKFLOWSTATE-2000": verify_workflowstate_2000,
+    "TAGBUBBLE-2000": verify_tagbubble_2000,
+    "POSTPROC-2000": verify_postproc_2000,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

@@ -1,0 +1,22 @@
+{
+  "issue_id": "ANSINPUT-2000",
+  "title": "AnswerPanel 输入区 shared 收口",
+  "mode": "exec",
+  "goal": "把 AnswerPanelView+Input 中附件处理对 AttachmentManager.shared 的直接依赖迁到可注入依赖层。",
+  "scope": [
+    "UI/QuickAsk/AnswerPanelView.swift",
+    "UI/QuickAsk/AnswerPanelView+Input.swift",
+    "UI/QuickAsk/AnswerPanelViewLiveDependencies.swift"
+  ],
+  "metric": "answer_panel_input_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ANSINPUT-2000",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "ANSINPUT-2000",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}

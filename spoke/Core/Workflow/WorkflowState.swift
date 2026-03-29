@@ -5,6 +5,12 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "WorkflowState")
 
+@MainActor
+struct WorkflowStateDependencies {
+    let configService: WorkflowConfigService
+    let markAsRecent: (String) -> Void
+}
+
 /// Workflow 选择器状态
 @Observable
 @MainActor
@@ -12,7 +18,7 @@ final class WorkflowState {
     
     // MARK: - Singleton
     
-    static let shared = WorkflowState()
+    static let shared = WorkflowState(dependencies: .live)
     
     // MARK: - State
     
@@ -34,12 +40,15 @@ final class WorkflowState {
     /// 键盘确认选择的回调（用于触发执行）
     var onKeyboardConfirm: ((WorkflowAction) -> Void)?
     
-    private let configService = WorkflowConfigService.shared
+    private let dependencies: WorkflowStateDependencies
+    private var configService: WorkflowConfigService { dependencies.configService }
     
-    private init() {}
+    private init(dependencies: WorkflowStateDependencies) {
+        self.dependencies = dependencies
+    }
 
     static func makePreview() -> WorkflowState {
-        WorkflowState()
+        WorkflowState(dependencies: .preview)
     }
     
     // MARK: - Actions
@@ -93,7 +102,7 @@ final class WorkflowState {
         filterKeyword = ""
         
         // 标记为最近使用
-        WorkflowConfigService.shared.markAsRecent(workflow.id)
+        dependencies.markAsRecent(workflow.id)
     }
     
     /// 获取用户实际输入（去掉 /keyword 部分）

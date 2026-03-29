@@ -1,0 +1,21 @@
+{
+  "issue_id": "WORKFLOWSTATE-2000",
+  "title": "WorkflowState shared 入口收口",
+  "mode": "exec",
+  "goal": "把 WorkflowState 主文件里的 WorkflowConfigService.shared 入口迁到 live dependencies 层，不改变 picker 行为。",
+  "scope": [
+    "Core/Workflow/WorkflowState.swift",
+    "Core/Workflow/WorkflowStateLiveDependencies.swift"
+  ],
+  "metric": "workflow_state_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue WORKFLOWSTATE-2000",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "WORKFLOWSTATE-2000",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}

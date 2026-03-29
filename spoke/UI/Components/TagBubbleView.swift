@@ -18,7 +18,7 @@ struct TagBubbleDependencies {
 
 @MainActor
 extension TagBubbleDependencies {
-    private static func makeLive(
+    static func makeLive(
         tagLibrary: TagLibrary,
         messagePanelState: MessagePanelState
     ) -> TagBubbleDependencies {
@@ -35,11 +35,6 @@ extension TagBubbleDependencies {
             addTagToCard: { messagePanelState.addTag($0, to: $1) }
         )
     }
-
-    static let live = makeLive(
-        tagLibrary: TagLibrary.shared,
-        messagePanelState: MessagePanelState.shared
-    )
 
     static let preview = TagBubbleDependencies(
         updateTagName: { _, _ in },

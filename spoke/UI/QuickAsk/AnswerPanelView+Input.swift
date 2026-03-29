@@ -144,13 +144,13 @@ extension AnswerPanelView {
     }
     
     func handlePasteImage(_ image: NSImage) {
-        AttachmentManager.shared.addImage(image, source: .paste) { attachment in
+        dependencies.inputDependencies.addImage(image) { attachment in
             withAnimation { pendingAttachments.append(attachment) }
         }
     }
     
     func handleDropProviders(_ providers: [NSItemProvider]) {
-        AttachmentManager.shared.handleDrop(providers: providers) { attachment in
+        dependencies.inputDependencies.handleDrop(providers) { attachment in
             withAnimation { pendingAttachments.append(attachment) }
         }
     }

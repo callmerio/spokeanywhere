@@ -7,13 +7,20 @@ struct AnswerPanelViewDependencies {
     let ttsService: TTSService
     let ttsSettings: TTSSettings
     let messageBubbleDependencies: MessageBubbleViewDependencies
+    let inputDependencies: AnswerPanelInputDependencies
     let openSettings: () -> Void
+}
+
+@MainActor
+struct AnswerPanelInputDependencies {
+    let addImage: (_ image: NSImage, _ onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) -> Void
+    let handleDrop: (_ providers: [NSItemProvider], _ onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) -> Void
 }
 
 /// Quick Ask 回答面板视图
 struct AnswerPanelView: View {
     @Bindable var state: AnswerPanelState
-    private let dependencies: AnswerPanelViewDependencies
+    let dependencies: AnswerPanelViewDependencies
     
     @State var followUpInput: String = ""
     

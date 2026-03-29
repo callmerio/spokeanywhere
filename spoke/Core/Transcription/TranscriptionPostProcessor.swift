@@ -1,6 +1,12 @@
 import Foundation
 import os
 
+@MainActor
+struct TranscriptionPostProcessorDependencies {
+    let applyDictionary: (String) -> String
+    let recordWordUsage: (String) -> Void
+}
+
 // MARK: - Transcription Post Processor
 
 /// 转录后处理器
@@ -11,9 +17,10 @@ final class TranscriptionPostProcessor {
     
     // MARK: - Singleton
     
-    static let shared = TranscriptionPostProcessor()
+    static let shared = TranscriptionPostProcessor(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "TranscriptionPostProcessor")
+    private let dependencies: TranscriptionPostProcessorDependencies
     
     // MARK: - Configuration
     
@@ -25,7 +32,9 @@ final class TranscriptionPostProcessor {
     
     // MARK: - Init
     
-    private init() {}
+    private init(dependencies: TranscriptionPostProcessorDependencies) {
+        self.dependencies = dependencies
+    }
     
     // MARK: - Public API
     
@@ -40,16 +49,14 @@ final class TranscriptionPostProcessor {
         // 默认使用 LLM 智能纠错（在 LLMPipeline 中处理），不在这里强制替换
         // 只有当用户关闭 LLM 智能纠错时，才在这里进行强制替换
         if isDictionaryEnabled && !UserDefaults.standard.useLLMForCorrection {
-            let dictionaryService = DictionaryService.shared
-            
             // 对已确认文本应用词典（强制替换模式）
             if !result.finalizedText.isEmpty {
-                processedFinalizedText = dictionaryService.applyDictionary(to: result.finalizedText)
+                processedFinalizedText = dependencies.applyDictionary(result.finalizedText)
             }
             
             // 对最终结果的完整文本应用词典
             if result.type == .final {
-                processedFinalizedText = dictionaryService.applyDictionary(to: result.text)
+                processedFinalizedText = dependencies.applyDictionary(result.text)
                 processedVolatileText = ""
             }
         }
@@ -77,9 +84,8 @@ final class TranscriptionPostProcessor {
         // 提取可能的热词候选
         let candidates = extractHotwordCandidates(from: text)
         
-        let dictionaryService = DictionaryService.shared
         for candidate in candidates {
-            dictionaryService.recordWordUsage(candidate)
+            dependencies.recordWordUsage(candidate)
         }
         
         if !candidates.isEmpty {
