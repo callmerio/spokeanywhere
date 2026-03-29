@@ -796,6 +796,50 @@ def verify_spanhelp_1600() -> dict[str, Any]:
     )
 
 
+def verify_dicthelp_1700() -> dict[str, Any]:
+    path = ROOT / "UI" / "Dictionary" / "DictionaryPanelRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "dictionary_panel_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_ttshelp_1700() -> dict[str, Any]:
+    path = ROOT / "Services" / "TTSServiceRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "tts_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_inputhelp_1700() -> dict[str, Any]:
+    path = ROOT / "Services" / "InputServiceRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "input_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_toolbarhelp_1700() -> dict[str, Any]:
+    path = ROOT / "Services" / "ToolbarConfigServiceRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "toolbar_config_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -834,6 +878,10 @@ HANDLERS = {
     "SHOTHELP-1600": verify_shothelp_1600,
     "SCREENOCR-1600": verify_screenocr_1600,
     "SPANHELP-1600": verify_spanhelp_1600,
+    "DICTHELP-1700": verify_dicthelp_1700,
+    "TTSHELP-1700": verify_ttshelp_1700,
+    "INPUTHELP-1700": verify_inputhelp_1700,
+    "TOOLBARHELP-1700": verify_toolbarhelp_1700,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

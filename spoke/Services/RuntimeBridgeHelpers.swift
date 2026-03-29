@@ -79,6 +79,34 @@ func runtimeMakeMainActorTask<Owner: AnyObject>(
     }
 }
 
+func runtimeMakeDelayedTask<Owner: AnyObject>(
+    delayNs: UInt64,
+    owner: Owner?,
+    _ action: @escaping @MainActor (Owner) -> Void
+) -> Task<Void, Never> {
+    runtimeMakeTask { [weak owner] in
+        try? await Task.sleep(nanoseconds: delayNs)
+        guard !Task.isCancelled else { return }
+        guard let owner else { return }
+        await MainActor.run {
+            action(owner)
+        }
+    }
+}
+
+func runtimeMakeDelayedAsyncTask<Owner: AnyObject>(
+    delaySeconds: Double,
+    owner: Owner?,
+    _ action: @escaping @MainActor (Owner) async -> Void
+) -> Task<Void, Never> {
+    runtimeMakeTask { [weak owner] in
+        try? await Task.sleep(for: .seconds(delaySeconds))
+        guard !Task.isCancelled else { return }
+        guard let owner else { return }
+        await action(owner)
+    }
+}
+
 func runtimeRunDetachedAsync<Result: Sendable>(
     priority: TaskPriority = .userInitiated,
     _ operation: @escaping @Sendable () async -> Result

@@ -1,0 +1,22 @@
+{
+  "issue_id": "DICTHELP-1700",
+  "title": "DictionaryPanelRuntimeHelpers 原始 Task 样板收口",
+  "mode": "exec",
+  "goal": "清除 DictionaryPanelRuntimeHelpers 中剩余的 raw Task 与 Task.detached，统一改走共享 runtime bridge。",
+  "scope": [
+    "UI/Dictionary/DictionaryPanelRuntimeHelpers.swift",
+    "Services/RuntimeBridgeHelpers.swift"
+  ],
+  "metric": "dictionary_panel_runtime_helper_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue DICTHELP-1700",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "DICTHELP-1700",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收 helper 层样板，不改变词典面板搜索行为。"
+}

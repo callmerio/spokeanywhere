@@ -18,8 +18,5 @@ func makeTTSServiceTask(
     owner: TTSService,
     _ action: @escaping @MainActor (TTSService) async -> Void
 ) -> Task<Void, Never> {
-    Task { @MainActor in
-        await action(owner)
-    }
+    runtimeMakeMainActorTask(owner: owner, action)
 }
-
