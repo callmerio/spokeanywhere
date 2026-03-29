@@ -898,6 +898,61 @@ def verify_msgbubble_1800() -> dict[str, Any]:
     )
 
 
+def verify_livecaphelp_1900() -> dict[str, Any]:
+    path = ROOT / "UI" / "LiveCaption" / "LiveCaptionRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "live_caption_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_histhelp_1900() -> dict[str, Any]:
+    path = ROOT / "Services" / "HistoryManagerRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "history_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_shotmgrhelp_1900() -> dict[str, Any]:
+    path = ROOT / "Core" / "Screenshot" / "ScreenshotManagerRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "screenshot_manager_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_aisethelp_1900() -> dict[str, Any]:
+    path = ROOT / "UI" / "Settings" / "AISettingsContentRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "ai_settings_content_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_aicomphelp_1900() -> dict[str, Any]:
+    path = ROOT / "UI" / "Settings" / "AISettingsComponentsRuntimeHelpers.swift"
+    return hotspot_metric(
+        path,
+        "ai_settings_components_runtime_helper_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -945,6 +1000,11 @@ HANDLERS = {
     "LIVETOOLBAR-1800": verify_livetoolbar_1800,
     "HOTKEYREG-1800": verify_hotkeyreg_1800,
     "MSGBUBBLE-1800": verify_msgbubble_1800,
+    "LIVECAPHELP-1900": verify_livecaphelp_1900,
+    "HISTHELP-1900": verify_histhelp_1900,
+    "SHOTMGRHELP-1900": verify_shotmgrhelp_1900,
+    "AISETHELP-1900": verify_aisethelp_1900,
+    "AICOMPHELP-1900": verify_aicomphelp_1900,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

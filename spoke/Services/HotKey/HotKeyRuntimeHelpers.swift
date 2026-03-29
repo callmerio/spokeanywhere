@@ -9,7 +9,7 @@ func runHotKeyServiceOnMain(
 
 func invokeHotKeyServiceCallback(
     _ owner: HotKeyService?,
-    _ callback: @escaping (HotKeyService) -> (() -> Void)?
+    _ callback: @escaping @MainActor (HotKeyService) -> (() -> Void)?
 ) {
     runHotKeyServiceOnMain(owner) { service in
         callback(service)?()
@@ -47,7 +47,7 @@ func scheduleHotKeyWorkItem(
     after seconds: Double,
     _ workItem: DispatchWorkItem
 ) {
-    runtimeRunOnMain(after: seconds) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
         guard !workItem.isCancelled else { return }
         workItem.perform()
     }

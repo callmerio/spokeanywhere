@@ -4,7 +4,7 @@ func runLiveCaptionLocaleChange(
     manager: LiveCaptionManager,
     languageId: String
 ) {
-    Task {
+    Task(priority: .userInitiated) {
         await manager.setLocale(languageId)
     }
 }
@@ -113,7 +113,7 @@ func runLiveCaptionWordLookup(
     dependencies: LiveCaptionViewDependencies,
     finishInteraction: @escaping @MainActor () -> Void
 ) {
-    Task { @MainActor in
+    Task(priority: .userInitiated) { @MainActor in
         defer { finishInteraction() }
 
         let context = makeLiveCaptionSelectionContext(

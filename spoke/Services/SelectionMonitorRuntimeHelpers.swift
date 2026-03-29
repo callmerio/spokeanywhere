@@ -22,6 +22,7 @@ func invalidateSelectionMonitorTimer(
     runtimeInvalidateTimer(&timer)
 }
 
+@MainActor
 func selectionMonitorToolbarContainsMouse(
     _ window: NSWindow?,
     at location: CGPoint = NSEvent.mouseLocation

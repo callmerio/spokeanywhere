@@ -1,0 +1,21 @@
+{
+  "issue_id": "AISETHELP-1900",
+  "title": "AISettingsContentRuntimeHelpers 原始 Task 样板收口",
+  "mode": "exec",
+  "goal": "清除 AISettingsContentRuntimeHelpers 中连接测试的 raw Task，统一改走共享 runtime bridge。",
+  "scope": [
+    "UI/Settings/AISettingsContentRuntimeHelpers.swift",
+    "Services/RuntimeBridgeHelpers.swift"
+  ],
+  "metric": "ai_settings_content_runtime_helper_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue AISETHELP-1900",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "AISETHELP-1900",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}

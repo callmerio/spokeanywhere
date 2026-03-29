@@ -5,7 +5,7 @@ func makeScreenOCRPrefetchTask(
     owner: ScreenOCRService,
     action: @escaping @MainActor (ScreenOCRService) async -> String?
 ) -> Task<String?, Never> {
-    runtimeMakeValueTask {
+    Task(priority: .userInitiated) { @MainActor in
         await action(owner)
     }
 }

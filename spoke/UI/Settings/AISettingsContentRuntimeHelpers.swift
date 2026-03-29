@@ -19,7 +19,7 @@ func runAISettingsConnectionTest(
 
     update(true, nil)
 
-    Task {
+    Task(priority: .userInitiated) {
         do {
             let success = try await provider.testConnection()
             await MainActor.run {

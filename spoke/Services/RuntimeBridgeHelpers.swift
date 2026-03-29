@@ -1,18 +1,32 @@
 import Foundation
 
+private final class RuntimeWeakRef<Object: AnyObject>: @unchecked Sendable {
+    weak var value: Object?
+
+    init(_ value: Object?) {
+        self.value = value
+    }
+}
+
+private struct RuntimeUnsafeBox<Value>: @unchecked Sendable {
+    let value: Value
+}
+
 func runtimeRunOnMain(
     _ operation: @escaping @MainActor () -> Void
 ) {
+    let operationBox = RuntimeUnsafeBox(value: operation)
     Task { @MainActor in
-        operation()
+        operationBox.value()
     }
 }
 
 func runtimeRunOnMainAsync(
     _ operation: @escaping @MainActor () async -> Void
 ) {
+    let operationBox = RuntimeUnsafeBox(value: operation)
     Task { @MainActor in
-        await operation()
+        await operationBox.value()
     }
 }
 
@@ -20,9 +34,11 @@ func runtimeRunOnMain<Owner: AnyObject>(
     owner: Owner?,
     _ action: @escaping @MainActor (Owner) -> Void
 ) {
+    let ownerRef = RuntimeWeakRef(owner)
+    let actionBox = RuntimeUnsafeBox(value: action)
     runtimeRunOnMain {
-        guard let owner else { return }
-        action(owner)
+        guard let owner = ownerRef.value else { return }
+        actionBox.value(owner)
     }
 }
 
@@ -30,9 +46,11 @@ func runtimeRunOnMainAsync<Owner: AnyObject>(
     owner: Owner?,
     _ action: @escaping @MainActor (Owner) async -> Void
 ) {
+    let ownerRef = RuntimeWeakRef(owner)
+    let actionBox = RuntimeUnsafeBox(value: action)
     runtimeRunOnMainAsync {
-        guard let owner else { return }
-        await action(owner)
+        guard let owner = ownerRef.value else { return }
+        await actionBox.value(owner)
     }
 }
 
@@ -40,8 +58,10 @@ func runtimeRunOnMainValue<Value>(
     _ value: Value,
     _ action: @escaping @MainActor (Value) -> Void
 ) {
+    let valueBox = RuntimeUnsafeBox(value: value)
+    let actionBox = RuntimeUnsafeBox(value: action)
     runtimeRunOnMain {
-        action(value)
+        actionBox.value(valueBox.value)
     }
 }
 
@@ -73,9 +93,11 @@ func runtimeMakeMainActorTask<Owner: AnyObject>(
     owner: Owner?,
     _ action: @escaping @MainActor (Owner) async -> Void
 ) -> Task<Void, Never> {
-    runtimeMakeTask {
-        guard let owner else { return }
-        await action(owner)
+    let ownerRef = RuntimeWeakRef(owner)
+    let actionBox = RuntimeUnsafeBox(value: action)
+    return runtimeMakeTask {
+        guard let owner = ownerRef.value else { return }
+        await actionBox.value(owner)
     }
 }
 
@@ -84,13 +106,13 @@ func runtimeMakeDelayedTask<Owner: AnyObject>(
     owner: Owner?,
     _ action: @escaping @MainActor (Owner) -> Void
 ) -> Task<Void, Never> {
-    runtimeMakeTask { [weak owner] in
+    let ownerRef = RuntimeWeakRef(owner)
+    let actionBox = RuntimeUnsafeBox(value: action)
+    return runtimeMakeTask {
         try? await Task.sleep(nanoseconds: delayNs)
         guard !Task.isCancelled else { return }
-        guard let owner else { return }
-        await MainActor.run {
-            action(owner)
-        }
+        guard let owner = ownerRef.value else { return }
+        await actionBox.value(owner)
     }
 }
 
@@ -99,11 +121,13 @@ func runtimeMakeDelayedAsyncTask<Owner: AnyObject>(
     owner: Owner?,
     _ action: @escaping @MainActor (Owner) async -> Void
 ) -> Task<Void, Never> {
-    runtimeMakeTask { [weak owner] in
+    let ownerRef = RuntimeWeakRef(owner)
+    let actionBox = RuntimeUnsafeBox(value: action)
+    return runtimeMakeTask {
         try? await Task.sleep(for: .seconds(delaySeconds))
         guard !Task.isCancelled else { return }
-        guard let owner else { return }
-        await action(owner)
+        guard let owner = ownerRef.value else { return }
+        await actionBox.value(owner)
     }
 }
 
@@ -120,9 +144,10 @@ func runtimeRunOnMain(
     after seconds: Double,
     _ operation: @escaping @MainActor () -> Void
 ) {
+    let operationBox = RuntimeUnsafeBox(value: operation)
     Task { @MainActor in
         try? await Task.sleep(for: .seconds(seconds))
-        operation()
+        operationBox.value()
     }
 }
 
@@ -131,9 +156,11 @@ func runtimeRunOnMain<Owner: AnyObject>(
     owner: Owner?,
     _ action: @escaping @MainActor (Owner) -> Void
 ) {
+    let ownerRef = RuntimeWeakRef(owner)
+    let actionBox = RuntimeUnsafeBox(value: action)
     runtimeRunOnMain(after: seconds) {
-        guard let owner else { return }
-        action(owner)
+        guard let owner = ownerRef.value else { return }
+        actionBox.value(owner)
     }
 }
 
@@ -143,8 +170,9 @@ func runtimeMakeOwnedTimer<Owner: AnyObject>(
     owner: Owner?,
     action: @escaping @MainActor (Owner) -> Void
 ) -> Timer {
-    Timer.scheduledTimer(withTimeInterval: interval, repeats: repeats) { _ in
-        runtimeRunOnMain(owner: owner, action)
+    let ownerRef = RuntimeWeakRef(owner)
+    return Timer.scheduledTimer(withTimeInterval: interval, repeats: repeats) { _ in
+        runtimeRunOnMain(owner: ownerRef.value, action)
     }
 }
 
@@ -161,18 +189,21 @@ func runtimeMakePollingTask<Owner: AnyObject>(
     isSatisfied: @escaping @MainActor (Owner) -> Bool,
     onSatisfied: @escaping @MainActor (Owner) -> Void
 ) -> Task<Void, Never> {
-    Task { [weak owner] in
-        guard let owner else { return }
-
+    let ownerRef = RuntimeWeakRef(owner)
+    let isSatisfiedBox = RuntimeUnsafeBox(value: isSatisfied)
+    let onSatisfiedBox = RuntimeUnsafeBox(value: onSatisfied)
+    return Task {
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: intervalNs)
-            let satisfied = await MainActor.run {
-                isSatisfied(owner)
+            let satisfied = await MainActor.run { () -> Bool in
+                guard let owner = ownerRef.value else { return false }
+                return isSatisfiedBox.value(owner)
             }
 
             if satisfied {
                 await MainActor.run {
-                    onSatisfied(owner)
+                    guard let owner = ownerRef.value else { return }
+                    onSatisfiedBox.value(owner)
                 }
                 break
             }
@@ -180,15 +211,14 @@ func runtimeMakePollingTask<Owner: AnyObject>(
     }
 }
 
-func runtimeRunDetachedValue<Result>(
+func runtimeRunDetachedValue<Result: Sendable>(
     priority: TaskPriority = .userInitiated,
     operation: @escaping @Sendable () -> Result?,
     onResult: @escaping @MainActor (Result) -> Void
 ) {
+    let onResultBox = RuntimeUnsafeBox(value: onResult)
     Task.detached(priority: priority) {
         guard let result = operation() else { return }
-        await MainActor.run {
-            onResult(result)
-        }
+        await onResultBox.value(result)
     }
 }

@@ -12,8 +12,8 @@ func runModelPickerLoadModels(
     llmSettings: LLMSettings,
     update: @escaping @MainActor ([String]) -> Void
 ) {
-    Task {
-        let currentProfile = llmSettings.profiles.first { $0.id == profile.id } ?? profile
+    let currentProfile = llmSettings.profiles.first { $0.id == profile.id } ?? profile
+    Task(priority: .userInitiated) {
         let models = await llmSettings.fetchModels(for: currentProfile)
         await MainActor.run {
             update(models)
