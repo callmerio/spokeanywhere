@@ -326,7 +326,8 @@ struct MessagePanelView: View {
                             type: type,
                             records: records,
                             onRecordTap: handleRecordTap,
-                            onClearType: { historyService.clearRecords(of: type) }
+                            onClearType: { historyService.clearRecords(of: type) },
+                            onDeleteRecord: { historyService.deleteRecord($0) }
                         )
                     }
                 }

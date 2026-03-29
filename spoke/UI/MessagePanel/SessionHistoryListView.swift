@@ -10,6 +10,7 @@ struct HistoryGroupView: View {
     let records: [SessionRecord]
     var onRecordTap: ((SessionRecord) -> Void)?
     var onClearType: (() -> Void)?
+    var onDeleteRecord: ((UUID) -> Void)?
     
     @State private var isExpanded = false
     
@@ -130,7 +131,7 @@ struct HistoryGroupView: View {
                     onTap: { onRecordTap?(record) },
                     onDelete: {
                         withAnimation(.easeOut(duration: 0.2)) {
-                            SessionHistoryService.shared.deleteRecord(record.id)
+                            onDeleteRecord?(record.id)
                         }
                     }
                 )
@@ -250,8 +251,7 @@ struct HistoryRecordCard: View {
         withAnimation(.easeOut(duration: 0.15)) {
             showCopied = true
         }
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
+        runSessionHistoryCopyFeedback {
             withAnimation(.easeIn(duration: 0.2)) {
                 showCopied = false
             }
@@ -270,11 +270,13 @@ struct HistoryRecordCard: View {
     return VStack(spacing: 12) {
         HistoryGroupView(
             type: .conversation,
-            records: testRecords.filter { $0.type == .conversation }
+            records: testRecords.filter { $0.type == .conversation },
+            onDeleteRecord: { _ in }
         )
         HistoryGroupView(
             type: .transcription,
-            records: testRecords.filter { $0.type == .transcription }
+            records: testRecords.filter { $0.type == .transcription },
+            onDeleteRecord: { _ in }
         )
     }
     .frame(width: 360)
