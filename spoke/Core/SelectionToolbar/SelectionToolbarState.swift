@@ -50,15 +50,6 @@ struct SelectionToolbarStateDependencies {
     let notificationCenter: NotificationCenter
 }
 
-@MainActor
-extension SelectionToolbarStateDependencies {
-    static let live = SelectionToolbarStateDependencies(
-        vocabularyService: .shared,
-        appSettings: .shared,
-        notificationCenter: .default
-    )
-}
-
 // MARK: - 状态管理
 
 /// 选择工具栏状态管理

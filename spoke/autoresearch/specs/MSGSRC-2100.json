@@ -1,0 +1,21 @@
+{
+  "issue_id": "MSGSRC-2100",
+  "title": "MessagePanelSourceAppHelpers workspace shared 收口",
+  "mode": "exec",
+  "goal": "把 MessagePanelSourceAppHelpers 主文件中的 NSWorkspace.shared 访问迁到独立 helper。",
+  "scope": [
+    "Core/MessagePanel/MessagePanelSourceAppHelpers.swift",
+    "Core/MessagePanel/MessagePanelSourceAppLiveHelpers.swift"
+  ],
+  "metric": "message_panel_source_app_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue MSGSRC-2100",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "MSGSRC-2100",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}

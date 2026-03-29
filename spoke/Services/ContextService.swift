@@ -1,6 +1,12 @@
 import AppKit
 import Combine
 
+@MainActor
+struct ContextServiceDependencies {
+    let notificationCenter: NotificationCenter
+    let frontmostApplication: () -> NSRunningApplication?
+}
+
 /// 上下文感知服务
 /// 监听当前活动 App，提供 Prompt 拼接
 @MainActor
@@ -8,7 +14,7 @@ final class ContextService {
     
     // MARK: - Singleton
     
-    static let shared = ContextService()
+    static let shared = ContextService(dependencies: .live)
     
     // MARK: - Properties
     
@@ -17,10 +23,12 @@ final class ContextService {
     
     /// App 切换通知
     private var cancellables = Set<AnyCancellable>()
+    private let dependencies: ContextServiceDependencies
     
     // MARK: - Init
     
-    private init() {
+    private init(dependencies: ContextServiceDependencies) {
+        self.dependencies = dependencies
         setupObservers()
         updateCurrentApp()
     }
@@ -62,7 +70,7 @@ final class ContextService {
     
     private func setupObservers() {
         // 监听 App 激活通知
-        NSWorkspace.shared.notificationCenter
+        dependencies.notificationCenter
             .publisher(for: NSWorkspace.didActivateApplicationNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] notification in
@@ -76,7 +84,7 @@ final class ContextService {
     }
     
     private func updateCurrentApp() {
-        guard let frontApp = NSWorkspace.shared.frontmostApplication else {
+        guard let frontApp = dependencies.frontmostApplication() else {
             currentApp = nil
             return
         }

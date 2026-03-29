@@ -997,6 +997,52 @@ def verify_postproc_2000() -> dict[str, Any]:
     )
 
 
+def verify_ansmgr_2100() -> dict[str, Any]:
+    path = ROOT / "UI" / "QuickAsk" / "AnswerPanelManager.swift"
+    return hotspot_metric(
+        path,
+        "answer_panel_manager_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+            "default_notifications": r"NotificationCenter\.default",
+        },
+    )
+
+
+def verify_selstate_2100() -> dict[str, Any]:
+    path = ROOT / "Core" / "SelectionToolbar" / "SelectionToolbarState.swift"
+    return hotspot_metric(
+        path,
+        "selection_toolbar_state_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_msgsrc_2100() -> dict[str, Any]:
+    path = ROOT / "Core" / "MessagePanel" / "MessagePanelSourceAppHelpers.swift"
+    return hotspot_metric(
+        path,
+        "message_panel_source_app_hotspots",
+        {
+            "workspace_shared_calls": r"NSWorkspace\.shared",
+        },
+    )
+
+
+def verify_context_2100() -> dict[str, Any]:
+    path = ROOT / "Services" / "ContextService.swift"
+    return hotspot_metric(
+        path,
+        "context_service_hotspots",
+        {
+            "workspace_shared_calls": r"NSWorkspace\.shared",
+            "default_shared_calls": r"\.shared\b",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1053,6 +1099,10 @@ HANDLERS = {
     "WORKFLOWSTATE-2000": verify_workflowstate_2000,
     "TAGBUBBLE-2000": verify_tagbubble_2000,
     "POSTPROC-2000": verify_postproc_2000,
+    "ANSMGR-2100": verify_ansmgr_2100,
+    "SELSTATE-2100": verify_selstate_2100,
+    "MSGSRC-2100": verify_msgsrc_2100,
+    "CONTEXT-2100": verify_context_2100,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

@@ -71,6 +71,7 @@ final class AnswerPanelInstance {
 @MainActor
 struct AnswerPanelManagerDependencies {
     let historyService: SessionHistoryService
+    let postFollowUp: (_ panelId: UUID, _ prompt: String, _ attachments: [QuickAskAttachment]) -> Void
 }
 
 /// 回答面板管理器（支持多窗口）
@@ -79,9 +80,7 @@ final class AnswerPanelManager {
 
     // MARK: - Singleton
 
-    static let shared = AnswerPanelManager(
-        dependencies: AnswerPanelManagerDependencies(historyService: .shared)
-    )
+    static let shared = AnswerPanelManager(dependencies: .live)
 
     // MARK: - Properties
 
@@ -321,15 +320,7 @@ final class AnswerPanelManager {
             self.appendUserMessage(question, attachments: attachments, for: panelId)
 
             // 发送追问通知，带上 panelId
-            NotificationCenter.default.post(
-                name: .quickAskFollowUpRequested,
-                object: nil,
-                userInfo: [
-                    "panelId": panelId,
-                    "prompt": question,
-                    "attachments": attachments
-                ]
-            )
+            dependencies.postFollowUp(panelId, question, attachments)
         }
         contentView.onRegenerate = { [weak self] in
             guard let state = self?.panels[panelId]?.state else { return }

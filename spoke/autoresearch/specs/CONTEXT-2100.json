@@ -1,0 +1,21 @@
+{
+  "issue_id": "CONTEXT-2100",
+  "title": "ContextService workspace wiring 外移",
+  "mode": "exec",
+  "goal": "把 ContextService 主文件中的 NSWorkspace.shared 访问迁到 live dependencies，保持上下文感知和 prompt 拼接行为不变。",
+  "scope": [
+    "Services/ContextService.swift",
+    "Services/ContextServiceLiveDependencies.swift"
+  ],
+  "metric": "context_service_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue CONTEXT-2100",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "CONTEXT-2100",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}

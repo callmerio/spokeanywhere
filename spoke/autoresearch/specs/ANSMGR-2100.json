@@ -1,0 +1,22 @@
+{
+  "issue_id": "ANSMGR-2100",
+  "title": "AnswerPanelManager 默认通知与 shared 收口",
+  "mode": "exec",
+  "goal": "把 AnswerPanelManager 主文件里的 SessionHistoryService.shared 和 follow-up 默认通知外移到 live dependencies。",
+  "scope": [
+    "UI/QuickAsk/AnswerPanelManager.swift",
+    "UI/QuickAsk/AnswerPanelManagerLiveDependencies.swift"
+  ],
+  "metric": "answer_panel_manager_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ANSMGR-2100",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests"
+  ],
+  "iterations": 4,
+  "run_tag": "ANSMGR-2100",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}
