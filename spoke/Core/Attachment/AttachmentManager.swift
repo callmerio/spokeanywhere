@@ -40,7 +40,7 @@ final class AttachmentManager: ObservableObject {
     
     // MARK: - Singleton
     
-    static let shared = AttachmentManager()
+    static let shared = AttachmentManager(dependencies: .live)
     
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "AttachmentManager")
     
@@ -51,15 +51,26 @@ final class AttachmentManager: ObservableObject {
     
     // MARK: - Services
     
-    private let textExtractor = TextExtractionService.shared
-    private let screenCapture = ScreenCaptureService.shared
+    private let dependencies: AttachmentManagerDependencies
+
+    private var textExtractor: TextExtractionService {
+        dependencies.textExtractor
+    }
+
+    private var screenCapture: ScreenCaptureService {
+        dependencies.screenCapture
+    }
     
     // MARK: - Init
     
-    private init() {}
+    private init(
+        dependencies: AttachmentManagerDependencies
+    ) {
+        self.dependencies = dependencies
+    }
 
     static func makePreview() -> AttachmentManager {
-        AttachmentManager()
+        AttachmentManager(dependencies: .preview)
     }
     
     // MARK: - Drop Handling
