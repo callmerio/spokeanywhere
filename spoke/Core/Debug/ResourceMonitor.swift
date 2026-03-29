@@ -38,11 +38,9 @@ final class ResourceMonitor: ObservableObject {
     func start(interval: TimeInterval = 2.0, onOverload: (() -> Void)? = nil) {
         self.overloadCallback = onOverload
         
-        monitorTimer?.invalidate()
-        monitorTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.sample()
-            }
+        invalidateResourceMonitorTimer(&monitorTimer)
+        monitorTimer = makeResourceMonitorTimer(interval: interval, owner: self) { monitor in
+            monitor.sample()
         }
         
         logger.info("📊 Resource monitor started (CPU: \(self.cpuThreshold)%, Memory: \(self.memoryThresholdMB)MB)")
@@ -50,8 +48,7 @@ final class ResourceMonitor: ObservableObject {
     
     /// 停止监控
     func stop() {
-        monitorTimer?.invalidate()
-        monitorTimer = nil
+        invalidateResourceMonitorTimer(&monitorTimer)
         logger.info("📊 Resource monitor stopped")
     }
     
@@ -131,7 +128,11 @@ final class ResourceMonitor: ObservableObject {
 import SwiftUI
 
 struct ResourceMonitorView: View {
-    @ObservedObject private var monitor = ResourceMonitor.shared
+    @ObservedObject private var monitor: ResourceMonitor
+
+    init(monitor: ResourceMonitor) {
+        _monitor = ObservedObject(wrappedValue: monitor)
+    }
     
     var body: some View {
         HStack(spacing: 12) {
