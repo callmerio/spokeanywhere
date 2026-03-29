@@ -51,17 +51,54 @@ struct ProviderIconView: View {
 
 // MARK: - Model Picker View (智能模型选择器)
 
+@MainActor
+struct ModelPickerDependencies {
+    let llmSettings: LLMSettings
+    let loadModels: ModelPickerLoadModelsRunner
+}
+
 struct ModelPickerView: View {
     @Binding var selectedModel: String
     let profile: ProviderProfile
     let placeholder: String
     let refreshTrigger: UUID
+    private let dependencies: ModelPickerDependencies
     
     @State private var isExpanded = false
     @State private var searchText = ""
     @State private var availableModels: [String] = []
     @State private var isLoading = false
     @State private var hasLoadedModels = false
+
+    init(
+        selectedModel: Binding<String>,
+        profile: ProviderProfile,
+        placeholder: String,
+        refreshTrigger: UUID,
+        dependencies: ModelPickerDependencies
+    ) {
+        self._selectedModel = selectedModel
+        self.profile = profile
+        self.placeholder = placeholder
+        self.refreshTrigger = refreshTrigger
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init(
+        selectedModel: Binding<String>,
+        profile: ProviderProfile,
+        placeholder: String,
+        refreshTrigger: UUID
+    ) {
+        self.init(
+            selectedModel: selectedModel,
+            profile: profile,
+            placeholder: placeholder,
+            refreshTrigger: refreshTrigger,
+            dependencies: .live
+        )
+    }
     
     private var filteredModels: [String] {
         if searchText.isEmpty {
@@ -221,16 +258,11 @@ struct ModelPickerView: View {
     private func loadModels() {
         guard !isLoading else { return }
         isLoading = true
-        
-        Task {
-            // 从 LLMSettings 获取最新的 profile（包含 API Key 引用）
-            let currentProfile = LLMSettings.shared.profiles.first { $0.id == profile.id } ?? profile
-            let models = await LLMSettings.shared.fetchModels(for: currentProfile)
-            await MainActor.run {
-                availableModels = models
-                hasLoadedModels = true
-                isLoading = false
-            }
+
+        dependencies.loadModels(profile, dependencies.llmSettings) { models in
+            availableModels = models
+            hasLoadedModels = true
+            isLoading = false
         }
     }
 }
