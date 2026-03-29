@@ -44,39 +44,14 @@ class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
     }
     
     func startCapture() {
-        Task {
-            do {
-                let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-                
-                guard let display = content.displays.first else { return }
-                
-                // 排除自己的应用窗口，防止"无限镜"效应
-                // 注意：这里简单地排除了所有属于当前应用的窗口
-                // 实际生产中可能需要更精细的控制
-                let excludedApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-                
-                let filter = SCContentFilter(display: display, excludingApplications: excludedApps, exceptingWindows: [])
-                
-                let config = SCStreamConfiguration()
-                config.width = display.width
-                config.height = display.height
-                config.minimumFrameInterval = CMTime(value: 1, timescale: 60) // 60 FPS
-                config.queueDepth = 5
-                config.showsCursor = false
-                
-                stream = SCStream(filter: filter, configuration: config, delegate: nil)
-                try stream?.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoOutputQueue)
-                try await stream?.startCapture()
-            } catch {
-                // Failed to start screen capture
-            }
+        runScreenCaptureBlurAsync(self) { service in
+            await service.startCaptureStream()
         }
     }
     
     func stopCapture() {
-        Task {
-            try? await stream?.stopCapture()
-            stream = nil
+        runScreenCaptureBlurAsync(self) { service in
+            await service.stopCaptureStream()
         }
     }
     
@@ -105,16 +80,49 @@ class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
         let croppedImage = blurredImage.cropped(to: ciImage.extent)
 
         if let cgImage = context.createCGImage(croppedImage, from: ciImage.extent) {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-
-                // R2-2: 计算主线程派发延迟
-                let dispatchMs = (CFAbsoluteTimeGetCurrent() - enqueueTs) * 1000
-                self.mainDispatchTimes.append(dispatchMs)
-                self.coverageBlur = true
-
-                self.currentFrame = cgImage
+            runScreenCaptureBlurOnMain(self) { service in
+                service.publishBlurFrame(cgImage, enqueueTs: enqueueTs)
             }
         }
+    }
+
+    private func startCaptureStream() async {
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+
+            guard let display = content.displays.first else { return }
+
+            // 排除自己的应用窗口，防止"无限镜"效应
+            // 注意：这里简单地排除了所有属于当前应用的窗口
+            // 实际生产中可能需要更精细的控制
+            let excludedApps = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
+
+            let filter = SCContentFilter(display: display, excludingApplications: excludedApps, exceptingWindows: [])
+
+            let config = SCStreamConfiguration()
+            config.width = display.width
+            config.height = display.height
+            config.minimumFrameInterval = CMTime(value: 1, timescale: 60) // 60 FPS
+            config.queueDepth = 5
+            config.showsCursor = false
+
+            stream = SCStream(filter: filter, configuration: config, delegate: nil)
+            try stream?.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoOutputQueue)
+            try await stream?.startCapture()
+        } catch {
+            // Failed to start screen capture
+        }
+    }
+
+    private func stopCaptureStream() async {
+        try? await stream?.stopCapture()
+        stream = nil
+    }
+
+    private func publishBlurFrame(_ cgImage: CGImage, enqueueTs: CFAbsoluteTime) {
+        let dispatchMs = (CFAbsoluteTimeGetCurrent() - enqueueTs) * 1000
+        mainDispatchTimes.append(dispatchMs)
+        coverageBlur = true
+        currentFrame = cgImage
     }
 }

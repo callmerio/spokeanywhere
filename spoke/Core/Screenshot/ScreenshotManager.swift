@@ -12,7 +12,7 @@ struct ScreenshotManagerDependencies {
     let resetBlurDiagnostics: () -> Void
     let blurMainDispatchP95: () -> Double
     let blurCoverage: () -> Bool
-    let captureScreen: (NSScreen) async -> NSImage?
+    let captureScreen: @MainActor (NSScreen) async -> NSImage?
     let copyImageToPasteboard: (NSImage) -> Void
     let openScreenCaptureSettings: () -> Void
 }
