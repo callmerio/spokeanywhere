@@ -2,6 +2,13 @@ import SwiftUI
 
 private typealias DS = DesignTokens
 
+@MainActor
+struct WorkflowPickerViewDependencies {
+    let workflowState: WorkflowState
+    let search: (String) -> [WorkflowAction]
+    let groupedWorkflows: (String) -> [(title: String, workflows: [WorkflowAction])]
+}
+
 /// Workflow 选择器视图
 /// 显示在 Quick Ask 输入框上方，支持键盘导航
 struct WorkflowPickerView: View {
@@ -10,16 +17,25 @@ struct WorkflowPickerView: View {
     let filter: String
     /// 选择回调
     let onSelect: (WorkflowAction) -> Void
+    private let dependencies: WorkflowPickerViewDependencies
     
-    private let configService = WorkflowConfigService.shared
-    private var workflowState: WorkflowState { WorkflowState.shared }
+    @MainActor
+    init(
+        filter: String,
+        onSelect: @escaping (WorkflowAction) -> Void,
+        dependencies: WorkflowPickerViewDependencies? = nil
+    ) {
+        self.filter = filter
+        self.onSelect = onSelect
+        self.dependencies = dependencies ?? .live
+    }
     
-    private var filteredWorkflows: [WorkflowAction] {
-        configService.search(keyword: filter)
+    private var workflowState: WorkflowState {
+        dependencies.workflowState
     }
     
     private var groupedWorkflows: [(title: String, workflows: [WorkflowAction])] {
-        configService.groupedWorkflows(filter: filter)
+        dependencies.groupedWorkflows(filter)
     }
     
     private var flatWorkflows: [WorkflowAction] {
