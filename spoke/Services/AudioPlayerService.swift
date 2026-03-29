@@ -129,11 +129,9 @@ final class AudioPlayerService: NSObject, ObservableObject {
     
     private func startProgressTimer() {
         stopProgressTimer()
-        
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateProgress()
-            }
+
+        progressTimer = makeAudioPlayerProgressTimer(owner: self) { service in
+            service.updateProgress()
         }
     }
     
@@ -154,19 +152,19 @@ final class AudioPlayerService: NSObject, ObservableObject {
 
 extension AudioPlayerService: AVAudioPlayerDelegate {
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        Task { @MainActor in
-            self.isPlaying = false
-            self.progress = 1.0
-            self.currentTime = self.duration
-            self.stopProgressTimer()
-            self.logger.info("✅ Playback finished")
+        runAudioPlayerOnMain(self) { service in
+            service.isPlaying = false
+            service.progress = 1.0
+            service.currentTime = service.duration
+            service.stopProgressTimer()
+            service.logger.info("✅ Playback finished")
         }
     }
     
     nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        Task { @MainActor in
-            self.logger.error("❌ Decode error: \(error?.localizedDescription ?? "Unknown")")
-            self.stop()
+        runAudioPlayerOnMain(self) { service in
+            service.logger.error("❌ Decode error: \(error?.localizedDescription ?? "Unknown")")
+            service.stop()
         }
     }
 }
