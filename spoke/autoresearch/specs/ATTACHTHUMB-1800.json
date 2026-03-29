@@ -1,0 +1,21 @@
+{
+  "issue_id": "ATTACHTHUMB-1800",
+  "title": "AttachmentThumbnailView 共享入口与后台任务收口",
+  "mode": "exec",
+  "goal": "清除 AttachmentThumbnailView 中剩余的 NSWorkspace.shared 和 Task.detached，改走 view dependency 与 runtime helper。",
+  "scope": [
+    "UI/Components/AttachmentThumbnailView.swift",
+    "UI/Components/AttachmentThumbnailRuntimeHelpers.swift"
+  ],
+  "metric": "attachment_thumbnail_view_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue ATTACHTHUMB-1800",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 4,
+  "run_tag": "ATTACHTHUMB-1800",
+  "stop_condition": "metric 归零且 guard 全通过，或连续 3 次 discard 后 pivot"
+}

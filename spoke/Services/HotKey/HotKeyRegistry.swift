@@ -57,6 +57,14 @@ final class HotKeyRegistry {
         return handlers[type]
     }
 
+    func reloadBinding(for type: HotKeyType) {
+        handlers[type]?.reloadBinding()
+    }
+
+    func logReload(_ message: String) {
+        logger.info("\(message, privacy: .public)")
+    }
+
     /// 获取所有处理器
     var allHandlers: [HotKeyHandler] {
         return Array(handlers.values)
@@ -98,10 +106,7 @@ final class HotKeyRegistry {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handlers[type]?.reloadBinding()
-                self?.logger.info("\(logMessage, privacy: .public)")
-            }
+            runHotKeyRegistryObserver(self, type: type, logMessage: logMessage)
         })
     }
 

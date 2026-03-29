@@ -6,6 +6,7 @@ struct AnswerPanelViewDependencies {
     let workflowState: WorkflowState
     let ttsService: TTSService
     let ttsSettings: TTSSettings
+    let messageBubbleDependencies: MessageBubbleViewDependencies
     let openSettings: () -> Void
 }
 
@@ -105,7 +106,10 @@ struct AnswerPanelView: View {
                         VStack(alignment: .leading, spacing: 24) {
                             // 消息列表
                             ForEach(state.messages) { message in
-                                MessageBubbleView(message: message)
+                                MessageBubbleView(
+                                    message: message,
+                                    dependencies: dependencies.messageBubbleDependencies
+                                )
                                     .id(message.id)
                             }
                             

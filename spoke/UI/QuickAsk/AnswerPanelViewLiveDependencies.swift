@@ -7,6 +7,7 @@ extension AnswerPanelViewDependencies {
         workflowState: .shared,
         ttsService: .shared,
         ttsSettings: .shared,
+        messageBubbleDependencies: .live,
         openSettings: {
             if let appDelegate = NSApp.delegate as? AppDelegate {
                 appDelegate.openSettings()
@@ -15,3 +16,9 @@ extension AnswerPanelViewDependencies {
     )
 }
 
+@MainActor
+extension MessageBubbleViewDependencies {
+    static let live = MessageBubbleViewDependencies(
+        ttsService: .shared
+    )
+}

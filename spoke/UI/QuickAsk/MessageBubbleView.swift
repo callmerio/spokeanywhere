@@ -71,10 +71,25 @@ class SelectableTextLabel: NSTextField {
 
 struct MessageBubbleView: View {
     let message: ChatMessage
+    private let dependencies: MessageBubbleViewDependencies
     @State private var answerHeight: CGFloat = 100
-    @ObservedObject private var ttsService = TTSService.shared
+    @ObservedObject private var ttsService: TTSService
     @State private var isCopied: Bool = false
     @State private var selectedMode: QuickAskMode = .chat
+
+    init(
+        message: ChatMessage,
+        dependencies: MessageBubbleViewDependencies
+    ) {
+        self.message = message
+        self.dependencies = dependencies
+        self.ttsService = dependencies.ttsService
+    }
+
+    @MainActor
+    init(message: ChatMessage) {
+        self.init(message: message, dependencies: .live)
+    }
 
     /// 保存图片到文件
     private func saveImage(_ image: NSImage) {
@@ -243,7 +258,7 @@ struct MessageBubbleView: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(message.content, forType: .string)
                         isCopied = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        scheduleMessageBubbleMain(after: 2) {
                             isCopied = false
                         }
                     }, label: {

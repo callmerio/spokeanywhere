@@ -311,7 +311,7 @@ struct QuickAskCapsuleView: View {
             // 点击时设置菜单打开状态
             isMenuOpen = true
             // 延迟重置（菜单关闭后）
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            scheduleQuickAskCapsuleMain(after: 0.5) {
                 if !isIconHovering {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isMenuOpen = false
@@ -387,22 +387,13 @@ struct QuickAskCapsuleView: View {
         let panelId = dependencies.showAnswerPanel(question, attachments)
         
         // 执行 Workflow
-        Task {
-            let result = await dependencies.executeWorkflow(workflow, context)
-            
-            switch result {
-            case .success(let response):
-                // 显示结果到 Answer Panel
-                dependencies.updateAnswer(response, panelId)
-                
-            case .failure(let error):
-                // 显示错误
-                dependencies.showAnswerError(error.localizedDescription, panelId)
-            }
-            
-            // 重置 Quick Ask 状态
-            state.reset()
-        }
+        runQuickAskCapsuleWorkflow(
+            workflow: workflow,
+            context: context,
+            panelId: panelId,
+            state: state,
+            dependencies: dependencies
+        )
     }
 }
 

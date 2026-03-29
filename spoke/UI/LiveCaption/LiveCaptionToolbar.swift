@@ -89,9 +89,10 @@ struct LiveCaptionToolbar: View {
         Menu {
             ForEach(LiveCaptionManager.supportedLanguages, id: \.id) { lang in
                 Button {
-                    Task {
-                        await manager.setLocale(lang.id)
-                    }
+                    runLiveCaptionLocaleChange(
+                        manager: manager,
+                        languageId: lang.id
+                    )
                 } label: {
                     HStack {
                         Text(lang.name)

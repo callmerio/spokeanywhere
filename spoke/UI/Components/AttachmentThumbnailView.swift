@@ -10,12 +10,39 @@ private typealias DS = DesignTokens
 struct AttachmentThumbnailView: View {
     let attachment: Attachment
     var onRemove: (() -> Void)?
+    private let dependencies: AttachmentThumbnailViewDependencies
     
     /// 缩略图尺寸
     var size: CGFloat = 52
     
     @State private var isHovering = false
     @State private var videoThumbnail: NSImage?
+
+    init(
+        attachment: Attachment,
+        onRemove: (() -> Void)? = nil,
+        size: CGFloat = 52,
+        dependencies: AttachmentThumbnailViewDependencies
+    ) {
+        self.attachment = attachment
+        self.onRemove = onRemove
+        self.size = size
+        self.dependencies = dependencies
+    }
+
+    @MainActor
+    init(
+        attachment: Attachment,
+        onRemove: (() -> Void)? = nil,
+        size: CGFloat = 52
+    ) {
+        self.init(
+            attachment: attachment,
+            onRemove: onRemove,
+            size: size,
+            dependencies: .live
+        )
+    }
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -111,7 +138,7 @@ struct AttachmentThumbnailView: View {
             ZStack {
                 DS.Colors.cardBackground
                 
-                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                Image(nsImage: dependencies.fileIcon(url.path))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: size * 0.6, height: size * 0.6)
@@ -164,11 +191,8 @@ struct AttachmentThumbnailView: View {
     // MARK: - Helpers
     
     private func loadVideoThumbnail(url: URL) {
-        Task.detached(priority: .userInitiated) {
-            let thumbnail = Attachment.makeVideoThumbnail(from: url)
-            await MainActor.run {
-                self.videoThumbnail = thumbnail
-            }
+        runAttachmentThumbnailLoad(url: url, dependencies: dependencies) { thumbnail in
+            self.videoThumbnail = thumbnail
         }
     }
 }

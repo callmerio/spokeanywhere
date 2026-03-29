@@ -840,6 +840,64 @@ def verify_toolbarhelp_1700() -> dict[str, Any]:
     )
 
 
+def verify_qacapsule_1800() -> dict[str, Any]:
+    path = ROOT / "UI" / "HUD" / "QuickAskCapsuleView.swift"
+    return hotspot_metric(
+        path,
+        "quickask_capsule_runtime_tail_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+            "raw_async_after": r"DispatchQueue\.main\.asyncAfter",
+        },
+    )
+
+
+def verify_attachthumb_1800() -> dict[str, Any]:
+    path = ROOT / "UI" / "Components" / "AttachmentThumbnailView.swift"
+    return hotspot_metric(
+        path,
+        "attachment_thumbnail_view_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+            "direct_shared_calls": r"\.shared\b",
+        },
+    )
+
+
+def verify_livetoolbar_1800() -> dict[str, Any]:
+    path = ROOT / "UI" / "LiveCaption" / "LiveCaptionToolbar.swift"
+    return hotspot_metric(
+        path,
+        "live_caption_toolbar_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_hotkeyreg_1800() -> dict[str, Any]:
+    path = ROOT / "Services" / "HotKey" / "HotKeyRegistry.swift"
+    return hotspot_metric(
+        path,
+        "hotkey_registry_hotspots",
+        {
+            "raw_task_calls": r"\bTask \{|\bTask\.detached",
+        },
+    )
+
+
+def verify_msgbubble_1800() -> dict[str, Any]:
+    path = ROOT / "UI" / "QuickAsk" / "MessageBubbleView.swift"
+    return hotspot_metric(
+        path,
+        "message_bubble_view_hotspots",
+        {
+            "raw_async_after": r"DispatchQueue\.main\.asyncAfter",
+            "direct_shared_calls": r"\.shared\b",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -882,6 +940,11 @@ HANDLERS = {
     "TTSHELP-1700": verify_ttshelp_1700,
     "INPUTHELP-1700": verify_inputhelp_1700,
     "TOOLBARHELP-1700": verify_toolbarhelp_1700,
+    "QACAPSULE-1800": verify_qacapsule_1800,
+    "ATTACHTHUMB-1800": verify_attachthumb_1800,
+    "LIVETOOLBAR-1800": verify_livetoolbar_1800,
+    "HOTKEYREG-1800": verify_hotkeyreg_1800,
+    "MSGBUBBLE-1800": verify_msgbubble_1800,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,
