@@ -1,0 +1,22 @@
+{
+  "issue_id": "TMODEL-2200",
+  "title": "TranscriptionModelManager 模型变更通知收口",
+  "mode": "exec",
+  "goal": "移除 TranscriptionModelManager 主文件中的 NotificationCenter.default.post，保留模型选择与角色切换语义不变。",
+  "scope": [
+    "Core/Transcription/Models/TranscriptionModelManager.swift",
+    "Core/Transcription/Models/TranscriptionModelManagerLiveDependencies.swift"
+  ],
+  "metric": "transcription_model_manager_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue TMODEL-2200",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh"
+  ],
+  "iterations": 6,
+  "run_tag": "TMODEL-2200",
+  "stop_condition": "metric 清零且 guard 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "只收通知发布，不改 settings 持久化与 provider 配置。"
+}

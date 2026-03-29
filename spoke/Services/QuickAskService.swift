@@ -309,8 +309,8 @@ final class QuickAskService {
             return
         }
 
-        Task { [weak self] in
-            await self?.handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
+        runQuickAskServiceOnMain(self) { service in
+            await service.handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
         }
     }
     
@@ -477,7 +477,9 @@ final class QuickAskHUDManager {
     
     // MARK: - Singleton
     
-    static let shared = QuickAskHUDManager(dependencies: .makeLive(answerPanelManager: .shared))
+    static let shared = QuickAskHUDManager(
+        dependencies: .makeLive(answerPanelManager: currentQuickAskLiveServices().answerPanelManager)
+    )
     
     // MARK: - Properties
     

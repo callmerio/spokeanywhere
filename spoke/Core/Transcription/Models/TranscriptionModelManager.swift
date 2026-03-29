@@ -9,7 +9,7 @@ final class TranscriptionModelManager {
     
     // MARK: - Singleton
     
-    static let shared = TranscriptionModelManager()
+    static let shared = TranscriptionModelManager(dependencies: .live)
     
     // MARK: - Properties
     
@@ -26,10 +26,12 @@ final class TranscriptionModelManager {
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "TranscriptionModelManager")
     private let defaults = UserDefaults.standard
     private let settingsKey = "transcription.modelSettings"
+    private let dependencies: TranscriptionModelManagerDependencies
     
     // MARK: - Init
     
-    private init() {
+    private init(dependencies: TranscriptionModelManagerDependencies) {
+        self.dependencies = dependencies
         self.settings = Self.load(from: defaults, key: settingsKey)
         initializeDownloadStates()
         logger.info("✅ TranscriptionModelManager initialized, selected: \(self.settings.selectedModelId, privacy: .public)")
@@ -68,11 +70,7 @@ final class TranscriptionModelManager {
             settings.selectedModelId = modelId
             logger.info("📍 Selected model: \(modelId, privacy: .public)")
             
-            NotificationCenter.default.post(
-                name: .transcriptionModelChanged,
-                object: nil,
-                userInfo: ["modelId": modelId]
-            )
+            dependencies.postModelChanged(modelId)
         }
     }
     
@@ -130,11 +128,7 @@ final class TranscriptionModelManager {
             logger.info("🎯 设为实时字幕模型: \(model.displayName, privacy: .public)")
         }
         
-        NotificationCenter.default.post(
-            name: .transcriptionModelRoleChanged,
-            object: nil,
-            userInfo: ["modelId": modelId, "role": role.rawValue]
-        )
+        dependencies.postModelRoleChanged(modelId, role.rawValue)
     }
     
     /// 获取指定角色的模型

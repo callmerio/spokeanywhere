@@ -1043,6 +1043,40 @@ def verify_context_2100() -> dict[str, Any]:
     )
 
 
+def verify_dicttext_2200() -> dict[str, Any]:
+    path = ROOT / "UI" / "Components" / "DictionarySelectableText.swift"
+    return hotspot_metric(
+        path,
+        "dictionary_selectable_text_hotspots",
+        {
+            "default_notifications": r"NotificationCenter\.default",
+        },
+    )
+
+
+def verify_tmodel_2200() -> dict[str, Any]:
+    path = ROOT / "Core" / "Transcription" / "Models" / "TranscriptionModelManager.swift"
+    return hotspot_metric(
+        path,
+        "transcription_model_manager_hotspots",
+        {
+            "default_notifications": r"NotificationCenter\.default",
+        },
+    )
+
+
+def verify_qasvc_2200() -> dict[str, Any]:
+    path = ROOT / "Services" / "QuickAskService.swift"
+    return hotspot_metric(
+        path,
+        "quickask_service_tail_hotspots",
+        {
+            "shared_calls": r"\.shared\b",
+            "raw_task": r"\bTask\s*\{",
+        },
+    )
+
+
 HANDLERS = {
     "AG-010": verify_ag010,
     "QG-010": verify_qg010,
@@ -1103,6 +1137,9 @@ HANDLERS = {
     "SELSTATE-2100": verify_selstate_2100,
     "MSGSRC-2100": verify_msgsrc_2100,
     "CONTEXT-2100": verify_context_2100,
+    "DICTTEXT-2200": verify_dicttext_2200,
+    "TMODEL-2200": verify_tmodel_2200,
+    "QASVC-2200": verify_qasvc_2200,
     "GOV-SC-160": verify_gov_sc_160,
     "DOC-MOD-160": verify_doc_mod_160,
     "GOV-RB-170": verify_gov_rb_170,

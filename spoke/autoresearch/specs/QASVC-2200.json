@@ -1,0 +1,24 @@
+{
+  "issue_id": "QASVC-2200",
+  "title": "QuickAskService 剩余 Task 与 shared 尾项收口",
+  "mode": "exec",
+  "goal": "清理 QuickAskService 主文件里最后一处裸 Task 和 QuickAskHUDManager.shared 默认 wiring 的 .shared 痕迹。",
+  "scope": [
+    "Services/QuickAskService.swift",
+    "Services/QuickAskLiveDependencies.swift",
+    "Services/QuickAskRuntimeHelpers.swift"
+  ],
+  "metric": "quickask_service_tail_hotspots",
+  "direction": "lower",
+  "verify": "python3 scripts/autoresearch/verify_issue_metric.py --issue QASVC-2200",
+  "guard": [
+    "swift build",
+    "swift test",
+    "bash Tests/run-concurrency-check.sh",
+    "ENABLE_AX_SMOKE_TESTS=1 swift test --filter SpokenAnyWhereUITests"
+  ],
+  "iterations": 6,
+  "run_tag": "QASVC-2200",
+  "stop_condition": "metric 清零且 full gate 全通过，或连续 3 次 discard 后 pivot",
+  "notes": "不改 Quick Ask 业务流程，只收主文件尾项。"
+}

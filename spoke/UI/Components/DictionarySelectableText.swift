@@ -12,11 +12,24 @@ import AppKit
 /// 用于 Pipeline 卡片内的文本展示
 struct DictionarySelectableText: NSViewRepresentable {
     let text: String
+    private let dependencies: DictionarySelectableTextDependencies
     var font: NSFont = .systemFont(ofSize: 13)
     var foregroundColor: NSColor = DS.Colors.NS.textPrimary
+
+    init(
+        text: String,
+        dependencies: DictionarySelectableTextDependencies = .makeLive(),
+        font: NSFont = .systemFont(ofSize: 13),
+        foregroundColor: NSColor = DS.Colors.NS.textPrimary
+    ) {
+        self.text = text
+        self.dependencies = dependencies
+        self.font = font
+        self.foregroundColor = foregroundColor
+    }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(dependencies: dependencies)
     }
     
     func makeNSView(context: Context) -> DictionaryTextView {
@@ -64,6 +77,11 @@ struct DictionarySelectableText: NSViewRepresentable {
     
     @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
+        private let dependencies: DictionarySelectableTextDependencies
+
+        init(dependencies: DictionarySelectableTextDependencies) {
+            self.dependencies = dependencies
+        }
         
         func textView(_ textView: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
             // 获取选中的文本
@@ -123,14 +141,11 @@ struct DictionarySelectableText: NSViewRepresentable {
                   let selectedText = context["selectedText"] as? String else { return }
             let fullText = context["fullText"] as? String ?? ""
             
-            // 发送通知，由 DictionaryService 处理
-            NotificationCenter.default.post(
-                name: .requestAddToDictionary,
-                object: nil,
-                userInfo: [
+            dependencies.postAddToDictionaryRequest(
+                [
                     "word": selectedText,
                     "mode": "new",
-                    "fullText": fullText  // 用于训练短语
+                    "fullText": fullText
                 ]
             )
         }
@@ -140,14 +155,11 @@ struct DictionarySelectableText: NSViewRepresentable {
                   let selectedText = context["selectedText"] as? String else { return }
             let fullText = context["fullText"] as? String ?? ""
             
-            // 发送通知，显示纠错弹窗
-            NotificationCenter.default.post(
-                name: .requestAddToDictionary,
-                object: nil,
-                userInfo: [
+            dependencies.postAddToDictionaryRequest(
+                [
                     "word": selectedText,
                     "mode": "correction",
-                    "fullText": fullText  // 用于训练短语
+                    "fullText": fullText
                 ]
             )
         }
