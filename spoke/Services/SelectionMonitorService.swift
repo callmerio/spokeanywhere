@@ -147,7 +147,7 @@ final class SelectionMonitorService {
     ]
     
     /// 自身应用的 Bundle ID
-    private let selfBundleId = Bundle.main.bundleIdentifier ?? "app.spokenly"
+    private let selfBundleId = Bundle.main.bundleIdentifier ?? AppIdentity.bundleIdentifier
     
     // MARK: - Init
     

@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import CoreImage
 import Foundation
+import os
 import ScreenCaptureKit
 
 @available(macOS 12.3, *)
@@ -9,6 +10,7 @@ import ScreenCaptureKit
 class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
     @MainActor static let shared = ScreenCaptureBlurService()
 
+    private let logger = Logger(subsystem: "com.spokeanywhere", category: "ScreenCaptureBlurService")
     @Published var currentFrame: CGImage?
     private var stream: SCStream?
     private let videoOutputQueue = DispatchQueue(label: "com.spoke.screencapture.output", qos: .userInteractive)
@@ -110,7 +112,7 @@ class ScreenCaptureBlurService: NSObject, SCStreamOutput, ObservableObject {
             try stream?.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoOutputQueue)
             try await stream?.startCapture()
         } catch {
-            // Failed to start screen capture
+            logger.error("❌ Failed to start screen capture blur stream: \(error.localizedDescription, privacy: .public)")
         }
     }
 

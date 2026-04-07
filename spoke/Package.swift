@@ -42,9 +42,13 @@ let package = Package(
                 "autoresearch",       // autoresearch 运行产物（非源码）
                 "issues",             // issue 快照（非源码）
                 "scripts",             // 性能测试脚本（非源码）
-                "perf"                 // 性能基线数据（非源码）
+                "perf",                // 性能基线数据（非源码）
+                "plan"                 // 本地计划文件（非资源）
             ],
-            sources: ["App", "Core", "Services", "UI"]
+            sources: ["App", "Core", "Services", "UI"],
+            resources: [
+                .process("Resources/markdown-assets")
+            ]
         ),
         .testTarget(
             name: "SpokenAnyWhereTests",
@@ -53,10 +57,6 @@ let package = Package(
             exclude: [
                 "UITests",
                 "run-tests.sh",
-                "test_edge_tts.swift",
-                "TextExtractionTests.swift",  // 独立脚本，有 @main
-                "EdgeTTSTests.swift",         // 独立脚本，有 @main
-                "AttachmentTests.swift",      // 独立脚本，有 @main
                 // P3-B2: 测试辅助文件（非测试源码）
                 "run-concurrency-check.sh",
                 "TEST_ISOLATION.md"

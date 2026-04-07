@@ -1,8 +1,9 @@
 # SpokenAnyWhere 当前状态审计
 
-**版本**: 1.2
+**版本**: 1.3
 **审计日期**: 2026-03-23
-**审计范围**: 仓库结构、架构分层、文档一致性、测试与并发门禁、记忆落地状态
+**补充复核**: 2026-04-07（当前能力基线 / 权限边界）
+**审计范围**: 仓库结构、架构分层、文档一致性、测试与并发门禁、记忆落地状态、当前能力基线
 
 ---
 
@@ -111,6 +112,67 @@ UI
 
 这种并存模式让系统具备演进弹性，但也增加了调用链追踪与测试替换成本。
 
+### 3.4 当前能力基线（2026-04-07 补充复核）
+
+本节用于回答“当前项目真实在提供什么能力、用户从哪里进入、哪些状态会留下来、哪些不该被权限平台误吞”。
+
+- 语音输入
+  - 用户入口：全局热键录音、HUD 完成/取消、后续写入历史
+  - 主链路：`HotKeyService -> VoiceHandler -> RecordingController -> AudioRecorderService -> TranscriptionManager`
+  - 权限依赖：`Microphone`、`Speech Recognition`；若启用边说边打字，还会触发 `Accessibility` 输入注入依赖
+  - 持久化 / 恢复：录音结果进入 `HistoryItem`，音频文件落到 `~/Library/Application Support/Spoke/Audio/`；未完成录音不会跨重启自动恢复
+
+- Quick Ask
+  - 用户入口：全局热键、HUD、`AnswerPanel`
+  - 主链路：`HotKeyService -> QuickAskHandler -> QuickAskService -> LLMPipeline`
+  - 权限依赖：与录音相似，但语义是“问答会话”而不是“录音历史”
+  - 持久化 / 恢复：运行期会话状态与 Message Panel / SessionHistory 协同，但不等于“未完成会话自动恢复”
+
+- 截图家族
+  - 用户入口：全局热键 `⌥A`、菜单栏“区域截图”、截图窗口内操作栏
+  - 主链路：`HotKeyService -> ScreenshotHandler -> ScreenshotManager -> ScreenCaptureService`
+  - 权限依赖：`Screen Recording`
+  - 持久化 / 恢复：
+    - `copy` / `temporary` 模式不持久化
+    - `pin` 与 `mark` 产生的截图项由 `ScreenshotManager.saveAll()/restoreAll()` 独立保存并跨重启恢复
+  - 边界提醒：`pinned screenshot` 是截图功能自己的用户资产，不应被归并为 Permission Experience 的 `blocked intent` 缓存
+
+- OCR / 活动应用上下文
+  - 用户入口：录音前置 `prefetch`、Selection Toolbar OCR 扩展、截图相关动作
+  - 主链路：`ScreenOCRService` 作为录音 / 工具栏 / LLM 的上下文提供者
+  - 权限依赖：`Screen Recording`
+  - 持久化 / 恢复：默认是运行时上下文，不应作为权限平台的持久化内容缓存
+
+- 文本选择工具栏
+  - 用户入口：菜单栏开关、设置页、选中文本后的浮动工具栏
+  - 主链路：`SelectionMonitorService -> SelectionToolbarManager -> SelectionActionService`
+  - 权限依赖：`Accessibility`
+  - 持久化 / 恢复：启用状态和配置走 `AppSettings` / 工具栏配置保存；被选中的文本内容不应进入权限平台持久化
+
+- 实时字幕 / 系统音频
+  - 用户入口：全局热键 `⌥S`、菜单栏“实时字幕”
+  - 主链路：`HotKeyService -> CaptionHandler -> LiveCaptionManager -> SystemAudioCaptureService -> LiveCaptionTranscriber`
+  - 权限依赖：系统音频路径依赖 `Screen Recording`
+  - 持久化 / 恢复：语言、翻译、显示模式等配置由 `AppSettings` 持久化；运行中的字幕采集不会跨重启自动恢复
+
+- Message Panel / Clipboard Pipeline
+  - 用户入口：消息面板热键、剪贴板 Pipeline 热键、录音 / LLM / 剪贴板内容注入 Message Panel
+  - 主链路：
+    - `MessagePanelManager -> MessagePanelState -> SessionHistoryService / SummaryService`
+    - `ClipboardPipelineService -> MessagePanelManager`
+  - 权限依赖：无额外 TCC 权限，但会承载来自录音、LLM、剪贴板的内容
+  - 持久化 / 恢复：剪贴板历史由 `ClipboardHistoryService` 静默持久化；Message Panel 会话历史与摘要具有独立持久化语义
+
+- 设置 / 状态栏 / 持久化骨架
+  - 用户入口：菜单栏、`SettingsView`
+  - 持久化载体：
+    - `SwiftData`：`HistoryItem`、`AppRule`、`AIProviderConfig`
+    - `AppStorage`：快捷键、截图 / 工具栏 / 实时字幕 / 历史清理等设置
+    - `UserDefaults(JSON)`：剪贴板历史
+    - `Application Support`：录音文件、截图图片与 `screenshot_items.json`
+    - `Keychain`：LLM 凭据
+  - 边界提醒：权限平台如果要记忆“被权限拦住的动作”，必须与这些现有持久化资产分层，不要混装
+
 ---
 
 ## 四、质量基线
@@ -198,13 +260,14 @@ bash Tests/run-concurrency-check.sh
 
 1. `overview.md`：先看项目入口、分层和主链路
 2. `core-modules.md`：了解真实 Core 模块边界
-3. `ui-components.md`：了解 UI 场景与业务依赖
-4. `quick-reference.md`：作为定位与排障索引
-5. `risks-and-recommendations.md`：查看治理建议与下一步
-6. `../m2-final-acceptance.md`：仅作为 2026-02-22 的历史验收证据
-7. `../roadmap/2026-03-conditional-go-architecture-roadmap.md`：基于本次审计拆出的执行路线
+3. `capability-graph.md`：看功能域、内容域、持久化层和入口面的关系
+4. `ui-components.md`：了解 UI 场景与业务依赖
+5. `quick-reference.md`：作为定位与排障索引
+6. `risks-and-recommendations.md`：查看治理建议与下一步
+7. `../m2-final-acceptance.md`：仅作为 2026-02-22 的历史验收证据
+8. `../roadmap/2026-03-conditional-go-architecture-roadmap.md`：基于本次审计拆出的执行路线
 
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-23
+**最后更新**: 2026-04-07

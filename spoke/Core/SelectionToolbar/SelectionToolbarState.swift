@@ -48,6 +48,8 @@ struct SelectionToolbarStateDependencies {
     let vocabularyService: VocabularyService
     let appSettings: AppSettings
     let notificationCenter: NotificationCenter
+    let requestBuiltinAction: (_ action: SelectionToolbarActionType, _ context: SelectionContext) -> Void
+    let requestToolbarAction: (_ action: ToolbarAction, _ context: SelectionContext) -> Void
 }
 
 // MARK: - 状态管理
@@ -142,6 +144,10 @@ final class SelectionToolbarState: ObservableObject {
     static func makePreview() -> SelectionToolbarState {
         SelectionToolbarState(dependencies: .live)
     }
+
+    static func makeTesting(dependencies: SelectionToolbarStateDependencies) -> SelectionToolbarState {
+        SelectionToolbarState(dependencies: dependencies)
+    }
     
     // MARK: - Public API
     
@@ -188,14 +194,7 @@ final class SelectionToolbarState: ObservableObject {
         actionPhase = .preparing
         
         logger.info("📋 [SelectionToolbar] 执行动作: \(action.displayName)")
-        
-        postNotification(
-            .selectionToolbarActionRequested,
-            userInfo: [
-                "action": action,
-                "context": context
-            ]
-        )
+        dependencies.requestBuiltinAction(action, context)
     }
     
     /// 执行工具栏动作 (新版，支持自定义动作)
@@ -209,14 +208,7 @@ final class SelectionToolbarState: ObservableObject {
         actionPhase = .preparing
         
         logger.info("📋 [SelectionToolbar] 执行工具栏动作: \(action.name)")
-        
-        postNotification(
-            .selectionToolbarActionRequested,
-            userInfo: [
-                "toolbarAction": action,
-                "context": context
-            ]
-        )
+        dependencies.requestToolbarAction(action, context)
     }
     
     /// 更新动作执行状态

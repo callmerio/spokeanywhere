@@ -42,12 +42,13 @@ extension ScreenshotActionDependencies {
     }
 
     static let live: ScreenshotActionDependencies = {
-        let screenshotManager = ScreenshotManager.shared
-        let quickAskService = QuickAskService.shared
-        let imageEnhancementService = ImageEnhancementService.shared
-        let screenshotSettings = ScreenshotSettings.shared
-        let selectionToolbarState = SelectionToolbarState.shared
-        let selectionToolbarManager = SelectionToolbarManager.shared
+        let services = currentServiceContainer()
+        let screenshotManager = services.screenshotManager
+        let quickAskService = services.quickAskServiceConcrete
+        let imageEnhancementService = services.imageEnhancementService
+        let screenshotSettings = services.screenshotSettings
+        let selectionToolbarState = services.selectionToolbarState
+        let selectionToolbarManager = services.selectionToolbarManager
         let pasteboard = NSPasteboard.general
 
         return ScreenshotActionDependencies(

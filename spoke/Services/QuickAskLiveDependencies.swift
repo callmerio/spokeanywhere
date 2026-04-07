@@ -74,8 +74,7 @@ extension QuickAskServiceDependencies {
             answerPanelManager: services.answerPanelManager,
             hotKeyService: services.hotKeyService,
             clipboardHistoryService: services.clipboardHistoryService,
-            liveCaptionManager: services.liveCaptionManager,
-            notificationCenter: .default
+            liveCaptionManager: services.liveCaptionManager
         )
     }
 }

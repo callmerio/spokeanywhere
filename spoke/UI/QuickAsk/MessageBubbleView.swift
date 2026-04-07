@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - Selectable Text View
 
 /// 可选择复制的文本视图（解决 SwiftUI Text 在 NSPanel 中 Cmd+C 不工作的问题）
@@ -8,7 +10,7 @@ struct SelectableTextView: NSViewRepresentable {
     let text: String
     let color: NSColor
     
-    init(_ text: String, color: NSColor = .white) {
+    init(_ text: String, color: NSColor = DesignTokens.Colors.NS.textPrimary) {
         self.text = text
         self.color = color
     }
@@ -166,7 +168,7 @@ struct MessageBubbleView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                        .stroke(DS.Colors.borderSecondary, lineWidth: DS.BorderWidth.thin)
                                 )
                         }
                     }
@@ -204,12 +206,12 @@ struct MessageBubbleView: View {
                         
                         // 语音转录（灰色，分行显示）
                         if let voiceText = message.voiceTranscription, !voiceText.isEmpty {
-                            SelectableTextView(voiceText, color: .white.withAlphaComponent(0.6))
+                            SelectableTextView(voiceText, color: DS.Colors.NS.textSecondary)
                         }
                     }
                     .padding(12)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .background(DS.Colors.buttonHoverStrong)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -249,7 +251,7 @@ struct MessageBubbleView: View {
                     Button(action: { ttsService.toggleSpeak(message.content) }, label: {
                         Image(systemName: ttsService.isPlaying ? "stop.circle.fill" : "speaker.wave.2.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundStyle(DS.Colors.textSecondary)
                     })
                     .buttonStyle(.plain)
 
@@ -264,7 +266,7 @@ struct MessageBubbleView: View {
                     }, label: {
                         Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc.fill")
                             .font(.system(size: 13))
-                            .foregroundStyle(isCopied ? Color.green : .white.opacity(0.5))
+                            .foregroundStyle(isCopied ? DS.Colors.success : DS.Colors.textPlaceholder)
                     })
                     .buttonStyle(.plain)
 
@@ -277,10 +279,10 @@ struct MessageBubbleView: View {
                         Text(selectedMode.rawValue)
                             .font(.system(size: 11))
                     }
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(DS.Colors.textPlaceholder)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.08))
+                    .background(DS.Colors.chipBackground)
                     .clipShape(Capsule())
                 }
             }
@@ -301,14 +303,14 @@ struct ContextSourceBadge: View {
             Text(source.rawValue)
                 .font(.system(size: 11))
         }
-        .foregroundStyle(.white.opacity(0.8))
+        .foregroundStyle(DS.Colors.textPrimary)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.white.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(DS.Colors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.md))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.md)
+                .stroke(DS.Colors.borderSecondary, lineWidth: DS.BorderWidth.thin)
         )
     }
 }

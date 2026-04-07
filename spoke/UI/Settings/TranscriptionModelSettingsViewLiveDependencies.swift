@@ -3,10 +3,10 @@ import Foundation
 @MainActor
 extension TranscriptionModelSettingsDependencies {
     static let live = TranscriptionModelSettingsDependencies(
-        modelManager: .shared,
+        modelManager: currentServiceContainer().transcriptionModelManager,
         downloadModel: { modelId in
             runTranscriptionModelSettingsDownload(
-                manager: .shared,
+                manager: currentServiceContainer().transcriptionModelManager,
                 modelId: modelId
             )
         }

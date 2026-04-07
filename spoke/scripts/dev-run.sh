@@ -28,7 +28,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 APP_NAME="SpokenAnyWhere"
-APP_BUNDLE_ID="app.spokenly"
+APP_BUNDLE_ID="com.spokeanywhere"
 BUNDLER="${SWIFT_BUNDLER_BIN:-$HOME/.local/bin/swift-bundler}"
 BUILD_APP="$ROOT_DIR/.build/bundler/${APP_NAME}.app"
 INSTALL_APP="${APP_INSTALL_PATH:-$HOME/Applications/${APP_NAME} Dev.app}"
@@ -129,7 +129,6 @@ prepare_logs() {
   /usr/bin/log stream --level debug --style compact --predicate '
     process == "'"$APP_NAME"'" AND (
       subsystem BEGINSWITH "com.spokeanywhere" OR
-      subsystem == "app.spokenly" OR
       (messageType == error) OR
       (messageType == fault)
     )

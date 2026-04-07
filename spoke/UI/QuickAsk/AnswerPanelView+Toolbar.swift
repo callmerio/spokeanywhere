@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 extension AnswerPanelView {
     // MARK: - Toolbar
     
@@ -8,10 +10,10 @@ extension AnswerPanelView {
             Button(action: { onClose?() }, label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(isHoveringCloseButton ? 0.9 : 0.6))
+                    .foregroundStyle(isHoveringCloseButton ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: 22, height: 22)
-                    .background(Color.white.opacity(isHoveringCloseButton ? 0.15 : 0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: isHoveringCloseButton ? 6 : 11))
+                    .background(isHoveringCloseButton ? DS.Colors.buttonHoverStrong : DS.Colors.buttonHover)
+                    .clipShape(RoundedRectangle(cornerRadius: isHoveringCloseButton ? DS.CornerRadius.sm : DS.CornerRadius.md))
                     .animation(.easeInOut(duration: 0.2), value: isHoveringCloseButton)
             })
             .buttonStyle(.plain)
@@ -28,11 +30,11 @@ extension AnswerPanelView {
                     Text("新对话")
                         .font(.system(size: 13, weight: .medium))
                 }
-                .foregroundStyle(.white.opacity(isHoveringNewChatButton ? 1.0 : 0.8))
+                .foregroundStyle(isHoveringNewChatButton ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color.white.opacity(isHoveringNewChatButton ? 0.15 : 0))
-                .clipShape(RoundedRectangle(cornerRadius: isHoveringNewChatButton ? 6 : 12))
+                .background(isHoveringNewChatButton ? DS.Colors.buttonHoverStrong : DS.Colors.clear)
+                .clipShape(RoundedRectangle(cornerRadius: isHoveringNewChatButton ? DS.CornerRadius.sm : DS.CornerRadius.lg))
                 .animation(.easeInOut(duration: 0.2), value: isHoveringNewChatButton)
             })
             .buttonStyle(.plain)
@@ -53,7 +55,7 @@ extension AnswerPanelView {
                 .controlSize(.small)
             Text("思考中...")
                 .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(DS.Colors.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -63,14 +65,14 @@ extension AnswerPanelView {
     func errorView(_ message: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+                .foregroundStyle(DS.Colors.error)
             Text(message)
                 .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(DS.Colors.textSecondary)
         }
         .padding(12)
-        .background(Color.red.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(DS.Colors.accentDangerBackground.opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.md))
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     
@@ -83,16 +85,16 @@ extension AnswerPanelView {
                     HStack {
                         Text(question)
                             .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(DS.Colors.textPrimary)
                             .lineLimit(2)
                         Spacer()
                         Image(systemName: "arrow.right")
                             .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.4))
+                            .foregroundStyle(DS.Colors.textPlaceholder)
                     }
                     .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .background(DS.Colors.surfaceThin)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.md))
                 })
                 .buttonStyle(.plain)
             }

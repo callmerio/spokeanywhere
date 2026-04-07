@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 /// 过滤标签按钮
 struct FilterChip: View {
     let title: String
@@ -21,7 +23,7 @@ struct FilterChip: View {
                         .padding(.vertical, 1)
                         .background(
                             Capsule()
-                                .fill(isActive ? Color.white.opacity(0.3) : color.opacity(0.3))
+                                .fill(isActive ? DS.Colors.separatorStrong : color.opacity(0.3))
                         )
                 }
             }

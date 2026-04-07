@@ -1,20 +1,22 @@
 import AppKit
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 extension AnswerPanelView {
     // MARK: - Input Area
     
     var inputArea: some View {
         inputAreaContent
             .padding(14)
-            .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .background(DS.Colors.chipBackground)
+            .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg))
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.lg)
+                    .stroke(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.thin)
             )
             .overlay {
-                AttachmentDropOverlay(cornerRadius: 14, isVisible: isDragOver)
+                AttachmentDropOverlay(cornerRadius: DS.CornerRadius.lg, isVisible: isDragOver)
             }
             .onDrop(of: [.image, .fileURL], isTargeted: $isDragOver) { providers in
                 handleDropProviders(providers)
@@ -98,7 +100,7 @@ extension AnswerPanelView {
                 Button(action: { toggleRecording() }, label: {
                     Image(systemName: "mic")
                         .font(.system(size: 16))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(DS.Colors.textPlaceholder)
                 })
                 .buttonStyle(.plain)
             }
@@ -112,7 +114,7 @@ extension AnswerPanelView {
         Button(action: { sendMessage() }, label: {
             Image(systemName: "arrow.up.circle.fill")
                 .font(.system(size: 28))
-                .foregroundStyle(canSend ? Color.accentColor : Color.white.opacity(0.2))
+                .foregroundStyle(canSend ? DS.Colors.accentPrimary : DS.Colors.textPlaceholder)
         })
         .buttonStyle(.plain)
         .disabled(!canSend && !isRecording)

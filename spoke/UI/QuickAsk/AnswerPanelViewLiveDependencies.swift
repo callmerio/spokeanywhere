@@ -4,9 +4,9 @@ import Foundation
 @MainActor
 extension AnswerPanelViewDependencies {
     static let live = AnswerPanelViewDependencies(
-        workflowState: .shared,
-        ttsService: .shared,
-        ttsSettings: .shared,
+        workflowState: currentServiceContainer().workflowState,
+        ttsService: currentServiceContainer().ttsService,
+        ttsSettings: currentServiceContainer().ttsSettings,
         messageBubbleDependencies: .live,
         inputDependencies: .live,
         openSettings: {
@@ -20,7 +20,7 @@ extension AnswerPanelViewDependencies {
 @MainActor
 extension MessageBubbleViewDependencies {
     static let live = MessageBubbleViewDependencies(
-        ttsService: .shared
+        ttsService: currentServiceContainer().ttsService
     )
 }
 
@@ -28,10 +28,10 @@ extension MessageBubbleViewDependencies {
 extension AnswerPanelInputDependencies {
     static let live = AnswerPanelInputDependencies(
         addImage: { image, onAdd in
-            AttachmentManager.shared.addImage(image, source: .paste, onAdd: onAdd)
+            currentServiceContainer().attachmentManager.addImage(image, source: .paste, onAdd: onAdd)
         },
         handleDrop: { providers, onAdd in
-            AttachmentManager.shared.handleDrop(providers: providers, onAdd: onAdd)
+            currentServiceContainer().attachmentManager.handleDrop(providers: providers, onAdd: onAdd)
         }
     )
 }

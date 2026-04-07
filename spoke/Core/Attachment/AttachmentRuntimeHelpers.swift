@@ -31,12 +31,11 @@ func runAttachmentDetached<Value: Sendable>(
 @MainActor
 func postAttachmentThumbnailUpdated(
     id: UUID,
-    attachment: Attachment,
     notificationCenter: NotificationCenter = .default
 ) {
     notificationCenter.post(
         name: .attachmentThumbnailUpdated,
         object: nil,
-        userInfo: ["id": id, "attachment": attachment]
+        userInfo: ["id": id]
     )
 }

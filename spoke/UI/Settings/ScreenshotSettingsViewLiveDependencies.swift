@@ -9,7 +9,7 @@ struct ScreenshotSettingsViewDependencies {
 @MainActor
 extension ScreenshotSettingsViewDependencies {
     static let live = Self(
-        settings: .shared,
-        modelManager: .shared
+        settings: currentServiceContainer().screenshotSettings,
+        modelManager: currentServiceContainer().imageUpscalerModelManager
     )
 }

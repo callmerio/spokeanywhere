@@ -304,7 +304,7 @@ struct MessagePanelView: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.05))
+                .fill(DesignTokens.Colors.surfaceThin)
         )
         // 🍑 移除动画，避免卡死
     }
@@ -412,7 +412,7 @@ struct MessagePanelView: View {
                     .foregroundColor(DesignTokens.Colors.textPlaceholder)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.white.opacity(0.1))
+                    .background(DesignTokens.Colors.cardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
             }
             .padding(.horizontal, 14)

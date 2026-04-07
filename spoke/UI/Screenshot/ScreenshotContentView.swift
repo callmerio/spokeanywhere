@@ -406,7 +406,7 @@ extension ScreenshotContentView {
             liveTextOverlay.analysis = analysis
             isLiveTextReady = true
         } catch {
-            // 分析失败静默处理（图片可能没有文字）
+            logger.debug("🔍 Live Text pre-analysis skipped: \(error.localizedDescription, privacy: .public)")
         }
     }
     

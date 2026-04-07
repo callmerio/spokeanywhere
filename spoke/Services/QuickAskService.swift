@@ -57,7 +57,6 @@ struct QuickAskServiceDependencies {
     let hotKeyService: HotKeyService
     let clipboardHistoryService: ClipboardHistoryService
     let liveCaptionManager: LiveCaptionManager
-    let notificationCenter: NotificationCenter
 }
 
 /// Quick Ask 服务
@@ -116,16 +115,10 @@ final class QuickAskService {
         dependencies.hudManager.onCancel = makeAction { service in
             service.cancelSession()
         }
-        
-        // 监听追问通知
-        dependencies.notificationCenter.addObserver(
-            forName: .quickAskFollowUpRequested,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            MainActor.assumeIsolated {
-                self?.handleFollowUpNotification(notification)
-            }
+
+        dependencies.answerPanelManager.onFollowUp = { [weak self] panelId, prompt in
+            guard let self else { return }
+            await self.handleFollowUp(panelId: panelId, prompt: prompt)
         }
     }
     
@@ -301,21 +294,8 @@ final class QuickAskService {
         }
     }
 
-    private func handleFollowUpNotification(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let panelId = userInfo["panelId"] as? UUID,
-              let prompt = userInfo["prompt"] as? String,
-              let attachments = userInfo["attachments"] as? [Attachment] else {
-            return
-        }
-
-        runQuickAskServiceOnMain(self) { service in
-            await service.handleFollowUp(panelId: panelId, prompt: prompt, attachments: attachments)
-        }
-    }
-    
     /// 处理追问
-    private func handleFollowUp(panelId: UUID, prompt: String, attachments: [Attachment]) async {
+    private func handleFollowUp(panelId: UUID, prompt: String) async {
         logger.info("🔄 Handling follow-up [\(panelId)]: \(prompt)")
         
         // 1. 获取指定面板的历史记录

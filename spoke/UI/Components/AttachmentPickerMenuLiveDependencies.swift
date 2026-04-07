@@ -7,5 +7,5 @@ struct AttachmentPickerMenuDependencies {
 
 @MainActor
 extension AttachmentPickerMenuDependencies {
-    static let live = Self(attachmentManager: .shared)
+    static let live = Self(attachmentManager: currentServiceContainer().attachmentManager)
 }

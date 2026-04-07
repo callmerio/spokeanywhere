@@ -60,9 +60,9 @@ enum CaptionDesign {
     /// Hover 光晕半径（微弱效果）
     static let glowRadius: CGFloat = 8
     /// Hover 光晕颜色（白色，微弱）
-    static let glowColor = Color.white.opacity(0.25)
+    static let glowColor = DS.Colors.accentBright.opacity(0.25)
     /// Hover 边框颜色（白色，微弱）
-    static let glowBorderColor = Color.white.opacity(0.18)
+    static let glowBorderColor = DS.Colors.accentBright.opacity(0.2)
     /// Hover 边框宽度
     static let glowBorderWidth: CGFloat = 1
     /// 阴影/光晕安全留白（保证阴影不被窗口裁剪）

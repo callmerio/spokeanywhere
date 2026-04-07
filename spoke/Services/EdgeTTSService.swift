@@ -1,6 +1,9 @@
 import AVFoundation
 import CryptoKit
 import Foundation
+import os
+
+private let edgeTTSLogger = Logger(subsystem: "com.spokeanywhere", category: "EdgeTTSService")
 
 @MainActor
 struct TTSServiceDependencies {
@@ -17,7 +20,7 @@ private enum EdgeTTSConstants {
 
 // MARK: - DRM Helper
 
-private enum DRMHelper {
+enum DRMHelper {
     /// 生成 Sec-MS-GEC Token (DRM 验证)
     static func generateSecMsGecToken() -> String {
         let currentTime = Int64(Date().timeIntervalSince1970)
@@ -484,7 +487,7 @@ final class TTSService: NSObject, ObservableObject {
             // 清理临时文件
             try? FileManager.default.removeItem(at: tempURL)
         } catch {
-            // Audio playback error - silently handled
+            edgeTTSLogger.warning("⚠️ Edge TTS audio playback failed: \(error.localizedDescription, privacy: .public)")
         }
     }
     

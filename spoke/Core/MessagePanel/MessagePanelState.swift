@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import IdentifiedCollections
+import Observation
 import OSLog
 import SwiftUI
 
@@ -356,30 +357,31 @@ enum CardFilterMode: String, CaseIterable {
     }
 }
 
-/// 消息卡片数据模型（class + ObservableObject 避免 ForEach 全量重绘）
-final class MessageCard: ObservableObject, Identifiable, Codable {
+/// 消息卡片数据模型（@Observable 粒度跟踪属性变化，避免整卡片层级无差别发布）
+@Observable
+final class MessageCard: Identifiable, Codable {
     let id: UUID
     let timestamp: Date
     let stage: MessageStage
     let content: String
-    @Published var metadata: [String: String]
+    var metadata: [String: String]
     /// 文本高亮标记（用于显示纠错/词典学习样式）
-    @Published var highlights: [TextHighlight]
+    var highlights: [TextHighlight]
     /// 记录类型：normal/todo/done/note
-    @Published var recordType: CardRecordType
+    var recordType: CardRecordType
     /// 标签 ID 列表（通过 TagLibrary 获取完整信息）
-    @Published var tagIds: [UUID]
+    var tagIds: [UUID]
     /// 附件列表（截图等）
-    @Published var attachments: [CardAttachment]
+    var attachments: [CardAttachment]
     /// 来源应用信息（用于显示图标和光晕）
     var sourceApp: SourceAppInfo?
     
     // MARK: - Summary
     
     /// 总结内容
-    @Published var summary: String?
+    var summary: String?
     /// 总结状态
-    @Published var summaryStatus: SummaryStatus
+    var summaryStatus: SummaryStatus
     /// 内容类型（用于选择总结策略）
     var contentType: CardContentType
     
@@ -458,7 +460,7 @@ final class MessageCard: ObservableObject, Identifiable, Codable {
         self.contentType = decodedContentType
     }
     
-    // 自定义编码：@Published 属性需要手动编码
+    // 自定义编码：显式编码可变属性，保持旧数据兼容
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
@@ -510,7 +512,7 @@ final class MessageCard: ObservableObject, Identifiable, Codable {
 
 extension MessageCard: Equatable {
     static func == (lhs: MessageCard, rhs: MessageCard) -> Bool {
-        // 只比较 ID，因为是引用类型，同一个对象的属性变化由 @Published 处理
+        // 只比较 ID，因为是引用类型，同一个对象的属性变化由 Observation 追踪
         lhs.id == rhs.id
     }
 }

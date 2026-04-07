@@ -5,7 +5,8 @@ import SwiftUI
 @preconcurrency import Translation
 
 private typealias DS = DesignTokens
-private let scrollLogger = Logger(subsystem: "app.spokenly", category: "LiveCaptionScroll")
+private let scrollLogger = Logger(subsystem: AppIdentity.logSubsystem, category: "LiveCaptionScroll")
+private let liveCaptionLogger = Logger(subsystem: "com.spokeanywhere", category: "LiveCaptionView")
 // MARK: - AppKitScrollView
 // 已移至: spoke/UI/LiveCaption/AppKitScrollView.swift
 
@@ -44,20 +45,9 @@ struct LiveCaptionView: View {
     @ObservedObject var translator: TranslationService
     private let dependencies: LiveCaptionViewDependencies
     
-    @State private var isExpanded: Bool = false
-    @State private var isHovering: Bool = false
-    @State private var isAtBottom: Bool = true
-    @State private var scrollTrigger: Int = 0  // 触发滚动的计数器
-    @State private var isUserSelecting: Bool = false  // 用户正在选择文本时暂停滚动
-    @State private var vocabularyRefreshTrigger: Int = 0  // 生词列表变化时触发全量刷新
-    @State private var appearedItemIDs: Set<UUID> = []  // 已出现过的 item ID（用于灰→白动画）
-    
-    // Hover 工具栏状态
-    @State private var isCopyHovered: Bool = false
-    @State private var isExpandHovered: Bool = false
-    @State private var isCloseHovered: Bool = false
-    @State private var isCopied: Bool = false  // 复制成功状态（显示 checkmark）
-    @State private var highlightedWord: String?  // 🔥 当前点击高亮的单词（跨所有 VocabularyHighlightText 共享）
+    @State private var hoverState = LiveCaptionHoverState()
+    @State private var scrollState = LiveCaptionScrollState()
+    @State private var interactionState = LiveCaptionInteractionState()
 
     var onClose: () -> Void
 
@@ -77,7 +67,7 @@ struct LiveCaptionView: View {
         ZStack {
             // 内容
             VStack(spacing: 0) {
-                if isExpanded {
+                if interactionState.isExpanded {
                     expandedContent
                 } else {
                     collapsedContent
@@ -88,63 +78,14 @@ struct LiveCaptionView: View {
             }
             
             // Hover 时显示悬浮控制层（左岛+右岛）
-            if isHovering {
-                VStack {
-                    HStack(alignment: .top) {
-                        // 👈 左岛：语言切换器（仅展开时显示，或根据需求常驻）
-                        if isExpanded {
-                            Menu {
-                                ForEach(LiveCaptionManager.supportedLanguages, id: \.id) { lang in
-                                    Button {
-                                        runLiveCaptionLocaleChange(
-                                            manager: manager,
-                                            languageId: lang.id
-                                        )
-                                    } label: {
-                                        if manager.sourceLanguage == lang.id {
-                                            Label(lang.name, systemImage: "checkmark")
-                                        } else {
-                                            Text(lang.name)
-                                        }
-                                    }
-                                }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "globe")
-                                        .font(.system(size: 12))
-                                    Text(
-                                        LiveCaptionManager.supportedLanguages
-                                            .first(where: { $0.id == manager.sourceLanguage })?.name ?? "Language"
-                                    )
-                                        .font(.system(size: 12, weight: .medium))
-                                    Image(systemName: "chevron.down")
-                                        .font(.system(size: 10))
-                                        .opacity(0.6)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
-                                .contentShape(Rectangle())
-                            }
-                            .menuStyle(.borderlessButton)
-                            .fixedSize()
-                            .background(.regularMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                        }
-                        
-                        Spacer()
-                        
-                        // 👉 右岛：功能按钮
-                        hoverToolbar
-                            .padding(4)
-                            .background(.regularMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                    }
-                    .padding(12)
-                    
-                    Spacer() // 推到顶部
-                }
+            if hoverState.isHovering {
+                LiveCaptionHoverOverlay(
+                    manager: manager,
+                    hoverState: hoverState,
+                    interactionState: interactionState,
+                    onClose: onClose,
+                    copyAllContent: copyAllContent
+                )
                 .transition(.opacity.animation(.easeInOut(duration: 0.15)))
             }
         }
@@ -155,10 +96,10 @@ struct LiveCaptionView: View {
         .overlay(cardBorder)
         .background(shadowAndGlowLayer)
         .padding(CaptionDesign.shadowPadding)
-        .animation(.easeInOut(duration: 0.15), value: isHovering)
+        .animation(.easeInOut(duration: 0.15), value: hoverState.isHovering)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
+                hoverState.isHovering = hovering
             }
         }
         .onAppear {
@@ -171,21 +112,21 @@ struct LiveCaptionView: View {
         }
         .onReceive(dependencies.notificationCenter.publisher(for: .vocabularyChanged)) { _ in
             // 生词列表变化时触发全量刷新（包括之前的内容）
-            vocabularyRefreshTrigger += 1
+            interactionState.vocabularyRefreshTrigger += 1
         }
         .onReceive(dependencies.notificationCenter.publisher(for: .translationUpdated)) { _ in
             // 翻译完成后强制触发滚动（解决放久了错位问题）
             // 🔥 关键修复：延迟触发滚动，等待 UI 布局完成
             // 当"一口气输出太多"时，布局更新是异步的，立即滚动会基于旧高度计算
-            scrollLogger.debug("📜 翻译完成通知: isAtBottom=\(isAtBottom) isUserSelecting=\(isUserSelecting)")
+            scrollLogger.debug("📜 翻译完成通知: isAtBottom=\(scrollState.isAtBottom) isUserSelecting=\(interactionState.isUserSelecting)")
             liveCaptionResyncScrollAfterTranslation(
                 shouldScroll: {
                     liveCaptionShouldAutoScroll(
-                        isAtBottom: isAtBottom,
-                        isUserSelecting: isUserSelecting
+                        isAtBottom: scrollState.isAtBottom,
+                        isUserSelecting: interactionState.isUserSelecting
                     )
                 },
-                bump: { scrollTrigger += 1 }
+                bump: { scrollState.scrollTrigger += 1 }
             )
         }
         .accessibilityIdentifier(UITestIdentifiers.Element.liveCaptionRoot)
@@ -218,6 +159,10 @@ struct LiveCaptionView: View {
     /// 折叠状态 - 列表模式
     /// 显示最近的句子流：[已确定句1] -> [已确定句2] -> [正在输入句]
     private var collapsedContent: some View {
+        let isAtBottomBinding = Binding(
+            get: { scrollState.isAtBottom },
+            set: { scrollState.isAtBottom = $0 }
+        )
         let isEmpty = manager.lineBuffer.items.isEmpty && manager.lineBuffer.pendingText.isEmpty
         
         return Group {
@@ -229,13 +174,13 @@ struct LiveCaptionView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 32)
             } else {
-                AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
+                AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
                     // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
                     VStack(alignment: .leading, spacing: 16) {
                         // 1. 已确定的句子（原文+译文）- 使用 CaptionItemView 独立组件
                         // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
                         ForEach(manager.lineBuffer.items) { item in
-                            let isNew = !appearedItemIDs.contains(item.id)
+                            let isNew = !scrollState.appearedItemIDs.contains(item.id)
                             CaptionItemView(
                                 item: item,
                                 isNew: isNew,
@@ -247,7 +192,7 @@ struct LiveCaptionView: View {
                             .opacity(isNew ? 0.7 : 1.0)
                             .animation(.easeOut(duration: 0.3), value: isNew)
                             .onAppear {
-                                liveCaptionMarkAppeared(itemID: item.id) { appearedItemIDs.insert($0) }
+                                liveCaptionMarkAppeared(itemID: item.id) { scrollState.appearedItemIDs.insert($0) }
                             }
                         }
                         
@@ -263,11 +208,11 @@ struct LiveCaptionView: View {
                                     fontSize: CaptionDesign.fontSize,
                                     opacity: displayText.isEmpty ? 0 : 0.7,
                                     onSelectionStarted: {
-                                        isUserSelecting = true
+                                        interactionState.isUserSelecting = true
                                         manager.lineBuffer.setUserInteracting(true)
                                     },
                                     onSelectionEnded: {
-                                        isUserSelecting = false
+                                        interactionState.isUserSelecting = false
                                         manager.lineBuffer.setUserInteracting(false)
                                     },
                                     onTextSelected: { selectedText, screenPoint in
@@ -276,8 +221,8 @@ struct LiveCaptionView: View {
                                     onWordClicked: { word, screenPoint in
                                         handleWordClicked(word, at: screenPoint)
                                     },
-                                    refreshTrigger: vocabularyRefreshTrigger,
-                                    highlightedWord: highlightedWord
+                                    refreshTrigger: interactionState.vocabularyRefreshTrigger,
+                                    highlightedWord: interactionState.highlightedWord
                                 )
                                 .fixedSize(horizontal: false, vertical: true)
                                 
@@ -315,21 +260,21 @@ struct LiveCaptionView: View {
                 ))
                 .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
                     liveCaptionBumpScrollIfNeeded(
-                        isAtBottom: isAtBottom,
-                        isUserSelecting: isUserSelecting
+                        isAtBottom: scrollState.isAtBottom,
+                        isUserSelecting: interactionState.isUserSelecting
                     ) {
-                        scrollTrigger += 1
+                        scrollState.scrollTrigger += 1
                     }
                 }
                 .onChange(of: manager.lineBuffer.pendingText) { _, _ in
                     liveCaptionBumpScrollIfNeeded(
-                        isAtBottom: isAtBottom,
-                        isUserSelecting: isUserSelecting
+                        isAtBottom: scrollState.isAtBottom,
+                        isUserSelecting: interactionState.isUserSelecting
                     ) {
-                        scrollTrigger += 1
+                        scrollState.scrollTrigger += 1
                     }
                 }
-                .onChange(of: scrollTrigger) { _, _ in
+                .onChange(of: scrollState.scrollTrigger) { _, _ in
                     // 通过改变 scrollTrigger 触发 NSScrollView 的更新
                 }
             }
@@ -338,14 +283,19 @@ struct LiveCaptionView: View {
     
     /// 展开状态 - 复用折叠模式设计，高度更大
     private var expandedContent: some View {
-        AppKitScrollView(isAtBottom: $isAtBottom, scrollTrigger: scrollTrigger) {
+        let isAtBottomBinding = Binding(
+            get: { scrollState.isAtBottom },
+            set: { scrollState.isAtBottom = $0 }
+        )
+
+        return AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
             // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
             VStack(alignment: .leading, spacing: 16) {
                 // 已确定的句子 - 使用 CaptionItemView 独立组件
 
                 // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
                 ForEach(manager.lineBuffer.items) { item in
-                    let isNew = !appearedItemIDs.contains(item.id)
+                    let isNew = !scrollState.appearedItemIDs.contains(item.id)
                     CaptionItemView(
                         item: item,
                         isNew: isNew,
@@ -357,7 +307,7 @@ struct LiveCaptionView: View {
                     .opacity(isNew ? 0.7 : 1.0)
                     .animation(.easeOut(duration: 0.3), value: isNew)
                     .onAppear {
-                        liveCaptionMarkAppeared(itemID: item.id) { appearedItemIDs.insert($0) }
+                        liveCaptionMarkAppeared(itemID: item.id) { scrollState.appearedItemIDs.insert($0) }
                     }
                 }
                 
@@ -373,11 +323,11 @@ struct LiveCaptionView: View {
                             fontSize: CaptionDesign.fontSize,
                             opacity: displayText.isEmpty ? 0 : 0.7,
                             onSelectionStarted: {
-                                isUserSelecting = true
+                                interactionState.isUserSelecting = true
                                 manager.lineBuffer.setUserInteracting(true)
                             },
                             onSelectionEnded: {
-                                isUserSelecting = false
+                                interactionState.isUserSelecting = false
                                 manager.lineBuffer.setUserInteracting(false)
                             },
                             onTextSelected: { selectedText, screenPoint in
@@ -386,8 +336,8 @@ struct LiveCaptionView: View {
                             onWordClicked: { word, screenPoint in
                                 handleWordClicked(word, at: screenPoint)
                             },
-                            refreshTrigger: vocabularyRefreshTrigger,
-                            highlightedWord: highlightedWord
+                            refreshTrigger: interactionState.vocabularyRefreshTrigger,
+                            highlightedWord: interactionState.highlightedWord
                         )
                         .fixedSize(horizontal: false, vertical: true)
                         
@@ -412,18 +362,18 @@ struct LiveCaptionView: View {
         .frame(height: 400)
         .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
             liveCaptionBumpScrollIfNeeded(
-                isAtBottom: isAtBottom,
-                isUserSelecting: isUserSelecting
+                isAtBottom: scrollState.isAtBottom,
+                isUserSelecting: interactionState.isUserSelecting
             ) {
-                scrollTrigger += 1
+                scrollState.scrollTrigger += 1
             }
         }
         .onChange(of: manager.lineBuffer.pendingText) { _, _ in
             liveCaptionBumpScrollIfNeeded(
-                isAtBottom: isAtBottom,
-                isUserSelecting: isUserSelecting
+                isAtBottom: scrollState.isAtBottom,
+                isUserSelecting: interactionState.isUserSelecting
             ) {
-                scrollTrigger += 1
+                scrollState.scrollTrigger += 1
             }
         }
     }
@@ -438,11 +388,11 @@ struct LiveCaptionView: View {
             fontSize: CaptionDesign.fontSize,
             opacity: opacity,
             onSelectionStarted: {
-                isUserSelecting = true
+                interactionState.isUserSelecting = true
                 manager.lineBuffer.setUserInteracting(true)
             },
             onSelectionEnded: {
-                isUserSelecting = false
+                interactionState.isUserSelecting = false
                 manager.lineBuffer.setUserInteracting(false)
             },
             onTextSelected: { selectedText, screenPoint in
@@ -451,8 +401,8 @@ struct LiveCaptionView: View {
             onWordClicked: { word, screenPoint in
                 handleWordClicked(word, at: screenPoint)
             },
-            refreshTrigger: vocabularyRefreshTrigger,
-            highlightedWord: highlightedWord  // 🔥 传入高亮单词
+            refreshTrigger: interactionState.vocabularyRefreshTrigger,
+            highlightedWord: interactionState.highlightedWord  // 🔥 传入高亮单词
         )
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -474,10 +424,10 @@ struct LiveCaptionView: View {
     /// 处理单词点击，调用统一查词服务并在选择工具栏中显示结果
     private func handleWordClicked(_ word: String, at screenPoint: CGPoint) {
         // 🔥 设置高亮单词
-        highlightedWord = word
+        interactionState.highlightedWord = word
 
         // 🔥 设置用户交互状态，防止 clearPending 时整行消失
-        isUserSelecting = true
+        interactionState.isUserSelecting = true
         manager.lineBuffer.setUserInteracting(true)
 
         runLiveCaptionWordLookup(
@@ -485,7 +435,7 @@ struct LiveCaptionView: View {
             screenPoint: screenPoint,
             dependencies: dependencies
         ) {
-            self.isUserSelecting = false
+            self.interactionState.isUserSelecting = false
             self.manager.lineBuffer.setUserInteracting(false)
         }
     }
@@ -496,82 +446,6 @@ struct LiveCaptionView: View {
             .fill(CaptionDesign.dragIndicatorColor)
             .frame(width: CaptionDesign.dragIndicatorWidth, height: CaptionDesign.dragIndicatorHeight)
             .padding(.bottom, 8)
-    }
-    
-    /// Hover 工具栏
-    /// 样式参考 HoverCloseButton：hover 时圆形 → 圆角方形 + 背景变亮
-    private var hoverToolbar: some View {
-        let buttonSize: CGFloat = 24
-        let cornerRadius: CGFloat = buttonSize * 0.27  // hover 时的圆角
-        
-        return HStack(spacing: 8) {
-            // 复制全部内容（复制后变 checkmark）
-            Button {
-                copyAllContent()
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isCopied = true
-                }
-                liveCaptionResetCopiedIndicator {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isCopied = false
-                    }
-                }
-            } label: {
-                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle((isCopyHovered || isCopied) ? DS.Colors.textPrimary : DS.Colors.textSecondary)
-                    .frame(width: buttonSize, height: buttonSize)
-                    .background((isCopyHovered || isCopied) ? DS.Colors.buttonHover : Color.clear)
-                    .clipShape(
-                        RoundedRectangle(
-                            cornerRadius: isCopyHovered || isCopied ? cornerRadius : buttonSize / 2
-                        )
-                    )
-                    .animation(.easeInOut(duration: 0.2), value: isCopyHovered)
-                    .animation(.easeInOut(duration: 0.2), value: isCopied)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovering in
-                isCopyHovered = hovering
-            }
-            .help("复制全部内容")
-            
-            // 展开/收起
-            Button {
-                withAnimation(.spring(response: 0.3)) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isExpandHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
-                    .frame(width: buttonSize, height: buttonSize)
-                    .background(isExpandHovered ? DS.Colors.buttonHover : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: isExpandHovered ? cornerRadius : buttonSize / 2))
-                    .animation(.easeInOut(duration: 0.2), value: isExpandHovered)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovering in
-                isExpandHovered = hovering
-            }
-            
-            // 关闭
-            Button {
-                onClose()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(isCloseHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
-                    .frame(width: buttonSize, height: buttonSize)
-                    .background(isCloseHovered ? DS.Colors.buttonHover : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: isCloseHovered ? cornerRadius : buttonSize / 2))
-                    .animation(.easeInOut(duration: 0.2), value: isCloseHovered)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovering in
-                isCloseHovered = hovering
-            }
-        }
     }
     
     /// 复制全部内容到剪贴板
@@ -632,7 +506,7 @@ struct LiveCaptionView: View {
             RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
                 .fill(Color.clear)
                 .shadow(
-                    color: isHovering ? CaptionDesign.glowColor : .clear,
+                    color: hoverState.isHovering ? CaptionDesign.glowColor : .clear,
                     radius: CaptionDesign.glowRadius,
                     x: 0,
                     y: 0
@@ -657,9 +531,150 @@ struct LiveCaptionView: View {
     private var cardBorder: some View {
         RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
             .stroke(
-                isHovering ? CaptionDesign.glowBorderColor : CaptionDesign.borderColor,
-                lineWidth: isHovering ? CaptionDesign.glowBorderWidth : 1
+                hoverState.isHovering ? CaptionDesign.glowBorderColor : CaptionDesign.borderColor,
+                lineWidth: hoverState.isHovering ? CaptionDesign.glowBorderWidth : 1
             )
+    }
+}
+
+@MainActor
+private struct LiveCaptionHoverOverlay: View {
+    @ObservedObject var manager: LiveCaptionManager
+    let hoverState: LiveCaptionHoverState
+    let interactionState: LiveCaptionInteractionState
+    let onClose: () -> Void
+    let copyAllContent: () -> Void
+
+    var body: some View {
+        VStack {
+            HStack(alignment: .top) {
+                if interactionState.isExpanded {
+                    languageMenu
+                }
+
+                Spacer()
+
+                hoverToolbar
+                    .padding(4)
+                    .background(.regularMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+            }
+            .padding(12)
+
+            Spacer()
+        }
+    }
+
+    private var languageMenu: some View {
+        Menu {
+            ForEach(LiveCaptionManager.supportedLanguages, id: \.id) { lang in
+                Button {
+                    runLiveCaptionLocaleChange(
+                        manager: manager,
+                        languageId: lang.id
+                    )
+                } label: {
+                    if manager.sourceLanguage == lang.id {
+                        Label(lang.name, systemImage: "checkmark")
+                    } else {
+                        Text(lang.name)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "globe")
+                    .font(.system(size: 12))
+                Text(
+                    LiveCaptionManager.supportedLanguages
+                        .first(where: { $0.id == manager.sourceLanguage })?.name ?? "Language"
+                )
+                .font(.system(size: 12, weight: .medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10))
+                    .opacity(0.6)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+    }
+
+    private var hoverToolbar: some View {
+        let buttonSize: CGFloat = 24
+        let cornerRadius: CGFloat = buttonSize * 0.27
+
+        return HStack(spacing: 8) {
+            Button {
+                copyAllContent()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    hoverState.isCopied = true
+                }
+                liveCaptionResetCopiedIndicator {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoverState.isCopied = false
+                    }
+                }
+            } label: {
+                Image(systemName: hoverState.isCopied ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle((hoverState.isCopyHovered || hoverState.isCopied) ? DS.Colors.textPrimary : DS.Colors.textSecondary)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background((hoverState.isCopyHovered || hoverState.isCopied) ? DS.Colors.buttonHover : Color.clear)
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: hoverState.isCopyHovered || hoverState.isCopied ? cornerRadius : buttonSize / 2
+                        )
+                    )
+                    .animation(.easeInOut(duration: 0.2), value: hoverState.isCopyHovered)
+                    .animation(.easeInOut(duration: 0.2), value: hoverState.isCopied)
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                hoverState.isCopyHovered = hovering
+            }
+            .help("复制全部内容")
+
+            Button {
+                withAnimation(.spring(response: 0.3)) {
+                    interactionState.isExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: interactionState.isExpanded ? "chevron.down" : "chevron.up")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(hoverState.isExpandHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(hoverState.isExpandHovered ? DS.Colors.buttonHover : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: hoverState.isExpandHovered ? cornerRadius : buttonSize / 2))
+                    .animation(.easeInOut(duration: 0.2), value: hoverState.isExpandHovered)
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                hoverState.isExpandHovered = hovering
+            }
+
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(hoverState.isCloseHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(hoverState.isCloseHovered ? DS.Colors.buttonHover : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: hoverState.isCloseHovered ? cornerRadius : buttonSize / 2))
+                    .animation(.easeInOut(duration: 0.2), value: hoverState.isCloseHovered)
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                hoverState.isCloseHovered = hovering
+            }
+        }
     }
 }
 
@@ -719,7 +734,7 @@ struct TranslationTaskModifier15: ViewModifier {
                 manager.lineBuffer.updateTranslation(id: itemId, translation: response.targetText)
             }
         } catch {
-            // 翻译失败，静默处理
+            liveCaptionLogger.warning("⚠️ Live caption translation failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

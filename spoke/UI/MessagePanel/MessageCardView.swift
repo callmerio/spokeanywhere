@@ -312,7 +312,7 @@ extension MessageCardView {
             // 标题（类似通知的 App 名称位置）
             Text(cardTitle)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundStyle(DesignTokens.Colors.textPrimary)
                 .lineLimit(1)
 
             // Today/Note 标记
@@ -325,7 +325,7 @@ extension MessageCardView {
             // 时间戳
             Text(card.formattedTime)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.4))
+                .foregroundStyle(DesignTokens.Colors.textPlaceholder)
 
             // 操作按钮组（悬浮显示）
             if isHovered {
@@ -397,7 +397,7 @@ extension MessageCardView {
                         // 普通文本或摘要（摘要标题已在 header 显示，这里直接显示内容）
                         Text(displayText)
                             .font(.system(size: 13))
-                            .foregroundColor(Color.white.opacity(0.6))
+                            .foregroundStyle(DesignTokens.Colors.textSecondary)
                             .textSelection(.enabled)
                             .lineLimit(nil)  // 禁用省略号，让 mask 处理渐变
                             .fixedSize(horizontal: false, vertical: true)
@@ -473,7 +473,7 @@ extension MessageCardView {
                         Text("添加标签")
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(Color.white.opacity(0.4))
+                    .foregroundStyle(DesignTokens.Colors.textPlaceholder)
                 }
                 .buttonStyle(.plain)
             }
@@ -505,9 +505,9 @@ extension MessageCardView {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(DesignTokens.Colors.textSecondary)
+                .foregroundStyle(DesignTokens.Colors.textSecondary)
                 .frame(width: 20, height: 20)
-                .background(Color.white.opacity(0.08))
+                .background(DesignTokens.Colors.buttonHover)
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -558,10 +558,10 @@ extension MessageCardView {
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(Color.black.opacity(0.6))
+                .fill(DesignTokens.Colors.overlayMedium)
                 .overlay(
                     Capsule()
-                        .stroke(Color.green.opacity(0.4), lineWidth: 0.5)
+                        .stroke(DesignTokens.Colors.success.opacity(0.4), lineWidth: DesignTokens.BorderWidth.hairline)
                 )
         )
         .offset(y: -6)
@@ -585,10 +585,10 @@ extension MessageCardView {
     private var cardBackground: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(showCopied ? 0.15 : (isHovered ? 0.1 : 0.03)))
+                .fill(showCopied ? DesignTokens.Colors.buttonHoverStrong : (isHovered ? DesignTokens.Colors.cardBackground : DesignTokens.Colors.surfaceThin))
 
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.white.opacity(isHovered ? 0.2 : 0.08), lineWidth: 1)
+                .stroke(isHovered ? DesignTokens.Colors.borderSecondary : DesignTokens.Colors.borderPrimary, lineWidth: DesignTokens.BorderWidth.thin)
         }
     }
 

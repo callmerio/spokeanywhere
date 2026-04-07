@@ -217,6 +217,16 @@ final class ScreenOCRService {
     private func performOCR(on image: CGImage) async -> String? {
         await runScreenOCRRecognition(on: image)
     }
+
+    static func makeDebugArtifactsDirectory(fileManager: FileManager = .default) -> URL {
+        fileManager.temporaryDirectory
+            .appendingPathComponent("SpokenAnyWhere", isDirectory: true)
+            .appendingPathComponent("ocr-debug", isDirectory: true)
+    }
+
+    private var debugArtifactsDirectory: URL {
+        Self.makeDebugArtifactsDirectory()
+    }
     
     /// 调试：保存 OCR 文本到 .tmp_frames 目录
     private func saveDebugOCRText(_ text: String) {
@@ -225,7 +235,7 @@ final class ScreenOCRService {
         let timestamp = formatter.string(from: Date())
         let filename = "ocr_\(timestamp).txt"
         
-        let tmpDir = URL(fileURLWithPath: "/Users/bigdan/Workspace/macos/spokeanywhere/.tmp_frames")
+        let tmpDir = debugArtifactsDirectory
         try? FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
         
         let fileURL = tmpDir.appendingPathComponent(filename)
@@ -248,7 +258,7 @@ final class ScreenOCRService {
         let filename = "OCR_\(safeName)_\(timestamp).png"
         
         // 保存到项目的 .tmp_frames 目录
-        let tmpDir = URL(fileURLWithPath: "/Users/bigdan/Workspace/macos/spokeanywhere/.tmp_frames")
+        let tmpDir = debugArtifactsDirectory
         
         // 确保目录存在
         try? FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)

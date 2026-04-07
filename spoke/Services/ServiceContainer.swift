@@ -355,6 +355,108 @@ final class ServiceContainer: ObservableObject {
         resolveService(storage: &_llmSettings, provider: dependencies.makeLLMSettings)
     }
 
+    // MARK: - Additional App Services
+
+    var translationService: TranslationService {
+        TranslationService.shared
+    }
+
+    var dictionaryService: DictionaryService {
+        DictionaryService.shared
+    }
+
+    var vocabularyService: VocabularyService {
+        VocabularyService.shared
+    }
+
+    var unifiedDictionaryService: UnifiedDictionaryService {
+        UnifiedDictionaryService.shared
+    }
+
+    var localDictionaryService: LocalDictionaryService {
+        LocalDictionaryService.shared
+    }
+
+    var tagLibrary: TagLibrary {
+        TagLibrary.shared
+    }
+
+    var messagePanelState: MessagePanelState {
+        MessagePanelState.shared
+    }
+
+    var attachmentImageCache: AttachmentImageCache {
+        AttachmentImageCache.shared
+    }
+
+    var summaryService: SummaryService {
+        SummaryService.shared
+    }
+
+    var ttsSettings: TTSSettings {
+        TTSSettings.shared
+    }
+
+    var screenshotSettings: ScreenshotSettings {
+        ScreenshotSettings.shared
+    }
+
+    var imageUpscalerModelManager: ImageUpscalerModelManager {
+        ImageUpscalerModelManager.shared
+    }
+
+    var audioPlayerService: AudioPlayerService {
+        AudioPlayerService.shared
+    }
+
+    var transcriptionModelManager: TranscriptionModelManager {
+        TranscriptionModelManager.shared
+    }
+
+    var transcriptionManagerConcrete: TranscriptionManager {
+        TranscriptionManager.shared
+    }
+
+    var screenshotManager: ScreenshotManager {
+        ScreenshotManager.shared
+    }
+
+    var imageEnhancementService: ImageEnhancementService {
+        ImageEnhancementService.shared
+    }
+
+    var dictionaryPanelManager: DictionaryPanelManager {
+        DictionaryPanelManager.shared
+    }
+
+    var debugAutomationTrigger: DebugAutomationTriggerService {
+        DebugAutomationTriggerService.shared
+    }
+
+    var recordingController: RecordingController {
+        RecordingController.shared
+    }
+
+    var selectionActionService: SelectionActionService {
+        SelectionActionService.shared
+    }
+
+    var trackpadSwipeService: TrackpadSwipeService {
+        TrackpadSwipeService.shared
+    }
+
+    var resourceMonitor: ResourceMonitor {
+        ResourceMonitor.shared
+    }
+
+    var crashLogger: CrashLogger {
+        CrashLogger.shared
+    }
+
+    var sessionHistoryService: SessionHistoryService {
+        SessionHistoryService.shared
+    }
+
     // MARK: - Test Injection
 
     /// 注册自定义音频捕获服务（用于测试）

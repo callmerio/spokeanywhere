@@ -10,7 +10,7 @@ final class CrashLogger {
     /// 信号专用引用（用于 C signal handler 访问）
     nonisolated(unsafe) fileprivate static var signalLogger: CrashLogger?
 
-    private let logger = Logger(subsystem: "app.spokenly", category: "CrashLogger")
+    private let logger = Logger(subsystem: AppIdentity.logSubsystem, category: "CrashLogger")
     private var logFileHandle: FileHandle?
 
     /// 日志文件路径

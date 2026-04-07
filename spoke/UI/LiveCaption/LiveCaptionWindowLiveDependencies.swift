@@ -3,23 +3,22 @@ import Foundation
 @MainActor
 extension LiveCaptionWindowManagerDependencies {
     static let live = LiveCaptionWindowManagerDependencies(
-        manager: .shared,
-        translator: .shared,
+        manager: currentServiceContainer().liveCaptionManager,
+        translator: currentServiceContainer().translationService,
         viewDependencies: .live(
             lookupWord: { word in
-                await UnifiedDictionaryService.shared.lookup(word)
+                await currentServiceContainer().unifiedDictionaryService.lookup(word)
             },
             markVocabulary: { text in
-                VocabularyService.shared.markVocabulary(in: text)
+                currentServiceContainer().vocabularyService.markVocabulary(in: text)
             },
-            selectionToolbarState: .shared,
-            selectionToolbarManager: .shared
+            selectionToolbarState: currentServiceContainer().selectionToolbarState,
+            selectionToolbarManager: currentServiceContainer().selectionToolbarManager
         )
     )
 }
 
 @MainActor
 func liveCaptionAvailabilityIsTranslationAvailable() -> Bool {
-    TranslationService.shared.isAvailable
+    currentServiceContainer().translationService.isAvailable
 }
-

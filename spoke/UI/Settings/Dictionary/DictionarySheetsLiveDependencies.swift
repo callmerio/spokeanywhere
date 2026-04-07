@@ -17,15 +17,15 @@ struct VocabularyListSheetDependencies {
 
 @MainActor
 extension AddDictionaryEntrySheetDependencies {
-    static let live = Self(dictionaryService: .shared)
+    static let live = Self(dictionaryService: currentServiceContainer().dictionaryService)
 }
 
 @MainActor
 extension EditDictionaryEntrySheetDependencies {
-    static let live = Self(dictionaryService: .shared)
+    static let live = Self(dictionaryService: currentServiceContainer().dictionaryService)
 }
 
 @MainActor
 extension VocabularyListSheetDependencies {
-    static let live = Self(vocabularyService: .shared)
+    static let live = Self(vocabularyService: currentServiceContainer().vocabularyService)
 }

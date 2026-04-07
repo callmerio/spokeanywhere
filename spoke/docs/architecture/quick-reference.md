@@ -1,7 +1,7 @@
 # SpokenAnyWhere 快速导航索引
 
-**版本**: 1.3
-**更新时间**: 2026-03-23
+**版本**: 1.4
+**更新时间**: 2026-04-07
 
 本文档提供“功能 -> 入口文件 -> 主链路 -> 验证命令”的快速映射。
 
@@ -65,7 +65,7 @@
 
 `HotKeyService -> CaptionHandler -> LiveCaptionManager -> SystemAudioCaptureService -> LiveCaptionTranscriber`
 
-### 1.5 Message Panel / Pipeline
+### 1.5 Message Panel / Clipboard Pipeline
 
 | 功能 | 入口文件 | 关键类型 |
 |------|---------|----------|
@@ -73,7 +73,13 @@
 | 面板状态 | `Core/MessagePanel/MessagePanelState.swift` | `MessagePanelState` |
 | 会话历史 | `Core/History/SessionHistoryService.swift` | `SessionHistoryService` |
 | 摘要生成 | `Services/SummaryService.swift` | `SummaryService` |
+| 剪贴板注入 | `Services/ClipboardPipelineService.swift` | `ClipboardPipelineService` |
+| 剪贴板历史 | `Services/ClipboardHistoryService.swift` | `ClipboardHistoryService` |
 | 主视图 | `UI/MessagePanel/MessagePanelView.swift` | `MessagePanelView` |
+
+主链路：
+
+`ClipboardPipelineService -> MessagePanelManager -> MessagePanelState`
 
 ### 1.6 文本选择工具栏
 
@@ -109,6 +115,21 @@
 | Workflow 选择器 | `UI/Workflow/WorkflowPickerView.swift` | `WorkflowPickerView` |
 | 翻译服务 | `Core/Translation/TranslationService.swift` | `TranslationService` |
 
+### 1.9 设置 / 状态栏 / 历史
+
+| 功能 | 入口文件 | 关键类型 |
+|------|---------|----------|
+| 状态栏与菜单 | `App/AppDelegate.swift` | `AppDelegate` |
+| 设置主界面 | `UI/Settings/SettingsView.swift` | `SettingsView` |
+| 应用设置 | `Services/AppSettings.swift` | `AppSettings` |
+| 历史记录管理 | `Services/HistoryManager.swift` | `HistoryManager` |
+| SwiftData 模型 | `Core/DataModels.swift` | `HistoryItem` / `AppRule` / `AIProviderConfig` |
+
+补充事实：
+
+- 菜单栏当前直接暴露了“实时字幕 / 选择工具栏 / 区域截图 / 查词 / 设置”这些用户入口。
+- `SettingsView` 当前包含 `常规 / 截图 / 划词工具栏 / 听写模型 / AI 处理 / 词典 / 语音合成 / 快捷键 / 历史记录` 九个标签页。
+
 ---
 
 ## 二、按入口查找
@@ -130,6 +151,20 @@
 - `Services/AppSettings.swift`
 - `Core/LLM/LLMSettings.swift`
 - `Services/TTSSettings.swift`
+
+### 2.4 状态栏 / 菜单栏入口
+
+- `App/AppDelegate.swift`
+- `Services/MessagePanelManager.swift`
+- `UI/Dictionary/DictionaryPanelView.swift`
+
+### 2.5 面板与浮窗入口
+
+- `UI/HUD/QuickAskCapsuleView.swift`
+- `UI/QuickAsk/AnswerPanelManager.swift`
+- `Services/MessagePanelManager.swift`
+- `Core/Screenshot/ScreenshotManager.swift`
+- `Core/LiveCaption/LiveCaptionManager.swift`
 
 ---
 
@@ -154,6 +189,17 @@
 | `ScreenshotItem` | `Core/Screenshot/ScreenshotItem.swift` | 截图项 |
 | `DictionaryEntry` | `Core/Dictionary/Models/DictionaryEntry.swift` | 词典条目 |
 | `CardTag` | `Core/Tags/CardTag.swift` | 标签模型 |
+
+### 3.3 其他持久化载体
+
+| 载体 | 文件 / 位置 | 用途 |
+|------|-------------|------|
+| `AppStorage` / `UserDefaults` | `Services/AppSettings.swift` | 快捷键、显示模式、历史清理、截图 / 工具栏 / 实时字幕设置 |
+| 剪贴板历史 JSON | `Services/ClipboardHistoryService.swift` | 静默保存剪贴板历史作为上下文 |
+| 截图项 JSON | `Core/Screenshot/ScreenshotManager.swift` | 保存并恢复 pinned screenshots |
+| 截图图片文件 | `~/Library/Application Support/Spoke/Screenshots/` | screenshot image assets |
+| 录音音频文件 | `~/Library/Application Support/Spoke/Audio/` | 历史录音文件 |
+| Keychain | `Core/LLM/KeychainService.swift` | LLM / provider 凭据 |
 
 ---
 
@@ -180,6 +226,7 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 - `Services/RuntimeBridgeHelpers.swift` 现为 Recording / Quick Ask / Selection 系列 runtime helper 的共享主线程与定时器桥接入口。
 - `Services/MessagePanelRuntimeHelpers.swift`、`UI/Screenshot/ScreenshotContentRuntimeHelpers.swift`、`Core/Attachment/AttachmentRuntimeHelpers.swift`、`Core/Audio/AudioRecorderRuntimeHelpers.swift` 与 `Core/LiveCaption/LiveCaptionManagerRuntimeHelpers.swift` 已覆盖 round 19-24 的生产路径桥接收敛。
 - `UI/MessagePanel/MessagePanelView.swift`、`UI/LiveCaption/LiveCaptionView.swift` 与 `UI/HUD/QuickAskCapsuleView.swift` 的 preview/shared 入口已收口，后续不应再把 preview 视图直接绑到 `.shared`。
+- `ScreenshotManager.saveAll()/restoreAll()` 只负责 `pinned screenshots` 的功能资产持久化；后续若建设权限平台，不应把它和 `blocked intent` 状态混为一类。
 ### 4.4 当前仓库缺失项
 
 以下路径在本次仓库快照中不存在，不应继续作为导航入口引用：
@@ -194,11 +241,16 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
+| 新贡献者指南 | `./new-contributor-guide.md` | 新人上手必读：项目定位、阅读顺序、常见任务 |
 | 当前状态审计 | `./current-state-audit.md` | 当前事实基线与文档偏差 |
 | 项目架构全景 | `./overview.md` | 架构首页 |
+| 能力关系图 | `./capability-graph.md` | 功能域、内容域、持久化层与入口面的关系图 |
 | 核心模块详解 | `./core-modules.md` | Core/ 深度分析 |
 | UI 组件体系 | `./ui-components.md` | UI/ 组件说明 |
 | 风险与改进建议 | `./risks-and-recommendations.md` | 治理建议 |
+| 启动序列分析 | `./app-layer-startup-sequence.md` | AppDelegate 启动时序与依赖链 |
+| 回调链分析 | `./app-layer-callback-chains.md` | 跨服务回调追踪 |
+| 风险评估 | `./app-layer-risk-assessment.md` | App 层风险评估 |
 | M2 并发告警收敛 | `../m2-final-acceptance.md` | 2026-02-22 历史验收文档 |
 
 ---

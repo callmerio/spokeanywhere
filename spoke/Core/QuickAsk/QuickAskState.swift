@@ -161,10 +161,10 @@ final class QuickAskState {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let id = notification.userInfo?["id"] as? UUID,
-                  let updated = notification.userInfo?["attachment"] as? Attachment else { return }
+            guard let id = notification.userInfo?["id"] as? UUID else { return }
 
             runQuickAskStateOnMain(self) { state in
+                guard let updated = state.attachmentManager.attachment(for: id) else { return }
                 if let index = state.attachments.firstIndex(where: { $0.id == id }) {
                     state.attachments[index] = updated
                 }

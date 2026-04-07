@@ -4,9 +4,9 @@ import Foundation
 @MainActor
 extension CardAttachmentViewDependencies {
     static let live = CardAttachmentViewDependencies(
-        imageCache: .shared,
+        imageCache: currentServiceContainer().attachmentImageCache,
         removeAttachment: { attachmentId, cardId in
-            MessagePanelState.shared.removeAttachment(attachmentId, from: cardId)
+            currentServiceContainer().messagePanelState.removeAttachment(attachmentId, from: cardId)
         },
         copyImage: { image in
             let pasteboard = NSPasteboard.general

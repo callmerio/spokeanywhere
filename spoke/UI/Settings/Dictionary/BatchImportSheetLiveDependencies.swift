@@ -9,7 +9,7 @@ struct BatchImportSheetDependencies {
 @MainActor
 extension BatchImportSheetDependencies {
     static let live = Self(
-        dictionaryService: .shared,
+        dictionaryService: currentServiceContainer().dictionaryService,
         scheduleDismiss: { seconds, operation in
             runtimeRunOnMain(after: seconds, operation)
         }

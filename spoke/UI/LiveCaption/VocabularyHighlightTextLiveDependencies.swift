@@ -3,8 +3,9 @@ import Foundation
 @MainActor
 extension VocabularyHighlightDependencies {
     static let live: VocabularyHighlightDependencies = {
-        let vocabularyService = VocabularyService.shared
-        let dictionaryService = DictionaryAPIService.shared
+        let services = currentServiceContainer()
+        let vocabularyService = services.vocabularyService
+        let dictionaryService = services.dictionaryAPI
         let translationStore = VocabularyTranslationStore()
 
         return VocabularyHighlightDependencies(

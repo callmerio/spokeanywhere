@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Design Tokens
 // 统一的设计系统入口，所有样式定义的唯一真相来源
-// 禁止在组件中硬编码 Color.white.opacity() / cornerRadius 等魔数
+// 禁止在组件中硬编码白色透明层 / cornerRadius 等魔数
 
 enum DesignTokens {
     
@@ -12,11 +12,11 @@ enum DesignTokens {
         
         // MARK: Text
         /// 主文字颜色（转录文字、内容文字）
-        static let textPrimary = Color.white.opacity(0.9)
+        static let textPrimary = Color(nsColor: NSColor.white.withAlphaComponent(0.9))
         /// 次要文字颜色（标签、提示）
-        static let textSecondary = Color.white.opacity(0.7)
+        static let textSecondary = Color(nsColor: NSColor.white.withAlphaComponent(0.7))
         /// 占位符颜色（时间戳、hint）
-        static let textPlaceholder = Color.white.opacity(0.4)
+        static let textPlaceholder = Color(nsColor: NSColor.white.withAlphaComponent(0.4))
         /// 字幕原文（高亮白）
         static let textCaption = Color(red: 249 / 255, green: 250 / 255, blue: 251 / 255)
         /// 字幕译文（灰色）
@@ -26,7 +26,7 @@ enum DesignTokens {
         /// 透明色（占位/无填充）
         static let clear = Color.clear
         /// 卡片/缩略图背景
-        static let cardBackground = Color.white.opacity(0.1)
+        static let cardBackground = Color(nsColor: NSColor.white.withAlphaComponent(0.1))
         /// 深色叠加层
         static let overlayDark = Color.black.opacity(0.3)
         /// 深色叠加层（浅）
@@ -42,13 +42,13 @@ enum DesignTokens {
         /// 输入框系统背景
         static let textFieldBackground = Color(NSColor.textBackgroundColor)
         /// Chip 背景
-        static let chipBackground = Color.white.opacity(0.08)
+        static let chipBackground = Color(nsColor: NSColor.white.withAlphaComponent(0.08))
         /// 训练短语卡片背景（默认）
-        static let trainingCardBackground = Color.white.opacity(0.03)
+        static let trainingCardBackground = Color(nsColor: NSColor.white.withAlphaComponent(0.03))
         /// 训练短语卡片背景（Hover）
-        static let trainingCardBackgroundHover = Color.white.opacity(0.08)
+        static let trainingCardBackgroundHover = Color(nsColor: NSColor.white.withAlphaComponent(0.08))
         /// 极浅表面背景
-        static let surfaceThin = Color.white.opacity(0.02)
+        static let surfaceThin = Color(nsColor: NSColor.white.withAlphaComponent(0.02))
         
         // MARK: Settings 专用
         /// 设置页面背景 #1a1a1a
@@ -64,35 +64,35 @@ enum DesignTokens {
         /// 设置工具条背景 #2a2a2a
         static let settingsToolbarBackground = Color(red: 42 / 255, green: 42 / 255, blue: 42 / 255)
         /// 设置卡片边框
-        static let settingsCardBorder = Color.white.opacity(0.06)
+        static let settingsCardBorder = Color(nsColor: NSColor.white.withAlphaComponent(0.06))
         /// 设置区域底色（提升层级）
         static let settingsSurfaceElevated = Color(white: 0.15)
         
         // MARK: Border
         /// 主边框
-        static let borderPrimary = Color.white.opacity(0.1)
+        static let borderPrimary = Color(nsColor: NSColor.white.withAlphaComponent(0.1))
         /// 次要边框（缩略图等）
-        static let borderSecondary = Color.white.opacity(0.2)
+        static let borderSecondary = Color(nsColor: NSColor.white.withAlphaComponent(0.2))
         /// 字幕卡片边框
-        static let borderCaption = Color.white.opacity(0.05)
+        static let borderCaption = Color(nsColor: NSColor.white.withAlphaComponent(0.05))
         /// 分隔线
-        static let separator = Color.white.opacity(0.15)
+        static let separator = Color(nsColor: NSColor.white.withAlphaComponent(0.15))
         /// 分隔线（强调）
-        static let separatorStrong = Color.white.opacity(0.3)
+        static let separatorStrong = Color(nsColor: NSColor.white.withAlphaComponent(0.3))
         
         // MARK: Interactive
         /// 按钮 Hover
-        static let buttonHover = Color.white.opacity(0.1)
+        static let buttonHover = Color(nsColor: NSColor.white.withAlphaComponent(0.1))
         /// 按钮 Hover（强化）
-        static let buttonHoverStrong = Color.white.opacity(0.15)
+        static let buttonHoverStrong = Color(nsColor: NSColor.white.withAlphaComponent(0.15))
         /// 按钮激活
-        static let buttonActive = Color.white.opacity(0.2)
+        static let buttonActive = Color(nsColor: NSColor.white.withAlphaComponent(0.2))
         /// 按钮按下
-        static let buttonPressed = Color.white.opacity(0.3)
+        static let buttonPressed = Color(nsColor: NSColor.white.withAlphaComponent(0.3))
         /// 拖动指示器
-        static let dragIndicator = Color.white.opacity(0.2)
+        static let dragIndicator = Color(nsColor: NSColor.white.withAlphaComponent(0.2))
         /// 行 Hover
-        static let rowHover = Color.white.opacity(0.05)
+        static let rowHover = Color(nsColor: NSColor.white.withAlphaComponent(0.05))
         /// 次级标签底色
         static let badgeBackground = Color.secondary.opacity(0.2)
         /// 输入控件边框
@@ -102,11 +102,11 @@ enum DesignTokens {
         
         // MARK: Accent
         /// 顶部渐变高光
-        static let glowTop = Color.white.opacity(0.08)
+        static let glowTop = Color(nsColor: NSColor.white.withAlphaComponent(0.08))
         /// 跑马灯亮色
-        static let accentBright = Color.white.opacity(0.9)
+        static let accentBright = Color(nsColor: NSColor.white.withAlphaComponent(0.9))
         /// 跑马灯暗色
-        static let accentDim = Color.white.opacity(0.05)
+        static let accentDim = Color(nsColor: NSColor.white.withAlphaComponent(0.05))
         /// 主强调色（遵循系统 Accent Color）
         static let accentPrimary = Color.accentColor
         /// 轻微高饱和渐变起点
@@ -138,7 +138,7 @@ enum DesignTokens {
         
         // MARK: Icon
         /// 图标颜色
-        static let icon = Color.white.opacity(0.85)
+        static let icon = Color(nsColor: NSColor.white.withAlphaComponent(0.85))
     }
 
     // MARK: - Gradients

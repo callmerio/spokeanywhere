@@ -45,7 +45,7 @@ cd /Volumes/1TBSSD/offload/Workspace/macos/spokeanywhere/spoke
 固定 bundle id：
 
 ```text
-app.spokenly
+com.spokeanywhere
 ```
 
 ---
@@ -89,7 +89,7 @@ app.spokenly
 如果辅助功能权限状态混乱，可先重置：
 
 ```bash
-tccutil reset Accessibility app.spokenly
+tccutil reset Accessibility com.spokeanywhere
 ```
 
 然后重新运行：
@@ -161,7 +161,6 @@ tail -f ../.tmp_frames/dev-*.log
 
 - `process == "SpokenAnyWhere"`
 - `subsystem BEGINSWITH "com.spokeanywhere"`
-- `subsystem == "app.spokenly"`
 - `error` / `fault`
 
 ---
@@ -177,7 +176,7 @@ DRY_RUN=1 ./dev.sh
 ### 7.2 手动重置辅助功能权限
 
 ```bash
-tccutil reset Accessibility app.spokenly
+tccutil reset Accessibility com.spokeanywhere
 ```
 
 ### 7.3 手动查看签名信息

@@ -2,7 +2,7 @@ import AppKit
 import os
 import SwiftUI
 
-private let scrollLogger = Logger(subsystem: "app.spokenly", category: "LiveCaptionScroll")
+private let scrollLogger = Logger(subsystem: AppIdentity.logSubsystem, category: "LiveCaptionScroll")
 
 // MARK: - NSScrollView Bridge
 

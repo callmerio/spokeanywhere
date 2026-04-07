@@ -5,9 +5,9 @@ private typealias DS = DesignTokens
 // MARK: - Main Settings View
 
 struct SettingsView: View {
+    @Environment(\.services) private var services
     @State private var selectedTab: SettingsTab
     @StateObject private var audioManager = AudioDeviceManager()
-    @StateObject private var appSettings = AppSettings()
     @StateObject private var micTester = MicrophoneTester()
     private let dependencies: SettingsViewDependencies
 
@@ -121,7 +121,7 @@ struct SettingsView: View {
                 switch selectedTab {
                 case .general:
                     GeneralSettingsContent(
-                        appSettings: appSettings,
+                        appSettings: services.appSettingsConcrete,
                         audioManager: audioManager,
                         micTester: micTester
                     )
@@ -138,7 +138,7 @@ struct SettingsView: View {
                 case .tts:
                     TTSSettingsContent()
                 case .shortcuts:
-                    ShortcutsSettingsContent(appSettings: appSettings)
+                    ShortcutsSettingsContent(appSettings: services.appSettingsConcrete)
                 case .history:
                     HistorySettingsContent()
                 }

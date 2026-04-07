@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 extension AnswerPanelView {
     // MARK: - Recording Waveform
     
@@ -14,7 +16,7 @@ extension AnswerPanelView {
             
             Text("Recording")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(DS.Colors.textPrimary)
             
             Spacer()
             
@@ -22,7 +24,7 @@ extension AnswerPanelView {
                 ForEach(0..<20, id: \.self) { index in
                     let level = audioLevels[index % audioLevels.count]
                     RoundedRectangle(cornerRadius: 1)
-                        .fill(Color.white.opacity(0.7))
+                        .fill(DS.Colors.textSecondary)
                         .frame(width: 2, height: CGFloat(level) * 16 + 4)
                         .animation(.easeInOut(duration: 0.1), value: level)
                 }

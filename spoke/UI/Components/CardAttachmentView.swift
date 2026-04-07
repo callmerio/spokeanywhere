@@ -289,7 +289,7 @@ struct CardAttachmentThumbnail: View {
                 } else {
                     // 占位
                     Rectangle()
-                        .fill(Color.white.opacity(0.1))
+                        .fill(DesignTokens.Colors.cardBackground)
                         .frame(width: displaySize.width, height: displaySize.height)
                         .overlay(
                             ProgressView()
@@ -300,7 +300,7 @@ struct CardAttachmentThumbnail: View {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    .stroke(DesignTokens.Colors.borderPrimary, lineWidth: DesignTokens.BorderWidth.thin)
             )
             .onTapGesture {
                 showFullImage = true

@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 extension ModelPickerDependencies {
     static let live = ModelPickerDependencies(
-        llmSettings: .shared,
+        llmSettings: currentServiceContainer().llmSettings,
         loadModels: runModelPickerLoadModels
     )
 }

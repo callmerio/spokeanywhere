@@ -36,6 +36,10 @@ final class LLMPipeline {
     private init(dependencies: LLMPipelineDependencies) {
         self.dependencies = dependencies
     }
+
+    static func makeTesting(dependencies: LLMPipelineDependencies) -> LLMPipeline {
+        LLMPipeline(dependencies: dependencies)
+    }
     
     // MARK: - Public API
     

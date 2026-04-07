@@ -86,6 +86,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private typealias LifecycleStep = (name: String, action: () -> Void)
 
     override init() {
+        AppIdentity.migrateLegacyUserDefaultsIfNeeded()
         self.dependencies = .makeLive()
         super.init()
     }
@@ -641,6 +642,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 预热语音引擎，消除首次使用时的卡顿
     /// SpeechTranscriber assets 安装是主要耗时点（~1.8s）
     private static func warmupSpeechEngine(transcriptionManager: TranscriptionManager) async {
+        let warmupLogger = Logger(subsystem: "com.spokeanywhere", category: "AppDelegate")
         do {
             // 1. 创建 provider（触发引擎选择）- 需要在 MainActor 上执行
             let provider = await MainActor.run {
@@ -655,7 +657,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 provider.reset()
             }
         } catch {
-            // 预热失败不影响后续使用，静默忽略
+            warmupLogger.warning("⚠️ Speech engine warmup skipped due to error: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

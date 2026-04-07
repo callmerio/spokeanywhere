@@ -81,12 +81,13 @@
 
 **工作包**
 1. ✅ R2-1: 音频链路背压验证（已完成，见 `docs/roadmap/r2-1-audio-backpressure-interpretation.md`）
-2. ⏳ R2-2: 截图/图像增强链路主线程占用验证（**Conditional GO** - 代码修复已验证，运行时证据待用户交互）
-   - 状态: `R2-2: Conditional GO — code-level fixes validated; runtime screenshot interaction evidence pending user pin action.`
+2. ✅ R2-2: 截图/图像增强链路主线程占用验证（**Full GO** - 运行时证据已验证）
+   - 状态: `R2-2: Full GO — code-level fixes + runtime screenshot interaction evidence validated (2026-02-23)`
    - 文档: `docs/roadmap/r2-2-screenshot-mainthread-interpretation.md`
    - Commit: b0ba0c1f7186db77e29cb056ce390edca8d0c16c
-   - 转正条件: 1 次用户手动 pin 交互 + 6 字段可解析日志 + coverage 命中
-3. 建立回归脚本：典型录音 + OCR + LLM 联动场景压测。
+   - 验证证据: PID 66224, 截图时间 11:10:22, 指标正常 (capture_latency: 3613ms, save_all_write_p95: 0.8ms)
+   - 同行评审: codex-1, codex-2, claude-2, reporter 一致通过
+3. ⏳ R2-3: 建立回归脚本：典型录音 + OCR + LLM 联动场景压测。
 
 **阶段 DoD**
 - 连续多轮压测无卡死、无新增高优先级并发告警。

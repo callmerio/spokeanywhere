@@ -49,22 +49,6 @@ final class SelectionActionService {
         dependencies: SelectionActionServiceDependencies
     ) {
         self.dependencies = dependencies
-        setupNotifications()
-    }
-    
-    // MARK: - Setup
-    
-    private func setupNotifications() {
-        // 监听动作请求 (新版 ToolbarAction)
-        dependencies.notificationCenter.addObserver(
-            forName: .selectionToolbarActionRequested,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            runSelectionActionServiceOnMain(self) { service in
-                await service.handleActionRequest(notification)
-            }
-        }
     }
     
     // MARK: - Public API
@@ -294,23 +278,6 @@ final class SelectionActionService {
     }
     
     // MARK: - Helpers
-
-    private func handleActionRequest(_ notification: Notification) async {
-        guard let context = notification.userInfo?["context"] as? SelectionContext else {
-            return
-        }
-
-        if let toolbarAction = notification.userInfo?["toolbarAction"] as? ToolbarAction {
-            await executeToolbarAction(toolbarAction, context: context)
-            return
-        }
-
-        guard let action = notification.userInfo?["action"] as? SelectionToolbarActionType else {
-            return
-        }
-
-        await executeAction(action, context: context)
-    }
 
     private func finishAction(_ outcome: SelectionActionFinishOutcome) {
         switch outcome {

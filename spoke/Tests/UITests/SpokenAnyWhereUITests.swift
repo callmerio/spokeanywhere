@@ -4,7 +4,7 @@ import Foundation
 import XCTest
 
 final class SpokenAnyWhereUITests: XCTestCase {
-    private static let appBundleIdentifier = "app.spokenly"
+    private static let appBundleIdentifier = "com.spokeanywhere"
     private static let enableSmokeEnvKey = "ENABLE_AX_SMOKE_TESTS"
 
     // MARK: - Window Identifiers

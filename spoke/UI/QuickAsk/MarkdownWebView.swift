@@ -41,6 +41,10 @@ class SelectableWebView: WKWebView {
 struct MarkdownWebView: NSViewRepresentable {
     let text: String
     @Binding var dynamicHeight: CGFloat
+
+    private static var assetBaseURL: URL? {
+        Bundle.module.resourceURL?.appendingPathComponent("markdown-assets", isDirectory: true)
+    }
     
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -60,8 +64,8 @@ struct MarkdownWebView: NSViewRepresentable {
     }
     
     func updateNSView(_ webView: WKWebView, context: Context) {
-        let html = generateHTML(from: text)
-        webView.loadHTMLString(html, baseURL: nil)
+        let html = Self.generateHTML(from: text)
+        webView.loadHTMLString(html, baseURL: Self.assetBaseURL)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -104,9 +108,9 @@ struct MarkdownWebView: NSViewRepresentable {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <!-- KaTeX CSS -->
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+            <link rel="stylesheet" href="katex/katex.min.css">
             <!-- Highlight.js CSS (GitHub Dark theme) -->
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+            <link rel="stylesheet" href="github-dark.min.css">
             <style>
                 html, body {
                     background-color: transparent;
@@ -214,27 +218,27 @@ struct MarkdownWebView: NSViewRepresentable {
                 .graphviz svg { max-width: 100%; }
             </style>
             <!-- KaTeX JS -->
-            <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-            <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+            <script defer src="katex/katex.min.js"></script>
+            <script defer src="katex/auto-render.min.js"></script>
             <!-- Marked -->
-            <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+            <script src="marked.min.js"></script>
             <!-- Highlight.js -->
-            <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+            <script src="highlight.min.js"></script>
             <!-- Mermaid -->
-            <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+            <script src="mermaid.min.js"></script>
             <!-- Viz.js -->
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/full.render.js"></script>
+            <script src="viz.js"></script>
+            <script src="full.render.js"></script>
         </head>
         <body data-markdown="{{MARKDOWN_ESCAPED}}">
             <div id="content"></div>
             
             <script>
-                // CDN 加载状态检测
-                var cdnLoadErrors = [];
+                // 本地资源加载状态检测
+                var assetLoadErrors = [];
                 window.onerror = function(msg, url) {
-                    if (url && url.includes('cdn.jsdelivr.net')) {
-                        cdnLoadErrors.push(url);
+                    if (url) {
+                        assetLoadErrors.push(url);
                     }
                 };
 
@@ -243,7 +247,7 @@ struct MarkdownWebView: NSViewRepresentable {
                     // 检查必要的库是否加载成功
                     if (typeof marked === 'undefined') {
                         document.getElementById('content').innerHTML =
-                            '<p style="color:#ff6b6b;">⚠️ 无法加载 Markdown 渲染库，请检查网络连接</p>' +
+                            '<p style="color:#ff6b6b;">⚠️ 无法加载本地 Markdown 渲染资源</p>' +
                             '<p style="color:rgba(255,255,255,0.7);font-size:12px;">原始内容：</p>' +
                             '<pre style="white-space:pre-wrap;color:rgba(255,255,255,0.9);">' +
                             document.body.getAttribute('data-markdown') + '</pre>';
@@ -260,12 +264,14 @@ struct MarkdownWebView: NSViewRepresentable {
                 
                 function initializeRendering() {
                     // Initialize Mermaid
-                    mermaid.initialize({
-                        startOnLoad: false,
-                        theme: 'dark',
-                        securityLevel: 'loose',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-                    });
+                    if (typeof mermaid !== 'undefined') {
+                        mermaid.initialize({
+                            startOnLoad: false,
+                            theme: 'dark',
+                            securityLevel: 'loose',
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+                        });
+                    }
                     
                     const markdown = `{{MARKDOWN}}`;
                     
@@ -330,7 +336,7 @@ struct MarkdownWebView: NSViewRepresentable {
                     
                     // Render Mermaid diagrams
                     const mermaidNodes = document.querySelectorAll('.mermaid');
-                    if (mermaidNodes.length > 0) {
+                    if (mermaidNodes.length > 0 && typeof mermaid !== 'undefined') {
                         mermaid.run({ nodes: mermaidNodes }).then(updateHeight).catch(e => {
                             console.warn('Mermaid error:', e);
                             updateHeight();
@@ -338,9 +344,9 @@ struct MarkdownWebView: NSViewRepresentable {
                     }
                     
                     // Render Graphviz diagrams
-                    const viz = new Viz();
+                    const viz = typeof Viz !== 'undefined' ? new Viz() : null;
                     const graphvizNodes = document.querySelectorAll('.graphviz');
-                    if (graphvizNodes.length > 0) {
+                    if (graphvizNodes.length > 0 && viz) {
                         Array.from(graphvizNodes).forEach(el => {
                             viz.renderSVGElement(el.textContent)
                                 .then(element => {
@@ -383,7 +389,7 @@ struct MarkdownWebView: NSViewRepresentable {
         </html>
         """
     
-    private func generateHTML(from markdown: String) -> String {
+    static func generateHTML(from markdown: String) -> String {
         // 只转义 JS 模板字符串需要的字符：反斜杠和反引号
         // 注意：不要转义 $ 符号，KaTeX 需要它来识别数学公式
         let escapedMarkdown = markdown

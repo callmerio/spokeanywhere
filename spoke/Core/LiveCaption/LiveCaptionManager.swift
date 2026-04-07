@@ -181,6 +181,11 @@ final class LiveCaptionManager: ObservableObject {
     static func makePreview() -> LiveCaptionManager {
         LiveCaptionManager(dependencies: .preview)
     }
+
+    @MainActor
+    static func makeTesting(dependencies: LiveCaptionManagerDependencies? = nil) -> LiveCaptionManager {
+        LiveCaptionManager(dependencies: dependencies ?? .preview)
+    }
     
     // MARK: - Public API
     

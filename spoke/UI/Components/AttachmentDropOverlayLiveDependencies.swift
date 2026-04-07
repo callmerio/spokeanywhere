@@ -7,5 +7,5 @@ struct AttachmentDropHandlerDependencies {
 
 @MainActor
 extension AttachmentDropHandlerDependencies {
-    static let live = Self(attachmentManager: .shared)
+    static let live = Self(attachmentManager: currentServiceContainer().attachmentManager)
 }

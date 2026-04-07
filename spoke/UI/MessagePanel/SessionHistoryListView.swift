@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - History Group View
 
 /// 历史记录分组视图（卡片叠放风格）
@@ -87,10 +89,10 @@ struct HistoryGroupView: View {
     /// 叠放卡片占位
     private func stackedCardPlaceholder(layerIndex: Int) -> some View {
         RoundedRectangle(cornerRadius: StackLayout.cornerRadius, style: .continuous)
-            .fill(Color(white: 0.1))
+            .fill(DS.Colors.cardBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: StackLayout.cornerRadius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                    .strokeBorder(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
             )
             .frame(height: StackLayout.placeholderHeight)
             .padding(.horizontal, CGFloat(layerIndex) * StackLayout.horizontalPadding)
@@ -106,7 +108,7 @@ struct HistoryGroupView: View {
                 // Chat 分类标题（和 Pipeline 对齐）
                 Text(type.displayTitle)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
                 
@@ -168,7 +170,7 @@ struct HistoryRecordCard: View {
                 // 标题
                 Text(record.title)
                     .font(.system(size: style == .prominent ? 14 : 13, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(DS.Colors.textPrimary)
                     .lineLimit(1)
                 
                 Spacer(minLength: 8)
@@ -176,15 +178,15 @@ struct HistoryRecordCard: View {
                 // 时间
                 Text(record.detailedTime)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.4))
+                    .foregroundStyle(DS.Colors.textPlaceholder)
                 
                 // 删除按钮（始终占位，opacity 控制显示）
                 Button(action: { onDelete?() }, label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.5))
+                        .foregroundStyle(DS.Colors.textPlaceholder)
                         .frame(width: 20, height: 20)
-                        .background(Color.white.opacity(0.08))
+                        .background(DS.Colors.chipBackground)
                         .clipShape(Circle())
                 })
                 .buttonStyle(.plain)
@@ -195,7 +197,7 @@ struct HistoryRecordCard: View {
             // 预览文本（独立一行，固定占位3行高度）
             Text(record.preview)
                 .font(.system(size: 13))
-                .foregroundColor(Color.white.opacity(0.6))
+                .foregroundStyle(DS.Colors.textSecondary)
                 .lineLimit(3)
                 .frame(height: 54, alignment: .topLeading) // 3行 * 18pt/行 = 54pt
         }
@@ -205,7 +207,7 @@ struct HistoryRecordCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(isHovered ? 0.15 : 0.1), lineWidth: 0.5)
+                .strokeBorder(isHovered ? DS.Colors.borderSecondary : DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -225,7 +227,7 @@ struct HistoryRecordCard: View {
             VisualEffectBlur(material: .hudWindow, cornerRadius: 16)
             
             // 深色叠加 (复制时短暂变亮)
-            Color.black.opacity(showCopied ? 0.15 : (isHovered ? 0.25 : 0.3))
+            showCopied ? DS.Colors.buttonHoverStrong : (isHovered ? DS.Colors.overlayDark : DS.Colors.overlayLight)
         }
     }
     

@@ -292,6 +292,10 @@ final class LLMSettings {
         logger.info("📦 LLMSettings loaded, enabled: \(self.isEnabled, privacy: .public), profiles: \(self.profiles.count, privacy: .public)")
     }
 
+    static func makeTesting() -> LLMSettings {
+        LLMSettings()
+    }
+
     private static func loadSelectedProviderType(from defaults: UserDefaults) -> LLMProviderType? {
         guard let rawValue = defaults.string(forKey: Keys.selectedProvider) else {
             return nil
@@ -399,40 +403,49 @@ final class LLMSettings {
         }
         
         var hasChanges = false
-        
+        var updatedCache = apiKeysCache
+        var updatedProfiles = profiles
+
         // 3. 检查所有 Profile，尝试迁移遗留 Key
         for i in profiles.indices {
             let profile = profiles[i]
-            
+
             // 如果缓存中没有 Key，但 Profile 有遗留引用 (且不是 "unified_storage")
-            if apiKeysCache[profile.id.uuidString] == nil,
+            if updatedCache[profile.id.uuidString] == nil,
                let keyRef = profile.apiKeyRef,
                keyRef != "unified_storage" {
-                
+
                 logger.info("📥 Consolidating legacy key for profile: \(profile.name, privacy: .public)")
-                
+
                 // 尝试从旧 Keychain Item 读取
                 if let legacyKey = KeychainService.load(key: keyRef) {
-                    // 存入缓存
-                    apiKeysCache[profile.id.uuidString] = legacyKey
-                    
-                    // 更新 Profile 标记
-                    profiles[i].apiKeyRef = "unified_storage"
-                    profiles[i].updatedAt = Date()
-                    
+                    // 先写入候选快照；只有 unified store 真正落盘成功后再提交到实例状态
+                    updatedCache[profile.id.uuidString] = legacyKey
+                    updatedProfiles[i].apiKeyRef = "unified_storage"
+                    updatedProfiles[i].updatedAt = Date()
+
                     hasChanges = true
                 }
             }
         }
-        
-        // 4. 保存迁移结果
+
+        // 4. 保存迁移结果（只有 unified store 真正落盘成功后才更新实例状态和标记）
         if hasChanges {
-            saveAllAPIKeys()
-            save() // 保存 Profile 的 apiKeyRef 更新
-            logger.info("✅ Consolidated legacy API keys to unified storage")
+            do {
+                try persistAllAPIKeys(updatedCache)
+                apiKeysCache = updatedCache
+                profiles = updatedProfiles
+                save() // 保存 Profile 的 apiKeyRef 更新
+                defaults.set(true, forKey: Keys.hasConsolidatedAPIKeys)
+                logger.info("✅ Consolidated legacy API keys to unified storage")
+            } catch {
+                logger.error("❌ Failed to persist consolidated API keys: \(error.localizedDescription, privacy: .public)")
+                // 不翻标记，下次启动会重试迁移
+                return
+            }
         }
-        
-        // 5. 标记迁移完成（即使没有任何 Key 需要迁移，也标记为完成）
+
+        // 5. 只有在没有待迁移项时才直接标记完成
         defaults.set(true, forKey: Keys.hasConsolidatedAPIKeys)
     }
     
@@ -467,19 +480,24 @@ final class LLMSettings {
             return
         }
         let profile = profiles[index]
-        
+
         // 删除关联的 API Key
-        if let keyRef = profile.apiKeyRef {
+        if profile.apiKeyRef == "unified_storage" {
+            // 已迁移到统一存储：从 cache 和 blob 中移除
+            apiKeysCache.removeValue(forKey: profileId.uuidString)
+            try? persistAllAPIKeys(apiKeysCache)
+        } else if let keyRef = profile.apiKeyRef {
+            // 未迁移：直接删独立 Keychain Item
             try? KeychainService.delete(key: keyRef)
         }
-        
+
         profiles.remove(at: index)
-        
+
         // 如果删除的是当前选中的，清除选择
         if selectedProfileId == profileId {
             selectedProfileId = profiles.first?.id
         }
-        
+
         logger.info("🗑️ Deleted profile: \(profile.name, privacy: .public)")
     }
     
@@ -560,11 +578,16 @@ final class LLMSettings {
     }
     
     private func saveAllAPIKeys() {
-        guard let data = try? JSONEncoder().encode(apiKeysCache),
+        try? persistAllAPIKeys(apiKeysCache)
+    }
+
+    /// 持久化 API Keys 到 Keychain（抛出错误供调用方判断）
+    private func persistAllAPIKeys(_ keys: [String: String]) throws {
+        guard let data = try? JSONEncoder().encode(keys),
               let jsonString = String(data: data, encoding: .utf8) else {
             return
         }
-        try? KeychainService.save(key: allAPIKeysStorageKey, value: jsonString)
+        try KeychainService.save(key: allAPIKeysStorageKey, value: jsonString)
         logger.info("🔒 Saved API keys to unified storage")
     }
     

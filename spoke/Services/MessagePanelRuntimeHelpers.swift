@@ -28,5 +28,5 @@ func runMessagePanelDetached(
 func runMessagePanelSummary(
     cardId: UUID
 ) async {
-    await SummaryService.shared.generateSummary(for: cardId)
+    await currentServiceContainer().summaryService.generateSummary(for: cardId)
 }

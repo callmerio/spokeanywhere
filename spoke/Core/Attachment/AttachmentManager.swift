@@ -48,6 +48,9 @@ final class AttachmentManager: ObservableObject {
     
     /// 处理状态（用于显示进度）
     @Published var processingState: ProcessingState = .idle
+
+    /// 最近生成/更新的附件快照（供轻量事件通过 ID 查回最新对象）
+    private var attachmentStore: [UUID: Attachment] = [:]
     
     // MARK: - Services
     
@@ -71,6 +74,10 @@ final class AttachmentManager: ObservableObject {
 
     static func makePreview() -> AttachmentManager {
         AttachmentManager(dependencies: .preview)
+    }
+
+    func attachment(for id: UUID) -> Attachment? {
+        attachmentStore[id]
     }
     
     // MARK: - Drop Handling
@@ -192,6 +199,7 @@ final class AttachmentManager: ObservableObject {
         let attachmentType: Attachment = source == .screenshot
             ? .screenshot(image, nil, id)
             : .image(image, nil, id)
+        attachmentStore[id] = attachmentType
         
         // 先添加占位
         onAdd(attachmentType)
@@ -205,7 +213,8 @@ final class AttachmentManager: ObservableObject {
                 let updated: Attachment = source == .screenshot
                     ? .screenshot(image, thumbnail, id)
                     : .image(image, thumbnail, id)
-                postAttachmentThumbnailUpdated(id: id, attachment: updated)
+                self.attachmentStore[id] = updated
+                postAttachmentThumbnailUpdated(id: id)
             }
         }
     }
@@ -220,6 +229,7 @@ final class AttachmentManager: ObservableObject {
     /// 添加普通文件
     func addFile(_ url: URL, onAdd: @escaping @MainActor @Sendable (Attachment) -> Void) {
         let attachment = Attachment.file(url, UUID())
+        attachmentStore[attachment.id] = attachment
         onAdd(attachment)
     }
     
@@ -253,6 +263,7 @@ final class AttachmentManager: ObservableObject {
                 bundle.fileCount,
                 UUID()
             )
+            attachmentStore[attachment.id] = attachment
             onAdd(attachment)
             logger.info("✅ Folder processed: \(bundle.fileCount) files, \(bundle.content.count) chars")
             
@@ -283,6 +294,7 @@ final class AttachmentManager: ObservableObject {
                 bundle.fileCount,
                 UUID()
             )
+            attachmentStore[attachment.id] = attachment
             onAdd(attachment)
             logger.info("✅ ZIP processed: \(bundle.fileCount) files, \(bundle.content.count) chars")
             

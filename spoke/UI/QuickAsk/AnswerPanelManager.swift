@@ -60,9 +60,9 @@ final class AnswerPanelInstance {
     let state: AnswerPanelState
     var window: NSWindow?
 
-    init(id: UUID = UUID()) {
+    init(id: UUID = UUID(), state: AnswerPanelState? = nil) {
         self.id = id
-        self.state = AnswerPanelState()
+        self.state = state ?? AnswerPanelState()
     }
 }
 
@@ -71,7 +71,6 @@ final class AnswerPanelInstance {
 @MainActor
 struct AnswerPanelManagerDependencies {
     let historyService: SessionHistoryService
-    let postFollowUp: (_ panelId: UUID, _ prompt: String, _ attachments: [QuickAskAttachment]) -> Void
 }
 
 /// 回答面板管理器（支持多窗口）
@@ -91,6 +90,7 @@ final class AnswerPanelManager {
     private var windowOffset: CGFloat = 0
     private let offsetStep: CGFloat = 30
     private let dependencies: AnswerPanelManagerDependencies
+    var onFollowUp: ((_ panelId: UUID, _ prompt: String) async -> Void)?
 
     // MARK: - Init
 
@@ -98,6 +98,10 @@ final class AnswerPanelManager {
         dependencies: AnswerPanelManagerDependencies
     ) {
         self.dependencies = dependencies
+    }
+
+    static func makeTesting(dependencies: AnswerPanelManagerDependencies) -> AnswerPanelManager {
+        AnswerPanelManager(dependencies: dependencies)
     }
 
     // MARK: - Public API
@@ -248,6 +252,25 @@ final class AnswerPanelManager {
         panels[panelId]?.state
     }
 
+    @discardableResult
+    func installTestingPanel(id: UUID = UUID(), state: AnswerPanelState? = nil) -> UUID {
+        panels[id] = AnswerPanelInstance(id: id, state: state)
+        return id
+    }
+
+    func handleFollowUpRequest(
+        question: String,
+        attachments: [QuickAskAttachment],
+        for panelId: UUID
+    ) {
+        guard panels[panelId] != nil else { return }
+        appendUserMessage(question, attachments: attachments, for: panelId)
+        Task { [weak self] in
+            guard let self else { return }
+            await self.onFollowUp?(panelId, question)
+        }
+    }
+
     // MARK: - Private
 
     private func makeInstance(
@@ -315,12 +338,7 @@ final class AnswerPanelManager {
         contentView.onFollowUp = { [weak self] question, attachments in
             guard let self, self.panels[panelId] != nil else { return }
             print("Follow up [\(panelId)]: \(question), attachments: \(attachments.count)")
-
-            // 添加用户消息并进入加载状态
-            self.appendUserMessage(question, attachments: attachments, for: panelId)
-
-            // 发送追问通知，带上 panelId
-            dependencies.postFollowUp(panelId, question, attachments)
+            self.handleFollowUpRequest(question: question, attachments: attachments, for: panelId)
         }
         contentView.onRegenerate = { [weak self] in
             guard let state = self?.panels[panelId]?.state else { return }
