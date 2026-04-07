@@ -86,3 +86,13 @@ tmp/
 .codex/prompts/plan.md
 .codex/prompts/plan.md
 .ace-tool/
+
+# Local AI workflow artifacts
+AGENTS.md
+spoke/.ccw/
+spoke/.claude/
+spoke/.magi/
+spoke/.memory/
+spoke/autoresearch/runs/
+spoke/plan/
+spoke/docs/superpowers/
