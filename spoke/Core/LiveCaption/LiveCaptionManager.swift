@@ -486,6 +486,8 @@ final class LiveCaptionManager: ObservableObject {
         // 取消翻译任务
         translationTask?.cancel()
         translationTask = nil
+        volatileTranslationTask?.cancel()
+        volatileTranslationTask = nil
         
         isActive = false
         pendingText = ""

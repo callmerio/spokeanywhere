@@ -18,6 +18,10 @@ enum AppLifecycleStepID: String, Equatable {
     case setupDictionaryPanel = "setup-dictionary-panel"
     case setupDebugAutomationTrigger = "setup-debug-automation-trigger"
     case stopRecordingController = "stop-recording-controller"
+    case stopQuickAskService = "stop-quickask-service"
+    case stopMessagePanelManager = "stop-message-panel-manager"
+    case stopLiveCaptionManager = "stop-live-caption-manager"
+    case stopScreenshotManager = "stop-screenshot-manager"
     case stopTrackpadGesture = "stop-trackpad-gesture"
     case stopSelectionToolbar = "stop-selection-toolbar"
     case stopResourceMonitor = "stop-resource-monitor"
@@ -65,6 +69,10 @@ enum AppLifecyclePlan {
     static func shutdown(includeDebugAutomation: Bool) -> [AppLifecycleStepSpec] {
         var steps: [AppLifecycleStepSpec] = [
             .init(id: .stopRecordingController, name: "stop recording controller"),
+            .init(id: .stopQuickAskService, name: "stop Quick Ask service"),
+            .init(id: .stopMessagePanelManager, name: "stop message panel manager"),
+            .init(id: .stopLiveCaptionManager, name: "stop live caption manager"),
+            .init(id: .stopScreenshotManager, name: "stop screenshot manager"),
             .init(id: .stopTrackpadGesture, name: "stop trackpad gesture"),
             .init(id: .stopSelectionToolbar, name: "stop selection toolbar"),
             .init(id: .stopResourceMonitor, name: "stop resource monitor"),

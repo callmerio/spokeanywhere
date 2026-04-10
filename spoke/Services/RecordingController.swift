@@ -50,110 +50,59 @@ final class RecordingController {
     private var recordingTimer: Timer?
     private var recordingStartTime: Date?
     private var lastTranscription: String = ""
-    private let recordingCallbackSessionID: UUID
-
-    private struct CapturedRecordingSession {
-        let transcription: String
-        let audioURL: URL?
-        let appBundleId: String?
-        let sourceApp: SourceAppInfo?
-    }
+    private var recordingCallbackSessionID: UUID
     
     // MARK: - Init
     
     private init(dependencies: RecordingControllerDependencies) {
         self.dependencies = dependencies
         recordingCallbackSessionID = dependencies.audioService.createCallbackSession()
-        setupAudioCallbacks()
-        setupHUDCallbacks()
-        setupQuickAskCallbacks()
-        setupMessagePanelCallbacks()
-    }
-    
-    private func setupHUDCallbacks() {
-        // 用户点击"完成录音"按钮
-        dependencies.hudManager.onComplete = makeControllerAction { controller in
-            controller.completeRecordingSession()
-        }
-        
-        // 用户点击"取消录音"按钮
-        dependencies.hudManager.onCancel = makeControllerAction { controller in
-            controller.cancelRecordingSession()
-        }
-    }
-    
-    private func setupQuickAskCallbacks() {
-        // Quick Ask 开始
-        dependencies.hotKeyService.onQuickAskStart = makeControllerAction { controller in
-            controller.dependencies.quickAskService.startSession()
-        }
-        
-        // Quick Ask 发送（再次按快捷键）
-        dependencies.hotKeyService.onQuickAskSend = makeControllerAction { controller in
-            controller.dependencies.quickAskService.sendViaShortcut()
-        }
-        
-        // Cmd+逗号 打开设置
-        dependencies.hotKeyService.onOpenSettings = makeDependenciesAction { dependencies in
-            dependencies.openSettings()
-        }
-    }
-    
-    private func setupMessagePanelCallbacks() {
-        // Message Panel 切换显示
-        dependencies.hotKeyService.onMessagePanelToggle = makeDependenciesAction { dependencies in
-            dependencies.messagePanelManager.toggle()
-        }
-        
-        // Live Caption 切换显示
-        dependencies.hotKeyService.onLiveCaptionToggle = makeDependenciesAction { dependencies in
-            dependencies.liveCaptionWindowManager.toggle()
-        }
-        
-        // Clipboard Pipeline 触发
-        dependencies.hotKeyService.onClipboardPipelineTrigger = makeDependenciesAction { dependencies in
-            dependencies.clipboardPipelineService.trigger()
-        }
-    }
-    
-    private func setupAudioCallbacks() {
-        dependencies.audioService.updateCallbackSession(recordingCallbackSessionID) { [weak self] callbacks in
-            callbacks.onAudioLevelUpdate = self?.makeControllerAction { controller, level in
-                controller.dependencies.hudManager.updateAudioLevel(level)
+        wireRecordingHUDCallbacks(
+            hudManager: dependencies.hudManager,
+            onComplete: makeControllerAction { controller in
+                controller.completeRecordingSession()
+            },
+            onCancel: makeControllerAction { controller in
+                controller.cancelRecordingSession()
             }
-
-            callbacks.onPartialResult = self?.makeControllerAction { controller, result in
-                // 保存完整文本
-                controller.lastTranscription = result.text
-
-                // HUD 始终显示完整文本（finalized + volatile）
-                controller.dependencies.hudManager.updatePartialText(result.text)
-
-                // 边说边打字模式：使用稳定性检测输入
-                if controller.dependencies.settings.realtimeTypingEnabled {
-                    // 基于前缀稳定性检测，更快地输入稳定内容
-                    controller.dependencies.inputService.typeWithStabilityDetection(
-                        finalizedText: result.finalizedText,
-                        volatileText: result.volatileText
-                    )
-                }
+        )
+        wireRecordingFeatureHotKeyCallbacks(
+            hotKeyService: dependencies.hotKeyService,
+            onQuickAskStart: makeControllerAction { controller in
+                controller.dependencies.quickAskService.startSession()
+            },
+            onQuickAskSend: makeControllerAction { controller in
+                controller.dependencies.quickAskService.sendViaShortcut()
+            },
+            onOpenSettings: makeDependenciesAction { dependencies in
+                dependencies.openSettings()
+            },
+            onMessagePanelToggle: makeDependenciesAction { dependencies in
+                dependencies.messagePanelManager.toggle()
+            },
+            onLiveCaptionToggle: makeDependenciesAction { dependencies in
+                dependencies.liveCaptionWindowManager.toggle()
+            },
+            onClipboardPipelineTrigger: makeDependenciesAction { dependencies in
+                dependencies.clipboardPipelineService.trigger()
             }
-
-            callbacks.onFinalResult = self?.makeControllerAction { controller, text in
-                controller.lastTranscription = text
-            }
-
-            callbacks.onError = { [weak self] error in
-                self?.logger.error("❌ Audio error: \(error.localizedDescription, privacy: .public)")
-            }
-        }
+        )
+        configureAudioCallbacks()
     }
     
     // MARK: - Public API
     
     /// 启动录音控制器
     func start() {
-        setupHotKeyCallbacks()
+        wireRecordingCaptureHotKeyCallbacks(
+            hotKeyService: dependencies.hotKeyService,
+            onRecordingStart: makeControllerAction { controller in
+                controller.startRecordingSession()
+            },
+            onRecordingStop: makeControllerAction { controller in
+                controller.stopRecordingSession()
+            }
+        )
         dependencies.hotKeyService.register()
         
         logger.info("🎙️ RecordingController started")
@@ -162,7 +111,11 @@ final class RecordingController {
     /// 停止录音控制器
     func stop() {
         dependencies.hotKeyService.unregister()
+        clearRecordingCaptureHotKeyCallbacks(hotKeyService: dependencies.hotKeyService)
+        clearRecordingFeatureHotKeyCallbacks(hotKeyService: dependencies.hotKeyService)
+        clearRecordingHUDCallbacks(hudManager: dependencies.hudManager)
         stopRecordingSession()
+        teardownRecordingCallbackSession()
     }
 
 #if DEBUG
@@ -186,16 +139,6 @@ final class RecordingController {
     
     // MARK: - Private
     
-    private func setupHotKeyCallbacks() {
-        dependencies.hotKeyService.onRecordingStart = makeControllerAction { controller in
-            controller.startRecordingSession()
-        }
-        
-        dependencies.hotKeyService.onRecordingStop = makeControllerAction { controller in
-            controller.stopRecordingSession()
-        }
-    }
-    
     private func startRecordingSession() {
         let targetApp = dependencies.contextService.getCurrentTargetApp()
         
@@ -210,7 +153,7 @@ final class RecordingController {
         dependencies.inputService.reset()
         
         // 录音入口使用独立回调会话，避免与 Quick Ask 串线
-        setupAudioCallbacks()
+        configureAudioCallbacks()
         dependencies.audioService.activateCallbackSession(recordingCallbackSessionID)
         
         // 🔍 预取 OCR（与录音并行，不阻塞）
@@ -327,13 +270,44 @@ final class RecordingController {
         }
     }
 
-    private func captureCurrentSession() -> CapturedRecordingSession {
+    private func configureAudioCallbacks() {
+        wireRecordingAudioCallbacks(
+            audioService: dependencies.audioService,
+            sessionID: recordingCallbackSessionID,
+            onAudioLevelUpdate: makeControllerAction { controller, level in
+                controller.dependencies.hudManager.updateAudioLevel(level)
+            },
+            onPartialResult: makeControllerAction { controller, result in
+                controller.lastTranscription = result.text
+                controller.dependencies.hudManager.updatePartialText(result.text)
+                if controller.dependencies.settings.realtimeTypingEnabled {
+                    controller.dependencies.inputService.typeWithStabilityDetection(
+                        finalizedText: result.finalizedText,
+                        volatileText: result.volatileText
+                    )
+                }
+            },
+            onFinalResult: makeControllerAction { controller, text in
+                controller.lastTranscription = text
+            },
+            onError: { [weak self] error in
+                self?.logger.error("❌ Audio error: \(error.localizedDescription, privacy: .public)")
+            }
+        )
+    }
+
+    private func teardownRecordingCallbackSession() {
+        dependencies.audioService.removeCallbackSession(recordingCallbackSessionID)
+        recordingCallbackSessionID = dependencies.audioService.createCallbackSession()
+        configureAudioCallbacks()
+    }
+
+    private func captureCurrentSession() -> RecordingCapturedSession {
         let targetApp = dependencies.contextService.getCurrentTargetApp()
-        return CapturedRecordingSession(
+        return RecordingSessionContextAssembler.capture(
             transcription: lastTranscription,
             audioURL: dependencies.audioService.tempAudioFileURL,
-            appBundleId: targetApp?.bundleIdentifier,
-            sourceApp: targetApp.map(SourceAppInfo.from)
+            targetApp: targetApp
         )
     }
 

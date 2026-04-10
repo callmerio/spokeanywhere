@@ -9,6 +9,7 @@ extension AppDelegateDependencies {
             hotKeyService: services.hotKeyService,
             quickAskService: services.quickAskServiceConcrete,
             screenshotManager: services.screenshotManager,
+            liveCaptionManager: services.liveCaptionManager,
             dictionaryPanelManager: services.dictionaryPanelManager,
             debugAutomationTrigger: services.debugAutomationTrigger,
             recordingController: services.recordingController,

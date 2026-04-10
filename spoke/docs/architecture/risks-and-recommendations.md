@@ -1,27 +1,24 @@
 # SpokenAnyWhere 风险评估与改进建议
 
-**版本**: 1.3
-**更新时间**: 2026-03-23
-**结论**: **Conditional Go**
+**版本**: 1.4
+**更新时间**: 2026-04-10
+**结论**: **Go**
 
 ---
 
 ## 一、执行摘要
 
-本次以当前仓库快照和 **2026-03-23** 的本地复核为基线，结论如下：
+本次以当前仓库快照和 **2026-04-10** 的本地复核为基线，结论如下：
 
 - ✅ **代码可运行性**: Go
   - `swift test` 通过，结果为 `150 tests / 30 suites`
   - `bash Tests/run-concurrency-check.sh` 通过，结果为 `0 warnings`
-- ⚠️ **质量治理**: Conditional Go
-  - 仓库中未发现版本化 `.github/workflows/*`，无法仅凭仓库内容证明自动化门禁已落地
-- ⚠️ **架构可维护性**: Conditional Go
-  - 核心运行时仍建立在单例基础之上
-  - UI 直连业务层仍集中在部分高频视图
-  - `NotificationCenter` / 直接调用 / `ServiceContainer` 三通道并存
-- ⚠️ **文档一致性**: Conditional Go
-  - 历史口径与当前现状之间存在偏差
-  - 旧文档引用了当前不存在的路径
+- ✅ **质量治理**: Go
+  - 统一质量门禁与版本化 summary 已落地到仓库内
+- ✅ **架构可维护性**: Go
+  - 高风险 orchestrator、UI 试点、依赖矩阵与 app-scope shutdown contract 已形成闭环
+- ✅ **文档一致性**: Go
+  - 当前事实真源、执行真源与最终复核文档已经对齐
 
 ---
 
@@ -174,6 +171,11 @@ bash Tests/run-concurrency-check.sh
 - strict concurrency 命令
 - 失败阈值与日志位置
 
+当前已补齐的仓库内入口：
+
+- `scripts/verify/run-architecture-quality-gate.sh`
+- `docs/architecture/quality-gate.md`
+
 是否采用 GitHub Actions、其他 CI，或仅保留项目脚本，不在本次文档修订中强行假定。
 
 ---
@@ -205,10 +207,14 @@ bash Tests/run-concurrency-check.sh
 ## 六、相关文档
 
 - `./current-state-audit.md`
+- `./fact-source-boundary.md`
+- `./p1-lifecycle-inventory.md`
+- `./minimal-rule-pack.md`
 - `./overview.md`
 - `./core-modules.md`
 - `./ui-components.md`
 - `./quick-reference.md`
+- `./quality-gate.md`
 - `./app-layer-startup-sequence.md`
 - `./app-layer-callback-chains.md`
 - `./app-layer-risk-assessment.md`
@@ -218,4 +224,4 @@ bash Tests/run-concurrency-check.sh
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-23
+**最后更新**: 2026-04-10

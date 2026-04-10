@@ -155,6 +155,22 @@ final class ScreenshotManager {
         )
     }
 
+    /// 应用退出期统一收口入口
+    func stop() {
+        activeSelectionWindow?.dismiss()
+        activeSelectionWindow = nil
+
+        for window in windows.values {
+            window.orderOut(nil)
+            window.close()
+        }
+        windows.removeAll()
+
+        saveAll()
+        windowFactory = nil
+        logger.info("🛑 Screenshot manager stopped")
+    }
+
 #if DEBUG
     /// Debug-only：自动化脚本入口，固定区域截图（无需手动框选）
     func debugCaptureForAutomation() async {

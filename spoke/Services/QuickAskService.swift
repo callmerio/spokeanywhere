@@ -102,54 +102,20 @@ final class QuickAskService {
         dependencies: QuickAskServiceDependencies
     ) {
         self.dependencies = dependencies
-        setupHUDCallbacks()
-    }
-    
-    // MARK: - Setup
-    
-    private func setupHUDCallbacks() {
-        dependencies.hudManager.onSend = makeAsyncAction { service in
-            await service.sendQuestion()
-        }
-        
-        dependencies.hudManager.onCancel = makeAction { service in
-            service.cancelSession()
-        }
-
-        dependencies.answerPanelManager.onFollowUp = { [weak self] panelId, prompt in
-            guard let self else { return }
-            await self.handleFollowUp(panelId: panelId, prompt: prompt)
-        }
-    }
-    
-    private func registerAudioCallbacks() {
-        if quickAskCallbackSessionID == nil {
-            quickAskCallbackSessionID = dependencies.audioService.createCallbackSession()
-        }
-
-        guard let sessionID = quickAskCallbackSessionID else { return }
-        dependencies.audioService.updateCallbackSession(sessionID) { [weak self] callbacks in
-            callbacks.onAudioLevelUpdate = self?.makeAction { service, level in
-                service.state.updateAudioLevel(level)
+        wireQuickAskHUDCallbacks(
+            hudManager: dependencies.hudManager,
+            answerPanelManager: dependencies.answerPanelManager,
+            onSend: makeAsyncAction { service in
+                await service.sendQuestion()
+            },
+            onCancel: makeAction { service in
+                service.cancelSession()
+            },
+            onFollowUp: { [weak self] panelId, prompt in
+                guard let self else { return }
+                await self.handleFollowUp(panelId: panelId, prompt: prompt)
             }
-
-            callbacks.onPartialResult = self?.makeAction { service, result in
-                service.state.updateVoiceTranscription(result.text)
-            }
-
-            callbacks.onFinalResult = nil
-            callbacks.onError = { [weak self] error in
-                self?.logger.error("❌ Quick Ask audio error: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-
-        dependencies.audioService.activateCallbackSession(sessionID)
-    }
-
-    private func unregisterAudioCallbacks() {
-        guard let sessionID = quickAskCallbackSessionID else { return }
-        dependencies.audioService.removeCallbackSession(sessionID)
-        quickAskCallbackSessionID = nil
+        )
     }
     
     // MARK: - Public API
@@ -178,6 +144,18 @@ final class QuickAskService {
             }
         }
     }
+
+    /// 应用退出期统一收口入口
+    func stop() {
+        stopRecording()
+        dependencies.hudManager.shutdown()
+        clearQuickAskHUDCallbacks(
+            hudManager: dependencies.hudManager,
+            answerPanelManager: dependencies.answerPanelManager
+        )
+        resetSessionState()
+        logger.info("🛑 Quick Ask stopped")
+    }
     
     /// 发送问题
     func sendQuestion() async {
@@ -188,28 +166,20 @@ final class QuickAskService {
         state.startSending()
         
         let settings = dependencies.llmSettings
-        var contextSources: [ContextSource] = []
-        
-        // 异步获取 OCR 上下文
-        var ocrContext: String?
-        if settings.quickAskIncludeOCR {
-            ocrContext = await dependencies.screenOCRService.getActiveWindowText(maxLength: 2000)
-            if ocrContext != nil && !ocrContext!.isEmpty {
-                contextSources.append(.ocr)
+        let collectedContext = await QuickAskContextAssembler.collect(
+            includeOCR: settings.quickAskIncludeOCR,
+            includeScreenshot: settings.quickAskIncludeScreenshot,
+            getOCRContext: { [screenOCRService = dependencies.screenOCRService] in
+                await screenOCRService.getActiveWindowText(maxLength: 2000)
+            },
+            captureScreenshot: { [screenOCRService = dependencies.screenOCRService] in
+                await screenOCRService.captureActiveWindow()
             }
-        }
-        
-        // 获取截图（如果开启）
-        var screenshotImage: CGImage?
-        if settings.quickAskIncludeScreenshot {
-            screenshotImage = await dependencies.screenOCRService.captureActiveWindow()
-            if screenshotImage != nil {
-                contextSources.append(.screenshot)
-            }
-        }
+        )
+        var contextSources = collectedContext.contextSources
         
         // 组装 prompt（包含上下文来源追踪）
-        let promptResult = buildPromptResult(ocrContext: ocrContext)
+        let promptResult = buildPromptResult(ocrContext: collectedContext.ocrContext)
         if promptResult.usedClipboard { contextSources.append(.clipboard) }
         if promptResult.usedCaption { contextSources.append(.liveCaption) }
         
@@ -237,7 +207,7 @@ final class QuickAskService {
             voiceTranscription: voiceText.isEmpty ? nil : voiceText,
             attachments: state.attachments,
             contextSources: contextSources,
-            screenshotImage: screenshotImage
+            screenshotImage: collectedContext.screenshotImage
         )
         
         // 调用 LLM
@@ -415,9 +385,29 @@ final class QuickAskService {
             )
         )
     }
-    
-    private func trimmedText(_ text: String) -> String {
-        text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    private func registerAudioCallbacks() {
+        quickAskCallbackSessionID = wireQuickAskAudioCallbacks(
+            audioService: dependencies.audioService,
+            existingSessionID: quickAskCallbackSessionID,
+            onAudioLevelUpdate: makeAction { service, level in
+                service.state.updateAudioLevel(level)
+            },
+            onPartialResult: makeAction { service, result in
+                service.state.updateVoiceTranscription(result.text)
+            },
+            onError: { [weak self] error in
+                self?.logger.error("❌ Quick Ask audio error: \(error.localizedDescription, privacy: .public)")
+            }
+        )
+    }
+
+    private func unregisterAudioCallbacks() {
+        clearQuickAskAudioCallbacks(
+            audioService: dependencies.audioService,
+            sessionID: quickAskCallbackSessionID
+        )
+        quickAskCallbackSessionID = nil
     }
     
     private func buildFollowUpPrompt(history: [ChatMessage], prompt: String) -> String {
@@ -529,6 +519,13 @@ final class QuickAskHUDManager {
             }
         }
     }
+
+    func shutdown() {
+        removeCancelObserver()
+        panel?.orderOut(nil)
+        panel = nil
+        state.reset()
+    }
     
     func fail(with message: String) {
         state.fail(with: message)
@@ -602,5 +599,11 @@ final class QuickAskHUDManager {
             manager.hide()
             manager.state.reset()
         }
+    }
+
+    private func removeCancelObserver() {
+        guard let cancelObserver else { return }
+        dependencies.notificationCenter.removeObserver(cancelObserver)
+        self.cancelObserver = nil
     }
 }

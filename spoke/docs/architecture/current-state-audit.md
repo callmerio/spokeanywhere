@@ -20,6 +20,7 @@ SpokenAnyWhere 是一个原生 macOS 生产力应用，使用 SwiftUI + AppKit �
   - `bash Tests/run-concurrency-check.sh` -> `0 warnings`
 - `docs/architecture/` 已有较完整基础文档，但存在明显口径漂移
 - `Memory` 项目上下文已初始化为 `.memory/`，`Memgraph` 服务已恢复，可写入实体、卡片与关系
+- 自 **2026-04-10** 起，本文件是当前架构事实真源；历史边界与同步清单见 `./fact-source-boundary.md`
 
 ---
 
@@ -81,6 +82,19 @@ UI
 - `Settings`
 - `Theme`
 - `Workflow`
+
+### 2.4 当前事实真源与历史边界
+
+- 当前事实真源：`./current-state-audit.md`
+- Active Plan：`../plans/2026-04-10-architecture-optimization-roadmap-v3.md`
+- Active Execution Checklist：`../../tasks/2026-04-10-architecture-optimization-roadmap-v3-execution.md`
+- 历史边界与同步清单：`./fact-source-boundary.md`
+
+当前执行期内：
+
+- `v1` / `v2` 只保留在 `docs/plans/archive/2026-04-10/`
+- `2026-03-conditional-go-architecture-roadmap.md` 只保留为解冻合同来源
+- `m2-final-acceptance.md` 只保留为 2026-02-22 的历史验收证据
 
 ---
 
@@ -197,6 +211,15 @@ bash Tests/run-concurrency-check.sh
 
 但仓库快照中未发现版本化的 `.github/workflows/*` 文件，因此无法仅凭仓库内容证明“自动化 CI 门禁”已经在版本控制中稳定落地。
 
+### 4.3 当前统一门禁入口
+
+- Provider-neutral 入口：`scripts/verify/run-architecture-quality-gate.sh`
+- 门禁说明：`./quality-gate.md`
+- 默认日志目录：`verify/quality-gate/<timestamp>/`
+- 当前策略：
+  - `swift build` / `swift test` / strict concurrency 为 hard fail
+  - `.shared` / `NotificationCenter` 扫描先保留为 report-only 证据，待 `GOV-380` 固化 allowlist 后再升级为硬约束
+
 ---
 
 ## 五、文档偏差清单
@@ -219,13 +242,12 @@ bash Tests/run-concurrency-check.sh
 - 测试通过
 - 严格并发检查通过
 
-从“可持续演进”角度看，项目当前仍更适合标记为 **Conditional Go**：
+从“可持续演进”角度看，项目当前可以标记为 **Go**：
 
 - 运行时主干仍以单例为基础，但高频 orchestrator / live factory 已完成多轮收敛
-- UI 对业务层的直接依赖仍然存在，尤其集中在少数高频视图层
-- 依赖通道并存，缺少统一治理
-- 自动化门禁的版本化证据缺失
-- 文档与实际代码之间存在持续漂移
+- UI 试点已经有 preview/fixture、interaction smoke 与 proof map
+- 依赖通道治理、最小规则包和统一质量门禁都已落地
+- app-scope 常驻对象的 shutdown contract 已进入统一 lifecycle 路径
 
 本轮新增的结构收敛：
 
@@ -236,6 +258,7 @@ bash Tests/run-concurrency-check.sh
 - `Services/RuntimeBridgeHelpers.swift` 已成为 Recording / Quick Ask / Selection 系列 runtime helper 的共享主线程、定时器与轮询桥接入口。
 - `Services/MessagePanelRuntimeHelpers.swift`、`UI/Screenshot/ScreenshotContentRuntimeHelpers.swift`、`Core/Attachment/AttachmentRuntimeHelpers.swift`、`Core/Audio/AudioRecorderRuntimeHelpers.swift` 与 `Core/LiveCaption/LiveCaptionManagerRuntimeHelpers.swift` 已把 MessagePanel / Screenshot / Attachment / Audio / LiveCaptionManager 的生产路径桥接样板继续从主文件中剥离。
 - `MessagePanelView`、`LiveCaptionView` 与 `QuickAskCapsuleView` 的 preview/shared 入口已在 round 18 改为 preview factory 或显式依赖，不再把视图本体直接系在 `.shared` 上。
+- `QuickAskService`、`MessagePanelManager`、`LiveCaptionManager`、`ScreenshotManager` 已进入 `AppLifecyclePlan.shutdown(...)`，`RecordingController` 的 callback session / hotkey callback 也补齐了对称 cleanup。
 - 若按最新测试口径计，当前本地基线已提升到 `150 tests / 30 suites`。
 
 ---
@@ -258,16 +281,18 @@ bash Tests/run-concurrency-check.sh
 
 ## 八、建议阅读顺序
 
-1. `overview.md`：先看项目入口、分层和主链路
-2. `core-modules.md`：了解真实 Core 模块边界
-3. `capability-graph.md`：看功能域、内容域、持久化层和入口面的关系
-4. `ui-components.md`：了解 UI 场景与业务依赖
-5. `quick-reference.md`：作为定位与排障索引
-6. `risks-and-recommendations.md`：查看治理建议与下一步
-7. `../m2-final-acceptance.md`：仅作为 2026-02-22 的历史验收证据
-8. `../roadmap/2026-03-conditional-go-architecture-roadmap.md`：基于本次审计拆出的执行路线
+1. `fact-source-boundary.md`：先确认当前 / 历史 / archived 边界
+2. `quality-gate.md`：确认统一门禁入口、失败分类与日志路径
+3. `overview.md`：再看项目入口、分层和主链路
+4. `core-modules.md`：了解真实 Core 模块边界
+5. `capability-graph.md`：看功能域、内容域、持久化层和入口面的关系
+6. `ui-components.md`：了解 UI 场景与业务依赖
+7. `quick-reference.md`：作为定位与排障索引
+8. `risks-and-recommendations.md`：查看治理建议与下一步
+9. `../m2-final-acceptance.md`：仅作为 2026-02-22 的历史验收证据
+10. `../roadmap/2026-03-conditional-go-architecture-roadmap.md`：仅作为 Conditional Go 解冻合同来源
 
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-04-07
+**最后更新**: 2026-04-10

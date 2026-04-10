@@ -41,6 +41,10 @@ struct AppLifecyclePlanTests {
 
         #expect(plan.map(\.id) == [
             .stopRecordingController,
+            .stopQuickAskService,
+            .stopMessagePanelManager,
+            .stopLiveCaptionManager,
+            .stopScreenshotManager,
             .stopTrackpadGesture,
             .stopSelectionToolbar,
             .stopResourceMonitor,

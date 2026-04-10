@@ -22,7 +22,7 @@ final class ScreenshotContentView: NSView, ImageAnalysisOverlayViewDelegate {
     // MARK: - Properties
     
     let item: ScreenshotItem
-    private let dependencies: ScreenshotActionDependencies
+    let dependencies: ScreenshotActionDependencies
     let imageView: NSImageView
     private(set) var actionBar: ActionBarView?
     private let glowLayer = CAShapeLayer()

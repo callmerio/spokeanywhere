@@ -137,7 +137,7 @@ UI
 ### 5.3 当前判断
 
 - 从可运行性看：**Go**
-- 从可持续演进看：**Conditional Go**
+- 从可持续演进看：**Go**
 
 详见：`./risks-and-recommendations.md`
 

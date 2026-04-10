@@ -2,7 +2,7 @@ import AppKit
 import Vision
 
 extension ScreenshotContentView {
-    private var actionDependencies: ScreenshotActionDependencies { .live }
+    private var actionDependencies: ScreenshotActionDependencies { dependencies }
 
     // MARK: - Actions
 

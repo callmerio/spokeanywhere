@@ -100,6 +100,24 @@ final class MessagePanelManager {
             show()
         }
     }
+
+    /// 应用退出期统一收口入口
+    func stop() {
+        state.hide()
+        dependencies.hoverState.hoveredCardId = nil
+        dependencies.hoverState.isMouseInPanel = false
+        dependencies.hoverState.configure(
+            dependencies: MessagePanelHoverStateDependencies(
+                isPanelVisible: { false },
+                addAttachmentToCard: { _, _ in },
+                triggerClipboardPipeline: {}
+            )
+        )
+        panel?.orderOut(nil)
+        panel?.close()
+        panel = nil
+        logger.info("🛑 Message Panel stopped")
+    }
     
     /// 添加 Welcome 消息
     func addWelcome(_ message: String) {

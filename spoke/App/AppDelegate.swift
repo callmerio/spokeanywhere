@@ -9,6 +9,7 @@ struct AppDelegateDependencies {
     let hotKeyService: HotKeyService
     let quickAskService: QuickAskService
     let screenshotManager: ScreenshotManager
+    let liveCaptionManager: LiveCaptionManager
     let dictionaryPanelManager: DictionaryPanelManager
     let debugAutomationTrigger: DebugAutomationTriggerService
     let recordingController: RecordingController
@@ -332,6 +333,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return {}
 #endif
         case .stopRecordingController,
+             .stopQuickAskService,
+             .stopMessagePanelManager,
+             .stopLiveCaptionManager,
+             .stopScreenshotManager,
              .stopTrackpadGesture,
              .stopSelectionToolbar,
              .stopResourceMonitor,
@@ -345,6 +350,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         switch id {
         case .stopRecordingController:
             return { self.dependencies.recordingController.stop() }
+        case .stopQuickAskService:
+            return { self.dependencies.quickAskService.stop() }
+        case .stopMessagePanelManager:
+            return { self.dependencies.messagePanelManager.stop() }
+        case .stopLiveCaptionManager:
+            return {
+                runAppMainActorAsync {
+                    await self.dependencies.liveCaptionManager.stop()
+                }
+            }
+        case .stopScreenshotManager:
+            return { self.dependencies.screenshotManager.stop() }
         case .stopTrackpadGesture:
             return { self.dependencies.trackpadSwipeService.stop() }
         case .stopSelectionToolbar:

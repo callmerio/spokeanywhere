@@ -208,6 +208,8 @@
 ### 4.1 当前有效命令
 
 ```bash
+scripts/verify/run-architecture-quality-gate.sh
+swift build
 swift test
 bash Tests/run-concurrency-check.sh
 rg -n "\.shared\." App Core Services UI
@@ -227,7 +229,23 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 - `Services/MessagePanelRuntimeHelpers.swift`、`UI/Screenshot/ScreenshotContentRuntimeHelpers.swift`、`Core/Attachment/AttachmentRuntimeHelpers.swift`、`Core/Audio/AudioRecorderRuntimeHelpers.swift` 与 `Core/LiveCaption/LiveCaptionManagerRuntimeHelpers.swift` 已覆盖 round 19-24 的生产路径桥接收敛。
 - `UI/MessagePanel/MessagePanelView.swift`、`UI/LiveCaption/LiveCaptionView.swift` 与 `UI/HUD/QuickAskCapsuleView.swift` 的 preview/shared 入口已收口，后续不应再把 preview 视图直接绑到 `.shared`。
 - `ScreenshotManager.saveAll()/restoreAll()` 只负责 `pinned screenshots` 的功能资产持久化；后续若建设权限平台，不应把它和 `blocked intent` 状态混为一类。
-### 4.4 当前仓库缺失项
+
+### 4.4 统一质量门禁入口
+
+- Provider-neutral 入口：`scripts/verify/run-architecture-quality-gate.sh`
+- 默认日志目录：`verify/quality-gate/<timestamp>/`
+- 当前扫描策略：
+  - `swift build` / `swift test` / strict concurrency 为硬失败项
+  - `.shared` 与 `NotificationCenter` 扫描默认保留为 repo-owned 报告，不在 Wave 0 直接当作 hard fail
+
+### 4.5 最小规则快答
+
+- `.shared`：默认只允许落在 `*LiveDependencies.swift`、组合根和测试/预览工厂
+- `NotificationCenter`：默认只允许跨窗口 / 跨 feature / app-scope 广播
+- 新状态落点：只有设置、用户资产、secret、capability cache 才能进现有持久化载体
+- 详细规则：`./minimal-rule-pack.md`
+
+### 4.6 当前仓库缺失项
 
 以下路径在本次仓库快照中不存在，不应继续作为导航入口引用：
 
@@ -241,6 +259,17 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
+| 事实真源与历史边界 | `./fact-source-boundary.md` | 当前 / 历史 / archived 边界与架构同步清单 |
+| P1 生命周期 Inventory | `./p1-lifecycle-inventory.md` | 六个热点对象的 owner / register / cleanup 矩阵 |
+| 最小规则包 | `./minimal-rule-pack.md` | `.shared` / `NotificationCenter` / 状态落点的最小约束 |
+| 前台交互 Coverage Matrix | `./foreground-interaction-coverage-matrix.md` | guardrail sample / 主试点 / proof map |
+| AnswerPanel 主试点 Proof Map | `./answer-panel-pilot-proof-map.md` | open / close / focus / error / permission 证据链 |
+| Screenshot 主试点 Proof Map | `./screenshot-pilot-proof-map.md` | save / restore / action dispatch / window chain / Quick Ask dispatch 证据链 |
+| RecordingController Move List | `./recording-controller-concern-move-list.md` | Recording orchestrator concern move list 与 naming crosswalk |
+| QuickAsk 行为矩阵 | `./quickask-service-behavior-matrix.md` | Quick Ask 主链行为矩阵与 concern move list |
+| Shared Hot Path Contract | `./shared-hot-path-contract.md` | Recording / Quick Ask 共享热路径合同 |
+| 依赖通道决策矩阵 | `./dependency-channel-decision-matrix.md` | dependency channel、state crosswalk、NotificationCenter allowlist |
+| Conditional Go 复核 | `./conditional-go-review-2026-04-10.md` | 5 条解冻条件复核与最终结论 |
 | 新贡献者指南 | `./new-contributor-guide.md` | 新人上手必读：项目定位、阅读顺序、常见任务 |
 | 当前状态审计 | `./current-state-audit.md` | 当前事实基线与文档偏差 |
 | 项目架构全景 | `./overview.md` | 架构首页 |
@@ -248,6 +277,7 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 | 核心模块详解 | `./core-modules.md` | Core/ 深度分析 |
 | UI 组件体系 | `./ui-components.md` | UI/ 组件说明 |
 | 风险与改进建议 | `./risks-and-recommendations.md` | 治理建议 |
+| 统一质量门禁说明 | `./quality-gate.md` | 统一门禁入口、失败分类、日志与复现路径 |
 | 启动序列分析 | `./app-layer-startup-sequence.md` | AppDelegate 启动时序与依赖链 |
 | 回调链分析 | `./app-layer-callback-chains.md` | 跨服务回调追踪 |
 | 风险评估 | `./app-layer-risk-assessment.md` | App 层风险评估 |
@@ -256,4 +286,4 @@ rg -n "NotificationCenter\.default\.(addObserver|post)" App Core Services UI
 ---
 
 **维护者**: SpokenAnyWhere Team
-**最后更新**: 2026-03-23
+**最后更新**: 2026-04-10
