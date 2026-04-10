@@ -32,6 +32,9 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
     private var selectedTextAnnotationID: UUID?
     
     var onTextStyleChanged: ((TextAnnotationStyle, Bool) -> Void)?
+    var currentTextStyle: TextAnnotationStyle {
+        editingTextAnnotation?.style ?? selectedTextAnnotation?.style ?? defaultTextStyle
+    }
     
     var activeEditingTextAnnotation: TextAnnotation? { editingTextAnnotation }
     var selectedTextAnnotation: TextAnnotation? {
@@ -193,6 +196,27 @@ extension AnnotationCanvasView {
         historyManager.clear()
         needsDisplay = true
         onAnnotationsChanged?()
+    }
+
+    func applyTextFontSizeStep(_ delta: CGFloat) {
+        guard delta != 0 else { return }
+        let baseStyle = editingTextAnnotation?.style ?? selectedTextAnnotation?.style ?? defaultTextStyle
+        let updatedStyle = TextAnnotationStyle(
+            fontSize: min(max(baseStyle.fontSize + delta, 10), 72),
+            color: baseStyle.color,
+            opacity: baseStyle.opacity
+        )
+        applyTextStyle(updatedStyle)
+    }
+
+    func applyTextColor(_ color: NSColor) {
+        let baseStyle = editingTextAnnotation?.style ?? selectedTextAnnotation?.style ?? defaultTextStyle
+        let updatedStyle = TextAnnotationStyle(
+            fontSize: baseStyle.fontSize,
+            color: color,
+            opacity: baseStyle.opacity
+        )
+        applyTextStyle(updatedStyle)
     }
     
     func renderAnnotations(on image: NSImage) -> NSImage {
@@ -600,17 +624,69 @@ extension AnnotationCanvasView {
     private func publishTextStyleState() {
         if let textAnnotation = editingTextAnnotation {
             defaultTextStyle = textAnnotation.style
+            currentColor = textAnnotation.style.color
             onTextStyleChanged?(textAnnotation.style, true)
             return
         }
         
         if let textAnnotation = selectedTextAnnotation {
             defaultTextStyle = textAnnotation.style
+            currentColor = textAnnotation.style.color
             onTextStyleChanged?(textAnnotation.style, false)
             return
         }
         
         onTextStyleChanged?(defaultTextStyle, false)
+    }
+
+    private func applyTextStyle(_ style: TextAnnotationStyle) {
+        defaultTextStyle = style
+        currentColor = style.color
+
+        if let textAnnotation = editingTextAnnotation {
+            textAnnotation.style = style
+            updateEditingTextViewStyle(style)
+            needsDisplay = true
+            publishTextStyleState()
+            return
+        }
+
+        if let textAnnotation = selectedTextAnnotation {
+            let oldSnapshot = TextAnnotationSnapshot(annotation: textAnnotation)
+            textAnnotation.style = style
+            let newSnapshot = TextAnnotationSnapshot(annotation: textAnnotation)
+            if !textAnnotationMatches(snapshot: oldSnapshot, annotation: textAnnotation) {
+                let command = EditTextAnnotationCommand(
+                    annotation: textAnnotation,
+                    oldSnapshot: oldSnapshot,
+                    newSnapshot: newSnapshot,
+                    canvas: self
+                )
+                historyManager.record(command)
+            }
+            needsDisplay = true
+            onAnnotationsChanged?()
+            publishTextStyleState()
+            return
+        }
+
+        publishTextStyleState()
+    }
+
+    private func updateEditingTextViewStyle(_ style: TextAnnotationStyle) {
+        guard let textView = editingTextView else { return }
+        textView.textColor = style.color.withAlphaComponent(style.opacity)
+        textView.font = .systemFont(ofSize: style.fontSize, weight: .medium)
+        textView.insertionPointColor = style.color
+        if !textView.string.isEmpty {
+            textView.textStorage?.setAttributes(
+                [
+                    .font: NSFont.systemFont(ofSize: style.fontSize, weight: .medium),
+                    .foregroundColor: style.color.withAlphaComponent(style.opacity)
+                ],
+                range: NSRange(location: 0, length: textView.string.utf16.count)
+            )
+        }
     }
     
     private func textAnnotationMatches(snapshot: TextAnnotationSnapshot, annotation: TextAnnotation) -> Bool {

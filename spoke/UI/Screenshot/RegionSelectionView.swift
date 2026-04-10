@@ -146,6 +146,9 @@ final class RegionSelectionView: NSView {
     
     /// 选区变化回调（编辑模式下选区移动/调整大小）
     var onSelectionChanged: ((CGRect) -> Void)?
+
+    /// 文字样式变化回调
+    var onTextStyleChanged: ((TextAnnotationStyle, Bool) -> Void)?
     
     // MARK: - Init
     
@@ -208,6 +211,9 @@ final class RegionSelectionView: NSView {
         canvas.onHistoryChanged = { [weak self] canUndo, canRedo in
             self?.annotationHistoryChangedHandler?(canUndo, canRedo)
         }
+        canvas.onTextStyleChanged = { [weak self] style, hasSelectedText in
+            self?.onTextStyleChanged?(style, hasSelectedText)
+        }
     }
     
     /// 更新标注画布位置（选区调整时）
@@ -269,6 +275,14 @@ extension RegionSelectionView {
     /// 重做标注
     func redoAnnotation() {
         annotationCanvas?.redo()
+    }
+
+    func adjustTextFontSize(by delta: CGFloat) {
+        annotationCanvas?.applyTextFontSizeStep(delta)
+    }
+
+    func applyTextColor(_ color: NSColor) {
+        annotationCanvas?.applyTextColor(color)
     }
     
     /// 获取 Undo/Redo 状态
