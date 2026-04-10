@@ -551,6 +551,31 @@ extension AnnotationCanvasView {
         }
     }
     
+    private func cancelActiveTextEditing() {
+        guard let textView = editingTextView else { return }
+        
+        if let originalSnapshot = editingOriginalTextSnapshot,
+           let textAnnotation = editingTextAnnotation {
+            textAnnotation.apply(snapshot: originalSnapshot)
+            addAnnotation(textAnnotation, recordCommand: false)
+        }
+        
+        if window?.firstResponder === textView {
+            window?.makeFirstResponder(nil)
+        }
+        
+        textView.removeFromSuperview()
+        editingTextView = nil
+        editingTextAnnotation = nil
+        editingOriginalTextSnapshot = nil
+        selectedTextAnnotationID = nil
+        needsDisplay = true
+        
+        if currentTool == .text {
+            publishTextStyleState()
+        }
+    }
+    
     private func createTextView(at position: CGPoint, style: TextAnnotationStyle, existingText: String) -> NSTextView {
         let textView = NSTextView()
         textView.frame = CGRect(x: position.x, y: position.y - 2, width: 300, height: 100)
@@ -726,16 +751,7 @@ extension AnnotationCanvasView: NSTextViewDelegate {
         }
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
             // ESC = 取消
-            if let editingTextView, window?.firstResponder === editingTextView {
-                window?.makeFirstResponder(nil)
-            }
-            editingTextView?.removeFromSuperview()
-            editingTextView = nil
-            editingTextAnnotation = nil
-            editingOriginalTextSnapshot = nil
-            if currentTool == .text {
-                publishTextStyleState()
-            }
+            cancelActiveTextEditing()
             return true
         }
         return false

@@ -224,6 +224,39 @@ struct AnnotationCanvasTextStateTests {
         #expect((canvas.annotations.first as? TextAnnotation)?.text == "after")
     }
 
+    @Test("canceling an existing text edit restores the original annotation without changing history")
+    func cancelExistingTextEditRestoresOriginalAnnotationWithoutHistoryChange() throws {
+        let canvas = AnnotationCanvasView(frame: CGRect(x: 0, y: 0, width: 240, height: 160))
+        canvas.currentTool = .text
+
+        let seedEditor = canvas.beginTextDraft(at: CGPoint(x: 12, y: 12))
+        seedEditor.string = "seed"
+        canvas.currentTool = .pen
+
+        #expect(canvas.canUndo)
+        #expect(!canvas.canRedo)
+
+        let original = TextAnnotation(position: CGPoint(x: 32, y: 32), text: "before", color: .systemBlue)
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .text
+
+        #expect(canvas.beginEditingTextAnnotation(at: CGPoint(x: 40, y: 40)))
+        let editor = try #require(canvas.subviews.compactMap { $0 as? NSTextView }.first)
+        editor.string = "after"
+
+        #expect(canvas.textView(editor, doCommandBy: #selector(NSResponder.cancelOperation(_:))))
+
+        let restored = try #require(
+            canvas.annotations.first(where: { ($0 as? TextAnnotation)?.id == original.id }) as? TextAnnotation
+        )
+
+        #expect(restored.text == "before")
+        #expect(restored.style.color == .systemBlue)
+        #expect(canvas.activeEditingTextAnnotation == nil)
+        #expect(canvas.canUndo)
+        #expect(!canvas.canRedo)
+    }
+
     @Test("new drafts inherit currentColor when no selected text annotation overrides the style")
     func newDraftUsesCurrentColorWithoutTextSelection() {
         let canvas = AnnotationCanvasView(frame: CGRect(x: 0, y: 0, width: 240, height: 160))
@@ -234,5 +267,30 @@ struct AnnotationCanvasTextStateTests {
 
         #expect(canvas.selectedTextAnnotation == nil)
         #expect(canvas.activeEditingTextAnnotation?.style.color == .systemPink)
+    }
+
+    @Test("export-path draft commit notifies RegionSelectionView history handler once without recursion")
+    func exportDraftCommitNotifiesHistoryHandlerOnce() throws {
+        let (view, window) = makeSelectionViewInWindow()
+        view.backgroundImage = makeSolidImage(size: NSSize(width: 240, height: 180))
+
+        var historyEvents: [(Bool, Bool)] = []
+        view.onAnnotationHistoryChanged = { canUndo, canRedo in
+            historyEvents.append((canUndo, canRedo))
+        }
+
+        try makeSelectionRegion(view: view, window: window)
+        view.setAnnotationTool(.text)
+
+        let canvas = try #require(view.annotationCanvas)
+        let editor = canvas.beginTextDraft(at: CGPoint(x: 28, y: 20))
+        editor.string = "draft"
+
+        let exportedImage = view.getAnnotatedImage()
+
+        #expect(exportedImage != nil)
+        #expect(historyEvents.count == 1)
+        #expect(historyEvents.first?.0 == true)
+        #expect(historyEvents.first?.1 == false)
     }
 }
