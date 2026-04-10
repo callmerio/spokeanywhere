@@ -129,6 +129,9 @@ final class RegionSelectionView: NSView {
             }
         }
     }
+
+    /// 标注历史变更回调
+    private var annotationHistoryChangedHandler: ((Bool, Bool) -> Void)?
     
     // MARK: - Callbacks
     
@@ -203,7 +206,7 @@ final class RegionSelectionView: NSView {
         
         // 监听历史变化
         canvas.onHistoryChanged = { [weak self] canUndo, canRedo in
-            self?.onAnnotationHistoryChanged?(canUndo, canRedo)
+            self?.annotationHistoryChangedHandler?(canUndo, canRedo)
         }
     }
     
@@ -275,6 +278,7 @@ extension RegionSelectionView {
     /// 获取带标注的图片
     func getAnnotatedImage() -> NSImage? {
         guard let bgImage = backgroundImage else { return nil }
+        annotationCanvas?.commitActiveTextIfNeeded(selectCommittedText: false)
         
         // 从 NSImage 获取 CGImage representation
         guard let cgImage = bgImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
@@ -321,8 +325,8 @@ extension RegionSelectionView {
     
     /// 设置标注历史回调
     var onAnnotationHistoryChanged: ((Bool, Bool) -> Void)? {
-        get { annotationCanvas?.onHistoryChanged }
-        set { annotationCanvas?.onHistoryChanged = newValue }
+        get { annotationHistoryChangedHandler }
+        set { annotationHistoryChangedHandler = newValue }
     }
 }
 
@@ -788,4 +792,3 @@ extension RegionSelectionView {
         }
     }
 }
-
