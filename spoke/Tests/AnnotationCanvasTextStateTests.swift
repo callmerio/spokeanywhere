@@ -39,6 +39,25 @@ struct AnnotationCanvasTextStateTests {
         )
     }
 
+    private func makeScrollEvent(
+        deltaX: Int32 = 0,
+        deltaY: Int32 = 0,
+        precise: Bool = true
+    ) throws -> NSEvent {
+        let units: CGScrollEventUnit = precise ? .pixel : .line
+        let cgEvent = try #require(
+            CGEvent(
+                scrollWheelEvent2Source: nil,
+                units: units,
+                wheelCount: 2,
+                wheel1: deltaY,
+                wheel2: deltaX,
+                wheel3: 0
+            )
+        )
+        return try #require(NSEvent(cgEvent: cgEvent))
+    }
+
     private func makeSolidImage(size: NSSize, color: NSColor = .white) -> NSImage {
         let image = NSImage(size: size)
         image.lockFocus()
@@ -298,6 +317,146 @@ struct AnnotationCanvasTextStateTests {
         #expect(secondRedoState.0.fontSize == 20)
         #expect(secondRedoState.0.color == .systemRed)
         #expect(secondRedoState.1 == false)
+    }
+
+    @Test("selected text decoration state follows text selection lifecycle")
+    func selectedTextDecorationStateFollowsSelectionLifecycle() throws {
+        let (canvas, window) = makeCanvasInWindow()
+        let original = TextAnnotation(position: CGPoint(x: 32, y: 32), text: "selected")
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .text
+
+        canvas.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+        canvas.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+
+        let decorationRect = try #require(canvas.selectedTextDecorationRect(for: original))
+        let textRect = original.boundingRect()
+        #expect(decorationRect.minX < textRect.minX)
+        #expect(decorationRect.minY < textRect.minY)
+        #expect(decorationRect.maxX > textRect.maxX)
+        #expect(decorationRect.maxY > textRect.maxY)
+
+        canvas.clearTextSelection()
+        #expect(canvas.selectedTextDecorationRect(for: original) == nil)
+
+        #expect(canvas.selectTextAnnotation(at: CGPoint(x: 40, y: 40)))
+        #expect(canvas.selectedTextDecorationRect(for: original) != nil)
+
+        canvas.currentTool = .pen
+        #expect(canvas.selectedTextAnnotation == nil)
+        #expect(canvas.selectedTextDecorationRect(for: original) == nil)
+    }
+
+    @Test("selected text style helpers only mutate the selected annotation while text mode selection is active")
+    func selectedTextStyleHelpersOnlyMutateActiveTextSelection() throws {
+        let (canvas, window) = makeCanvasInWindow()
+        let original = TextAnnotation(
+            position: CGPoint(x: 32, y: 32),
+            text: "styled",
+            color: .systemBlue,
+            opacity: 0.8
+        )
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .text
+
+        canvas.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+        canvas.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+
+        canvas.applyTextFontSizeStep(6)
+        canvas.adjustSelectedTextOpacity(by: -0.9)
+        canvas.adjustSelectedTextOpacity(by: 1.0)
+
+        let selected = try #require(canvas.selectedTextAnnotation)
+        #expect(selected.style.fontSize == 22)
+        #expect(selected.style.opacity == 1.0)
+
+        canvas.currentTool = .pen
+        canvas.applyTextFontSizeStep(10)
+        canvas.adjustSelectedTextOpacity(by: -0.5)
+
+        let persisted = try #require(canvas.annotations.first as? TextAnnotation)
+        #expect(persisted.style.fontSize == 22)
+        #expect(persisted.style.opacity == 1.0)
+    }
+
+    @Test("scrollWheel adjusts selected text opacity horizontally and font size vertically in text mode")
+    func scrollWheelAdjustsSelectedTextInTextMode() throws {
+        let (canvas, window) = makeCanvasInWindow()
+        let original = TextAnnotation(
+            position: CGPoint(x: 32, y: 32),
+            text: "scroll",
+            color: .systemBlue,
+            opacity: 0.9
+        )
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .text
+
+        canvas.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+        canvas.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+
+        let brushSizeBeforeScroll = canvas.currentBrushSize
+        canvas.scrollWheel(with: try makeScrollEvent(deltaX: -50, precise: true))
+
+        let afterOpacityScroll = try #require(canvas.selectedTextAnnotation)
+        #expect(abs(afterOpacityScroll.style.opacity - 0.75) < 0.0001)
+        #expect(afterOpacityScroll.style.fontSize == 16)
+        #expect(canvas.currentBrushSize == brushSizeBeforeScroll)
+
+        canvas.scrollWheel(with: try makeScrollEvent(deltaY: 12, precise: true))
+
+        let afterFontScroll = try #require(canvas.selectedTextAnnotation)
+        #expect(afterFontScroll.style.fontSize == 18)
+        #expect(abs(afterFontScroll.style.opacity - 0.75) < 0.0001)
+    }
+
+    @Test("scrollWheel keeps brush-size behavior when selected text path is inactive")
+    func scrollWheelKeepsBrushSizeBehaviorWhenSelectedTextPathIsInactive() throws {
+        let canvas = AnnotationCanvasView(frame: CGRect(x: 0, y: 0, width: 240, height: 160))
+        let original = TextAnnotation(
+            position: CGPoint(x: 32, y: 32),
+            text: "brush",
+            color: .systemBlue,
+            opacity: 0.7
+        )
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .pen
+
+        canvas.scrollWheel(with: try makeScrollEvent(deltaY: 12, precise: false))
+
+        #expect(canvas.currentBrushSize == 4)
+        let unchanged = try #require(canvas.annotations.first as? TextAnnotation)
+        #expect(unchanged.style.fontSize == 16)
+        #expect(abs(unchanged.style.opacity - 0.7) < 0.0001)
     }
 
     @Test("canceling an existing text edit restores the original annotation without changing history")

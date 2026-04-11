@@ -135,6 +135,10 @@ extension AnnotationCanvasView {
                 context.saveGState()
                 context.setAlpha(0.5)
             }
+
+            if let decorationRect = selectedTextDecorationRect(for: annotation) {
+                drawSelectedTextDecoration(in: decorationRect, context: context)
+            }
             
             annotation.draw(in: context)
             
@@ -217,6 +221,17 @@ extension AnnotationCanvasView {
             fontSize: baseStyle.fontSize,
             color: color,
             opacity: baseStyle.opacity
+        )
+        applyTextStyle(updatedStyle)
+    }
+
+    func adjustSelectedTextOpacity(by delta: CGFloat) {
+        guard delta != 0, let selectedTextAnnotation else { return }
+
+        let updatedStyle = TextAnnotationStyle(
+            fontSize: selectedTextAnnotation.style.fontSize,
+            color: selectedTextAnnotation.style.color,
+            opacity: min(max(selectedTextAnnotation.style.opacity + delta, 0.3), 1.0)
         )
         applyTextStyle(updatedStyle)
     }
@@ -676,6 +691,22 @@ extension AnnotationCanvasView {
         publishTextStyleState()
     }
 
+    func selectedTextDecorationRect(for annotation: Annotation) -> CGRect? {
+        guard currentTool == .text,
+              let textAnnotation = annotation as? TextAnnotation,
+              selectedTextAnnotation?.id == textAnnotation.id else {
+            return nil
+        }
+
+        let textRect = textAnnotation.boundingRect()
+        guard !textRect.isEmpty else { return nil }
+
+        return textRect.insetBy(
+            dx: -DesignTokens.Spacing.sm,
+            dy: -DesignTokens.Spacing.xs
+        )
+    }
+
     private func updateEditingTextViewStyle(_ style: TextAnnotationStyle) {
         guard let textView = editingTextView else { return }
         textView.textColor = style.color.withAlphaComponent(style.opacity)
@@ -713,26 +744,53 @@ extension AnnotationCanvasView {
         snapshot.style.color == annotation.style.color &&
         snapshot.style.opacity == annotation.style.opacity
     }
+
+    private func drawSelectedTextDecoration(in rect: CGRect, context: CGContext) {
+        let path = NSBezierPath(
+            roundedRect: rect,
+            xRadius: DesignTokens.CornerRadius.md,
+            yRadius: DesignTokens.CornerRadius.md
+        )
+        path.lineJoinStyle = .round
+
+        context.saveGState()
+        context.setShadow(
+            offset: .zero,
+            blur: 10,
+            color: DesignTokens.Colors.NS.selectionShadow.cgColor
+        )
+        DesignTokens.Colors.NS.glowHoverShadow.withAlphaComponent(0.9).setStroke()
+        path.lineWidth = 3
+        path.stroke()
+        context.restoreGState()
+
+        DesignTokens.Colors.NS.accentInfo.setStroke()
+        path.lineWidth = 1.5
+        path.stroke()
+    }
     
     // MARK: - Scroll Wheel (Adjust Brush Size)
     
     override func scrollWheel(with event: NSEvent) {
+        if currentTool == .text, selectedTextAnnotation != nil {
+            if event.hasPreciseScrollingDeltas, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
+                adjustSelectedTextOpacity(by: event.scrollingDeltaX * 0.003)
+            } else {
+                applyTextFontSizeStep(event.scrollingDeltaY > 0 ? 2 : -2)
+            }
+            return
+        }
+
         guard currentTool == .pen || currentTool == .marker else {
             super.scrollWheel(with: event)
             return
         }
         
         let delta = event.scrollingDeltaY
-        if delta == 0 { return }
-        
-        // 向上滚动 (delta > 0) -> 变大，向下滚动 (delta < 0) -> 变小
+        guard delta != 0 else { return }
+
         let change = delta > 0 ? 1.0 : -1.0
-        let newSize = currentBrushSize + CGFloat(change)
-        
-        // 限制范围
-        currentBrushSize = min(max(newSize, 1.0), 100.0)
-        
-        // 刷新光标
+        currentBrushSize = min(max(currentBrushSize + change, 1.0), 100.0)
         updateCursor()
         window?.invalidateCursorRects(for: self)
     }
