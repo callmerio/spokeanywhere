@@ -88,30 +88,41 @@ final class EditTextAnnotationCommand: AnnotationCommand {
     private let annotation: TextAnnotation
     private let oldSnapshot: TextAnnotationSnapshot
     private let newSnapshot: TextAnnotationSnapshot
-    private weak var canvas: AnnotationCanvas?
+    private weak var canvas: AnnotationCanvasView?
+    private let restoresSelection: Bool
 
     init(
         annotation: TextAnnotation,
         oldSnapshot: TextAnnotationSnapshot,
         newSnapshot: TextAnnotationSnapshot,
-        canvas: AnnotationCanvas
+        canvas: AnnotationCanvasView,
+        restoresSelection: Bool = false
     ) {
         self.annotation = annotation
         self.oldSnapshot = oldSnapshot
         self.newSnapshot = newSnapshot
         self.canvas = canvas
+        self.restoresSelection = restoresSelection
     }
 
     func execute() {
         canvas?.removeAnnotation(annotation, recordCommand: false)
         annotation.apply(snapshot: newSnapshot)
         canvas?.addAnnotation(annotation, recordCommand: false)
+        if restoresSelection {
+            canvas?.restoreTextSelection(annotation.id)
+        }
+        canvas?.syncTextStyleStateAfterHistoryChange()
     }
 
     func undo() {
         canvas?.removeAnnotation(annotation, recordCommand: false)
         annotation.apply(snapshot: oldSnapshot)
         canvas?.addAnnotation(annotation, recordCommand: false)
+        if restoresSelection {
+            canvas?.restoreTextSelection(annotation.id)
+        }
+        canvas?.syncTextStyleStateAfterHistoryChange()
     }
 }
 

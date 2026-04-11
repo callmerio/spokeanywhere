@@ -180,11 +180,13 @@ extension AnnotationCanvasView {
     
     func undo() {
         historyManager.undo()
+        syncTextStyleStateAfterHistoryChange()
         needsDisplay = true
     }
     
     func redo() {
         historyManager.redo()
+        syncTextStyleStateAfterHistoryChange()
         needsDisplay = true
     }
     
@@ -660,7 +662,8 @@ extension AnnotationCanvasView {
                     annotation: textAnnotation,
                     oldSnapshot: oldSnapshot,
                     newSnapshot: newSnapshot,
-                    canvas: self
+                    canvas: self,
+                    restoresSelection: true
                 )
                 historyManager.record(command)
             }
@@ -686,6 +689,19 @@ extension AnnotationCanvasView {
                 ],
                 range: NSRange(location: 0, length: textView.string.utf16.count)
             )
+        }
+    }
+
+    func restoreTextSelection(_ annotationID: UUID?) {
+        selectedTextAnnotationID = annotationID
+        needsDisplay = true
+    }
+
+    func syncTextStyleStateAfterHistoryChange() {
+        if currentTool == .text {
+            publishTextStyleState()
+        } else if selectedTextAnnotation == nil {
+            currentColor = defaultTextStyle.color
         }
     }
     

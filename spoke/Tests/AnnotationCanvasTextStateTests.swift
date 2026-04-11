@@ -224,6 +224,82 @@ struct AnnotationCanvasTextStateTests {
         #expect((canvas.annotations.first as? TextAnnotation)?.text == "after")
     }
 
+    @Test("selected text style edits keep selection and republish style across undo redo")
+    func selectedTextStyleEditsResyncAcrossUndoRedo() throws {
+        let (canvas, window) = makeCanvasInWindow()
+        let original = TextAnnotation(position: CGPoint(x: 32, y: 32), text: "styled", color: .systemBlue)
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .text
+
+        var styleUpdates: [(TextAnnotationStyle, Bool)] = []
+        canvas.onTextStyleChanged = { style, hasSelectedText in
+            styleUpdates.append((style, hasSelectedText))
+        }
+
+        canvas.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+        canvas.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+
+        #expect(canvas.selectedTextAnnotation?.id == original.id)
+
+        canvas.applyTextFontSizeStep(4)
+        canvas.applyTextColor(.systemRed)
+
+        let styled = try #require(canvas.selectedTextAnnotation)
+        #expect(styled.id == original.id)
+        #expect(styled.style.fontSize == 20)
+        #expect(styled.style.color == .systemRed)
+
+        canvas.undo()
+        let afterUndo = try #require(canvas.selectedTextAnnotation)
+        #expect(afterUndo.id == original.id)
+        #expect(afterUndo.style.fontSize == 20)
+        #expect(afterUndo.style.color == .systemBlue)
+        let undoState = try #require(styleUpdates.last)
+        #expect(undoState.0.fontSize == 20)
+        #expect(undoState.0.color == .systemBlue)
+        #expect(undoState.1 == false)
+
+        canvas.undo()
+        let afterSecondUndo = try #require(canvas.selectedTextAnnotation)
+        #expect(afterSecondUndo.id == original.id)
+        #expect(afterSecondUndo.style.fontSize == 16)
+        #expect(afterSecondUndo.style.color == .systemBlue)
+        let secondUndoState = try #require(styleUpdates.last)
+        #expect(secondUndoState.0.fontSize == 16)
+        #expect(secondUndoState.0.color == .systemBlue)
+        #expect(secondUndoState.1 == false)
+
+        canvas.redo()
+        let afterRedo = try #require(canvas.selectedTextAnnotation)
+        #expect(afterRedo.id == original.id)
+        #expect(afterRedo.style.fontSize == 20)
+        #expect(afterRedo.style.color == .systemBlue)
+        let redoState = try #require(styleUpdates.last)
+        #expect(redoState.0.fontSize == 20)
+        #expect(redoState.0.color == .systemBlue)
+        #expect(redoState.1 == false)
+
+        canvas.redo()
+        let afterSecondRedo = try #require(canvas.selectedTextAnnotation)
+        #expect(afterSecondRedo.id == original.id)
+        #expect(afterSecondRedo.style.fontSize == 20)
+        #expect(afterSecondRedo.style.color == .systemRed)
+        let secondRedoState = try #require(styleUpdates.last)
+        #expect(secondRedoState.0.fontSize == 20)
+        #expect(secondRedoState.0.color == .systemRed)
+        #expect(secondRedoState.1 == false)
+    }
+
     @Test("canceling an existing text edit restores the original annotation without changing history")
     func cancelExistingTextEditRestoresOriginalAnnotationWithoutHistoryChange() throws {
         let canvas = AnnotationCanvasView(frame: CGRect(x: 0, y: 0, width: 240, height: 160))
