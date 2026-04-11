@@ -775,7 +775,7 @@ extension AnnotationCanvasView {
         if currentTool == .text, selectedTextAnnotation != nil {
             if event.hasPreciseScrollingDeltas, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
                 adjustSelectedTextOpacity(by: event.scrollingDeltaX * 0.003)
-            } else {
+            } else if event.scrollingDeltaY != 0 {
                 applyTextFontSizeStep(event.scrollingDeltaY > 0 ? 2 : -2)
             }
             return

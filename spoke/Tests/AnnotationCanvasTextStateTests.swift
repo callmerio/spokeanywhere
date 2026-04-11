@@ -439,6 +439,38 @@ struct AnnotationCanvasTextStateTests {
         #expect(abs(afterFontScroll.style.opacity - 0.75) < 0.0001)
     }
 
+    @Test("scrollWheel ignores horizontal non-precise selected-text events with zero vertical delta")
+    func scrollWheelIgnoresHorizontalNonPreciseSelectedTextEventWithoutVerticalDelta() throws {
+        let (canvas, window) = makeCanvasInWindow()
+        let original = TextAnnotation(
+            position: CGPoint(x: 32, y: 32),
+            text: "scroll",
+            color: .systemBlue,
+            opacity: 0.9
+        )
+        canvas.addAnnotation(original, recordCommand: false)
+        canvas.currentTool = .text
+
+        canvas.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+        canvas.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 40, y: 40),
+            clickCount: 1
+        ))
+
+        canvas.scrollWheel(with: try makeScrollEvent(deltaX: 6, deltaY: 0, precise: false))
+
+        let unchanged = try #require(canvas.selectedTextAnnotation)
+        #expect(unchanged.style.fontSize == 16)
+        #expect(abs(unchanged.style.opacity - 0.9) < 0.0001)
+    }
+
     @Test("scrollWheel keeps brush-size behavior when selected text path is inactive")
     func scrollWheelKeepsBrushSizeBehaviorWhenSelectedTextPathIsInactive() throws {
         let canvas = AnnotationCanvasView(frame: CGRect(x: 0, y: 0, width: 240, height: 160))
