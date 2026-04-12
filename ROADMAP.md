@@ -174,4 +174,20 @@ swift test --sanitize=address --parallel
 - 体验增强（菜单栏能力、快捷键自定义、主题系统）。
 - 平台扩展（多语言、iOS/iPadOS、企业能力）。
 
+### Phase 999.1（BACKLOG）桌面文本贴屏 Overlay
+
+**Goal**
+- 支持将剪贴板文本、语音转录文本或手动输入文本，作为可拖动、可调样式、可 Pin 的桌面悬浮文字对象展示。
+
+**Requirements**
+- 与截图 Pin 窗口保持交互一致性，但不混入截图文字标注 phase。
+- 第一版优先复用现有浮窗 / 截图窗口基础设施，避免引入全新桌面层子系统。
+- 进入 active planning 前，必须先完成独立 discuss/context，明确 phase boundary、交互语义与持久化策略。
+
+**Plans**
+- [ ] TBD (use repo-native discuss/planning artifacts before promotion)
+
+**Notes**
+- 来源：`docs/superpowers/specs/2026-04-11-screenshot-text-annotation-design.md` 已明确将“文本贴屏 / 桌面浮动文字”排除为独立立项需求。
+
 > 注：以上仅保留为候选方向，不纳入当前执行窗口。
