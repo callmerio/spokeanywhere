@@ -2,7 +2,7 @@
 
 > 类型: imported external execution  
 > 来源: superpowers worktree / plan / spec  
-> 更新时间: 2026-04-13 03:04 +08:00
+> 更新时间: 2026-04-13 03:18 +08:00
 
 ## 1. Summary
 
@@ -124,11 +124,13 @@
 - `222 tests in 60 suites passed`
 - `0 warnings`
 
-## 7. Current Ship Blockers
+## 7. Current Ship Status
 
-当前 imported branch 仍有一个已知 blocker，不能直接无脑 ship：
+当前 imported branch 的环境噪音 blocker 已清理：
 
-- worktree 里存在 `.serena/project.yml` 脏改动
+- `.serena/project.yml` 已恢复
+- branch 当前为 clean working tree
+- 相对 `main` 为 ahead 10 commits（随后补录文档提交后继续前进）
 
 因此，这条记录当前口径应为：
 
@@ -136,7 +138,7 @@
 implementation complete in external worktree
 + review passed
 + verification passed
-- ship cleanup incomplete
++ ship cleanup completed
 ```
 
 ## 8. Conflict With Current Project Guardrails
@@ -161,10 +163,10 @@ implementation complete in external worktree
 
 如果要继续推进：
 
-1. 清理 `codex/screenshot-text-annotation` worktree 中的 `.serena/project.yml`
-2. 对 main 与该 branch 再做一次最终 diff 审核
-3. 明确是否按“exception ship”处理
-4. 再执行 push / PR / merge
+1. 保持当前 imported traceability 记录随分支一起 ship
+2. 对 `main` 与该 branch 再做一次最终 diff 审核
+3. 按“exception ship”处理并创建 PR
+4. 在 PR 描述中明确这是截图文字标注对象化改造，不包含文本贴屏功能
 
 如果要继续规划“文本贴屏 / 桌面浮动文字”：
 
