@@ -129,6 +129,9 @@ final class RegionSelectionView: NSView {
             }
         }
     }
+
+    /// 标注历史变更回调
+    private var annotationHistoryChangedHandler: ((Bool, Bool) -> Void)?
     
     // MARK: - Callbacks
     
@@ -143,6 +146,9 @@ final class RegionSelectionView: NSView {
     
     /// 选区变化回调（编辑模式下选区移动/调整大小）
     var onSelectionChanged: ((CGRect) -> Void)?
+
+    /// 文字样式变化回调
+    var onTextStyleChanged: ((TextAnnotationStyle, Bool) -> Void)?
     
     // MARK: - Init
     
@@ -203,7 +209,10 @@ final class RegionSelectionView: NSView {
         
         // 监听历史变化
         canvas.onHistoryChanged = { [weak self] canUndo, canRedo in
-            self?.onAnnotationHistoryChanged?(canUndo, canRedo)
+            self?.annotationHistoryChangedHandler?(canUndo, canRedo)
+        }
+        canvas.onTextStyleChanged = { [weak self] style, hasSelectedText in
+            self?.onTextStyleChanged?(style, hasSelectedText)
         }
     }
     
@@ -267,6 +276,14 @@ extension RegionSelectionView {
     func redoAnnotation() {
         annotationCanvas?.redo()
     }
+
+    func adjustTextFontSize(by delta: CGFloat) {
+        annotationCanvas?.applyTextFontSizeStep(delta)
+    }
+
+    func applyTextColor(_ color: NSColor) {
+        annotationCanvas?.applyTextColor(color)
+    }
     
     /// 获取 Undo/Redo 状态
     var canUndoAnnotation: Bool { annotationCanvas?.canUndo ?? false }
@@ -275,6 +292,7 @@ extension RegionSelectionView {
     /// 获取带标注的图片
     func getAnnotatedImage() -> NSImage? {
         guard let bgImage = backgroundImage else { return nil }
+        annotationCanvas?.commitActiveTextIfNeeded(selectCommittedText: false)
         
         // 从 NSImage 获取 CGImage representation
         guard let cgImage = bgImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
@@ -321,8 +339,8 @@ extension RegionSelectionView {
     
     /// 设置标注历史回调
     var onAnnotationHistoryChanged: ((Bool, Bool) -> Void)? {
-        get { annotationCanvas?.onHistoryChanged }
-        set { annotationCanvas?.onHistoryChanged = newValue }
+        get { annotationHistoryChangedHandler }
+        set { annotationHistoryChangedHandler = newValue }
     }
 }
 
@@ -788,4 +806,3 @@ extension RegionSelectionView {
         }
     }
 }
-

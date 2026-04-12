@@ -63,12 +63,21 @@ final class ScreenshotToolbarView: NSView {
     // MARK: - Callbacks
     
     var onAction: ((ToolbarAction) -> Void)?
+    var onTextFontStep: ((CGFloat) -> Void)?
+    var onTextColorSelected: ((NSColor) -> Void)?
     
     // MARK: - Properties
     
     private var buttons: [ToolbarAction: ScreenshotToolbarButton] = [:]
     private let stackView: NSStackView
     private let backgroundView: NSVisualEffectView
+    private let textControlsStackView = NSStackView()
+    private let textFontValueLabel = NSTextField(labelWithString: "16")
+    private var textColorButtons: [NSButton] = []
+    private var textColorMap: [ObjectIdentifier: NSColor] = [:]
+
+    var isTextControlsVisible: Bool { !textControlsStackView.isHidden }
+    var displayedTextFontSize: String { textFontValueLabel.stringValue }
     
     // MARK: - Constants
     
@@ -78,6 +87,11 @@ final class ScreenshotToolbarView: NSView {
         static let buttonSpacing: CGFloat = 4
         static let groupSpacing: CGFloat = 12
         static let cornerRadius: CGFloat = 12
+        static let textControlSpacing: CGFloat = 6
+        static let fontButtonWidth: CGFloat = 28
+        static let fontLabelWidth: CGFloat = 28
+        static let colorSwatchSize: CGFloat = 14
+        static let fontStepAmount: CGFloat = 1
     }
     
     // MARK: - Init
@@ -121,6 +135,17 @@ final class ScreenshotToolbarView: NSView {
         stackView.alignment = .centerY
         stackView.distribution = .fill
         addSubview(stackView)
+
+        textControlsStackView.orientation = .horizontal
+        textControlsStackView.alignment = .centerY
+        textControlsStackView.spacing = Design.textControlSpacing
+        textControlsStackView.isHidden = true
+
+        textFontValueLabel.textColor = DesignTokens.Colors.NS.textPrimary
+        textFontValueLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        textFontValueLabel.alignment = .center
+        textFontValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        textFontValueLabel.widthAnchor.constraint(equalToConstant: Design.fontLabelWidth).isActive = true
         
         // 创建按钮组
         createButtonGroups()
@@ -134,6 +159,9 @@ final class ScreenshotToolbarView: NSView {
         for action in ToolbarAction.annotationTools {
             let button = createButton(for: action)
             stackView.addArrangedSubview(button)
+            if action == .text {
+                stackView.addArrangedSubview(textControlsStackView)
+            }
         }
         
         // 分隔线 1
@@ -177,6 +205,88 @@ final class ScreenshotToolbarView: NSView {
         ])
         
         return separator
+    }
+
+    private func configureTextControlsIfNeeded() {
+        guard textControlsStackView.arrangedSubviews.isEmpty else { return }
+
+        textControlsStackView.addArrangedSubview(makeFontStepButton(title: "A-", delta: -Design.fontStepAmount))
+        textControlsStackView.addArrangedSubview(textFontValueLabel)
+        textControlsStackView.addArrangedSubview(makeFontStepButton(title: "A+", delta: Design.fontStepAmount))
+        textControlsStackView.addArrangedSubview(createSeparator())
+
+        let colors: [NSColor] = [
+            DesignTokens.Colors.NS.annotationText,
+            .systemYellow,
+            .systemRed,
+            .systemGreen,
+            .systemBlue
+        ]
+
+        for color in colors {
+            let swatch = makeColorSwatch(color: color)
+            textControlsStackView.addArrangedSubview(swatch)
+            textColorButtons.append(swatch)
+            textColorMap[ObjectIdentifier(swatch)] = color
+        }
+    }
+
+    private func makeFontStepButton(title: String, delta: CGFloat) -> NSButton {
+        let button = NSButton(title: title, target: self, action: #selector(handleTextFontStep(_:)))
+        button.bezelStyle = .texturedRounded
+        button.isBordered = true
+        button.font = .systemFont(ofSize: 11, weight: .semibold)
+        button.contentTintColor = DesignTokens.Colors.NS.textPrimary
+        button.identifier = NSUserInterfaceItemIdentifier("\(delta)")
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: Design.fontButtonWidth),
+            button.heightAnchor.constraint(equalToConstant: 24)
+        ])
+        return button
+    }
+
+    private func makeColorSwatch(color: NSColor) -> NSButton {
+        let button = NSButton(frame: NSRect(x: 0, y: 0, width: Design.colorSwatchSize, height: Design.colorSwatchSize))
+        button.isBordered = false
+        button.bezelStyle = .shadowlessSquare
+        button.title = ""
+        button.target = self
+        button.action = #selector(handleTextColorTap(_:))
+        button.wantsLayer = true
+        button.layer?.cornerRadius = Design.colorSwatchSize / 2
+        button.layer?.backgroundColor = color.cgColor
+        button.layer?.borderColor = DesignTokens.Colors.NS.clear.cgColor
+        button.layer?.borderWidth = 1
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: Design.colorSwatchSize),
+            button.heightAnchor.constraint(equalToConstant: Design.colorSwatchSize)
+        ])
+        return button
+    }
+
+    @objc
+    private func handleTextFontStep(_ sender: NSButton) {
+        guard let rawValue = sender.identifier?.rawValue,
+              let delta = Double(rawValue) else { return }
+        onTextFontStep?(CGFloat(delta))
+    }
+
+    @objc
+    private func handleTextColorTap(_ sender: NSButton) {
+        guard let color = textColorMap[ObjectIdentifier(sender)] else { return }
+        onTextColorSelected?(color)
+    }
+
+    private func updateSelectedTextColor(_ color: NSColor) {
+        for button in textColorButtons {
+            let isSelected = textColorMap[ObjectIdentifier(button)] == color
+            button.layer?.borderWidth = isSelected ? 2 : 1
+            button.layer?.borderColor = isSelected
+                ? DesignTokens.Colors.NS.inkLight.cgColor
+                : DesignTokens.Colors.NS.clear.cgColor
+        }
     }
     
     private func setupConstraints() {
@@ -230,6 +340,23 @@ final class ScreenshotToolbarView: NSView {
     /// 设置按钮启用状态
     func setEnabled(_ action: ToolbarAction, enabled: Bool) {
         buttons[action]?.setEnabled(enabled)
+    }
+
+    func setTextControlsVisible(_ visible: Bool) {
+        configureTextControlsIfNeeded()
+        textControlsStackView.isHidden = !visible
+        invalidateIntrinsicContentSize()
+        needsLayout = true
+    }
+
+    func applyTextStyle(_ style: TextAnnotationStyle, hasSelectedText: Bool) {
+        configureTextControlsIfNeeded()
+        textFontValueLabel.stringValue = String(Int(style.fontSize.rounded()))
+        textFontValueLabel.textColor = hasSelectedText
+            ? DesignTokens.Colors.NS.inkLight
+            : DesignTokens.Colors.NS.textPrimary
+        updateSelectedTextColor(style.color)
+        invalidateIntrinsicContentSize()
     }
     
     /// 更新撤销/重做按钮状态

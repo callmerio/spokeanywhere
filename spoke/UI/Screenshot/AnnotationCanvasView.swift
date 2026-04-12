@@ -28,6 +28,19 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
     
     private(set) var annotations: [Annotation] = []
     private let historyManager = AnnotationHistoryManager()
+    private var defaultTextStyle = TextAnnotationStyle.default
+    private var selectedTextAnnotationID: UUID?
+    
+    var onTextStyleChanged: ((TextAnnotationStyle, Bool) -> Void)?
+    var currentTextStyle: TextAnnotationStyle {
+        editingTextAnnotation?.style ?? selectedTextAnnotation?.style ?? defaultTextStyle
+    }
+    
+    var activeEditingTextAnnotation: TextAnnotation? { editingTextAnnotation }
+    var selectedTextAnnotation: TextAnnotation? {
+        guard let selectedTextAnnotationID else { return nil }
+        return annotations.first { $0.id == selectedTextAnnotationID } as? TextAnnotation
+    }
     
     var currentTool: Tool = .none {
         didSet {
@@ -37,6 +50,13 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
             case .pen: currentBrushSize = 3
             case .marker: currentBrushSize = 20
             default: break
+            }
+            
+            if currentTool != .text {
+                commitActiveTextIfNeeded(selectCommittedText: false)
+                clearTextSelection()
+            } else {
+                publishTextStyleState()
             }
             
             updateCursor()
@@ -55,6 +75,7 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
     /// 正在编辑的文字
     private var editingTextView: NSTextView?
     private var editingTextAnnotation: TextAnnotation?
+    private var editingOriginalTextSnapshot: TextAnnotationSnapshot?
     
     /// 正在拖动的标注
     private var draggingAnnotation: Annotation?
@@ -114,6 +135,10 @@ extension AnnotationCanvasView {
                 context.saveGState()
                 context.setAlpha(0.5)
             }
+
+            if let decorationRect = selectedTextDecorationRect(for: annotation) {
+                drawSelectedTextDecoration(in: decorationRect, context: context)
+            }
             
             annotation.draw(in: context)
             
@@ -141,6 +166,9 @@ extension AnnotationCanvasView {
     
     func removeAnnotation(_ annotation: Annotation, recordCommand: Bool = true) {
         annotations.removeAll { $0.id == annotation.id }
+        if selectedTextAnnotationID == annotation.id {
+            selectedTextAnnotationID = nil
+        }
         
         if recordCommand {
             let command = RemoveAnnotationCommand(annotation: annotation, canvas: self)
@@ -156,11 +184,13 @@ extension AnnotationCanvasView {
     
     func undo() {
         historyManager.undo()
+        syncTextStyleStateAfterHistoryChange()
         needsDisplay = true
     }
     
     func redo() {
         historyManager.redo()
+        syncTextStyleStateAfterHistoryChange()
         needsDisplay = true
     }
     
@@ -172,6 +202,38 @@ extension AnnotationCanvasView {
         historyManager.clear()
         needsDisplay = true
         onAnnotationsChanged?()
+    }
+
+    func applyTextFontSizeStep(_ delta: CGFloat) {
+        guard delta != 0 else { return }
+        let baseStyle = editingTextAnnotation?.style ?? selectedTextAnnotation?.style ?? defaultTextStyle
+        let updatedStyle = TextAnnotationStyle(
+            fontSize: min(max(baseStyle.fontSize + delta, 10), 72),
+            color: baseStyle.color,
+            opacity: baseStyle.opacity
+        )
+        applyTextStyle(updatedStyle)
+    }
+
+    func applyTextColor(_ color: NSColor) {
+        let baseStyle = editingTextAnnotation?.style ?? selectedTextAnnotation?.style ?? defaultTextStyle
+        let updatedStyle = TextAnnotationStyle(
+            fontSize: baseStyle.fontSize,
+            color: color,
+            opacity: baseStyle.opacity
+        )
+        applyTextStyle(updatedStyle)
+    }
+
+    func adjustSelectedTextOpacity(by delta: CGFloat) {
+        guard delta != 0, let selectedTextAnnotation else { return }
+
+        let updatedStyle = TextAnnotationStyle(
+            fontSize: selectedTextAnnotation.style.fontSize,
+            color: selectedTextAnnotation.style.color,
+            opacity: min(max(selectedTextAnnotation.style.opacity + delta, 0.3), 1.0)
+        )
+        applyTextStyle(updatedStyle)
     }
     
     func renderAnnotations(on image: NSImage) -> NSImage {
@@ -200,18 +262,24 @@ extension AnnotationCanvasView {
         let location = convert(event.locationInWindow, from: nil)
         dragStartPoint = location
         
-        // 双击检测：编辑文字
         if event.clickCount == 2 {
-            if let textAnnotation = annotations.last(where: { $0.hitTest(point: location) }) as? TextAnnotation {
-                editExistingText(textAnnotation)
+            if currentTool == .text, beginEditingTextAnnotation(at: location) {
+                return
+            }
+            if currentTool == .text {
+                beginTextDraft(at: location)
                 return
             }
         }
         
-        // 检查是否点击了现有标注（用于拖动）
-        if currentTool == .none || currentTool == .text {
+        if currentTool == .text, selectTextAnnotation(at: location) {
+            draggingAnnotation = selectedTextAnnotation
+            draggingStartPosition = selectedTextAnnotation?.position ?? .zero
+            return
+        }
+        
+        if currentTool == .none {
             if let annotation = findAnnotation(at: location) {
-                // 单击标注开始拖动
                 draggingAnnotation = annotation
                 if let textAnn = annotation as? TextAnnotation {
                     draggingStartPosition = textAnn.position
@@ -237,9 +305,11 @@ extension AnnotationCanvasView {
             currentAnnotation = marker
             
         case .text:
-            showTextInput(at: location)
+            beginTextDraft(at: location)
             
         case .eraser:
+            commitActiveTextIfNeeded(selectCommittedText: false)
+            clearTextSelection()
             if let annotation = findAnnotation(at: location) {
                 removeAnnotation(annotation)
             }
@@ -328,7 +398,15 @@ extension AnnotationCanvasView {
         }
         
         // 检查是否 hover 到标注上（显示移动光标）
-        if findAnnotation(at: location) != nil {
+        let hoveredInteractiveAnnotation: Annotation?
+        switch currentTool {
+        case .text:
+            hoveredInteractiveAnnotation = findTextAnnotation(at: location)
+        default:
+            hoveredInteractiveAnnotation = findAnnotation(at: location)
+        }
+        
+        if hoveredInteractiveAnnotation != nil {
             NSCursor.openHand.set()
         } else {
             updateCursor()
@@ -337,21 +415,6 @@ extension AnnotationCanvasView {
     
     override func mouseExited(with event: NSEvent) {
         hoveredAnnotation = nil
-    }
-    
-    private func editExistingText(_ textAnnotation: TextAnnotation) {
-        // 移除原标注
-        annotations.removeAll { $0.id == textAnnotation.id }
-        needsDisplay = true
-        
-        // 显示编辑框
-        editingTextAnnotation = textAnnotation
-        
-        let textView = createTextView(at: textAnnotation.position, existingText: textAnnotation.text)
-        addSubview(textView)
-        editingTextView = textView
-        
-        window?.makeFirstResponder(textView)
     }
 }
 
@@ -385,30 +448,184 @@ extension AnnotationCanvasView {
         return annotations.last(where: { $0.hitTest(point: point) })
     }
     
+    private func findTextAnnotation(at point: CGPoint) -> TextAnnotation? {
+        annotations.reversed().first(where: { annotation in
+            guard annotation is TextAnnotation else { return false }
+            return annotation.hitTest(point: point)
+        }) as? TextAnnotation
+    }
+    
     // MARK: - Text Input
     
-    private func showTextInput(at position: CGPoint) {
-        finishTextEditing()
+    @discardableResult
+    func beginTextDraft(at position: CGPoint) -> NSTextView {
+        commitActiveTextIfNeeded(selectCommittedText: false)
         
-        let textAnnotation = TextAnnotation(position: position, text: "", color: currentColor)
+        var draftStyle = defaultTextStyle
+        if selectedTextAnnotation == nil {
+            draftStyle.color = currentColor
+        }
+        
+        let textAnnotation = TextAnnotation(position: position, text: "")
+        textAnnotation.style = draftStyle
+        
+        clearTextSelection()
         editingTextAnnotation = textAnnotation
+        editingOriginalTextSnapshot = nil
         
-        let textView = createTextView(at: position, existingText: "")
+        let textView = createTextView(at: position, style: draftStyle, existingText: "")
         addSubview(textView)
         editingTextView = textView
         
+        publishTextStyleState()
         window?.makeFirstResponder(textView)
+        return textView
     }
     
-    private func createTextView(at position: CGPoint, existingText: String) -> NSTextView {
+    func selectTextAnnotation(at point: CGPoint) -> Bool {
+        commitActiveTextIfNeeded(selectCommittedText: false)
+        
+        guard let textAnnotation = findTextAnnotation(at: point) else {
+            clearTextSelection()
+            return false
+        }
+        
+        selectedTextAnnotationID = textAnnotation.id
+        defaultTextStyle = textAnnotation.style
+        publishTextStyleState()
+        needsDisplay = true
+        return true
+    }
+    
+    func beginEditingTextAnnotation(at point: CGPoint) -> Bool {
+        commitActiveTextIfNeeded(selectCommittedText: false)
+        
+        guard let textAnnotation = findTextAnnotation(at: point) else {
+            clearTextSelection()
+            return false
+        }
+        
+        editingOriginalTextSnapshot = TextAnnotationSnapshot(annotation: textAnnotation)
+        annotations.removeAll { $0.id == textAnnotation.id }
+        clearTextSelection()
+        
+        editingTextAnnotation = textAnnotation
+        defaultTextStyle = textAnnotation.style
+        
+        let textView = createTextView(
+            at: textAnnotation.position,
+            style: textAnnotation.style,
+            existingText: textAnnotation.text
+        )
+        addSubview(textView)
+        editingTextView = textView
+        
+        needsDisplay = true
+        onAnnotationsChanged?()
+        publishTextStyleState()
+        window?.makeFirstResponder(textView)
+        return true
+    }
+    
+    func clearTextSelection() {
+        guard selectedTextAnnotationID != nil else { return }
+        selectedTextAnnotationID = nil
+        needsDisplay = true
+        
+        if currentTool == .text, editingTextAnnotation == nil {
+            publishTextStyleState()
+        }
+    }
+    
+    func commitActiveTextIfNeeded(selectCommittedText: Bool) {
+        guard let textView = editingTextView,
+              let textAnnotation = editingTextAnnotation else { return }
+        
+        let text = textView.string.trimmingCharacters(in: .whitespacesAndNewlines)
+        let originalSnapshot = editingOriginalTextSnapshot
+        
+        if !text.isEmpty {
+            textAnnotation.text = text
+            if let containerWidth = textView.textContainer?.containerSize.width {
+                textAnnotation.maxWidth = containerWidth
+            }
+            defaultTextStyle = textAnnotation.style
+            
+            if let originalSnapshot {
+                let newSnapshot = TextAnnotationSnapshot(annotation: textAnnotation)
+                addAnnotation(textAnnotation, recordCommand: false)
+                
+                if !textAnnotationMatches(snapshot: originalSnapshot, annotation: textAnnotation) {
+                    let command = EditTextAnnotationCommand(
+                        annotation: textAnnotation,
+                        oldSnapshot: originalSnapshot,
+                        newSnapshot: newSnapshot,
+                        canvas: self
+                    )
+                    historyManager.record(command)
+                }
+            } else {
+                addAnnotation(textAnnotation)
+            }
+            
+            selectedTextAnnotationID = selectCommittedText ? textAnnotation.id : nil
+        } else if let originalSnapshot {
+            textAnnotation.apply(snapshot: originalSnapshot)
+            let command = RemoveAnnotationCommand(annotation: textAnnotation, canvas: self)
+            historyManager.record(command)
+            selectedTextAnnotationID = nil
+        } else if !selectCommittedText {
+            selectedTextAnnotationID = nil
+        }
+        
+        if window?.firstResponder === textView {
+            window?.makeFirstResponder(nil)
+        }
+        textView.removeFromSuperview()
+        editingTextView = nil
+        editingTextAnnotation = nil
+        editingOriginalTextSnapshot = nil
+        
+        needsDisplay = true
+        if currentTool == .text {
+            publishTextStyleState()
+        }
+    }
+    
+    private func cancelActiveTextEditing() {
+        guard let textView = editingTextView else { return }
+        
+        if let originalSnapshot = editingOriginalTextSnapshot,
+           let textAnnotation = editingTextAnnotation {
+            textAnnotation.apply(snapshot: originalSnapshot)
+            addAnnotation(textAnnotation, recordCommand: false)
+        }
+        
+        if window?.firstResponder === textView {
+            window?.makeFirstResponder(nil)
+        }
+        
+        textView.removeFromSuperview()
+        editingTextView = nil
+        editingTextAnnotation = nil
+        editingOriginalTextSnapshot = nil
+        selectedTextAnnotationID = nil
+        needsDisplay = true
+        
+        if currentTool == .text {
+            publishTextStyleState()
+        }
+    }
+    
+    private func createTextView(at position: CGPoint, style: TextAnnotationStyle, existingText: String) -> NSTextView {
         let textView = NSTextView()
         textView.frame = CGRect(x: position.x, y: position.y - 2, width: 300, height: 100)
         textView.backgroundColor = .clear
         textView.drawsBackground = false
-        textView.textColor = currentColor
-        textView.font = .systemFont(ofSize: 16, weight: .medium)
+        textView.textColor = style.color.withAlphaComponent(style.opacity)
+        textView.font = .systemFont(ofSize: style.fontSize, weight: .medium)
         textView.isRichText = false
-        textView.insertionPointColor = currentColor
+        textView.insertionPointColor = style.color
         textView.delegate = self
         textView.string = existingText
         
@@ -421,47 +638,159 @@ extension AnnotationCanvasView {
         return textView
     }
     
-    private func finishTextEditing() {
-        guard let textView = editingTextView,
-              let textAnnotation = editingTextAnnotation else { return }
-        
-        let text = textView.string.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if !text.isEmpty {
-            textAnnotation.text = text
-            // 保持输入时的换行宽度
-            if let containerWidth = textView.textContainer?.containerSize.width {
-                textAnnotation.maxWidth = containerWidth
-            }
-            addAnnotation(textAnnotation)
+    private func publishTextStyleState() {
+        if let textAnnotation = editingTextAnnotation {
+            defaultTextStyle = textAnnotation.style
+            currentColor = textAnnotation.style.color
+            onTextStyleChanged?(textAnnotation.style, true)
+            return
         }
         
-        textView.removeFromSuperview()
-        editingTextView = nil
-        editingTextAnnotation = nil
+        if let textAnnotation = selectedTextAnnotation {
+            defaultTextStyle = textAnnotation.style
+            currentColor = textAnnotation.style.color
+            onTextStyleChanged?(textAnnotation.style, false)
+            return
+        }
         
+        onTextStyleChanged?(defaultTextStyle, false)
+    }
+
+    private func applyTextStyle(_ style: TextAnnotationStyle) {
+        defaultTextStyle = style
+        currentColor = style.color
+
+        if let textAnnotation = editingTextAnnotation {
+            textAnnotation.style = style
+            updateEditingTextViewStyle(style)
+            needsDisplay = true
+            publishTextStyleState()
+            return
+        }
+
+        if let textAnnotation = selectedTextAnnotation {
+            let oldSnapshot = TextAnnotationSnapshot(annotation: textAnnotation)
+            textAnnotation.style = style
+            let newSnapshot = TextAnnotationSnapshot(annotation: textAnnotation)
+            if !textAnnotationMatches(snapshot: oldSnapshot, annotation: textAnnotation) {
+                let command = EditTextAnnotationCommand(
+                    annotation: textAnnotation,
+                    oldSnapshot: oldSnapshot,
+                    newSnapshot: newSnapshot,
+                    canvas: self,
+                    restoresSelection: true
+                )
+                historyManager.record(command)
+            }
+            needsDisplay = true
+            onAnnotationsChanged?()
+            publishTextStyleState()
+            return
+        }
+
+        publishTextStyleState()
+    }
+
+    func selectedTextDecorationRect(for annotation: Annotation) -> CGRect? {
+        guard currentTool == .text,
+              let textAnnotation = annotation as? TextAnnotation,
+              selectedTextAnnotation?.id == textAnnotation.id else {
+            return nil
+        }
+
+        let textRect = textAnnotation.boundingRect()
+        guard !textRect.isEmpty else { return nil }
+
+        return textRect.insetBy(
+            dx: -DesignTokens.Spacing.sm,
+            dy: -DesignTokens.Spacing.xs
+        )
+    }
+
+    private func updateEditingTextViewStyle(_ style: TextAnnotationStyle) {
+        guard let textView = editingTextView else { return }
+        textView.textColor = style.color.withAlphaComponent(style.opacity)
+        textView.font = .systemFont(ofSize: style.fontSize, weight: .medium)
+        textView.insertionPointColor = style.color
+        if !textView.string.isEmpty {
+            textView.textStorage?.setAttributes(
+                [
+                    .font: NSFont.systemFont(ofSize: style.fontSize, weight: .medium),
+                    .foregroundColor: style.color.withAlphaComponent(style.opacity)
+                ],
+                range: NSRange(location: 0, length: textView.string.utf16.count)
+            )
+        }
+    }
+
+    func restoreTextSelection(_ annotationID: UUID?) {
+        selectedTextAnnotationID = annotationID
         needsDisplay = true
+    }
+
+    func syncTextStyleStateAfterHistoryChange() {
+        if currentTool == .text {
+            publishTextStyleState()
+        } else if selectedTextAnnotation == nil {
+            currentColor = defaultTextStyle.color
+        }
+    }
+    
+    private func textAnnotationMatches(snapshot: TextAnnotationSnapshot, annotation: TextAnnotation) -> Bool {
+        snapshot.text == annotation.text &&
+        snapshot.position == annotation.position &&
+        snapshot.maxWidth == annotation.maxWidth &&
+        snapshot.style.fontSize == annotation.style.fontSize &&
+        snapshot.style.color == annotation.style.color &&
+        snapshot.style.opacity == annotation.style.opacity
+    }
+
+    private func drawSelectedTextDecoration(in rect: CGRect, context: CGContext) {
+        let path = NSBezierPath(
+            roundedRect: rect,
+            xRadius: DesignTokens.CornerRadius.md,
+            yRadius: DesignTokens.CornerRadius.md
+        )
+        path.lineJoinStyle = .round
+
+        context.saveGState()
+        context.setShadow(
+            offset: .zero,
+            blur: 10,
+            color: DesignTokens.Colors.NS.selectionShadow.cgColor
+        )
+        DesignTokens.Colors.NS.glowHoverShadow.withAlphaComponent(0.9).setStroke()
+        path.lineWidth = 3
+        path.stroke()
+        context.restoreGState()
+
+        DesignTokens.Colors.NS.accentInfo.setStroke()
+        path.lineWidth = 1.5
+        path.stroke()
     }
     
     // MARK: - Scroll Wheel (Adjust Brush Size)
     
     override func scrollWheel(with event: NSEvent) {
+        if currentTool == .text, selectedTextAnnotation != nil {
+            if event.hasPreciseScrollingDeltas, abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
+                adjustSelectedTextOpacity(by: event.scrollingDeltaX * 0.003)
+            } else if event.scrollingDeltaY != 0 {
+                applyTextFontSizeStep(event.scrollingDeltaY > 0 ? 2 : -2)
+            }
+            return
+        }
+
         guard currentTool == .pen || currentTool == .marker else {
             super.scrollWheel(with: event)
             return
         }
         
         let delta = event.scrollingDeltaY
-        if delta == 0 { return }
-        
-        // 向上滚动 (delta > 0) -> 变大，向下滚动 (delta < 0) -> 变小
+        guard delta != 0 else { return }
+
         let change = delta > 0 ? 1.0 : -1.0
-        let newSize = currentBrushSize + CGFloat(change)
-        
-        // 限制范围
-        currentBrushSize = min(max(newSize, 1.0), 100.0)
-        
-        // 刷新光标
+        currentBrushSize = min(max(currentBrushSize + change, 1.0), 100.0)
         updateCursor()
         window?.invalidateCursorRects(for: self)
     }
@@ -567,14 +896,12 @@ extension AnnotationCanvasView: NSTextViewDelegate {
                 return true
             }
             // Enter = 确认
-            finishTextEditing()
+            commitActiveTextIfNeeded(selectCommittedText: false)
             return true
         }
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
             // ESC = 取消
-            editingTextView?.removeFromSuperview()
-            editingTextView = nil
-            editingTextAnnotation = nil
+            cancelActiveTextEditing()
             return true
         }
         return false

@@ -31,6 +31,69 @@ enum AnnotationType: String, CaseIterable {
     case text
 }
 
+struct TextAnnotationStyle {
+    var fontSize: CGFloat
+    var color: NSColor
+    var opacity: CGFloat
+
+    static let `default` = TextAnnotationStyle()
+
+    init(
+        fontSize: CGFloat = 16,
+        color: NSColor = DesignTokens.Colors.NS.annotationText,
+        opacity: CGFloat = 1
+    ) {
+        self.fontSize = fontSize
+        self.color = color
+        self.opacity = opacity
+    }
+}
+
+private func strokeHitTest(
+    point: CGPoint,
+    strokePoints: [CGPoint],
+    lineWidth: CGFloat,
+    extraTolerance: CGFloat = 5
+) -> Bool {
+    let threshold = lineWidth / 2 + extraTolerance
+
+    guard !strokePoints.isEmpty else { return false }
+
+    if strokePoints.count == 1 {
+        let onlyPoint = strokePoints[0]
+        return hypot(onlyPoint.x - point.x, onlyPoint.y - point.y) <= threshold
+    }
+
+    for index in 1..<strokePoints.count {
+        let start = strokePoints[index - 1]
+        let end = strokePoints[index]
+        if distanceFromPoint(point, toSegmentFrom: start, to: end) <= threshold {
+            return true
+        }
+    }
+
+    return false
+}
+
+private func distanceFromPoint(_ point: CGPoint, toSegmentFrom start: CGPoint, to end: CGPoint) -> CGFloat {
+    let dx = end.x - start.x
+    let dy = end.y - start.y
+
+    if dx == 0, dy == 0 {
+        return hypot(point.x - start.x, point.y - start.y)
+    }
+
+    let numerator = (point.x - start.x) * dx + (point.y - start.y) * dy
+    let denominator = dx * dx + dy * dy
+    let projection = max(0, min(1, numerator / denominator))
+    let closestPoint = CGPoint(
+        x: start.x + projection * dx,
+        y: start.y + projection * dy
+    )
+
+    return hypot(point.x - closestPoint.x, point.y - closestPoint.y)
+}
+
 // MARK: - Arrow Annotation
 
 /// 箭头标注
@@ -168,13 +231,7 @@ final class PenAnnotation: Annotation {
     }
     
     func hitTest(point: CGPoint) -> Bool {
-        for pointValue in points {
-            let distance = hypot(pointValue.x - point.x, pointValue.y - point.y)
-            if distance <= lineWidth / 2 + 5 {
-                return true
-            }
-        }
-        return false
+        strokeHitTest(point: point, strokePoints: points, lineWidth: lineWidth)
     }
     
     func move(by delta: CGPoint) {
@@ -228,13 +285,7 @@ final class MarkerAnnotation: Annotation {
     }
     
     func hitTest(point: CGPoint) -> Bool {
-        for pointValue in points {
-            let distance = hypot(pointValue.x - point.x, pointValue.y - point.y)
-            if distance <= lineWidth / 2 + 5 {
-                return true
-            }
-        }
-        return false
+        strokeHitTest(point: point, strokePoints: points, lineWidth: lineWidth)
     }
     
     func move(by delta: CGPoint) {
@@ -257,6 +308,7 @@ final class TextAnnotation: Annotation {
     var position: CGPoint
     var text: String
     var color: NSColor
+    var opacity: CGFloat
     var lineWidth: CGFloat
     var font: NSFont
     
@@ -266,10 +318,33 @@ final class TextAnnotation: Annotation {
     /// 缓存的文字尺寸
     private var cachedSize: CGSize = .zero
     
-    init(position: CGPoint, text: String = "", color: NSColor = DesignTokens.Colors.NS.annotationText, font: NSFont = .systemFont(ofSize: 16, weight: .medium)) {
+    var style: TextAnnotationStyle {
+        get {
+            TextAnnotationStyle(
+                fontSize: font.pointSize,
+                color: color,
+                opacity: opacity
+            )
+        }
+        set {
+            color = newValue.color
+            opacity = min(max(newValue.opacity, 0.3), 1.0)
+            font = .systemFont(ofSize: newValue.fontSize, weight: .medium)
+            updateCachedSize()
+        }
+    }
+
+    init(
+        position: CGPoint,
+        text: String = "",
+        color: NSColor = DesignTokens.Colors.NS.annotationText,
+        font: NSFont = .systemFont(ofSize: 16, weight: .medium),
+        opacity: CGFloat = 1
+    ) {
         self.position = position
         self.text = text
         self.color = color
+        self.opacity = min(max(opacity, 0.3), 1.0)
         self.lineWidth = 1
         self.font = font
         updateCachedSize()
@@ -277,37 +352,32 @@ final class TextAnnotation: Annotation {
     
     func draw(in context: CGContext) {
         guard !text.isEmpty else { return }
-        
-        // 段落样式（支持换行）
+
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = maxWidth != nil ? .byWordWrapping : .byClipping
-        
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: color,
+            .foregroundColor: color.withAlphaComponent(opacity),
             .paragraphStyle: paragraphStyle
         ]
-        
+
         let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = nsContext
-        
-        if let maxW = maxWidth {
-            // 有宽度限制，使用 boundingRect 计算高度后绘制
+
+        if let maxWidth {
             let attrString = NSAttributedString(string: text, attributes: attributes)
-            let constraintSize = CGSize(width: maxW, height: CGFloat.greatestFiniteMagnitude)
-            let boundingRect = attrString.boundingRect(with: constraintSize, options: [.usesLineFragmentOrigin, .usesFontLeading])
-            
-            // 使用 draw(at:) 逐行绘制（更可靠）
-            let drawRect = CGRect(x: position.x, y: position.y, width: maxW, height: boundingRect.height)
-            attrString.draw(in: drawRect)
+            let constraintSize = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
+            let boundingRect = attrString.boundingRect(
+                with: constraintSize,
+                options: [.usesLineFragmentOrigin, .usesFontLeading]
+            )
+            attrString.draw(in: CGRect(x: position.x, y: position.y, width: maxWidth, height: boundingRect.height))
         } else {
-            // 无限制，单行绘制
             text.draw(at: position, withAttributes: attributes)
         }
-        
+
         NSGraphicsContext.restoreGraphicsState()
-        
         updateCachedSize()
     }
     
@@ -329,8 +399,15 @@ final class TextAnnotation: Annotation {
     }
     
     func copy() -> Annotation {
-        let textAnnotation = TextAnnotation(position: position, text: text, color: color, font: font)
+        let textAnnotation = TextAnnotation(
+            position: position,
+            text: text,
+            color: color,
+            font: font,
+            opacity: opacity
+        )
         textAnnotation.maxWidth = maxWidth
+        textAnnotation.updateCachedSize()
         return textAnnotation
     }
     

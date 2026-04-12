@@ -117,6 +117,16 @@ final class RegionSelectionWindow: NSPanel {
         selectionView.onConfirm = { [weak self] _ in
             self?.handleConfirm(mode: .temporary)
         }
+
+        selectionView.onTextStyleChanged = { [weak self] style, hasSelectedText in
+            guard let self, let toolbar = self.toolbarView else { return }
+            let isTextTool = self.selectionView.currentAnnotationTool == .text
+            toolbar.setTextControlsVisible(isTextTool)
+            toolbar.applyTextStyle(style, hasSelectedText: hasSelectedText)
+            toolbar.layoutSubtreeIfNeeded()
+            toolbar.frame.size = toolbar.intrinsicContentSize
+            self.updateToolbarPosition()
+        }
     }
     
     private func setupAnnotationHistoryCallback() {
@@ -132,6 +142,12 @@ final class RegionSelectionWindow: NSPanel {
         
         toolbar.onAction = { [weak self] action in
             self?.handleToolbarAction(action)
+        }
+        toolbar.onTextFontStep = { [weak self] delta in
+            self?.selectionView.adjustTextFontSize(by: delta)
+        }
+        toolbar.onTextColorSelected = { [weak self] color in
+            self?.selectionView.applyTextColor(color)
         }
         
         // 添加到 contentView
@@ -279,11 +295,19 @@ final class RegionSelectionWindow: NSPanel {
             // 再次点击相同工具，取消选择
             selectionView.setAnnotationTool(.none)
             toolbarView?.deselectAllTools()
+            toolbarView?.setTextControlsVisible(false)
         } else {
             // 选择新工具
             selectionView.setAnnotationTool(tool)
             toolbarView?.setSelected(action, selected: true)
+            toolbarView?.setTextControlsVisible(tool == .text)
+            if tool == .text {
+                toolbarView?.applyTextStyle(selectionView.annotationCanvas?.currentTextStyle ?? .default, hasSelectedText: false)
+            }
         }
+
+        toolbarView?.frame.size = toolbarView?.intrinsicContentSize ?? .zero
+        updateToolbarPosition()
     }
     
     // MARK: - Selection Handling

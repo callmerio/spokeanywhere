@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 
 // MARK: - Annotation Command Protocol
 
@@ -7,6 +7,31 @@ import Foundation
 protocol AnnotationCommand {
     func execute()
     func undo()
+}
+
+// MARK: - Text Annotation Snapshot
+
+struct TextAnnotationSnapshot {
+    let text: String
+    let position: CGPoint
+    let style: TextAnnotationStyle
+    let maxWidth: CGFloat?
+
+    init(annotation: TextAnnotation) {
+        self.text = annotation.text
+        self.position = annotation.position
+        self.style = annotation.style
+        self.maxWidth = annotation.maxWidth
+    }
+}
+
+extension TextAnnotation {
+    func apply(snapshot: TextAnnotationSnapshot) {
+        text = snapshot.text
+        position = snapshot.position
+        style = snapshot.style
+        maxWidth = snapshot.maxWidth
+    }
 }
 
 // MARK: - Add Annotation Command
@@ -52,6 +77,52 @@ final class RemoveAnnotationCommand: AnnotationCommand {
     @MainActor
     func undo() {
         canvas?.addAnnotation(annotation, recordCommand: false)
+    }
+}
+
+// MARK: - Edit Text Annotation Command
+
+/// 编辑文字标注命令
+@MainActor
+final class EditTextAnnotationCommand: AnnotationCommand {
+    private let annotation: TextAnnotation
+    private let oldSnapshot: TextAnnotationSnapshot
+    private let newSnapshot: TextAnnotationSnapshot
+    private weak var canvas: AnnotationCanvasView?
+    private let restoresSelection: Bool
+
+    init(
+        annotation: TextAnnotation,
+        oldSnapshot: TextAnnotationSnapshot,
+        newSnapshot: TextAnnotationSnapshot,
+        canvas: AnnotationCanvasView,
+        restoresSelection: Bool = false
+    ) {
+        self.annotation = annotation
+        self.oldSnapshot = oldSnapshot
+        self.newSnapshot = newSnapshot
+        self.canvas = canvas
+        self.restoresSelection = restoresSelection
+    }
+
+    func execute() {
+        canvas?.removeAnnotation(annotation, recordCommand: false)
+        annotation.apply(snapshot: newSnapshot)
+        canvas?.addAnnotation(annotation, recordCommand: false)
+        if restoresSelection {
+            canvas?.restoreTextSelection(annotation.id)
+        }
+        canvas?.syncTextStyleStateAfterHistoryChange()
+    }
+
+    func undo() {
+        canvas?.removeAnnotation(annotation, recordCommand: false)
+        annotation.apply(snapshot: oldSnapshot)
+        canvas?.addAnnotation(annotation, recordCommand: false)
+        if restoresSelection {
+            canvas?.restoreTextSelection(annotation.id)
+        }
+        canvas?.syncTextStyleStateAfterHistoryChange()
     }
 }
 
