@@ -23,6 +23,14 @@
 - 文档口径存在不一致（如部分文档仍保留 `122/122` 历史数据，而近期回归为 `129/129`）。
 - `PROJECT.md` 明确当前阶段禁止新增 UI/API 功能，需持续控制范围蔓延。
 
+### 1.3 Imported External Execution Records（Traceability Only）
+
+- 2026-04-11 截图文字标注外部执行链已补录到 repo-native GSD 记录，用于解决 ship / merge 前的 traceability 缺口。
+  - 来源：`docs/superpowers/specs/2026-04-11-screenshot-text-annotation-design.md`、`docs/superpowers/plans/2026-04-11-screenshot-text-annotation-implementation.md`、外部分支 `codex/screenshot-text-annotation`
+  - 迁移记录：`plan/2026-04-13_03-05-05-screenshot-text-annotation-import.md`、`issues/2026-04-13_03-05-05-screenshot-text-annotation-import.csv`、`docs/memo/2026-04-13-screenshot-text-annotation-imported-execution.md`、`docs/reports/2026-04-13-screenshot-text-annotation-imported-execution.md`
+  - 当前口径：外部分支实现 / review / fresh verification 已完成，ship cleanup 已完成，当前只剩 merge / ship 决策
+  - 约束：该条目仅用于历史补录与可追溯，不代表当前 `PROJECT.md` / 本 roadmap 已解冻新增 feature scope
+
 ---
 
 ## 2. 约束与范围（To-Be Guardrails）
