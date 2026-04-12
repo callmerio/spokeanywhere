@@ -89,10 +89,15 @@ tmp/
 
 # Local AI workflow artifacts
 AGENTS.md
+.serena/
 spoke/.ccw/
 spoke/.claude/
 spoke/.magi/
 spoke/.memory/
+spoke/.serena/
+spoke/.workflow/
+spoke/archive/backups/
+spoke/verify/quality-gate/
 spoke/autoresearch/runs/
 spoke/plan/
 spoke/docs/superpowers/
