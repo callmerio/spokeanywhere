@@ -194,6 +194,15 @@ struct AnnotationCanvasTextStateTests {
         #expect(canvas.annotations.isEmpty)
     }
 
+    @Test("eraser cursor is arrow off-target and eraser on target")
+    func eraserCursorStyleOnlyActivatesOnInteractiveTarget() {
+        let canvas = AnnotationCanvasView(frame: CGRect(x: 0, y: 0, width: 240, height: 160))
+        canvas.currentTool = .eraser
+
+        #expect(canvas.resolvedCursorStyle(hasInteractiveTarget: false) == .arrow)
+        #expect(canvas.resolvedCursorStyle(hasInteractiveTarget: true) == .eraser)
+    }
+
     @Test("export path commits active text drafts before generating the annotated image")
     func exportCommitsActiveDraftBeforeRendering() throws {
         let (view, window) = makeSelectionViewInWindow()

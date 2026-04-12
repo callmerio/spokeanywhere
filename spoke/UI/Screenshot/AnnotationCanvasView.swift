@@ -23,6 +23,15 @@ final class AnnotationCanvasView: NSView, AnnotationCanvas {
         case text
         case eraser
     }
+
+    enum CursorStyle: Equatable {
+        case arrow
+        case crosshair
+        case iBeam
+        case brush
+        case openHand
+        case eraser
+    }
     
     // MARK: - Properties
     
@@ -405,12 +414,8 @@ extension AnnotationCanvasView {
         default:
             hoveredInteractiveAnnotation = findAnnotation(at: location)
         }
-        
-        if hoveredInteractiveAnnotation != nil {
-            NSCursor.openHand.set()
-        } else {
-            updateCursor()
-        }
+
+        applyCursorStyle(resolvedCursorStyle(hasInteractiveTarget: hoveredInteractiveAnnotation != nil))
     }
     
     override func mouseExited(with event: NSEvent) {
@@ -797,16 +802,39 @@ extension AnnotationCanvasView {
 
     // MARK: - Cursor
     
-    private func updateCursor() {
-        let cursor: NSCursor
+    func resolvedCursorStyle(hasInteractiveTarget: Bool) -> CursorStyle {
+        if currentTool == .eraser {
+            return hasInteractiveTarget ? .eraser : .arrow
+        }
+
+        if hasInteractiveTarget {
+            return .openHand
+        }
+
         switch currentTool {
-        case .none: cursor = .arrow
-        case .arrow: cursor = .crosshair
-        case .pen, .marker: cursor = createBrushCursor(size: currentBrushSize, color: currentColor)
-        case .text: cursor = .iBeam
+        case .none: return .arrow
+        case .arrow: return .crosshair
+        case .pen, .marker: return .brush
+        case .text: return .iBeam
+        case .eraser: return .arrow
+        }
+    }
+
+    private func applyCursorStyle(_ style: CursorStyle) {
+        let cursor: NSCursor
+        switch style {
+        case .arrow: cursor = .arrow
+        case .crosshair: cursor = .crosshair
+        case .iBeam: cursor = .iBeam
+        case .brush: cursor = createBrushCursor(size: currentBrushSize, color: currentColor)
+        case .openHand: cursor = .openHand
         case .eraser: cursor = eraserCursor
         }
         cursor.set()
+    }
+
+    private func updateCursor() {
+        applyCursorStyle(resolvedCursorStyle(hasInteractiveTarget: false))
     }
     
     private func createBrushCursor(size: CGFloat, color: NSColor) -> NSCursor {
@@ -840,46 +868,59 @@ extension AnnotationCanvasView {
     }
     
     private func createEraserCursor() -> NSCursor {
-        let size: CGFloat = 24
-        let image = NSImage(size: NSSize(width: size, height: size))
-        
+        let size = NSSize(width: 24, height: 24)
+        let image = NSImage(size: size)
+
         image.lockFocus()
-        
-        let context = NSGraphicsContext.current!.cgContext
-        
-        // 白色圆形背景
-        context.setFillColor(DesignTokens.Colors.NS.inkLight.cgColor)
-        context.fillEllipse(in: CGRect(x: 2, y: 2, width: size - 4, height: size - 4))
-        
-        // 灰色边框
-        context.setStrokeColor(DesignTokens.Colors.NS.inkMuted.cgColor)
-        context.setLineWidth(2)
-        context.strokeEllipse(in: CGRect(x: 2, y: 2, width: size - 4, height: size - 4))
-        
-        // 红色斜线（禁止符号）
-        context.setStrokeColor(DesignTokens.Colors.NS.error.cgColor)
-        context.setLineWidth(2.5)
-        context.move(to: CGPoint(x: 6, y: size - 6))
-        context.addLine(to: CGPoint(x: size - 6, y: 6))
-        context.strokePath()
-        
+
+        let bounds = CGRect(origin: .zero, size: size)
+        let backgroundRect = bounds.insetBy(dx: 2, dy: 2)
+
+        DesignTokens.Colors.NS.overlayStrong.withAlphaComponent(0.92).setFill()
+        NSBezierPath(ovalIn: backgroundRect).fill()
+
+        DesignTokens.Colors.NS.inkLight.withAlphaComponent(0.95).setStroke()
+        let ring = NSBezierPath(ovalIn: backgroundRect)
+        ring.lineWidth = 1.5
+        ring.stroke()
+
+        var transform = AffineTransform(rotationByDegrees: -28)
+        transform.translate(x: -2, y: 5)
+
+        let body = NSBezierPath(
+            roundedRect: NSRect(x: 7, y: 7, width: 10, height: 7),
+            xRadius: 2,
+            yRadius: 2
+        )
+        body.transform(using: transform)
+        DesignTokens.Colors.NS.inkLight.setFill()
+        body.fill()
+
+        let edge = NSBezierPath()
+        edge.move(to: CGPoint(x: 9, y: 8))
+        edge.line(to: CGPoint(x: 15, y: 15))
+        DesignTokens.Colors.NS.inkDark.withAlphaComponent(0.65).setStroke()
+        edge.lineWidth = 1.5
+        edge.stroke()
+
         image.unlockFocus()
-        
-        return NSCursor(image: image, hotSpot: NSPoint(x: size / 2, y: size / 2))
+
+        return NSCursor(image: image, hotSpot: NSPoint(x: size.width / 2, y: size.height / 2))
     }
     
     override func resetCursorRects() {
         super.resetCursorRects()
-        
+
         let cursor: NSCursor
-        switch currentTool {
-        case .none: cursor = .arrow
-        case .arrow: cursor = .crosshair
-        case .pen, .marker: cursor = createBrushCursor(size: currentBrushSize, color: currentColor)
-        case .text: cursor = .iBeam
+        switch resolvedCursorStyle(hasInteractiveTarget: false) {
+        case .arrow: cursor = .arrow
+        case .crosshair: cursor = .crosshair
+        case .iBeam: cursor = .iBeam
+        case .brush: cursor = createBrushCursor(size: currentBrushSize, color: currentColor)
+        case .openHand: cursor = .openHand
         case .eraser: cursor = eraserCursor
         }
-        
+
         addCursorRect(bounds, cursor: cursor)
     }
 }
