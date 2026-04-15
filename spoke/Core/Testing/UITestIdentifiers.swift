@@ -10,6 +10,7 @@ enum UITestIdentifiers {
         static let selectionToolbar = "ui.selection-toolbar.window"
         static let liveCaption = "ui.live-caption.window"
         static let screenshot = "ui.screenshot.window"
+        static let pinnedText = "ui.pinned-text.window"
     }
 
     enum Element {
@@ -21,6 +22,6 @@ enum UITestIdentifiers {
         static let selectionToolbarRoot = "ui.selection-toolbar.root"
         static let liveCaptionRoot = "ui.live-caption.root"
         static let screenshotContent = "ui.screenshot.content"
+        static let pinnedTextContent = "ui.pinned-text.content"
     }
 }
-

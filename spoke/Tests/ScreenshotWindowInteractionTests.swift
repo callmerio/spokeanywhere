@@ -94,4 +94,67 @@ struct ScreenshotWindowInteractionTests {
         try window.keyDown(with: makeKeyEvent(window: window, key: "q"))
         #expect(closeCalls == [item.id])
     }
+
+    @Test("截图 Pin 状态显示黑色 idle 光晕，Unpin 状态无光晕")
+    func screenshotPinnedIdleGlowIsBlackAndUnpinnedIsClear() throws {
+        let imageURL = try makeTempImageURL()
+        defer { try? FileManager.default.removeItem(at: imageURL) }
+
+        let item = ScreenshotItem(
+            imagePath: imageURL.path,
+            frame: CGRect(x: 0, y: 0, width: 160, height: 120)
+        )
+
+        let dependencies = ScreenshotActionDependencies(
+            togglePin: { _ in },
+            toggleLock: { _ in },
+            toggleMark: { _ in },
+            withWindow: { _, _ in },
+            updateWindowCollectionBehavior: { _ in },
+            updateWindowMovable: { _ in },
+            copyImage: { _, _ in },
+            copyRawImage: { _ in },
+            closeWindow: { _ in },
+            startQuickAsk: { _ in },
+            enhanceImage: { image, _ in image },
+            enhanceBasic: { _, _ in nil },
+            enhanceAIHighRes: { _ in nil },
+            scaleImage: { image, _, _ in image },
+            shouldShowEnhancedCopy: { false },
+            showSelectionToolbar: { _, _ in },
+            saveWindowState: {},
+            notificationCenter: .default,
+            copyText: { _ in }
+        )
+
+        let content = ScreenshotContentView(item: item, dependencies: dependencies)
+        content.frame = CGRect(origin: .zero, size: item.frame.size)
+        content.layoutSubtreeIfNeeded()
+
+        let glowLayer = try #require(
+            content.layer?.sublayers?
+                .compactMap { $0 as? CAShapeLayer }
+                .first { $0.zPosition == -1 }
+        )
+
+        content.updateGlow(isHovered: false, isMarked: false, isPinned: true)
+
+        #expect(glowLayer.strokeColor != nil)
+        #expect(glowLayer.lineWidth == DesignTokens.Glow.ScreenshotCard.idle.lineWidth)
+        #expect(glowLayer.shadowRadius == DesignTokens.Glow.ScreenshotCard.idle.shadowRadius)
+        #expect(glowLayer.shadowOpacity == DesignTokens.Glow.ScreenshotCard.idle.shadowOpacity)
+
+        let shadowCGColor = try #require(glowLayer.shadowColor)
+        let shadowColor = try #require(NSColor(cgColor: shadowCGColor)?.usingColorSpace(.deviceRGB))
+        #expect(shadowColor.redComponent == 0)
+        #expect(shadowColor.greenComponent == 0)
+        #expect(shadowColor.blueComponent == 0)
+
+        content.updateGlow(isHovered: false, isMarked: false, isPinned: false)
+
+        #expect(glowLayer.strokeColor == nil)
+        #expect(glowLayer.lineWidth == 0)
+        #expect(glowLayer.shadowColor == nil)
+        #expect(glowLayer.shadowOpacity == 0)
+    }
 }

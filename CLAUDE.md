@@ -267,6 +267,19 @@ Reference: `spoke/UI/Theme/DesignTokens.swift`
 
 ---
 
+## Execution Cadence
+
+- If the user clearly authorizes continuous execution with phrases like `继续`、`继续推进`、`go on`、`执行所有任务`、`你来推动就行`, treat that as standing permission to keep executing the active workstream.
+- After such authorization, do **not** stop just to re-ask for routine coding approval, intermediate checkpoint approval, or formatting approval.
+- Only pause when one of these is true:
+  - the next action is destructive or hard to reverse
+  - the next action materially changes agreed scope or direction
+  - local facts are insufficient and a wrong assumption would be materially risky
+- For non-trivial work, prefer finishing a meaningful batch and then reporting, rather than interrupting the flow with repeated confirmation prompts.
+- Remember that already-open sessions may still be running on an earlier instruction snapshot; this section primarily protects future sessions and fresh agent runs.
+
+---
+
 ## Documentation Index
 
 | Path | Content |

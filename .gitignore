@@ -89,7 +89,10 @@ tmp/
 
 # Local AI workflow artifacts
 AGENTS.md
+!spoke/AGENTS.md
+.agents/autoresearch/
 .serena/
+tracks/
 spoke/.ccw/
 spoke/.claude/
 spoke/.magi/

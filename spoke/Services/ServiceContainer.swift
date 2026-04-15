@@ -421,6 +421,10 @@ final class ServiceContainer: ObservableObject {
         ScreenshotManager.shared
     }
 
+    var pinnedTextManager: PinnedTextManager {
+        PinnedTextManager.shared
+    }
+
     var imageEnhancementService: ImageEnhancementService {
         ImageEnhancementService.shared
     }

@@ -22,6 +22,7 @@ struct AppLifecyclePlanTests {
             .setupResourceMonitor,
             .setupSelectionToolbar,
             .setupScreenshotService,
+            .setupPinnedTextService,
             .setupDictionaryPanel
         ])
     }
@@ -45,6 +46,7 @@ struct AppLifecyclePlanTests {
             .stopMessagePanelManager,
             .stopLiveCaptionManager,
             .stopScreenshotManager,
+            .stopPinnedTextManager,
             .stopTrackpadGesture,
             .stopSelectionToolbar,
             .stopResourceMonitor,

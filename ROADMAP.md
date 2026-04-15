@@ -185,7 +185,9 @@ swift test --sanitize=address --parallel
 - 进入 active planning 前，必须先完成独立 discuss/context，明确 phase boundary、交互语义与持久化策略。
 
 **Plans**
-- [ ] TBD (use repo-native discuss/planning artifacts before promotion)
+- [x] `plan/2026-04-13_07-07-14-desktop-text-overlay.md`
+- [x] `issues/2026-04-13_07-07-14-desktop-text-overlay.csv`
+- [ ] Manual UAT: clipboard -> pinned text, edit round-trip, gesture controls, restore, and screenshot / Message Panel regressions
 
 **Notes**
 - 来源：`docs/superpowers/specs/2026-04-11-screenshot-text-annotation-design.md` 已明确将“文本贴屏 / 桌面浮动文字”排除为独立立项需求。

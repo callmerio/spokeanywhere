@@ -210,7 +210,7 @@ final class ScreenshotWindow: NSPanel {
             isHovered = hoveredValue
         }
         
-        // 通知 contentView 更新光晕（传入 isPinned 以支持非 Pin 状态的奶白色光晕）
+        // 通知 contentView 更新光晕（传入 isPinned 以支持 Pin 状态的黑色光晕）
         screenshotContentView?.updateGlow(isHovered: isHovered, isMarked: item.isMarked, isPinned: item.isPinned)
     }
     

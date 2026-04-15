@@ -35,6 +35,7 @@ let package = Package(
                 "progress.txt",
                 "prd.json",
                 "CLAUDE.md",
+                "AGENTS.md",
                 "autoresearch",       // autoresearch 运行产物（非源码）
                 "issues",             // issue 快照（非源码）
                 "scripts",             // 性能测试脚本（非源码）

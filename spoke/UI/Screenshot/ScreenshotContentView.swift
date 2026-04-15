@@ -697,39 +697,41 @@ extension ScreenshotContentView {
     
     /// 更新光晕效果（由 ScreenshotWindow 调用）
     /// 使用 CAShapeLayer 的 strokeColor 绘制边框，shadow 实现光晕
-    /// 颜色优先级：Mark(橙) > Hover(蓝) > 非Pin(奶白) > 无
+    /// 颜色优先级：Mark(橙) > Hover(蓝) > Pin(黑) > 无
     func updateGlow(isHovered: Bool, isMarked: Bool, isPinned: Bool) {
         CATransaction.begin()
         CATransaction.setAnimationDuration(0.25)
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
         
         if isMarked {
+            let style = DesignTokens.Glow.ScreenshotCard.mark
             // 橙色光晕 (Mark 状态 - 持久) - 柔和版本
             glowLayer.strokeColor = DesignTokens.Colors.NS.glowMarkStroke.cgColor
-            glowLayer.lineWidth = 1.5
+            glowLayer.lineWidth = style.lineWidth
             glowLayer.shadowColor = DesignTokens.Colors.NS.glowMarkShadow.cgColor
-            glowLayer.shadowRadius = 12
+            glowLayer.shadowRadius = style.shadowRadius
             glowLayer.shadowOffset = .zero
-            glowLayer.shadowOpacity = 0.5
+            glowLayer.shadowOpacity = style.shadowOpacity
         } else if isHovered {
+            let style = DesignTokens.Glow.ScreenshotCard.hover
             // 蓝色光晕 (Hover/Select 状态 - 临时) - 柔和版本
             glowLayer.strokeColor = DesignTokens.Colors.NS.glowHoverStroke.cgColor
-            glowLayer.lineWidth = 1.5
+            glowLayer.lineWidth = style.lineWidth
             glowLayer.shadowColor = DesignTokens.Colors.NS.glowHoverShadow.cgColor
-            glowLayer.shadowRadius = 10
+            glowLayer.shadowRadius = style.shadowRadius
             glowLayer.shadowOffset = .zero
-            glowLayer.shadowOpacity = 0.45
-        } else if !isPinned {
-            // 奶白色光晕 (非 Pin 状态) - 帮助用户定位新截图
-            // #E7D8AF -> RGB(231, 216, 175)
+            glowLayer.shadowOpacity = style.shadowOpacity
+        } else if isPinned {
+            let style = DesignTokens.Glow.ScreenshotCard.idle
+            // 黑色光晕 (Pin 状态)
             glowLayer.strokeColor = DesignTokens.Colors.NS.glowIdle.withAlphaComponent(0.5).cgColor
-            glowLayer.lineWidth = 1.5
+            glowLayer.lineWidth = style.lineWidth
             glowLayer.shadowColor = DesignTokens.Colors.NS.glowIdle.cgColor
-            glowLayer.shadowRadius = 10
+            glowLayer.shadowRadius = style.shadowRadius
             glowLayer.shadowOffset = .zero
-            glowLayer.shadowOpacity = 0.6
+            glowLayer.shadowOpacity = style.shadowOpacity
         } else {
-            // 无光晕 (Pin 状态且非 hover/mark)
+            // 无光晕 (未 Pin 状态且非 hover/mark)
             glowLayer.strokeColor = nil
             glowLayer.lineWidth = 0
             glowLayer.shadowColor = nil

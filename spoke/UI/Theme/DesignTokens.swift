@@ -35,6 +35,10 @@ enum DesignTokens {
         static let overlayMedium = Color.black.opacity(0.6)
         /// 深色叠加层（强）
         static let overlayStrong = Color.black.opacity(0.8)
+        /// PinnedText 背景（#222）
+        static let pinnedTextBackground = Color(red: 34 / 255, green: 34 / 255, blue: 34 / 255)
+        /// PinnedText 前景（#DCCEA9）
+        static let pinnedTextForeground = Color(red: 220 / 255, green: 206 / 255, blue: 169 / 255)
         /// 字幕卡片背景
         static let captionCardBackground = Color(red: 27 / 255, green: 28 / 255, blue: 30 / 255).opacity(0.7)
         /// 工具栏背景
@@ -253,6 +257,13 @@ enum DesignTokens {
             let x: CGFloat
             let y: CGFloat
         }
+
+        struct LayerToken: Equatable {
+            let color: NSColor
+            let opacity: Float
+            let radius: CGFloat
+            let offset: CGSize
+        }
         
         /// 贴边阴影
         static func tight(_ opacity: Double = 0.08) -> Token {
@@ -268,6 +279,46 @@ enum DesignTokens {
         }
         /// 字幕卡片阴影（柔和阴影，融入背景）
         static let caption = Token(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 8)
+
+        enum PinnedText {
+            static let card = LayerToken(color: .black, opacity: 0, radius: 0, offset: .zero)
+        }
+    }
+
+    // MARK: - Glow
+    enum Glow {
+        struct Style: Equatable {
+            let lineWidth: CGFloat
+            let shadowRadius: CGFloat
+            let shadowOpacity: Float
+
+            // Optional fill for layer-backed glow sources; screenshot-style glows use stroke instead.
+            let fillOpacity: CGFloat
+
+            init(
+                lineWidth: CGFloat,
+                shadowRadius: CGFloat,
+                shadowOpacity: Float,
+                fillOpacity: CGFloat = 0
+            ) {
+                self.lineWidth = lineWidth
+                self.shadowRadius = shadowRadius
+                self.shadowOpacity = shadowOpacity
+                self.fillOpacity = fillOpacity
+            }
+        }
+
+        enum ScreenshotCard {
+            static let hover = Style(lineWidth: 1.5, shadowRadius: 10, shadowOpacity: 0.45)
+            static let mark = Style(lineWidth: 1.5, shadowRadius: 12, shadowOpacity: 0.5)
+            static let idle = Style(lineWidth: 1.5, shadowRadius: 10, shadowOpacity: 0.6)
+        }
+
+        enum PinnedText {
+            static let hover = ScreenshotCard.hover
+            static let mark = ScreenshotCard.mark
+            static let idle = ScreenshotCard.idle
+        }
     }
     
     // MARK: - Layout
@@ -304,6 +355,8 @@ enum DesignTokens {
 
     // MARK: - Border Width
     enum BorderWidth {
+        /// 无描边
+        static let none: CGFloat = 0
         /// 细线
         static let hairline: CGFloat = 0.5
         /// 标准线
@@ -344,6 +397,18 @@ extension DesignTokens.Colors {
         static let overlayBase = NSColor.black.withAlphaComponent(0.5)
         static let overlayMedium = NSColor.black.withAlphaComponent(0.6)
         static let overlayStrong = NSColor.black.withAlphaComponent(0.8)
+        static let pinnedTextBackground = NSColor(
+            red: 34 / 255,
+            green: 34 / 255,
+            blue: 34 / 255,
+            alpha: 1.0
+        )
+        static let pinnedTextForeground = NSColor(
+            red: 220 / 255,
+            green: 206 / 255,
+            blue: 169 / 255,
+            alpha: 1.0
+        )
         static let codeBackground = NSColor.white.withAlphaComponent(0.1)
         static let highlightGold = NSColor(red: 0.84, green: 0.61, blue: 0, alpha: 1.0)
         static let accentPrimary = NSColor.controlAccentColor
@@ -358,7 +423,7 @@ extension DesignTokens.Colors {
         static let glowMarkShadow = NSColor(red: 0.95, green: 0.55, blue: 0.2, alpha: 1.0)
         static let glowHoverStroke = NSColor(red: 0.3, green: 0.5, blue: 0.9, alpha: 0.4)
         static let glowHoverShadow = NSColor(red: 0.3, green: 0.5, blue: 0.9, alpha: 1.0)
-        static let glowIdle = NSColor(red: 231 / 255.0, green: 216 / 255.0, blue: 175 / 255.0, alpha: 1.0)
+        static let glowIdle = NSColor.black
     }
 }
 

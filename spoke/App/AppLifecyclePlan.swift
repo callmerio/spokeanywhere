@@ -15,6 +15,7 @@ enum AppLifecycleStepID: String, Equatable {
     case setupResourceMonitor = "setup-resource-monitor"
     case setupSelectionToolbar = "setup-selection-toolbar"
     case setupScreenshotService = "setup-screenshot-service"
+    case setupPinnedTextService = "setup-pinned-text-service"
     case setupDictionaryPanel = "setup-dictionary-panel"
     case setupDebugAutomationTrigger = "setup-debug-automation-trigger"
     case stopRecordingController = "stop-recording-controller"
@@ -22,6 +23,7 @@ enum AppLifecycleStepID: String, Equatable {
     case stopMessagePanelManager = "stop-message-panel-manager"
     case stopLiveCaptionManager = "stop-live-caption-manager"
     case stopScreenshotManager = "stop-screenshot-manager"
+    case stopPinnedTextManager = "stop-pinned-text-manager"
     case stopTrackpadGesture = "stop-trackpad-gesture"
     case stopSelectionToolbar = "stop-selection-toolbar"
     case stopResourceMonitor = "stop-resource-monitor"
@@ -51,6 +53,7 @@ enum AppLifecyclePlan {
             .init(id: .setupResourceMonitor, name: "Step 8: Starting resource monitor..."),
             .init(id: .setupSelectionToolbar, name: "Step 9: Starting selection toolbar..."),
             .init(id: .setupScreenshotService, name: "Step 10: Setting up screenshot service..."),
+            .init(id: .setupPinnedTextService, name: "Step 10.5: Setting up pinned text service..."),
             .init(id: .setupDictionaryPanel, name: "Step 11: Setting up dictionary panel...")
         ]
 
@@ -73,6 +76,7 @@ enum AppLifecyclePlan {
             .init(id: .stopMessagePanelManager, name: "stop message panel manager"),
             .init(id: .stopLiveCaptionManager, name: "stop live caption manager"),
             .init(id: .stopScreenshotManager, name: "stop screenshot manager"),
+            .init(id: .stopPinnedTextManager, name: "stop pinned text manager"),
             .init(id: .stopTrackpadGesture, name: "stop trackpad gesture"),
             .init(id: .stopSelectionToolbar, name: "stop selection toolbar"),
             .init(id: .stopResourceMonitor, name: "stop resource monitor"),

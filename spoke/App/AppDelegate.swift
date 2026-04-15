@@ -9,6 +9,7 @@ struct AppDelegateDependencies {
     let hotKeyService: HotKeyService
     let quickAskService: QuickAskService
     let screenshotManager: ScreenshotManager
+    let pinnedTextManager: PinnedTextManager
     let liveCaptionManager: LiveCaptionManager
     let dictionaryPanelManager: DictionaryPanelManager
     let debugAutomationTrigger: DebugAutomationTriggerService
@@ -83,6 +84,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await screenshotManager.debugCaptureForAutomation()
         }
     )
+    private lazy var pinnedTextRuntime = AppPinnedTextRuntime(
+        makeWindow: { item in
+            PinnedTextWindow(item: item)
+        },
+        updateFrame: { [pinnedTextManager = dependencies.pinnedTextManager] frame, item in
+            pinnedTextManager.updateFrame(frame, for: item)
+        },
+        restoreAll: { [pinnedTextManager = dependencies.pinnedTextManager] in
+            await pinnedTextManager.restoreAll()
+        },
+        createFromClipboard: { [pinnedTextManager = dependencies.pinnedTextManager] in
+            _ = pinnedTextManager.createFromClipboard()
+        }
+    )
 
     private typealias LifecycleStep = (name: String, action: () -> Void)
 
@@ -126,6 +141,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         logger.info("📸 [AppDelegate] ✅ Screenshot service setup complete")
+    }
+
+    private func setupPinnedTextService() {
+        logger.info("📝 [AppDelegate] setupPinnedTextService() 开始")
+
+        dependencies.pinnedTextManager.windowFactory = pinnedTextRuntime.makeWindowFactory()
+
+        runAppDelegateUtilityTask(self) { delegate in
+            await delegate.pinnedTextRuntime.restorePinnedTexts { message in
+                delegate.logger.info("\(message, privacy: .public)")
+            }
+        }
+
+        logger.info("📝 [AppDelegate] ✅ Pinned text service setup complete")
     }
     
     private func setupDictionaryPanel() {
@@ -325,6 +354,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case .setupResourceMonitor: return setupResourceMonitor
         case .setupSelectionToolbar: return setupSelectionToolbar
         case .setupScreenshotService: return setupScreenshotService
+        case .setupPinnedTextService: return setupPinnedTextService
         case .setupDictionaryPanel: return setupDictionaryPanel
         case .setupDebugAutomationTrigger:
 #if DEBUG
@@ -337,6 +367,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
              .stopMessagePanelManager,
              .stopLiveCaptionManager,
              .stopScreenshotManager,
+             .stopPinnedTextManager,
              .stopTrackpadGesture,
              .stopSelectionToolbar,
              .stopResourceMonitor,
@@ -362,6 +393,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         case .stopScreenshotManager:
             return { self.dependencies.screenshotManager.stop() }
+        case .stopPinnedTextManager:
+            return { self.dependencies.pinnedTextManager.stop() }
         case .stopTrackpadGesture:
             return { self.dependencies.trackpadSwipeService.stop() }
         case .stopSelectionToolbar:
@@ -390,6 +423,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
              .setupResourceMonitor,
              .setupSelectionToolbar,
              .setupScreenshotService,
+             .setupPinnedTextService,
              .setupDictionaryPanel,
              .setupDebugAutomationTrigger:
             return {}
@@ -489,7 +523,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let screenshotItem = NSMenuItem(title: "区域截图", action: #selector(triggerScreenshot), keyEquivalent: "a")
         screenshotItem.keyEquivalentModifierMask = .option
         menu.addItem(screenshotItem)
-        
+
+        let pinnedTextItem = NSMenuItem(title: "贴屏文本", action: #selector(triggerPinnedTextFromClipboard), keyEquivalent: "")
+        menu.addItem(pinnedTextItem)
+
         // 查词
         let dictionaryItem = NSMenuItem(title: "查词", action: #selector(toggleDictionaryPanel), keyEquivalent: " ")
         dictionaryItem.keyEquivalentModifierMask = .option
@@ -533,6 +570,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         runAppMainActorAsync {
             await self.screenshotRuntime.captureRegion()
         }
+    }
+
+    @objc func triggerPinnedTextFromClipboard() {
+        pinnedTextRuntime.createFromClipboard()
     }
     
     @objc func openSettings() {
