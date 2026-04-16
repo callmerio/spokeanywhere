@@ -617,7 +617,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.backgroundColor = NSColor(red: 0.08, green: 0.08, blue: 0.08, alpha: 1.0) // #141414
-        window.isMovableByWindowBackground = true
+        window.isMovableByWindowBackground = false
         
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()

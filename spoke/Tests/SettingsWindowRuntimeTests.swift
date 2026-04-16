@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 import Testing
 @testable import SpokenAnyWhere
 
@@ -36,4 +37,22 @@ struct SettingsWindowRuntimeTests {
         runtime.restoreAfterClose(showInDock: false)
         #expect(policies == [.accessory])
     }
+
+    @Test("设置窗口不允许通过整块背景拖动")
+    func settingsWindowDisablesBackgroundDragging() throws {
+        let source = try appDelegateSource()
+
+        #expect(source.contains("window.isMovableByWindowBackground = false"))
+        #expect(!source.contains("window.isMovableByWindowBackground = true"))
+    }
+}
+
+private func appDelegateSource(filePath: String = #filePath) throws -> String {
+    let testsFileURL = URL(fileURLWithPath: filePath)
+    let repoRootURL = testsFileURL.deletingLastPathComponent().deletingLastPathComponent()
+    let sourceURL = repoRootURL
+        .appendingPathComponent("App")
+        .appendingPathComponent("AppDelegate.swift")
+
+    return try String(contentsOf: sourceURL, encoding: .utf8)
 }
