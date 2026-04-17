@@ -62,4 +62,28 @@ struct LiveCaptionManagerTests {
         #expect(appCaptureResolveCount == 0)
         #expect(systemCaptureResolveCount == 0)
     }
+
+    @Test("repeated app capture reads 复用同一懒加载实例")
+    func repeatedAppCaptureReadsReuseCachedService() {
+        var appCaptureResolveCount = 0
+
+        let manager = LiveCaptionManager.makeTesting(
+            dependencies: .init(
+                translator: .makePreview(),
+                makeAppCaptureService: {
+                    appCaptureResolveCount += 1
+                    return .shared
+                },
+                makeSystemCaptureService: { .shared },
+                transcriptionModelManager: .shared,
+                dictionaryService: .shared,
+                postTranslationUpdate: {}
+            )
+        )
+
+        _ = manager.isRetrying
+        _ = manager.isRetrying
+
+        #expect(appCaptureResolveCount == 1)
+    }
 }

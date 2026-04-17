@@ -58,13 +58,13 @@ final class LiveCaptionManager: ObservableObject {
     private let dependencies: LiveCaptionManagerDependencies
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LiveCaption")
 
-    private var appCaptureService: AppAudioCaptureService {
+    private lazy var appCaptureService: AppAudioCaptureService = {
         dependencies.makeAppCaptureService()
-    }
+    }()
 
-    private var systemCaptureService: SystemAudioCaptureService {
+    private lazy var systemCaptureService: SystemAudioCaptureService = {
         dependencies.makeSystemCaptureService()
-    }
+    }()
     
     /// 是否激活
     @Published private(set) var isActive: Bool = false
