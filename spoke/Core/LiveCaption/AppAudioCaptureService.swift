@@ -121,7 +121,11 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     
     /// 停止捕获
     func stopCapture() async {
-        guard isCapturing || isRetrying else { return }
+        guard isCapturing || isRetrying else {
+            currentAppName = nil
+            deactivatePickerAndClearSelectionState()
+            return
+        }
         
         // 标记为用户主动停止，不触发重试
         isUserInitiatedStop = true
@@ -140,6 +144,7 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         lastFilter = nil
         lastAppName = nil
         isUserInitiatedStop = false
+        deactivatePickerAndClearSelectionState()
         logger.info("🛑 App audio capture stopped")
     }
     
@@ -210,6 +215,11 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         }
         return nil
     }
+
+    private func deactivatePickerAndClearSelectionState() {
+        dependencies.picker.isActive = false
+        isWaitingForSelection = false
+    }
 }
 
 // MARK: - SCContentSharingPickerObserver
@@ -219,7 +229,9 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
     
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
         runAppAudioCaptureAsync(self) { capture in
-            capture.isWaitingForSelection = false
+            defer {
+                capture.deactivatePickerAndClearSelectionState()
+            }
             let appName = capture.extractAppName(from: filter) ?? "Selected App"
 
             do {
@@ -236,17 +248,39 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
     }
     
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                logger.info("❌ User cancelled app selection")
+                deactivatePickerAndClearSelectionState()
+                currentAppName = nil
+                onSelectionCancelled?()
+            }
+            return
+        }
+
         runAppAudioCaptureOnMain(self) { capture in
             capture.logger.info("❌ User cancelled app selection")
-            capture.isWaitingForSelection = false
+            capture.deactivatePickerAndClearSelectionState()
+            capture.currentAppName = nil
             capture.onSelectionCancelled?()
         }
     }
     
     nonisolated func contentSharingPickerStartDidFailWithError(_ error: any Error) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                logger.error("❌ Picker failed to start: \(error.localizedDescription)")
+                deactivatePickerAndClearSelectionState()
+                currentAppName = nil
+                onError?(error)
+            }
+            return
+        }
+
         runAppAudioCaptureOnMain(self) { capture in
             capture.logger.error("❌ Picker failed to start: \(error.localizedDescription)")
-            capture.isWaitingForSelection = false
+            capture.deactivatePickerAndClearSelectionState()
+            capture.currentAppName = nil
             capture.onError?(error)
         }
     }

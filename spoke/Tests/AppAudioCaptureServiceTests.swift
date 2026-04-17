@@ -81,4 +81,48 @@ struct AppAudioCaptureServiceTests {
             #expect(Bool(true))
         }
     }
+
+    @Test("stopCapture 会撤回 picker 活跃状态并清空等待状态")
+    @MainActor
+    func stopCaptureResetsPickerActivity() async {
+        if #available(macOS 14.0, *) {
+            let picker = FakeContentSharingPicker()
+            picker.isActive = true
+
+            let service = AppAudioCaptureService.makeTesting(
+                dependencies: .init(picker: picker)
+            )
+
+            service.presentPicker()
+            await service.stopCapture()
+
+            #expect(picker.isActive == false)
+            #expect(service.isWaitingForSelection == false)
+            #expect(service.isRetrying == false)
+            #expect(service.currentAppName == nil)
+        } else {
+            #expect(Bool(true))
+        }
+    }
+
+    @Test("用户取消应用选择后会撤回 picker 活跃状态")
+    @MainActor
+    func cancelSelectionDeactivatesPicker() {
+        if #available(macOS 14.0, *) {
+            let picker = FakeContentSharingPicker()
+            let service = AppAudioCaptureService.makeTesting(
+                dependencies: .init(picker: picker)
+            )
+
+            service.presentPicker()
+            service.contentSharingPicker(
+                SCContentSharingPicker.shared,
+                didCancelFor: nil
+            )
+
+            #expect(picker.isActive == false)
+        } else {
+            #expect(Bool(true))
+        }
+    }
 }
