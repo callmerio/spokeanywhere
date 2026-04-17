@@ -8,6 +8,16 @@ import OSLog
 
 // MARK: - App Audio Capture Service
 
+@available(macOS 14.0, *)
+@MainActor
+protocol AppAudioCapturePickerProtocol: AnyObject {
+    var defaultConfiguration: SCContentSharingPickerConfiguration { get set }
+    var isActive: Bool { get set }
+    func add(_ observer: any SCContentSharingPickerObserver)
+    func present()
+    func present(for stream: SCStream)
+}
+
 /// 应用音频捕获服务
 /// 使用 SCContentSharingPicker 让用户选择特定应用进行音频捕获
 @available(macOS 14.0, *)
@@ -25,6 +35,7 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     private var stream: SCStream?
     private let audioQueue = DispatchQueue(label: "com.spokeanywhere.appaudio", qos: .userInteractive)
     private let dependencies: AppAudioCaptureServiceDependencies
+    private var isPickerConfigured = false
     
     /// 是否正在捕获
     @Published private(set) var isCapturing: Bool = false
@@ -72,12 +83,18 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     private init(dependencies: AppAudioCaptureServiceDependencies) {
         self.dependencies = dependencies
         super.init()
-        configurePicker()
+        configurePickerIfNeeded()
+    }
+
+    static func makeTesting(dependencies: AppAudioCaptureServiceDependencies) -> AppAudioCaptureService {
+        AppAudioCaptureService(dependencies: dependencies)
     }
     
     // MARK: - Picker Configuration
     
-    private func configurePicker() {
+    private func configurePickerIfNeeded() {
+        guard !isPickerConfigured else { return }
+
         var config = SCContentSharingPickerConfiguration()
         config.allowedPickerModes = [.singleApplication, .singleWindow]
         config.allowsChangingSelectedContent = true
@@ -88,7 +105,7 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         
         dependencies.picker.defaultConfiguration = config
         dependencies.picker.add(self)
-        dependencies.picker.isActive = true
+        isPickerConfigured = true
     }
     
     // MARK: - Public API
@@ -97,6 +114,7 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     func presentPicker() {
         logger.info("📱 Presenting app picker")
         isWaitingForSelection = true
+        configurePickerIfNeeded()
         dependencies.picker.isActive = true
         dependencies.picker.present()
     }
@@ -129,6 +147,8 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     func reselectApp() {
         logger.info("🔄 Re-selecting app")
         isWaitingForSelection = true
+        configurePickerIfNeeded()
+        dependencies.picker.isActive = true
         
         if let existingStream = stream {
             dependencies.picker.present(for: existingStream)
