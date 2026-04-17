@@ -36,8 +36,8 @@ struct CaptionSegment: Identifiable, Equatable, Codable {
 @MainActor
 struct LiveCaptionManagerDependencies {
     let translator: TranslationService
-    let appCaptureService: AppAudioCaptureService
-    let systemCaptureService: SystemAudioCaptureService
+    let makeAppCaptureService: () -> AppAudioCaptureService
+    let makeSystemCaptureService: () -> SystemAudioCaptureService
     let transcriptionModelManager: TranscriptionModelManager
     let dictionaryService: DictionaryService
     let postTranslationUpdate: () -> Void
@@ -57,6 +57,14 @@ final class LiveCaptionManager: ObservableObject {
     
     private let dependencies: LiveCaptionManagerDependencies
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LiveCaption")
+
+    private var appCaptureService: AppAudioCaptureService {
+        dependencies.makeAppCaptureService()
+    }
+
+    private var systemCaptureService: SystemAudioCaptureService {
+        dependencies.makeSystemCaptureService()
+    }
     
     /// 是否激活
     @Published private(set) var isActive: Bool = false
@@ -91,7 +99,7 @@ final class LiveCaptionManager: ObservableObject {
     /// 是否正在重试连接（UI 显示用）
     var isRetrying: Bool {
         if #available(macOS 14.0, *) {
-            return dependencies.appCaptureService.isRetrying
+            return appCaptureService.isRetrying
         }
         return false
     }
@@ -254,7 +262,7 @@ final class LiveCaptionManager: ObservableObject {
     /// 使用应用选择器模式 (macOS 26+ 因为依赖 SpeechAnalyzerProvider)
     @available(macOS 26.0, *)
     private func startWithAppPicker() async throws {
-        let appCapture = dependencies.appCaptureService
+        let appCapture = appCaptureService
         
         // 设置选择完成回调
         appCapture.onSelectionComplete = { [weak self] success in
@@ -315,7 +323,7 @@ final class LiveCaptionManager: ObservableObject {
         try await setupSpeechAnalyzer(withAppCapture: false)
         
         // 启动全局音频捕获
-        let capture = dependencies.systemCaptureService
+        let capture = systemCaptureService
         do {
             try await capture.startCapture()
         } catch {
@@ -364,7 +372,7 @@ final class LiveCaptionManager: ObservableObject {
         
         // 根据模式设置音频回调
         if withAppCapture {
-            let appCapture = dependencies.appCaptureService
+            let appCapture = appCaptureService
             appCapture.onPCMBuffer = { [weak self] buffer in
                 guard let self = self else { return }
                 do {
@@ -374,7 +382,7 @@ final class LiveCaptionManager: ObservableObject {
                 }
             }
         } else {
-            let capture = dependencies.systemCaptureService
+            let capture = systemCaptureService
             capture.onPCMBuffer = { [weak self] buffer in
                 guard let self = self else { return }
                 do {
@@ -422,7 +430,7 @@ final class LiveCaptionManager: ObservableObject {
         }
         
         // 启动音频捕获
-        let capture = dependencies.systemCaptureService
+        let capture = systemCaptureService
         
         capture.onAudioBuffer = { [weak self] buffer in
             self?.legacyTranscriber?.processAudioBuffer(buffer)
@@ -475,11 +483,11 @@ final class LiveCaptionManager: ObservableObject {
         // 停止音频捕获（根据当前模式）
         if captureMode == CaptureMode.appPicker.rawValue {
             if #available(macOS 14.0, *) {
-                await dependencies.appCaptureService.stopCapture()
+                await appCaptureService.stopCapture()
             }
         } else {
             if #available(macOS 12.3, *) {
-                await dependencies.systemCaptureService.stopCapture()
+                await systemCaptureService.stopCapture()
             }
         }
         
@@ -506,7 +514,7 @@ final class LiveCaptionManager: ObservableObject {
         
         if #available(macOS 14.0, *) {
             logger.info("🔄 Re-selecting app...")
-            dependencies.appCaptureService.reselectApp()
+            appCaptureService.reselectApp()
         }
     }
     

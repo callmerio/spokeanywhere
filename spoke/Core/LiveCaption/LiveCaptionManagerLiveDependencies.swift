@@ -4,8 +4,8 @@ import Foundation
 extension LiveCaptionManagerDependencies {
     static let preview = LiveCaptionManagerDependencies(
         translator: .makePreview(),
-        appCaptureService: .shared,
-        systemCaptureService: .shared,
+        makeAppCaptureService: { .shared },
+        makeSystemCaptureService: { .shared },
         transcriptionModelManager: .shared,
         dictionaryService: .shared,
         postTranslationUpdate: {}
@@ -13,8 +13,8 @@ extension LiveCaptionManagerDependencies {
 
     static let live = LiveCaptionManagerDependencies(
         translator: .shared,
-        appCaptureService: .shared,
-        systemCaptureService: .shared,
+        makeAppCaptureService: { .shared },
+        makeSystemCaptureService: { .shared },
         transcriptionModelManager: .shared,
         dictionaryService: .shared,
         postTranslationUpdate: {
@@ -22,4 +22,3 @@ extension LiveCaptionManagerDependencies {
         }
     )
 }
-
