@@ -86,4 +86,29 @@ struct LiveCaptionManagerTests {
 
         #expect(appCaptureResolveCount == 1)
     }
+
+    @Test("inactive manager 的普通配置读取不会触发 app capture service")
+    func managerReadsDoNotActivateAppCapture() {
+        var appCaptureResolveCount = 0
+
+        let manager = LiveCaptionManager.makeTesting(
+            dependencies: .init(
+                translator: .makePreview(),
+                makeAppCaptureService: {
+                    appCaptureResolveCount += 1
+                    return .shared
+                },
+                makeSystemCaptureService: { .shared },
+                transcriptionModelManager: .shared,
+                dictionaryService: .shared,
+                postTranslationUpdate: {}
+            )
+        )
+
+        _ = manager.isActive
+        _ = manager.sourceLanguage
+        _ = manager.currentAppName
+
+        #expect(appCaptureResolveCount == 0)
+    }
 }
