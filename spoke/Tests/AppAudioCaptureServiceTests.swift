@@ -107,7 +107,7 @@ struct AppAudioCaptureServiceTests {
 
     @Test("用户取消应用选择后会撤回 picker 活跃状态")
     @MainActor
-    func cancelSelectionDeactivatesPicker() {
+    func cancelSelectionDeactivatesPicker() async {
         if #available(macOS 14.0, *) {
             let picker = FakeContentSharingPicker()
             let service = AppAudioCaptureService.makeTesting(
@@ -119,6 +119,9 @@ struct AppAudioCaptureServiceTests {
                 SCContentSharingPicker.shared,
                 didCancelFor: nil
             )
+
+            await Task.yield()
+            await Task.yield()
 
             #expect(picker.isActive == false)
         } else {

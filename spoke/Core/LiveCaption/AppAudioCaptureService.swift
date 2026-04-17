@@ -248,16 +248,6 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
     }
     
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
-        if Thread.isMainThread {
-            MainActor.assumeIsolated {
-                logger.info("❌ User cancelled app selection")
-                deactivatePickerAndClearSelectionState()
-                currentAppName = nil
-                onSelectionCancelled?()
-            }
-            return
-        }
-
         runAppAudioCaptureOnMain(self) { capture in
             capture.logger.info("❌ User cancelled app selection")
             capture.deactivatePickerAndClearSelectionState()
@@ -267,16 +257,6 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
     }
     
     nonisolated func contentSharingPickerStartDidFailWithError(_ error: any Error) {
-        if Thread.isMainThread {
-            MainActor.assumeIsolated {
-                logger.error("❌ Picker failed to start: \(error.localizedDescription)")
-                deactivatePickerAndClearSelectionState()
-                currentAppName = nil
-                onError?(error)
-            }
-            return
-        }
-
         runAppAudioCaptureOnMain(self) { capture in
             capture.logger.error("❌ Picker failed to start: \(error.localizedDescription)")
             capture.deactivatePickerAndClearSelectionState()
