@@ -56,6 +56,7 @@ struct AppAudioCaptureServiceTests {
             service.presentPicker()
 
             #expect(picker.isActive)
+            #expect(picker.addObserverCalls == 1)
             #expect(picker.presentCalls == 1)
         } else {
             #expect(Bool(true))
@@ -74,6 +75,7 @@ struct AppAudioCaptureServiceTests {
             service.reselectApp()
 
             #expect(picker.isActive)
+            #expect(picker.addObserverCalls == 1)
             #expect(picker.presentCalls == 1)
         } else {
             #expect(Bool(true))
