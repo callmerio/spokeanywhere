@@ -112,6 +112,11 @@ struct AppAudioCaptureServiceTests {
             )
 
             service.presentPicker()
+            service.testingSetCaptureState(
+                isCapturing: true,
+                isRetrying: false,
+                currentAppName: "Existing App"
+            )
             await service.stopCapture()
 
             #expect(picker.isActive == false)
@@ -149,6 +154,34 @@ struct AppAudioCaptureServiceTests {
             #expect(picker.isActive == false)
             #expect(service.isWaitingForSelection == false)
             #expect(cancelCalls == 1)
+        } else {
+            #expect(Bool(true))
+        }
+    }
+
+    @Test("成功选择应用后会撤回 picker 活跃状态并记录应用名")
+    @MainActor
+    func successfulPickerUpdateDeactivatesPicker() async {
+        if #available(macOS 14.0, *) {
+            let picker = FakeContentSharingPicker()
+            let service = AppAudioCaptureService.makeTesting(
+                dependencies: .init(picker: picker)
+            )
+            var selectionCompleted = false
+
+            service.onSelectionComplete = { success in
+                selectionCompleted = success
+            }
+            service.presentPicker()
+
+            await service.testingHandlePickerUpdate(appName: "Selected App") {
+                // No-op: test only cares that success path performs state cleanup.
+            }
+
+            #expect(picker.isActive == false)
+            #expect(service.isWaitingForSelection == false)
+            #expect(service.currentAppName == "Selected App")
+            #expect(selectionCompleted)
         } else {
             #expect(Bool(true))
         }

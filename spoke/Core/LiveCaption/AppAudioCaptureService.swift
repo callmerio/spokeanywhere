@@ -89,6 +89,16 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
     static func makeTesting(dependencies: AppAudioCaptureServiceDependencies) -> AppAudioCaptureService {
         AppAudioCaptureService(dependencies: dependencies)
     }
+
+    func testingSetCaptureState(
+        isCapturing: Bool,
+        isRetrying: Bool,
+        currentAppName: String? = nil
+    ) {
+        self.isCapturing = isCapturing
+        self.isRetrying = isRetrying
+        self.currentAppName = currentAppName
+    }
     
     // MARK: - Picker Configuration
     
@@ -220,6 +230,33 @@ final class AppAudioCaptureService: NSObject, ObservableObject {
         dependencies.picker.isActive = false
         isWaitingForSelection = false
     }
+
+    private func handlePickerUpdate(
+        appName: String,
+        startCapture: @escaping @MainActor () async throws -> Void
+    ) async {
+        defer {
+            deactivatePickerAndClearSelectionState()
+        }
+
+        do {
+            try await startCapture()
+            currentAppName = appName
+            lastAppName = appName
+            onSelectionComplete?(true)
+        } catch {
+            logger.error("❌ Failed to start capture: \(error.localizedDescription)")
+            onError?(error)
+            onSelectionComplete?(false)
+        }
+    }
+
+    func testingHandlePickerUpdate(
+        appName: String = "Selected App",
+        startCapture: @escaping @MainActor () async throws -> Void
+    ) async {
+        await handlePickerUpdate(appName: appName, startCapture: startCapture)
+    }
 }
 
 // MARK: - SCContentSharingPickerObserver
@@ -229,20 +266,9 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
     
     nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
         runAppAudioCaptureAsync(self) { capture in
-            defer {
-                capture.deactivatePickerAndClearSelectionState()
-            }
             let appName = capture.extractAppName(from: filter) ?? "Selected App"
-
-            do {
+            await capture.handlePickerUpdate(appName: appName) {
                 try await capture.startCapture(with: filter)
-                capture.currentAppName = appName
-                capture.lastAppName = appName
-                capture.onSelectionComplete?(true)
-            } catch {
-                capture.logger.error("❌ Failed to start capture: \(error.localizedDescription)")
-                capture.onError?(error)
-                capture.onSelectionComplete?(false)
             }
         }
     }
