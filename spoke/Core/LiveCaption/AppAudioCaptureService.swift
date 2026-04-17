@@ -251,7 +251,6 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
         runAppAudioCaptureOnMain(self) { capture in
             capture.logger.info("❌ User cancelled app selection")
             capture.deactivatePickerAndClearSelectionState()
-            capture.currentAppName = nil
             capture.onSelectionCancelled?()
         }
     }
@@ -260,7 +259,6 @@ extension AppAudioCaptureService: SCContentSharingPickerObserver {
         runAppAudioCaptureOnMain(self) { capture in
             capture.logger.error("❌ Picker failed to start: \(error.localizedDescription)")
             capture.deactivatePickerAndClearSelectionState()
-            capture.currentAppName = nil
             capture.onError?(error)
         }
     }

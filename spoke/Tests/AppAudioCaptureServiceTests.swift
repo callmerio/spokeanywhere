@@ -24,6 +24,24 @@ private final class FakeContentSharingPicker: AppAudioCapturePickerProtocol {
     }
 }
 
+private enum FakePickerError: Error {
+    case failedToStart
+}
+
+@MainActor
+private func waitForPickerState(
+    maxAttempts: Int = 20,
+    condition: @escaping @MainActor () -> Bool
+) async {
+    for _ in 0..<maxAttempts {
+        if condition() {
+            return
+        }
+
+        await Task.yield()
+    }
+}
+
 @Suite("AppAudioCaptureService 测试")
 struct AppAudioCaptureServiceTests {
 
@@ -113,17 +131,52 @@ struct AppAudioCaptureServiceTests {
             let service = AppAudioCaptureService.makeTesting(
                 dependencies: .init(picker: picker)
             )
+            var cancelCalls = 0
 
+            service.onSelectionCancelled = {
+                cancelCalls += 1
+            }
             service.presentPicker()
             service.contentSharingPicker(
                 SCContentSharingPicker.shared,
                 didCancelFor: nil
             )
 
-            await Task.yield()
-            await Task.yield()
+            await waitForPickerState {
+                picker.isActive == false && service.isWaitingForSelection == false && cancelCalls == 1
+            }
 
             #expect(picker.isActive == false)
+            #expect(service.isWaitingForSelection == false)
+            #expect(cancelCalls == 1)
+        } else {
+            #expect(Bool(true))
+        }
+    }
+
+    @Test("picker 启动失败后会撤回活跃状态并派发错误")
+    @MainActor
+    func pickerStartFailureDeactivatesPicker() async {
+        if #available(macOS 14.0, *) {
+            let picker = FakeContentSharingPicker()
+            let service = AppAudioCaptureService.makeTesting(
+                dependencies: .init(picker: picker)
+            )
+            var receivedError: FakePickerError?
+
+            service.onError = { error in
+                receivedError = error as? FakePickerError
+            }
+            service.presentPicker()
+            service.contentSharingPickerStartDidFailWithError(FakePickerError.failedToStart)
+
+            await waitForPickerState {
+                picker.isActive == false && service.isWaitingForSelection == false && receivedError == .failedToStart
+            }
+
+            #expect(picker.isActive == false)
+            #expect(service.isWaitingForSelection == false)
+            #expect(receivedError == .failedToStart)
         } else {
             #expect(Bool(true))
         }
