@@ -24,26 +24,30 @@ private final class FakeContentSharingPicker: AppAudioCapturePickerProtocol {
     }
 }
 
-private enum FakePickerError: Error {
-    case failedToStart
-}
-
-@MainActor
-private func waitForPickerState(
-    maxAttempts: Int = 20,
-    condition: @escaping @MainActor () -> Bool
-) async {
-    for _ in 0..<maxAttempts {
-        if condition() {
-            return
-        }
-
-        await Task.yield()
-    }
+@available(macOS 14.0, *)
+private enum PickerTestError: Error, Equatable {
+    case startFailed
 }
 
 @Suite("AppAudioCaptureService 测试")
 struct AppAudioCaptureServiceTests {
+
+    @MainActor
+    private func waitUntil(
+        _ description: String,
+        attempts: Int = 20,
+        sleepNs: UInt64 = 10_000_000,
+        predicate: @escaping @MainActor () -> Bool
+    ) async {
+        for _ in 0..<attempts {
+            if predicate() {
+                return
+            }
+            try? await Task.sleep(nanoseconds: sleepNs)
+        }
+
+        Issue.record(Comment(rawValue: description))
+    }
 
     @Test("初始化 AppAudioCaptureService 不会自动激活 picker")
     @MainActor
@@ -136,24 +140,28 @@ struct AppAudioCaptureServiceTests {
             let service = AppAudioCaptureService.makeTesting(
                 dependencies: .init(picker: picker)
             )
-            var cancelCalls = 0
+            var didCancel = false
 
-            service.onSelectionCancelled = {
-                cancelCalls += 1
-            }
             service.presentPicker()
+            service.onSelectionCancelled = {
+                didCancel = true
+            }
             service.contentSharingPicker(
                 SCContentSharingPicker.shared,
                 didCancelFor: nil
             )
 
-            await waitForPickerState {
-                picker.isActive == false && service.isWaitingForSelection == false && cancelCalls == 1
+            await waitUntil(
+                "expected cancel callback to deactivate picker and clear waiting state"
+            ) {
+                picker.isActive == false &&
+                service.isWaitingForSelection == false &&
+                didCancel
             }
 
             #expect(picker.isActive == false)
             #expect(service.isWaitingForSelection == false)
-            #expect(cancelCalls == 1)
+            #expect(didCancel)
         } else {
             #expect(Bool(true))
         }
@@ -187,29 +195,33 @@ struct AppAudioCaptureServiceTests {
         }
     }
 
-    @Test("picker 启动失败后会撤回活跃状态并派发错误")
+    @Test("picker 启动失败后会撤活并回调错误")
     @MainActor
-    func pickerStartFailureDeactivatesPicker() async {
+    func pickerStartFailureDeactivatesPickerAndReportsError() async {
         if #available(macOS 14.0, *) {
             let picker = FakeContentSharingPicker()
             let service = AppAudioCaptureService.makeTesting(
                 dependencies: .init(picker: picker)
             )
-            var receivedError: FakePickerError?
+            var receivedError: PickerTestError?
 
-            service.onError = { error in
-                receivedError = error as? FakePickerError
-            }
             service.presentPicker()
-            service.contentSharingPickerStartDidFailWithError(FakePickerError.failedToStart)
+            service.onError = { error in
+                receivedError = error as? PickerTestError
+            }
+            service.contentSharingPickerStartDidFailWithError(PickerTestError.startFailed)
 
-            await waitForPickerState {
-                picker.isActive == false && service.isWaitingForSelection == false && receivedError == .failedToStart
+            await waitUntil(
+                "expected picker start failure to deactivate picker, clear waiting state, and report error"
+            ) {
+                picker.isActive == false &&
+                service.isWaitingForSelection == false &&
+                receivedError == .startFailed
             }
 
             #expect(picker.isActive == false)
             #expect(service.isWaitingForSelection == false)
-            #expect(receivedError == .failedToStart)
+            #expect(receivedError == .startFailed)
         } else {
             #expect(Bool(true))
         }
