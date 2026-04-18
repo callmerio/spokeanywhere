@@ -9,6 +9,9 @@ struct ShortcutsSettingsContent: View {
     @ObservedObject var appSettings: AppSettings
     @State private var isRecordingShortcut = false
     @State private var isRecordingQuickAskShortcut = false
+    @State private var isRecordingMessagePanelShortcut = false
+    @State private var isRecordingLiveCaptionShortcut = false
+    @State private var isRecordingClipboardPipelineShortcut = false
     @State private var isRecordingScreenshotShortcut = false
     
     var body: some View {
@@ -42,7 +45,43 @@ struct ShortcutsSettingsContent: View {
                 }
                 
                 Divider().background(DS.Colors.settingsCardBorder)
-                
+
+                SettingsRow(icon: "menubar.rectangle", title: "消息面板", description: "显示或隐藏消息面板") {
+                    ShortcutRecorderButton(
+                        isRecording: $isRecordingMessagePanelShortcut,
+                        currentShortcut: appSettings.messagePanelShortcutDisplayString,
+                        onShortcutCaptured: { keyCode, modifiers in
+                            appSettings.updateMessagePanelShortcut(keyCode: keyCode, modifiers: modifiers)
+                        }
+                    )
+                }
+
+                Divider().background(DS.Colors.settingsCardBorder)
+
+                SettingsRow(icon: "captions.bubble", title: "实时字幕", description: "开始或关闭实时字幕") {
+                    ShortcutRecorderButton(
+                        isRecording: $isRecordingLiveCaptionShortcut,
+                        currentShortcut: appSettings.liveCaptionShortcutDisplayString,
+                        onShortcutCaptured: { keyCode, modifiers in
+                            appSettings.updateLiveCaptionShortcut(keyCode: keyCode, modifiers: modifiers)
+                        }
+                    )
+                }
+
+                Divider().background(DS.Colors.settingsCardBorder)
+
+                SettingsRow(icon: "doc.on.clipboard", title: "剪贴板注入", description: "读取剪贴板并发送到消息面板") {
+                    ShortcutRecorderButton(
+                        isRecording: $isRecordingClipboardPipelineShortcut,
+                        currentShortcut: appSettings.clipboardPipelineShortcutDisplayString,
+                        onShortcutCaptured: { keyCode, modifiers in
+                            appSettings.updateClipboardPipelineShortcut(keyCode: keyCode, modifiers: modifiers)
+                        }
+                    )
+                }
+
+                Divider().background(DS.Colors.settingsCardBorder)
+
                 SettingsRow(icon: "camera.viewfinder", title: "区域截图", description: "截取屏幕区域并钉住") {
                     ShortcutRecorderButton(
                         isRecording: $isRecordingScreenshotShortcut,

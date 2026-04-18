@@ -61,12 +61,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
-    private var hotkeyMenuItem: NSMenuItem?
+    private var recordingMenuItem: NSMenuItem?
+    private var quickAskMenuItem: NSMenuItem?
     private var selectionToolbarMenuItem: NSMenuItem?
     private var shortcutObserver: NSObjectProtocol?
+    private var quickAskShortcutObserver: NSObjectProtocol?
     private var toolbarSettingsObserver: NSObjectProtocol?
     private let dependencies: AppDelegateDependencies
     private let settingsWindowRuntime = SettingsWindowRuntime.live
+    private let statusMenuTitleRuntime = AppStatusMenuTitleRuntime()
+    private let statusMenuShortcutObserverRuntime = AppStatusMenuShortcutObserverRuntime()
+    private lazy var statusMenuCommandRuntime = AppStatusMenuCommandRuntime(
+        toggleRecording: { [hotKeyService = dependencies.hotKeyService] in
+            hotKeyService.toggleRecordingFromMenu()
+        },
+        triggerQuickAsk: { [hotKeyService = dependencies.hotKeyService] in
+            hotKeyService.triggerQuickAskFromMenu()
+        }
+    )
     private lazy var screenshotRuntime = AppScreenshotRuntime(
         makeWindow: { item in
             ScreenshotWindow(item: item)
@@ -499,13 +511,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         menu.addItem(NSMenuItem(title: "SpokenAnyWhere", action: nil, keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
-        
-        // 动态显示当前快捷键
-        let hotkeyItem = NSMenuItem(title: "快捷键: \(dependencies.appSettings.shortcutDisplayString)", action: nil, keyEquivalent: "")
-        hotkeyItem.isEnabled = false
-        self.hotkeyMenuItem = hotkeyItem
-        menu.addItem(hotkeyItem)
-        
+
+        let recordingItem = NSMenuItem(title: "", action: #selector(toggleRecordingFromMenu), keyEquivalent: "")
+        self.recordingMenuItem = recordingItem
+        menu.addItem(recordingItem)
+
+        let quickAskItem = NSMenuItem(title: "", action: #selector(triggerQuickAskFromMenu), keyEquivalent: "")
+        self.quickAskMenuItem = quickAskItem
+        menu.addItem(quickAskItem)
+
         menu.addItem(NSMenuItem.separator())
         
         // 实时字幕
@@ -538,19 +552,75 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
         statusItem?.menu = menu
-        
-        // 监听快捷键变更通知
+        updateShortcutMenuItems()
         setupShortcutObserver()
     }
     
     private func setupShortcutObserver() {
-        installObserver(&shortcutObserver, forName: AppSettings.shortcutDidChangeNotification) { [weak self] _ in
-            self?.updateHotkeyMenuItem()
+        let observations = statusMenuShortcutObserverRuntime.makeObservations { [weak self] in
+            self?.updateShortcutMenuItems()
+        }
+
+        for observation in observations {
+            switch observation.name {
+            case AppSettings.shortcutDidChangeNotification:
+                installObserver(&shortcutObserver, forName: observation.name, using: observation.handler)
+            case AppSettings.quickAskShortcutDidChangeNotification:
+                installObserver(&quickAskShortcutObserver, forName: observation.name, using: observation.handler)
+            default:
+                break
+            }
         }
     }
     
-    private func updateHotkeyMenuItem() {
-        hotkeyMenuItem?.title = "快捷键: \(dependencies.appSettings.shortcutDisplayString)"
+    private func updateShortcutMenuItems() {
+        statusMenuTitleRuntime.updateTitles(
+            setRecordingTitle: { [weak self] in
+                self?.recordingMenuItem?.title = $0
+            },
+            setQuickAskTitle: { [weak self] in
+                self?.quickAskMenuItem?.title = $0
+            }
+        )
+
+        updateMenuShortcut(
+            item: recordingMenuItem,
+            keyCode: dependencies.appSettings.shortcutKeyCode,
+            modifiers: dependencies.appSettings.shortcutModifiers
+        )
+        updateMenuShortcut(
+            item: quickAskMenuItem,
+            keyCode: dependencies.appSettings.quickAskKeyCode,
+            modifiers: dependencies.appSettings.quickAskModifiers
+        )
+    }
+
+    private func updateMenuShortcut(
+        item: NSMenuItem?,
+        keyCode: Int,
+        modifiers: Int
+    ) {
+        guard let item else { return }
+
+        if let shortcut = AppStatusMenuShortcutRuntime.shortcut(
+            keyCode: keyCode,
+            modifiers: modifiers
+        ) {
+            item.keyEquivalent = shortcut.keyEquivalent
+            item.keyEquivalentModifierMask = shortcut.modifierMask
+            return
+        }
+
+        item.keyEquivalent = ""
+        item.keyEquivalentModifierMask = []
+    }
+
+    @objc func toggleRecordingFromMenu() {
+        statusMenuCommandRuntime.toggleRecordingFromMenu()
+    }
+
+    @objc func triggerQuickAskFromMenu() {
+        statusMenuCommandRuntime.triggerQuickAskFromMenu()
     }
     
     @objc func toggleLiveCaption() {
@@ -665,6 +735,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func removeAllObservers() {
         removeObserver(&shortcutObserver)
+        removeObserver(&quickAskShortcutObserver)
         removeObserver(&toolbarSettingsObserver)
         removeObserver(&settingsWindowObserver)
     }
@@ -718,4 +789,57 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             warmupLogger.warning("⚠️ Speech engine warmup skipped due to error: \(error.localizedDescription, privacy: .public)")
         }
     }
+
+#if DEBUG
+    func testingSetupMenuBar() {
+        setupMenuBar()
+    }
+
+    func testingReinstallShortcutObserver() {
+        setupShortcutObserver()
+    }
+
+    var testingRecordingMenuTitle: String? {
+        recordingMenuItem?.title
+    }
+
+    var testingQuickAskMenuTitle: String? {
+        quickAskMenuItem?.title
+    }
+
+    var testingRecordingMenuAction: Selector? {
+        recordingMenuItem?.action
+    }
+
+    var testingQuickAskMenuAction: Selector? {
+        quickAskMenuItem?.action
+    }
+
+    var testingRecordingMenuKeyEquivalent: String? {
+        recordingMenuItem?.keyEquivalent
+    }
+
+    var testingQuickAskMenuKeyEquivalent: String? {
+        quickAskMenuItem?.keyEquivalent
+    }
+
+    var testingRecordingMenuModifierMask: NSEvent.ModifierFlags? {
+        recordingMenuItem?.keyEquivalentModifierMask
+    }
+
+    var testingQuickAskMenuModifierMask: NSEvent.ModifierFlags? {
+        quickAskMenuItem?.keyEquivalentModifierMask
+    }
+
+    func testingTearDownStatusMenu() {
+        removeAllObservers()
+        if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+        }
+        statusItem = nil
+        recordingMenuItem = nil
+        quickAskMenuItem = nil
+        selectionToolbarMenuItem = nil
+    }
+#endif
 }

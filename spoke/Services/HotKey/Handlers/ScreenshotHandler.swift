@@ -77,11 +77,7 @@ final class ClipboardPipelineHandler: HotKeyHandler {
     var onTrigger: (() -> Void)?
 
     init() {
-        // Clipboard Pipeline 暂时没有专门的设置，使用默认值
-        self.binding = HotKeyBinding(
-            keyCode: UInt32(kVK_ANSI_V),
-            modifiers: .option
-        )
+        self.binding = makeClipboardPipelineHandlerBinding()
     }
 
     func handleKeyDown() -> Bool {
@@ -93,6 +89,8 @@ final class ClipboardPipelineHandler: HotKeyHandler {
     }
 
     func reloadBinding() {
-        // Clipboard Pipeline 暂无独立设置
+        let settings = clipboardPipelineHandlerSettings()
+        binding = makeClipboardPipelineHandlerBinding()
+        logger.info("Clipboard Pipeline shortcut reloaded: \(settings.clipboardPipelineShortcutDisplayString)")
     }
 }

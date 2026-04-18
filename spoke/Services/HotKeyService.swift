@@ -154,6 +154,8 @@ final class HotKeyService {
         messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.messagePanelModifiers))
         liveCaptionKeyCode = UInt32(dependencies.appSettings.liveCaptionKeyCode)
         liveCaptionModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.liveCaptionModifiers))
+        clipboardPipelineKeyCode = UInt32(dependencies.appSettings.clipboardPipelineKeyCode)
+        clipboardPipelineModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.clipboardPipelineModifiers))
         screenshotKeyCode = UInt32(dependencies.appSettings.screenshotKeyCode)
         screenshotModifiers = NSEvent.ModifierFlags(rawValue: UInt(dependencies.appSettings.screenshotModifiers))
     }
@@ -170,6 +172,9 @@ final class HotKeyService {
         }
         observeShortcutChange(AppSettings.liveCaptionShortcutDidChangeNotification) { service in
             service.reloadLiveCaptionShortcut()
+        }
+        observeShortcutChange(AppSettings.clipboardPipelineShortcutDidChangeNotification) { service in
+            service.reloadClipboardPipelineShortcut()
         }
         observeShortcutChange(AppSettings.screenshotShortcutDidChangeNotification) { service in
             service.reloadScreenshotShortcut()
@@ -207,6 +212,12 @@ final class HotKeyService {
         messagePanelModifiers = NSEvent.ModifierFlags(rawValue: UInt(self.dependencies.appSettings.messagePanelModifiers))
         logger.info("🔄 Message Panel shortcut reloaded: \(self.dependencies.appSettings.messagePanelShortcutDisplayString)")
     }
+
+    private func reloadClipboardPipelineShortcut() {
+        clipboardPipelineKeyCode = UInt32(self.dependencies.appSettings.clipboardPipelineKeyCode)
+        clipboardPipelineModifiers = NSEvent.ModifierFlags(rawValue: UInt(self.dependencies.appSettings.clipboardPipelineModifiers))
+        logger.info("🔄 Clipboard Pipeline shortcut reloaded: \(self.dependencies.appSettings.clipboardPipelineShortcutDisplayString)")
+    }
     
     private func reloadQuickAskShortcut() {
         quickAskKeyCode = UInt32(self.dependencies.appSettings.quickAskKeyCode)
@@ -228,6 +239,25 @@ final class HotKeyService {
     }
     
     // MARK: - Public API
+
+    func toggleRecordingFromMenu() {
+        if isRecording {
+            stopRecordingForMenuToggle()
+            return
+        }
+
+        startRecordingForMenuToggle()
+    }
+
+    func triggerQuickAskFromMenu() {
+        if !isQuickAskActive {
+            beginQuickAskSession()
+            logger.info("🚀 Quick Ask started")
+        } else {
+            finishQuickAskSession()
+            logger.info("📤 Quick Ask sending")
+        }
+    }
     
     /// 注册全局快捷键
     func register() {
@@ -561,18 +591,26 @@ final class HotKeyService {
     
     private func startQuickAsk() {
         runHotKeyServiceOnMain(self) { service in
-            service.isQuickAskActive = true
-            service.onQuickAskStart?()
+            service.beginQuickAskSession()
         }
         logger.info("🚀 Quick Ask started")
     }
     
     private func sendQuickAsk() {
         runHotKeyServiceOnMain(self) { service in
-            service.isQuickAskActive = false
-            service.onQuickAskSend?()
+            service.finishQuickAskSession()
         }
         logger.info("📤 Quick Ask sending")
+    }
+
+    private func beginQuickAskSession() {
+        isQuickAskActive = true
+        onQuickAskStart?()
+    }
+
+    private func finishQuickAskSession() {
+        isQuickAskActive = false
+        onQuickAskSend?()
     }
     
     /// 重置 Quick Ask 状态
@@ -629,20 +667,7 @@ final class HotKeyService {
             service.logger.info("⬇️ [keyDown] isRecording=\(service.isRecording), isToggleSession=\(service.isToggleSession), delayedStopTask=\(taskStatus, privacy: .public)")
             
             if !service.isRecording {
-                // 开始新录音
-                // 1. 先取消之前的延迟停止（如果有）
-                service.delayedStopTask?.cancel()
-                service.delayedStopTask = nil
-                
-                // 2. 创建新的会话 ID
-                service.currentSessionId = UUID()
-                
-                // 3. 开始录音
-                service.isRecording = true
-                service.recordingStartTime = Date()
-                service.isToggleSession = false
-                service.onRecordingStart?()
-                
+                service.startRecordingForHotKey()
                 service.logger.info("🎙️ New recording session started: \(service.currentSessionId?.uuidString.prefix(8) ?? "nil") | startTime=\(service.recordingStartTime?.timeIntervalSince1970 ?? 0)")
             } else {
                 // 正在录音中
@@ -671,9 +696,7 @@ final class HotKeyService {
                             return
                         }
 
-                        service.isRecording = false
-                        service.recordingStartTime = nil
-                        service.currentSessionId = nil
+                        service.transitionToIdleRecordingState()
                         service.onRecordingStop?()
                     }
                 } else if service.delayedStopTask != nil {
@@ -684,18 +707,12 @@ final class HotKeyService {
                     service.delayedStopTask = nil
                     
                     // 先停止当前录音
-                    service.isRecording = false
-                    service.recordingStartTime = nil
                     let oldSessionId = service.currentSessionId
-                    service.currentSessionId = nil
+                    service.transitionToIdleRecordingState()
                     service.onRecordingStop?()
                     
                     // 立即开始新录音
-                    service.currentSessionId = UUID()
-                    service.isRecording = true
-                    service.recordingStartTime = Date()
-                    service.isToggleSession = false
-                    service.onRecordingStart?()
+                    service.beginRecordingSessionIfPossible()
                     
                     service.logger.info("🎙️ New recording session started (interrupted delayed stop): old=\(oldSessionId?.uuidString.prefix(8) ?? "nil") → new=\(service.currentSessionId?.uuidString.prefix(8) ?? "nil")")
                 }
@@ -781,30 +798,65 @@ final class HotKeyService {
                         return
                     }
 
-                    service.isRecording = false
-                    service.recordingStartTime = nil
-                    service.currentSessionId = nil
+                    service.transitionToIdleRecordingState()
                     service.onRecordingStop?()
                 }
             }
         }
     }
-    
-    /// 强制重置状态（用于异常恢复或取消录音）
-    func resetState() {
-        isRecording = false
+
+    private func startRecordingForHotKey() {
+        guard beginRecordingSessionIfPossible() else { return }
+    }
+
+    private func startRecordingForMenuToggle() {
+        guard beginRecordingSessionIfPossible() else {
+            logger.warning("⚠️ Status menu start ignored because recording callback is unavailable")
+            return
+        }
+        logger.info("🎛️ [StatusMenu] recording toggled -> start")
+    }
+
+    private func stopRecordingForMenuToggle() {
+        transitionToIdleRecordingState()
+        onRecordingStop?()
+        logger.info("🎛️ [StatusMenu] recording toggled -> stop")
+    }
+
+    @discardableResult
+    private func beginRecordingSessionIfPossible() -> Bool {
+        guard let onRecordingStart else { return false }
+        transitionToActiveRecordingState()
+        onRecordingStart()
+        return true
+    }
+
+    private func transitionToActiveRecordingState() {
+        cancelPendingRecordingTransitions()
+        currentSessionId = UUID()
+        isRecording = true
+        recordingStartTime = Date()
         isToggleSession = false
+    }
+
+    private func transitionToIdleRecordingState() {
+        cancelPendingRecordingTransitions()
+        isRecording = false
         recordingStartTime = nil
         currentSessionId = nil
-        
-        // 取消任何待执行的延迟停止
+        isToggleSession = false
+    }
+
+    private func cancelPendingRecordingTransitions() {
         delayedStopTask?.cancel()
         delayedStopTask = nil
-        
-        // 取消任何待执行的防抖检查
         flagsDebounceWorkItem?.cancel()
         flagsDebounceWorkItem = nil
-        
+    }
+
+    /// 强制重置状态（用于异常恢复或取消录音）
+    func resetState() {
+        transitionToIdleRecordingState()
         logger.info("🔄 HotKey state reset")
     }
 }

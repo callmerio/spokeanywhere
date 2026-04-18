@@ -22,6 +22,11 @@ func captionHandlerSettings() -> AppSettings {
 }
 
 @MainActor
+func clipboardPipelineHandlerSettings() -> AppSettings {
+    AppSettings.shared
+}
+
+@MainActor
 func voiceHandlerSettings() -> AppSettings {
     AppSettings.shared
 }
@@ -67,6 +72,15 @@ func makeCaptionHandlerBinding() -> HotKeyBinding {
     return makeHotKeyBinding(
         keyCode: settings.liveCaptionKeyCode,
         modifiers: settings.liveCaptionModifiers
+    )
+}
+
+@MainActor
+func makeClipboardPipelineHandlerBinding() -> HotKeyBinding {
+    let settings = clipboardPipelineHandlerSettings()
+    return makeHotKeyBinding(
+        keyCode: settings.clipboardPipelineKeyCode,
+        modifiers: settings.clipboardPipelineModifiers
     )
 }
 

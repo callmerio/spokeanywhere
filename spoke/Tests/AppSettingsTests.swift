@@ -185,6 +185,14 @@ struct AppSettingsTests {
         #expect(!display.isEmpty)
     }
 
+    @Test("clipboardPipelineShortcutDisplayString 应返回可读字符串")
+    func clipboardPipelineShortcutDisplayStringReadable() {
+        let settings = AppSettings.shared
+        let display = settings.clipboardPipelineShortcutDisplayString
+
+        #expect(!display.isEmpty)
+    }
+
     // MARK: - Update Shortcut
 
     @Test("updateShortcut 应更新快捷键设置")
@@ -219,6 +227,24 @@ struct AppSettingsTests {
 
         // 恢复
         settings.updateQuickAskShortcut(keyCode: originalKeyCode, modifiers: originalModifiers)
+    }
+
+    @Test("updateClipboardPipelineShortcut 应更新剪贴板注入快捷键")
+    func updateClipboardPipelineShortcutWorks() {
+        let settings = AppSettings.shared
+
+        let originalKeyCode = settings.clipboardPipelineKeyCode
+        let originalModifiers = settings.clipboardPipelineModifiers
+
+        settings.updateClipboardPipelineShortcut(
+            keyCode: kVK_ANSI_B,
+            modifiers: Int(NSEvent.ModifierFlags.command.rawValue)
+        )
+
+        #expect(settings.clipboardPipelineKeyCode == kVK_ANSI_B)
+        #expect(settings.clipboardPipelineModifiers == Int(NSEvent.ModifierFlags.command.rawValue))
+
+        settings.updateClipboardPipelineShortcut(keyCode: originalKeyCode, modifiers: originalModifiers)
     }
 
     // MARK: - RecordingMode
@@ -293,5 +319,12 @@ struct AppSettingsNotificationTests {
     func screenshotShortcutNotificationExists() {
         let name = AppSettings.screenshotShortcutDidChangeNotification
         #expect(name.rawValue == "ScreenshotShortcutDidChange")
+    }
+
+    @Test("clipboardPipelineShortcutDidChangeNotification 应正确定义")
+    @MainActor
+    func clipboardPipelineShortcutNotificationExists() {
+        let name = AppSettings.clipboardPipelineShortcutDidChangeNotification
+        #expect(name.rawValue == "ClipboardPipelineShortcutDidChange")
     }
 }

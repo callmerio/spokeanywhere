@@ -221,6 +221,36 @@ class AppSettings: ObservableObject {
         self.messagePanelKeyCode = keyCode
         self.messagePanelModifiers = modifiers
     }
+
+    // MARK: - Clipboard Pipeline Shortcut
+
+    /// Clipboard Pipeline 快捷键 keyCode (默认: V = 9)
+    @AppStorage("ClipboardPipelineKeyCode") var clipboardPipelineKeyCode: Int = kVK_ANSI_V {
+        didSet { notifyClipboardPipelineShortcutChange() }
+    }
+
+    /// Clipboard Pipeline 快捷键修饰符 (默认: Option = 524288)
+    @AppStorage("ClipboardPipelineModifiers") var clipboardPipelineModifiers: Int = Int(NSEvent.ModifierFlags.option.rawValue) {
+        didSet { notifyClipboardPipelineShortcutChange() }
+    }
+
+    /// Clipboard Pipeline 快捷键变更通知
+    static let clipboardPipelineShortcutDidChangeNotification = Notification.Name("ClipboardPipelineShortcutDidChange")
+
+    private func notifyClipboardPipelineShortcutChange() {
+        postNotification(Self.clipboardPipelineShortcutDidChangeNotification)
+    }
+
+    /// 获取 Clipboard Pipeline 快捷键显示字符串
+    var clipboardPipelineShortcutDisplayString: String {
+        KeyComboFormatter.format(keyCode: clipboardPipelineKeyCode, modifiers: clipboardPipelineModifiers)
+    }
+
+    /// 更新 Clipboard Pipeline 快捷键
+    func updateClipboardPipelineShortcut(keyCode: Int, modifiers: Int) {
+        self.clipboardPipelineKeyCode = keyCode
+        self.clipboardPipelineModifiers = modifiers
+    }
     
     // MARK: - Live Caption Shortcut
     

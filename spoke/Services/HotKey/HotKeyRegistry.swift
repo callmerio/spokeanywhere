@@ -93,6 +93,7 @@ final class HotKeyRegistry {
         observeShortcutChange(AppSettings.quickAskShortcutDidChangeNotification, type: .quickAsk, logMessage: "Quick Ask shortcut reloaded")
         observeShortcutChange(AppSettings.messagePanelShortcutDidChangeNotification, type: .messagePanel, logMessage: "Message Panel shortcut reloaded")
         observeShortcutChange(AppSettings.liveCaptionShortcutDidChangeNotification, type: .liveCaption, logMessage: "Live Caption shortcut reloaded")
+        observeShortcutChange(AppSettings.clipboardPipelineShortcutDidChangeNotification, type: .clipboardPipeline, logMessage: "Clipboard Pipeline shortcut reloaded")
         observeShortcutChange(AppSettings.screenshotShortcutDidChangeNotification, type: .screenshot, logMessage: "Screenshot shortcut reloaded")
     }
 
