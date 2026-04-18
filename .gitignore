@@ -90,6 +90,8 @@ tmp/
 # Local AI workflow artifacts
 AGENTS.md
 !spoke/AGENTS.md
+.codex/config.toml
+.worktrees/
 .agents/autoresearch/
 .serena/
 tracks/
