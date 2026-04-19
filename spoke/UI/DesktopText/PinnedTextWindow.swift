@@ -389,13 +389,18 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private func applyPreviewZoomFrame(_ zoom: Double) {
         guard let baseFrame = previewBaseFrame else { return }
 
-        let preferredSize = PinnedTextMarkdownRenderer.preferredWindowSize(
-            text: item.text,
-            zoomLevel: zoom
-        )
-        let scaledSize = CGSize(
-            width: max(preferredSize.width, minimumWindowSize.width),
-            height: max(preferredSize.height, minimumWindowSize.height)
+        let zoomRatio = CGFloat(zoom / max(item.zoomLevel, 0.0001))
+        let scaledSize = PinnedTextZoomGeometry.scaledViewportSize(
+            baseViewport: baseFrame.size,
+            zoomRatio: zoomRatio,
+            minimumSize: minimumWindowSize,
+            maximumSize: CGSize(
+                width: PinnedTextMarkdownRenderer.maxContentWidth
+                    + PinnedTextMarkdownRenderer.contentInsets.left
+                    + PinnedTextMarkdownRenderer.contentInsets.right
+                    + (PinnedTextMarkdownRenderer.windowGlowPadding * 2),
+                height: PinnedTextMarkdownRenderer.maxWindowHeight
+            )
         )
         let center = CGPoint(x: baseFrame.midX, y: baseFrame.midY)
         let nextFrame = CGRect(
