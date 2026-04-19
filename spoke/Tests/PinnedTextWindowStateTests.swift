@@ -144,6 +144,33 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
     }
 
+    @Test("horizontal precise scroll while hover unfocused does not create preview zoom")
+    func horizontalPreciseScrollDoesNotCreatePreviewZoom() throws {
+        let (window, counter) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let originalZoom = window.item.zoomLevel
+        let originalOpacity = window.item.opacity
+
+        window.scrollWheel(with: try makeScrollEvent(deltaX: -40, precise: true))
+
+        #expect(window.item.opacity < originalOpacity)
+        #expect(content.previewZoomForTesting == originalZoom)
+        #expect(window.item.zoomLevel == originalZoom)
+        #expect(counter.saves >= 1)
+    }
+
     @Test("unfocused hover vertical scroll updates zoom instead of scrolling content")
     func unfocusedHoverVerticalScrollZooms() throws {
         let (window, counter) = makeWindow(
