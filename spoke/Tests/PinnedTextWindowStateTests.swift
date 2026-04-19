@@ -136,6 +136,11 @@ struct PinnedTextWindowStateTests {
         abs(lhs.size.height - rhs.size.height) <= tolerance
     }
 
+    private func sizesMatch(_ lhs: CGSize, _ rhs: CGSize, tolerance: CGFloat = 0.5) -> Bool {
+        abs(lhs.width - rhs.width) <= tolerance &&
+        abs(lhs.height - rhs.height) <= tolerance
+    }
+
     @Test("preview mode keeps vertical scroll for content and uses horizontal scroll for opacity")
     func scrollWheelUsesVerticalForContentAndHorizontalForOpacity() throws {
         let (window, counter) = makeWindow()
@@ -708,6 +713,34 @@ struct PinnedTextWindowStateTests {
 
         #expect(content.previewZoomForTesting > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+    }
+
+    @Test("active preview zoom uses renderer preferred size for the visible card")
+    func activePreviewZoomUsesRendererPreferredSizeForVisibleCard() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        window.beginPreviewZoomForTesting(deltaY: 20)
+
+        let previewZoom = content.previewZoomForTesting
+        let expectedSize = PinnedTextMarkdownRenderer.preferredWindowSize(
+            text: window.item.text,
+            zoomLevel: previewZoom
+        )
+
+        #expect(sizesMatch(window.frame.size, expectedSize))
+        #expect(window.item.zoomLevel < previewZoom)
     }
 
     @Test("active preview zoom grows the visible card and cancellation restores the committed frame")

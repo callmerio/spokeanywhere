@@ -138,8 +138,9 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         )
     }
 
-    func resizeToPreferredContent(animated: Bool) {
-        guard let contentView = pinnedTextContentView else { return }
+    @discardableResult
+    func resizeToPreferredContent(animated: Bool) -> Bool {
+        guard let contentView = pinnedTextContentView else { return false }
 
         let size = contentView.preferredWindowSize()
         let currentFrame = frame
@@ -152,13 +153,14 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         )
 
         guard abs(currentFrame.width - nextFrame.width) > 0.5 || abs(currentFrame.height - nextFrame.height) > 0.5 else {
-            return
+            return false
         }
 
         suppressManagedFrameCallbacks = true
         setFrame(nextFrame, display: true, animate: animated)
         suppressManagedFrameCallbacks = false
         onFrameChanged?(nextFrame)
+        return true
     }
 
     func windowDidMove(_ notification: Notification) {
@@ -376,18 +378,24 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private func applyCommittedZoomValue(_ zoom: Double) {
         item.zoomLevel = zoom
         pinnedTextContentView?.refreshFromItem()
-        resizeToPreferredContent(animated: false)
+        let didPublishResize = resizeToPreferredContent(animated: false)
         item.frame = frame
+        if !didPublishResize {
+            onFrameChanged?(frame)
+        }
         dependencies.saveWindowState()
     }
 
     private func applyPreviewZoomFrame(_ zoom: Double) {
-        guard let baseFrame = previewBaseFrame, abs(item.zoomLevel) > 0.0001 else { return }
+        guard let baseFrame = previewBaseFrame else { return }
 
-        let scale = zoom / item.zoomLevel
+        let preferredSize = PinnedTextMarkdownRenderer.preferredWindowSize(
+            text: item.text,
+            zoomLevel: zoom
+        )
         let scaledSize = CGSize(
-            width: max(baseFrame.width * scale, minimumWindowSize.width),
-            height: max(baseFrame.height * scale, minimumWindowSize.height)
+            width: max(preferredSize.width, minimumWindowSize.width),
+            height: max(preferredSize.height, minimumWindowSize.height)
         )
         let center = CGPoint(x: baseFrame.midX, y: baseFrame.midY)
         let nextFrame = CGRect(
