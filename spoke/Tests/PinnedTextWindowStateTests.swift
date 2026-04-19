@@ -290,6 +290,48 @@ struct PinnedTextWindowStateTests {
         #expect(window.item.zoomLevel == originalZoom)
     }
 
+    @Test("entering focused browsing during preview zoom cancels pending commit")
+    func enteringFocusedBrowsingDuringPreviewZoomCancelsPendingCommit() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+
+        content.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 1
+        ))
+        content.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 1
+        ))
+
+        advanceMainLoop()
+
+        #expect(content.isFocusedBrowsingForTesting == true)
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(content.previewZoomForTesting == committedZoom)
+    }
+
     @Test("immediate window drag does not leave focused browsing enabled")
     func immediateWindowDragDoesNotFocusBrowsing() throws {
         let (window, _) = makeWindow(

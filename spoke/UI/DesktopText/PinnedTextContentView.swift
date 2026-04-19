@@ -234,6 +234,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     func enterFocusedBrowsing() {
         guard !isEditing else { return }
+        clearPreviewZoom()
         isFocusedBrowsing = true
     }
 
