@@ -341,13 +341,11 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     }
 
     private func schedulePreviewZoomCommit() {
-        pinnedTextContentView?.pendingZoomCommitWorkItem?.cancel()
-
         let workItem = DispatchWorkItem { [weak self] in
             self?.commitPreviewZoomIfNeeded()
         }
 
-        pinnedTextContentView?.pendingZoomCommitWorkItem = workItem
+        pinnedTextContentView?.replacePendingPreviewZoomCommitWorkItem(workItem)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: workItem)
     }
 

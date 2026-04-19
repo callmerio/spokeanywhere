@@ -38,7 +38,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
     private(set) var isFocusedBrowsing = false
     private(set) var gestureZoom: Double?
-    var pendingZoomCommitWorkItem: DispatchWorkItem?
+    private var pendingZoomCommitWorkItem: DispatchWorkItem?
     private var forwardedVerticalScrollCount = 0
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
@@ -628,6 +628,11 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         pendingZoomCommitWorkItem = nil
         gestureZoom = nil
         updatePreviewZoomVisuals()
+    }
+
+    func replacePendingPreviewZoomCommitWorkItem(_ workItem: DispatchWorkItem) {
+        pendingZoomCommitWorkItem?.cancel()
+        pendingZoomCommitWorkItem = workItem
     }
 
     private func updatePreviewZoomVisuals() {
