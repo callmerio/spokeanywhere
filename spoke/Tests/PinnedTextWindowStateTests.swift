@@ -1086,16 +1086,26 @@ struct PinnedTextWindowStateTests {
         ))
 
         let committedZoom = window.item.zoomLevel
+        let committedFrame = window.frame
         window.scrollWheel(with: try makeScrollEvent(deltaY: 3, precise: false))
 
         #expect(content.previewZoomForTesting > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
         #expect(counter.saves == 0)
+
+        let previewFrame = window.frame
 
         advanceMainLoop()
 
         #expect(window.item.zoomLevel > committedZoom)
         #expect(content.previewZoomForTesting == window.item.zoomLevel)
+        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
         #expect(counter.saves >= 1)
     }
 
