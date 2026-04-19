@@ -198,6 +198,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     func beginEditing() {
         guard !isEditing else { return }
+        clearPreviewZoom()
         editingSnapshot = item.text
         isEditing = true
         editorTextView.string = item.text
