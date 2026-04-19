@@ -38,7 +38,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
     private(set) var isFocusedBrowsing = false
     private(set) var gestureZoom: Double?
-    private var pendingZoomCommitWorkItem: DispatchWorkItem?
+    private var pendingZoomCommitTimer: Timer?
     private var forwardedVerticalScrollCount = 0
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
@@ -624,15 +624,22 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
 
     func clearPreviewZoom() {
-        pendingZoomCommitWorkItem?.cancel()
-        pendingZoomCommitWorkItem = nil
+        pendingZoomCommitTimer?.invalidate()
+        pendingZoomCommitTimer = nil
         gestureZoom = nil
         updatePreviewZoomVisuals()
     }
 
-    func replacePendingPreviewZoomCommitWorkItem(_ workItem: DispatchWorkItem) {
-        pendingZoomCommitWorkItem?.cancel()
-        pendingZoomCommitWorkItem = workItem
+    func schedulePendingPreviewZoomCommit(
+        after delay: TimeInterval,
+        _ action: @escaping @MainActor () -> Void
+    ) {
+        pendingZoomCommitTimer?.invalidate()
+        pendingZoomCommitTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                action()
+            }
+        }
     }
 
     private func updatePreviewZoomVisuals() {
