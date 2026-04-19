@@ -60,6 +60,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
     override func resignKey() {
         super.resignKey()
+        pinnedTextContentView?.clearPreviewZoom()
         pinnedTextContentView?.commitEditingIfNeeded()
     }
 
