@@ -903,6 +903,8 @@ struct PinnedTextWindowStateTests {
         let widthScale = previewFrame.width / committedFrame.width
         let heightScale = previewFrame.height / committedFrame.height
 
+        #expect(previewFrame.width > committedFrame.width)
+        #expect(previewFrame.height > committedFrame.height)
         #expect(abs(widthScale - heightScale) <= 0.02)
     }
 
@@ -932,6 +934,9 @@ struct PinnedTextWindowStateTests {
         let widthScale = previewFrame.width / committedFrame.width
         let heightScale = previewFrame.height / committedFrame.height
 
+        #expect(previewFrame.width > committedFrame.width)
+        #expect(previewFrame.height > committedFrame.height)
+        #expect(abs(previewFrame.height - PinnedTextMarkdownRenderer.maxWindowHeight) <= 0.5)
         #expect(abs(widthScale - heightScale) <= 0.02)
     }
 
