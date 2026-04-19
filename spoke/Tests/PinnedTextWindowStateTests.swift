@@ -1031,13 +1031,21 @@ struct PinnedTextWindowStateTests {
             window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
         }
 
+        let clampedPreviewFrame = window.frame
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
         #expect(window.item.zoomLevel <= PinnedTextMarkdownRenderer.maxZoomLevel)
+        let expectedMaxSize = PinnedTextMarkdownRenderer.preferredWindowSize(
+            text: window.item.text,
+            zoomLevel: PinnedTextMarkdownRenderer.maxZoomLevel
+        )
+        #expect(sizesMatch(clampedPreviewFrame.size, expectedMaxSize))
 
         window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
 
         #expect(abs(window.item.zoomLevel - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
+        #expect(itemFramesMatch(window.frame, clampedPreviewFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, clampedPreviewFrame, tolerance: 0.5))
     }
 
     @Test("preview zoom clamps at renderer min before and after commit")
@@ -1060,13 +1068,21 @@ struct PinnedTextWindowStateTests {
             window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: true))
         }
 
+        let clampedPreviewFrame = window.frame
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.minZoomLevel) <= 0.0001)
         #expect(window.item.zoomLevel >= PinnedTextMarkdownRenderer.minZoomLevel)
+        let expectedMinSize = PinnedTextMarkdownRenderer.preferredWindowSize(
+            text: window.item.text,
+            zoomLevel: PinnedTextMarkdownRenderer.minZoomLevel
+        )
+        #expect(sizesMatch(clampedPreviewFrame.size, expectedMinSize))
 
         window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
 
         #expect(abs(window.item.zoomLevel - PinnedTextMarkdownRenderer.minZoomLevel) <= 0.0001)
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.minZoomLevel) <= 0.0001)
+        #expect(itemFramesMatch(window.frame, clampedPreviewFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, clampedPreviewFrame, tolerance: 0.5))
     }
 
     @Test("non-precise hover zoom commits after delay without ended event")
