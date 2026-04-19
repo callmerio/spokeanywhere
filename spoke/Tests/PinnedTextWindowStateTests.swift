@@ -325,6 +325,29 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
     }
 
+    @Test("active zoom gesture keeps preview zoom separate from committed item zoom")
+    func activeZoomGestureUsesPreviewZoomBeforeCommit() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        window.beginPreviewZoomForTesting(deltaY: 20)
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+    }
+
     @Test("double click enters editing and commit persists updated markdown source")
     func doubleClickEntersEditingAndCommitPersists() throws {
         let (window, counter) = makeWindow()

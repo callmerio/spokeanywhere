@@ -375,4 +375,8 @@ extension PinnedTextWindow {
     var activeResizeRegionForTesting: ResizeRegion {
         activeResizeRegion
     }
+
+    func beginPreviewZoomForTesting(deltaY: CGFloat) {
+        applyCommittedZoom(deltaY: deltaY)
+    }
 }

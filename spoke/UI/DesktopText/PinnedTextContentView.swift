@@ -37,6 +37,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         didSet { updateToolbarVisibility() }
     }
     private(set) var isFocusedBrowsing = false
+    private(set) var gestureZoom: Double?
     private var forwardedVerticalScrollCount = 0
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
@@ -628,6 +629,10 @@ extension PinnedTextContentView {
 
     var previewScrollOriginYForTesting: CGFloat {
         previewScrollView.contentView.bounds.origin.y
+    }
+
+    var previewZoomForTesting: Double {
+        gestureZoom ?? item.zoomLevel
     }
 }
 
