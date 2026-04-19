@@ -346,6 +346,36 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
     }
 
+    @Test("unfocused hover zoom publishes exactly one committed frame update")
+    func unfocusedHoverZoomPublishesSingleCommittedFrameUpdate() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 40, y: 50, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        var receivedFrames: [CGRect] = []
+        window.onFrameChanged = { frame in
+            receivedFrames.append(frame)
+        }
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 90, y: 80),
+            clickCount: 0
+        ))
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        #expect(receivedFrames.isEmpty)
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+
+        #expect(receivedFrames.count == 1)
+        #expect(receivedFrames.last?.equalTo(window.frame) == true)
+    }
+
     @Test("active zoom gesture keeps preview zoom separate from committed item zoom")
     func activeZoomGestureUsesPreviewZoomBeforeCommit() throws {
         let (window, _) = makeWindow(

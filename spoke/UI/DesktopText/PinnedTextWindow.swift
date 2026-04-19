@@ -29,6 +29,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private var activeResizeRegion: ResizeRegion = .none
     private var dragStartScreenPoint: CGPoint = .zero
     private var dragStartFrame: CGRect = .zero
+    private var suppressManagedFrameCallbacks = false
     // Minimal test hook so unit tests can deterministically model immediate window drag.
     var performDragHandlerForTesting: ((NSEvent) -> Void)?
     private let resizeHandleInset: CGFloat = 14
@@ -139,15 +140,19 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return
         }
 
+        suppressManagedFrameCallbacks = true
         setFrame(nextFrame, display: true, animate: animated)
+        suppressManagedFrameCallbacks = false
         onFrameChanged?(nextFrame)
     }
 
     func windowDidMove(_ notification: Notification) {
+        guard !suppressManagedFrameCallbacks else { return }
         onFrameChanged?(frame)
     }
 
     func windowDidResize(_ notification: Notification) {
+        guard !suppressManagedFrameCallbacks else { return }
         onFrameChanged?(frame)
     }
 
@@ -231,7 +236,9 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         }
 
         nextFrame = clampedResizeFrame(nextFrame, from: dragStartFrame, region: activeResizeRegion)
+        suppressManagedFrameCallbacks = true
         setFrame(nextFrame, display: true)
+        suppressManagedFrameCallbacks = false
         item.frame = nextFrame
         onFrameChanged?(nextFrame)
         NSCursor.closedHand.set()
@@ -304,7 +311,6 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         resizeToPreferredContent(animated: false)
         item.frame = frame
         dependencies.saveWindowState()
-        onFrameChanged?(frame)
     }
 
     private func updatePreviewZoom(deltaY: CGFloat) {
@@ -346,7 +352,6 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         resizeToPreferredContent(animated: false)
         item.frame = frame
         dependencies.saveWindowState()
-        onFrameChanged?(frame)
     }
 
     func resizeRegion(at locationInWindow: CGPoint) -> ResizeRegion {
