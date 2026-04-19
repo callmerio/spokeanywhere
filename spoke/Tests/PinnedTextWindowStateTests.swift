@@ -144,6 +144,25 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
     }
 
+    @Test("preview mode vertical scroll does not create preview zoom")
+    func previewModeVerticalScrollDoesNotCreatePreviewZoom() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        let originalZoom = window.item.zoomLevel
+        let originalForwardedScrollCount = content.forwardedVerticalScrollCountForTesting
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+
+        #expect(content.forwardedVerticalScrollCountForTesting > originalForwardedScrollCount)
+        #expect(content.previewZoomForTesting == originalZoom)
+        #expect(window.item.zoomLevel == originalZoom)
+    }
+
     @Test("horizontal precise scroll while hover unfocused does not create preview zoom")
     func horizontalPreciseScrollDoesNotCreatePreviewZoom() throws {
         let (window, counter) = makeWindow(
