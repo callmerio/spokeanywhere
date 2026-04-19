@@ -238,16 +238,104 @@ struct PinnedTextWindowStateTests {
         #expect(content.isFocusedBrowsingForTesting == false)
     }
 
+    @Test("immediate window drag does not leave focused browsing enabled")
+    func immediateWindowDragDoesNotFocusBrowsing() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 20, y: 30, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        window.performDragHandlerForTesting = { _ in
+            let draggedFrame = CGRect(x: 70, y: 90, width: 360, height: 160)
+            window.setFrame(draggedFrame, display: true)
+            window.item.frame = draggedFrame
+        }
+
+        content.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 1
+        ))
+
+        #expect(content.isFocusedBrowsingForTesting == false)
+    }
+
+    @Test("resize affordance remains available just outside the card edge")
+    func resizeAffordanceStillWorksOutsideCardEdge() throws {
+        let (window, _) = makeWindow()
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        let cardFrame = content.interactiveCardFrame()
+        let resizeEdgePoint = CGPoint(x: cardFrame.minX - 4, y: cardFrame.midY)
+
+        content.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: resizeEdgePoint,
+            clickCount: 1
+        ))
+
+        #expect(window.activeResizeRegionForTesting == .left)
+    }
+
+    @Test("unfocused hover zoom keeps center anchored and publishes updated frame")
+    func unfocusedHoverZoomKeepsCenterAndPublishesFrame() throws {
+        let (window, counter) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 40, y: 50, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        var receivedFrames: [CGRect] = []
+        window.onFrameChanged = { frame in
+            receivedFrames.append(frame)
+        }
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 90, y: 80),
+            clickCount: 0
+        ))
+
+        let originalFrame = window.frame
+        let originalCenter = CGPoint(x: originalFrame.midX, y: originalFrame.midY)
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: true))
+
+        let updatedFrame = window.frame
+        let updatedCenter = CGPoint(x: updatedFrame.midX, y: updatedFrame.midY)
+
+        #expect(abs(updatedCenter.x - originalCenter.x) <= 0.5)
+        #expect(abs(updatedCenter.y - originalCenter.y) <= 0.5)
+        #expect(window.item.frame.equalTo(updatedFrame))
+        #expect(receivedFrames.last?.equalTo(updatedFrame) == true)
+        #expect(counter.saves >= 1)
+    }
+
     @Test("double click enters editing and commit persists updated markdown source")
     func doubleClickEntersEditingAndCommitPersists() throws {
         let (window, counter) = makeWindow()
         let content = try #require(window.pinnedTextContentView)
         window.contentView = content
+        let contentPoint = CGPoint(x: 80, y: 80)
 
         content.mouseDown(with: try makeMouseEvent(
             window: window,
             type: .leftMouseDown,
-            location: CGPoint(x: 40, y: 40),
+            location: contentPoint,
             clickCount: 2
         ))
 
@@ -267,6 +355,7 @@ struct PinnedTextWindowStateTests {
         let (window, counter) = makeWindow()
         let content = try #require(window.pinnedTextContentView)
         window.contentView = content
+        let contentPoint = CGPoint(x: 80, y: 80)
 
         let resizedFrame = CGRect(x: 0, y: 0, width: 520, height: 220)
         window.setFrame(resizedFrame, display: true)
@@ -278,7 +367,7 @@ struct PinnedTextWindowStateTests {
         content.mouseDown(with: try makeMouseEvent(
             window: window,
             type: .leftMouseDown,
-            location: CGPoint(x: 40, y: 40),
+            location: contentPoint,
             clickCount: 2
         ))
 
@@ -403,11 +492,12 @@ struct PinnedTextWindowStateTests {
         let (window, _) = makeWindow()
         let content = try #require(window.pinnedTextContentView)
         window.contentView = content
+        let contentPoint = CGPoint(x: 80, y: 80)
 
         content.mouseDown(with: try makeMouseEvent(
             window: window,
             type: .leftMouseDown,
-            location: CGPoint(x: 40, y: 40),
+            location: contentPoint,
             clickCount: 2
         ))
 
@@ -415,7 +505,7 @@ struct PinnedTextWindowStateTests {
         let menu = try #require(editor.menu(for: makeMouseEvent(
             window: window,
             type: .rightMouseDown,
-            location: CGPoint(x: 40, y: 40),
+            location: contentPoint,
             clickCount: 1
         )))
         let titles = menu.items.filter { !$0.isSeparatorItem }.map(\.title)
@@ -430,11 +520,12 @@ struct PinnedTextWindowStateTests {
         let (window, _) = makeWindow()
         let content = try #require(window.pinnedTextContentView)
         window.contentView = content
+        let contentPoint = CGPoint(x: 80, y: 80)
 
         content.mouseDown(with: try makeMouseEvent(
             window: window,
             type: .leftMouseDown,
-            location: CGPoint(x: 40, y: 40),
+            location: contentPoint,
             clickCount: 2
         ))
 

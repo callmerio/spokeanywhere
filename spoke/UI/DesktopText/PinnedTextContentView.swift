@@ -101,16 +101,6 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
             return
         }
 
-        let isInsideCard = interactiveCardFrame().contains(event.locationInWindow)
-        guard isInsideCard else { return }
-
-        if event.clickCount >= 2 {
-            beginEditing()
-            return
-        }
-
-        enterFocusedBrowsing()
-
         guard let pinnedWindow = window as? PinnedTextWindow else {
             return
         }
@@ -119,11 +109,29 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
             return
         }
 
-        guard !item.isLocked else {
+        let isInsideCard = interactiveCardFrame().contains(event.locationInWindow)
+        guard isInsideCard else {
             return
         }
 
-        pinnedWindow.performDrag(with: event)
+        if event.clickCount >= 2 {
+            beginEditing()
+            return
+        }
+
+        guard !item.isLocked else {
+            enterFocusedBrowsing()
+            return
+        }
+
+        let frameBeforeDrag = pinnedWindow.frame
+        pinnedWindow.performWindowDrag(with: event)
+
+        if pinnedWindow.frame.equalTo(frameBeforeDrag) {
+            enterFocusedBrowsing()
+        } else {
+            exitFocusedBrowsing()
+        }
     }
 
     override func mouseDragged(with event: NSEvent) {

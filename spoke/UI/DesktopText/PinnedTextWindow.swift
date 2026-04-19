@@ -29,6 +29,8 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private var activeResizeRegion: ResizeRegion = .none
     private var dragStartScreenPoint: CGPoint = .zero
     private var dragStartFrame: CGRect = .zero
+    // Minimal test hook so unit tests can deterministically model immediate window drag.
+    var performDragHandlerForTesting: ((NSEvent) -> Void)?
     private let resizeHandleInset: CGFloat = 14
     private let minimumWindowSize = CGSize(width: 220, height: 120)
 
@@ -239,6 +241,15 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         return true
     }
 
+    func performWindowDrag(with event: NSEvent) {
+        if let performDragHandlerForTesting {
+            performDragHandlerForTesting(event)
+            return
+        }
+
+        performDrag(with: event)
+    }
+
     func handleHoverChanged(_ hovered: Bool, locationInWindow: CGPoint?) {
         isHovered = hovered
         updateGlow()
@@ -355,5 +366,13 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         case .none:
             return .arrow
         }
+    }
+}
+
+// MARK: - Testing Hooks
+
+extension PinnedTextWindow {
+    var activeResizeRegionForTesting: ResizeRegion {
+        activeResizeRegion
     }
 }
