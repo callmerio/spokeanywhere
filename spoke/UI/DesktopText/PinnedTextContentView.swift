@@ -90,6 +90,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     override func mouseExited(with event: NSEvent) {
         isHovered = false
         exitFocusedBrowsing()
+        clearPreviewZoom()
         (window as? PinnedTextWindow)?.handleHoverChanged(false, locationInWindow: nil)
     }
 
