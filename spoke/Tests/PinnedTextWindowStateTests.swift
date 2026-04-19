@@ -466,6 +466,33 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewZoomForTesting == committedZoom)
     }
 
+    @Test("preview zoom visual scale resets after commit")
+    func previewZoomVisualScaleResetsAfterCommit() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+
+        #expect(content.previewScaleForTesting > 1.0)
+        #expect(window.item.zoomLevel == 1.0)
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+
+        #expect(window.item.zoomLevel > 1.0)
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
+    }
+
     @Test("double click enters editing and commit persists updated markdown source")
     func doubleClickEntersEditingAndCommitPersists() throws {
         let (window, counter) = makeWindow()

@@ -655,6 +655,10 @@ extension PinnedTextContentView {
     var previewZoomForTesting: Double {
         gestureZoom ?? item.zoomLevel
     }
+
+    var previewScaleForTesting: CGFloat {
+        previewScrollView.layer?.affineTransform().a ?? 1.0
+    }
 }
 
 private final class PinnedTextEditorTextView: NSTextView {
