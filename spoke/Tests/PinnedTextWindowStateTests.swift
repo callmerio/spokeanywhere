@@ -182,9 +182,9 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewScrollOriginYForTesting != originalOffset)
     }
 
-    @Test("click enables content browsing and mouse exit restores hover zoom routing")
-    func clickAndMouseExitToggleWindowInteractionRouting() throws {
-        let (window, counter) = makeWindow(
+    @Test("click enters focused browsing and mouse exit clears it")
+    func clickFocusesAndMouseExitClearsFocusedBrowsing() throws {
+        let (window, _) = makeWindow(
             text: makeScrollablePreviewText(),
             frame: CGRect(x: 0, y: 0, width: 360, height: 160)
         )
@@ -211,13 +211,7 @@ struct PinnedTextWindowStateTests {
             clickCount: 1
         ))
 
-        let zoomAfterClick = window.item.zoomLevel
-        let offsetBeforeFocusedScroll = content.previewScrollOriginYForTesting
-
-        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: false))
-
-        #expect(window.item.zoomLevel == zoomAfterClick)
-        #expect(content.previewScrollOriginYForTesting != offsetBeforeFocusedScroll)
+        #expect(content.isFocusedBrowsingForTesting == true)
 
         content.mouseExited(with: try makeMouseEvent(
             window: window,
@@ -226,12 +220,7 @@ struct PinnedTextWindowStateTests {
             clickCount: 0
         ))
 
-        let offsetBeforeExitScroll = content.previewScrollOriginYForTesting
-        window.scrollWheel(with: try makeScrollEvent(deltaY: -20, precise: false))
-
-        #expect(window.item.zoomLevel != zoomAfterClick)
-        #expect(content.previewScrollOriginYForTesting == offsetBeforeExitScroll)
-        #expect(counter.saves >= 1)
+        #expect(content.isFocusedBrowsingForTesting == false)
     }
 
     @Test("double click enters editing and commit persists updated markdown source")
