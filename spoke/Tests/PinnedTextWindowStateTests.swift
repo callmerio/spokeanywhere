@@ -572,6 +572,35 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewZoomForTesting == secondPreviewZoom)
     }
 
+    @Test("preview zoom clamps at renderer max before and after commit")
+    func previewZoomClampsAtRendererMax() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        for _ in 0..<40 {
+            window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        }
+
+        #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
+        #expect(window.item.zoomLevel <= PinnedTextMarkdownRenderer.maxZoomLevel)
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+
+        #expect(abs(window.item.zoomLevel - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
+        #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
+    }
+
     @Test("non-precise hover zoom commits after delay without ended event")
     func nonPreciseHoverZoomCommitsAfterDelay() throws {
         let (window, counter) = makeWindow(
