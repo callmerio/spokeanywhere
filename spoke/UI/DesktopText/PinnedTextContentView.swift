@@ -33,6 +33,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
 
     private var trackingArea: NSTrackingArea?
+    private var lastHoverScreenLocation: CGPoint?
     private var isHovered = false {
         didSet { updateToolbarVisibility() }
     }
@@ -84,17 +85,22 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     override func mouseEntered(with event: NSEvent) {
         isHovered = true
+        updateLastHoverScreenLocation(from: event)
         (window as? PinnedTextWindow)?.handleHoverChanged(true, locationInWindow: event.locationInWindow)
     }
 
     override func mouseExited(with event: NSEvent) {
         isHovered = false
         exitFocusedBrowsing()
-        cancelActivePreviewIfNeeded()
+        if shouldCancelPreviewOnMouseExit(event) {
+            cancelActivePreviewIfNeeded()
+        }
         (window as? PinnedTextWindow)?.handleHoverChanged(false, locationInWindow: nil)
+        lastHoverScreenLocation = nil
     }
 
     override func mouseMoved(with event: NSEvent) {
+        updateLastHoverScreenLocation(from: event)
         (window as? PinnedTextWindow)?.handleHoverMovement(locationInWindow: event.locationInWindow)
     }
 
@@ -185,9 +191,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
 
     func refreshFromItem(resizeWindow: Bool = false) {
-        let attributed = PinnedTextMarkdownRenderer.makePreviewAttributedString(item.text, zoomLevel: item.zoomLevel)
-        previewTextView.textStorage?.setAttributedString(attributed)
-        configurePreviewAppearance()
+        refreshPreviewContent()
         configureEditorAppearance()
         actionBar.refreshButtons()
         updatePreviewZoomVisuals()
@@ -552,8 +556,8 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         return nil
     }
 
-    private func configurePreviewAppearance() {
-        previewTextView.font = PinnedTextMarkdownRenderer.bodyFont(for: item.zoomLevel)
+    private func configurePreviewAppearance(zoomLevel: Double) {
+        previewTextView.font = PinnedTextMarkdownRenderer.bodyFont(for: zoomLevel)
         previewTextView.textColor = DesignTokens.Colors.NS.pinnedTextForeground
     }
 
@@ -623,13 +627,17 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     func beginOrUpdatePreviewZoom(_ zoom: Double) {
         gestureZoom = zoom
+        refreshPreviewContent()
         updatePreviewZoomVisuals()
     }
 
-    func clearPreviewZoom() {
+    func clearPreviewZoom(resetPreviewContent: Bool = true) {
         pendingZoomCommitTimer?.invalidate()
         pendingZoomCommitTimer = nil
         gestureZoom = nil
+        if resetPreviewContent {
+            refreshPreviewContent()
+        }
         updatePreviewZoomVisuals()
     }
 
@@ -658,9 +666,32 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         gestureZoom ?? item.zoomLevel
     }
 
+    private func refreshPreviewContent() {
+        let previewZoom = currentPreviewOrCommittedZoom()
+        let attributed = PinnedTextMarkdownRenderer.makePreviewAttributedString(item.text, zoomLevel: previewZoom)
+        previewTextView.textStorage?.setAttributedString(attributed)
+        configurePreviewAppearance(zoomLevel: previewZoom)
+    }
+
+    private func updateLastHoverScreenLocation(from event: NSEvent) {
+        guard let window else { return }
+        lastHoverScreenLocation = window.convertPoint(toScreen: event.locationInWindow)
+    }
+
+    private func shouldCancelPreviewOnMouseExit(_ event: NSEvent) -> Bool {
+        guard gestureZoom != nil else { return true }
+        guard let window,
+              let lastHoverScreenLocation else { return true }
+
+        let exitScreenLocation = window.convertPoint(toScreen: event.locationInWindow)
+        let deltaX = exitScreenLocation.x - lastHoverScreenLocation.x
+        let deltaY = exitScreenLocation.y - lastHoverScreenLocation.y
+        let distance = hypot(deltaX, deltaY)
+        return distance > 1.0
+    }
+
     private func updatePreviewZoomVisuals() {
-        let scale = currentPreviewOrCommittedZoom() / item.zoomLevel
-        previewScrollView.layer?.setAffineTransform(CGAffineTransform(scaleX: scale, y: scale))
+        previewScrollView.layer?.setAffineTransform(.identity)
     }
 }
 
@@ -684,7 +715,19 @@ extension PinnedTextContentView {
     }
 
     var previewScaleForTesting: CGFloat {
-        previewScrollView.layer?.affineTransform().a ?? 1.0
+        CGFloat(currentPreviewOrCommittedZoom() / item.zoomLevel)
+    }
+
+    var previewBodyFontPointSizeForTesting: CGFloat {
+        guard let textStorage = previewTextView.textStorage, textStorage.length > 0 else { return 0 }
+
+        var minimumPointSize = CGFloat.greatestFiniteMagnitude
+        textStorage.enumerateAttribute(.font, in: NSRange(location: 0, length: textStorage.length)) { value, _, _ in
+            guard let font = value as? NSFont else { return }
+            minimumPointSize = min(minimumPointSize, font.pointSize)
+        }
+
+        return minimumPointSize == .greatestFiniteMagnitude ? 0 : minimumPointSize
     }
 }
 

@@ -850,6 +850,32 @@ struct PinnedTextWindowStateTests {
         #expect(window.item.zoomLevel < previewZoom)
     }
 
+    @Test("active preview zoom rerenders preview text at the preview zoom instead of only scaling the old layout")
+    func activePreviewZoomRerendersPreviewTextAtPreviewZoom() throws {
+        let text = Array(repeating: "preview body line for zoom sync", count: 24).joined(separator: "\n")
+        let (window, _) = makeWindow(
+            text: text,
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        let committedBodyFontSize = content.previewBodyFontPointSizeForTesting
+
+        window.beginPreviewZoomForTesting(deltaY: 20)
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(content.previewBodyFontPointSizeForTesting > committedBodyFontSize)
+    }
+
     @Test("active preview zoom grows the visible card and cancellation restores the committed frame")
     func activePreviewZoomGrowsVisibleCardAndCancellationRestoresCommittedFrame() throws {
         let (window, _) = makeWindow(
@@ -958,8 +984,8 @@ struct PinnedTextWindowStateTests {
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
-    @Test("mouse exit during preview zoom cancels pending commit")
-    func mouseExitDuringPreviewZoomCancelsPendingCommit() throws {
+    @Test("mouse exit during preview zoom keeps the last preview alive until gesture end commit")
+    func mouseExitDuringPreviewZoomKeepsLastPreviewUntilGestureEndCommit() throws {
         let (window, _) = makeWindow(
             text: makeScrollablePreviewText(),
             frame: CGRect(x: 0, y: 0, width: 360, height: 160)
@@ -973,24 +999,38 @@ struct PinnedTextWindowStateTests {
             location: CGPoint(x: 80, y: 80),
             clickCount: 0
         ))
+        let stationaryScreenPoint = window.convertPoint(toScreen: CGPoint(x: 80, y: 80))
 
         let committedZoom = window.item.zoomLevel
+        let committedFrame = window.frame
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        let previewZoom = content.previewZoomForTesting
+        let previewFrame = window.frame
+        let stationaryExitPoint = window.convertPoint(fromScreen: stationaryScreenPoint)
 
-        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(previewZoom > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+        #expect(previewFrame.width > committedFrame.width)
+        #expect(previewFrame.height > committedFrame.height)
 
         content.mouseExited(with: try makeMouseEvent(
             window: window,
             type: .mouseExited,
-            location: CGPoint(x: 500, y: 500),
+            location: stationaryExitPoint,
             clickCount: 0
         ))
 
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(content.previewZoomForTesting == previewZoom)
+        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
+
         window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
 
-        #expect(window.item.zoomLevel == committedZoom)
-        #expect(content.previewZoomForTesting == committedZoom)
+        #expect(window.item.zoomLevel == previewZoom)
+        #expect(content.previewZoomForTesting == previewZoom)
+        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
     @Test("multiple preview cancellation paths remain idempotent")

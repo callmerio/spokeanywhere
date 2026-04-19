@@ -371,7 +371,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         }
 
         previewBaseFrame = nil
-        contentView.clearPreviewZoom()
+        contentView.clearPreviewZoom(resetPreviewContent: false)
         applyCommittedZoomValue(previewZoom)
     }
 
