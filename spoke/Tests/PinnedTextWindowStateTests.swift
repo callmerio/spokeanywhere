@@ -876,6 +876,65 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewBodyFontPointSizeForTesting > committedBodyFontSize)
     }
 
+    @Test("lightly overflowing content zoom keeps viewport scaling proportional instead of stretching height first")
+    func lightlyOverflowingContentZoomKeepsViewportScalingProportional() throws {
+        let text = makeScrollablePreviewText(lineCount: 24)
+        let (window, _) = makeWindow(
+            text: text,
+            frame: CGRect(x: 0, y: 0, width: 300, height: 150)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        let committedFrame = CGRect(x: 0, y: 0, width: 300, height: 150)
+        window.setFrame(committedFrame, display: true)
+        window.item.frame = committedFrame
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        let previewFrame = window.frame
+
+        let widthScale = previewFrame.width / committedFrame.width
+        let heightScale = previewFrame.height / committedFrame.height
+
+        #expect(abs(widthScale - heightScale) <= 0.02)
+    }
+
+    @Test("heavily overflowing content at max height does not degrade into width-only zoom")
+    func heavilyOverflowingContentAtMaxHeightDoesNotDegradeIntoWidthOnlyZoom() throws {
+        let text = makeScrollablePreviewText(lineCount: 120)
+        let (window, _) = makeWindow(
+            text: text,
+            frame: CGRect(x: 0, y: 0, width: 320, height: 220)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedFrame = window.frame
+        for _ in 0..<8 {
+            window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        }
+
+        let previewFrame = window.frame
+        let widthScale = previewFrame.width / committedFrame.width
+        let heightScale = previewFrame.height / committedFrame.height
+
+        #expect(abs(widthScale - heightScale) <= 0.02)
+    }
+
     @Test("active preview zoom grows the visible card and cancellation restores the committed frame")
     func activePreviewZoomGrowsVisibleCardAndCancellationRestoresCommittedFrame() throws {
         let (window, _) = makeWindow(
