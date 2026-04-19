@@ -68,9 +68,19 @@ struct PinnedTextWindowStateTests {
     }
 
     private func makeWindow() -> (PinnedTextWindow, SaveCounter) {
-        let item = PinnedTextItem(
+        makeWindow(
             text: "# Preview\n- item",
             frame: CGRect(x: 0, y: 0, width: 360, height: 220)
+        )
+    }
+
+    private func makeWindow(
+        text: String,
+        frame: CGRect
+    ) -> (PinnedTextWindow, SaveCounter) {
+        let item = PinnedTextItem(
+            text: text,
+            frame: frame
         )
         let counter = SaveCounter()
 
@@ -86,6 +96,24 @@ struct PinnedTextWindowStateTests {
         )
 
         return (PinnedTextWindow(item: item, dependencies: dependencies), counter)
+    }
+
+    private func makeScrollablePreviewText(lineCount: Int = 80) -> String {
+        let lines = (1...lineCount).map { index in
+            "- item \(index): preview body line \(index)"
+        }
+        return "# Preview\n" + lines.joined(separator: "\n")
+    }
+
+    private func prepareContentForInteraction(
+        _ content: PinnedTextContentView,
+        in window: NSWindow
+    ) {
+        content.frame = CGRect(origin: .zero, size: window.frame.size)
+        window.contentView = content
+        content.layoutSubtreeIfNeeded()
+        content.displayIfNeeded()
+        window.displayIfNeeded()
     }
 
     @Test("preview mode keeps vertical scroll for content and uses horizontal scroll for opacity")
@@ -105,29 +133,12 @@ struct PinnedTextWindowStateTests {
 
     @Test("unfocused hover vertical scroll updates zoom instead of scrolling content")
     func unfocusedHoverVerticalScrollZooms() throws {
-        let (window, counter) = makeWindow()
+        let (window, counter) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
         let content = try #require(window.pinnedTextContentView)
-        window.contentView = content
-
-        content.mouseEntered(with: try makeMouseEvent(
-            window: window,
-            type: .mouseEntered,
-            location: CGPoint(x: 80, y: 80),
-            clickCount: 0
-        ))
-
-        let originalZoom = window.item.zoomLevel
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 20, precise: true))
-
-        #expect(window.item.zoomLevel > originalZoom)
-        #expect(counter.saves >= 1)
-    }
-
-    @Test("Shift vertical scroll in unfocused hover scrolls content without changing zoom")
-    func unfocusedHoverShiftVerticalScrollTemporarilyScrolls() throws {
-        let (window, _) = makeWindow()
-        let content = try #require(window.pinnedTextContentView)
-        window.contentView = content
+        prepareContentForInteraction(content, in: window)
 
         content.mouseEntered(with: try makeMouseEvent(
             window: window,
@@ -139,17 +150,46 @@ struct PinnedTextWindowStateTests {
         let originalZoom = window.item.zoomLevel
         let originalOffset = content.previewScrollOriginYForTesting
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: true, modifiers: [.shift]))
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: false))
+
+        #expect(window.item.zoomLevel != originalZoom)
+        #expect(content.previewScrollOriginYForTesting == originalOffset)
+        #expect(counter.saves >= 1)
+    }
+
+    @Test("Shift vertical scroll in unfocused hover scrolls content without changing zoom")
+    func unfocusedHoverShiftVerticalScrollTemporarilyScrolls() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let originalZoom = window.item.zoomLevel
+        let originalOffset = content.previewScrollOriginYForTesting
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: false, modifiers: [.shift]))
 
         #expect(window.item.zoomLevel == originalZoom)
         #expect(content.previewScrollOriginYForTesting != originalOffset)
     }
 
-    @Test("click enters focused browsing and mouse exit clears it")
-    func clickFocusesAndMouseExitClearsFocusedBrowsing() throws {
-        let (window, _) = makeWindow()
+    @Test("click enables content browsing and mouse exit restores hover zoom routing")
+    func clickAndMouseExitToggleWindowInteractionRouting() throws {
+        let (window, counter) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
         let content = try #require(window.pinnedTextContentView)
-        window.contentView = content
+        prepareContentForInteraction(content, in: window)
 
         content.mouseEntered(with: try makeMouseEvent(
             window: window,
@@ -171,7 +211,13 @@ struct PinnedTextWindowStateTests {
             clickCount: 1
         ))
 
-        #expect(content.isFocusedBrowsingForTesting == true)
+        let zoomAfterClick = window.item.zoomLevel
+        let offsetBeforeFocusedScroll = content.previewScrollOriginYForTesting
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: false))
+
+        #expect(window.item.zoomLevel == zoomAfterClick)
+        #expect(content.previewScrollOriginYForTesting != offsetBeforeFocusedScroll)
 
         content.mouseExited(with: try makeMouseEvent(
             window: window,
@@ -180,7 +226,12 @@ struct PinnedTextWindowStateTests {
             clickCount: 0
         ))
 
-        #expect(content.isFocusedBrowsingForTesting == false)
+        let offsetBeforeExitScroll = content.previewScrollOriginYForTesting
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -20, precise: false))
+
+        #expect(window.item.zoomLevel != zoomAfterClick)
+        #expect(content.previewScrollOriginYForTesting == offsetBeforeExitScroll)
+        #expect(counter.saves >= 1)
     }
 
     @Test("double click enters editing and commit persists updated markdown source")
