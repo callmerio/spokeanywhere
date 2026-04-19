@@ -38,6 +38,8 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
     // Temporary placeholder for Task 1 red-spec shape; real lifecycle arrives in Task 2.
     private(set) var isFocusedBrowsing = false
+    // Testing-only routing probe for Task 1 red specs.
+    private var forwardedVerticalScrollCount = 0
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
     }
@@ -585,6 +587,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
 
     func forwardVerticalScroll(_ event: NSEvent) {
+        forwardedVerticalScrollCount += 1
         let targetScrollView = isEditing ? editorScrollView : previewScrollView
         targetScrollView.scrollWheel(with: event)
     }
@@ -595,6 +598,10 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 extension PinnedTextContentView {
     var isFocusedBrowsingForTesting: Bool {
         isFocusedBrowsing
+    }
+
+    var forwardedVerticalScrollCountForTesting: Int {
+        forwardedVerticalScrollCount
     }
 
     var previewScrollOriginYForTesting: CGFloat {

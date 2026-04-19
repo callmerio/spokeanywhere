@@ -157,6 +157,7 @@ struct PinnedTextWindowStateTests {
         ))
 
         let originalZoom = window.item.zoomLevel
+        let originalForwardedScrollCount = content.forwardedVerticalScrollCountForTesting
         let originalOffset = content.previewScrollOriginYForTesting
         let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true)
 
@@ -164,6 +165,7 @@ struct PinnedTextWindowStateTests {
         window.scrollWheel(with: scrollEvent)
 
         #expect(window.item.zoomLevel != originalZoom)
+        #expect(content.forwardedVerticalScrollCountForTesting == originalForwardedScrollCount)
         #expect(content.previewScrollOriginYForTesting == originalOffset)
         #expect(counter.saves >= 1)
     }
@@ -185,6 +187,7 @@ struct PinnedTextWindowStateTests {
         ))
 
         let originalZoom = window.item.zoomLevel
+        let originalForwardedScrollCount = content.forwardedVerticalScrollCountForTesting
         let originalOffset = content.previewScrollOriginYForTesting
         let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true, modifiers: [.shift])
 
@@ -192,6 +195,7 @@ struct PinnedTextWindowStateTests {
         window.scrollWheel(with: scrollEvent)
 
         #expect(window.item.zoomLevel == originalZoom)
+        #expect(content.forwardedVerticalScrollCountForTesting > originalForwardedScrollCount)
         #expect(content.previewScrollOriginYForTesting != originalOffset)
     }
 
