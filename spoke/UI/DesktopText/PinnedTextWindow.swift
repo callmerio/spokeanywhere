@@ -336,7 +336,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private func updatePreviewZoom(deltaY: CGFloat) {
         guard let contentView = pinnedTextContentView, deltaY != 0 else { return }
 
-        let baseZoom = contentView.gestureZoom ?? item.zoomLevel
+        let baseZoom = contentView.currentPreviewOrCommittedZoom()
         let step: Double = deltaY > 0 ? 0.05 : -0.05
         let nextZoom = PinnedTextMarkdownRenderer.clampedZoom(baseZoom + step)
 

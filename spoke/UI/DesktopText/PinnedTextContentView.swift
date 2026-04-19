@@ -643,9 +643,12 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         }
     }
 
+    func currentPreviewOrCommittedZoom() -> Double {
+        gestureZoom ?? item.zoomLevel
+    }
+
     private func updatePreviewZoomVisuals() {
-        let preview = gestureZoom ?? item.zoomLevel
-        let scale = preview / item.zoomLevel
+        let scale = currentPreviewOrCommittedZoom() / item.zoomLevel
         previewScrollView.layer?.setAffineTransform(CGAffineTransform(scaleX: scale, y: scale))
     }
 }
@@ -666,7 +669,7 @@ extension PinnedTextContentView {
     }
 
     var previewZoomForTesting: Double {
-        gestureZoom ?? item.zoomLevel
+        currentPreviewOrCommittedZoom()
     }
 
     var previewScaleForTesting: CGFloat {
