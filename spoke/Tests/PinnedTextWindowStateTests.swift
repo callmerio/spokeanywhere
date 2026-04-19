@@ -192,6 +192,7 @@ struct PinnedTextWindowStateTests {
         ))
 
         let originalZoom = window.item.zoomLevel
+        let originalFrame = window.frame
         let originalOpacity = window.item.opacity
 
         window.scrollWheel(with: try makeScrollEvent(deltaX: -40, precise: true))
@@ -199,6 +200,8 @@ struct PinnedTextWindowStateTests {
         #expect(window.item.opacity < originalOpacity)
         #expect(content.previewZoomForTesting == originalZoom)
         #expect(window.item.zoomLevel == originalZoom)
+        #expect(itemFramesMatch(window.frame, originalFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, originalFrame, tolerance: 0.5))
         #expect(counter.saves >= 1)
     }
 
@@ -454,6 +457,7 @@ struct PinnedTextWindowStateTests {
         ))
 
         let originalZoom = window.item.zoomLevel
+        let originalFrame = window.frame
         let originalOpacity = window.item.opacity
 
         window.scrollWheel(with: try makeScrollEvent(deltaX: -40, precise: true))
@@ -462,6 +466,8 @@ struct PinnedTextWindowStateTests {
         #expect(window.item.opacity < originalOpacity)
         #expect(content.previewZoomForTesting == originalZoom)
         #expect(window.item.zoomLevel == originalZoom)
+        #expect(itemFramesMatch(window.frame, originalFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, originalFrame, tolerance: 0.5))
         #expect(counter.saves >= 1)
     }
 
