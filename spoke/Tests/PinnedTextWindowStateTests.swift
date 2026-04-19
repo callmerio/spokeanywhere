@@ -15,7 +15,23 @@ struct PinnedTextWindowStateTests {
         location: CGPoint,
         clickCount: Int
     ) throws -> NSEvent {
-        try #require(
+        if type == .mouseEntered || type == .mouseExited {
+            return try #require(
+                NSEvent.enterExitEvent(
+                    with: type,
+                    location: location,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: window.windowNumber,
+                    context: nil,
+                    eventNumber: 0,
+                    trackingNumber: 0,
+                    userData: nil
+                )
+            )
+        }
+
+        return try #require(
             NSEvent.mouseEvent(
                 with: type,
                 location: location,
@@ -33,7 +49,8 @@ struct PinnedTextWindowStateTests {
     private func makeScrollEvent(
         deltaX: Int32 = 0,
         deltaY: Int32 = 0,
-        precise: Bool = true
+        precise: Bool = true,
+        modifiers: NSEvent.ModifierFlags = []
     ) throws -> NSEvent {
         let units: CGScrollEventUnit = precise ? .pixel : .line
         let cgEvent = try #require(
@@ -46,6 +63,7 @@ struct PinnedTextWindowStateTests {
                 wheel3: 0
             )
         )
+        cgEvent.flags = CGEventFlags(rawValue: UInt64(modifiers.rawValue))
         return try #require(NSEvent(cgEvent: cgEvent))
     }
 
@@ -83,6 +101,86 @@ struct PinnedTextWindowStateTests {
         window.scrollWheel(with: try makeScrollEvent(deltaX: -40, precise: true))
         #expect(window.item.opacity < originalOpacity)
         #expect(counter.saves >= 1)
+    }
+
+    @Test("unfocused hover vertical scroll updates zoom instead of scrolling content")
+    func unfocusedHoverVerticalScrollZooms() throws {
+        let (window, counter) = makeWindow()
+        let content = try #require(window.pinnedTextContentView)
+        window.contentView = content
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let originalZoom = window.item.zoomLevel
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 20, precise: true))
+
+        #expect(window.item.zoomLevel > originalZoom)
+        #expect(counter.saves >= 1)
+    }
+
+    @Test("Shift vertical scroll in unfocused hover scrolls content without changing zoom")
+    func unfocusedHoverShiftVerticalScrollTemporarilyScrolls() throws {
+        let (window, _) = makeWindow()
+        let content = try #require(window.pinnedTextContentView)
+        window.contentView = content
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let originalZoom = window.item.zoomLevel
+        let originalOffset = content.previewScrollOriginYForTesting
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: true, modifiers: [.shift]))
+
+        #expect(window.item.zoomLevel == originalZoom)
+        #expect(content.previewScrollOriginYForTesting != originalOffset)
+    }
+
+    @Test("click enters focused browsing and mouse exit clears it")
+    func clickFocusesAndMouseExitClearsFocusedBrowsing() throws {
+        let (window, _) = makeWindow()
+        let content = try #require(window.pinnedTextContentView)
+        window.contentView = content
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        content.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 1
+        ))
+        content.mouseUp(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseUp,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 1
+        ))
+
+        #expect(content.isFocusedBrowsingForTesting == true)
+
+        content.mouseExited(with: try makeMouseEvent(
+            window: window,
+            type: .mouseExited,
+            location: CGPoint(x: 500, y: 500),
+            clickCount: 0
+        ))
+
+        #expect(content.isFocusedBrowsingForTesting == false)
     }
 
     @Test("double click enters editing and commit persists updated markdown source")

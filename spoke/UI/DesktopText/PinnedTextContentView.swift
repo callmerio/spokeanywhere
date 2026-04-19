@@ -36,6 +36,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     private var isHovered = false {
         didSet { updateToolbarVisibility() }
     }
+    private(set) var isFocusedBrowsing = false
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
     }
@@ -585,6 +586,14 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     func forwardVerticalScroll(_ event: NSEvent) {
         let targetScrollView = isEditing ? editorScrollView : previewScrollView
         targetScrollView.scrollWheel(with: event)
+    }
+
+    var isFocusedBrowsingForTesting: Bool {
+        isFocusedBrowsing
+    }
+
+    var previewScrollOriginYForTesting: CGFloat {
+        previewScrollView.contentView.bounds.origin.y
     }
 }
 
