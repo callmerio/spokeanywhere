@@ -36,9 +36,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     private var isHovered = false {
         didSet { updateToolbarVisibility() }
     }
-    // Temporary placeholder for Task 1 red-spec shape; real lifecycle arrives in Task 2.
     private(set) var isFocusedBrowsing = false
-    // Testing-only routing probe for Task 1 red specs.
     private var forwardedVerticalScrollCount = 0
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
@@ -89,6 +87,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     override func mouseExited(with event: NSEvent) {
         isHovered = false
+        exitFocusedBrowsing()
         (window as? PinnedTextWindow)?.handleHoverChanged(false, locationInWindow: nil)
     }
 
@@ -102,10 +101,15 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
             return
         }
 
-        if event.clickCount >= 2, interactiveCardFrame().contains(event.locationInWindow) {
+        let isInsideCard = interactiveCardFrame().contains(event.locationInWindow)
+        guard isInsideCard else { return }
+
+        if event.clickCount >= 2 {
             beginEditing()
             return
         }
+
+        enterFocusedBrowsing()
 
         guard let pinnedWindow = window as? PinnedTextWindow else {
             return
@@ -215,6 +219,16 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         editorTextView.string = editingSnapshot
         isEditing = false
         refreshFromItem()
+    }
+
+    func enterFocusedBrowsing() {
+        guard !isEditing else { return }
+        isFocusedBrowsing = true
+    }
+
+    func exitFocusedBrowsing() {
+        guard !isEditing else { return }
+        isFocusedBrowsing = false
     }
 
     func refreshToolbarState() {

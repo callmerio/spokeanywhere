@@ -26,7 +26,6 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
-    private var isOpacityScrollLocked = false
     private var activeResizeRegion: ResizeRegion = .none
     private var dragStartScreenPoint: CGPoint = .zero
     private var dragStartFrame: CGRect = .zero
@@ -60,46 +59,35 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     }
 
     override func scrollWheel(with event: NSEvent) {
-        if pinnedTextContentView?.isEditing == true {
+        guard let contentView = pinnedTextContentView else {
             super.scrollWheel(with: event)
             return
         }
 
-        if event.phase == .began {
-            isOpacityScrollLocked = event.modifierFlags.contains(.shift)
-        } else if event.phase == .changed || event.phase == [] {
-            if event.modifierFlags.contains(.shift) {
-                isOpacityScrollLocked = true
-            }
-        }
-
-        if event.phase == .ended || event.phase == .cancelled {
-            isOpacityScrollLocked = false
-        }
-
-        if isOpacityScrollLocked || event.modifierFlags.contains(.shift) {
-            let deltaY = event.scrollingDeltaY
-            let sensitivity: CGFloat = event.hasPreciseScrollingDeltas ? 0.003 : 0.05
-            if abs(deltaY) > (event.hasPreciseScrollingDeltas ? 1 : 0) {
-                handleOpacityChange(delta: deltaY, sensitivity: sensitivity)
-            }
+        if contentView.isEditing {
+            super.scrollWheel(with: event)
             return
         }
 
-        if event.hasPreciseScrollingDeltas {
-            let deltaX = event.scrollingDeltaX
-            let deltaY = event.scrollingDeltaY
+        let isVerticalDominant = abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX)
+        let wantsScrollOverride = event.modifierFlags.contains(.shift)
 
-            if abs(deltaX) > abs(deltaY) {
-                if abs(deltaX) > 1 {
-                    handleOpacityChange(delta: deltaX, sensitivity: 0.003)
-                }
-            } else if abs(deltaY) > 1 {
-                pinnedTextContentView?.forwardVerticalScroll(event)
-            }
-        } else {
-            pinnedTextContentView?.forwardVerticalScroll(event)
+        guard isVerticalDominant else {
+            handleHorizontalScroll(event)
+            return
         }
+
+        guard isHovered else {
+            contentView.forwardVerticalScroll(event)
+            return
+        }
+
+        if contentView.isFocusedBrowsing || wantsScrollOverride {
+            contentView.forwardVerticalScroll(event)
+            return
+        }
+
+        applyCommittedZoom(deltaY: event.scrollingDeltaY)
     }
 
     func updatePinnedState() {
@@ -132,9 +120,10 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
         let size = contentView.preferredWindowSize()
         let currentFrame = frame
+        let currentCenter = CGPoint(x: currentFrame.midX, y: currentFrame.midY)
         let nextFrame = CGRect(
-            x: currentFrame.midX - size.width / 2,
-            y: currentFrame.midY - size.height / 2,
+            x: currentCenter.x - size.width / 2,
+            y: currentCenter.y - size.height / 2,
             width: size.width,
             height: size.height
         )
@@ -266,6 +255,17 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         applyHoverCursor(at: locationInWindow)
     }
 
+    private func handleHorizontalScroll(_ event: NSEvent) {
+        guard event.hasPreciseScrollingDeltas else {
+            super.scrollWheel(with: event)
+            return
+        }
+
+        let deltaX = event.scrollingDeltaX
+        guard abs(deltaX) > 1 else { return }
+        handleOpacityChange(delta: deltaX, sensitivity: 0.003)
+    }
+
     private func handleOpacityChange(delta: CGFloat, sensitivity: CGFloat) {
         let opacityDelta = delta * sensitivity
         let newOpacity = max(0.3, min(1.0, item.opacity + opacityDelta))
@@ -274,6 +274,21 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         item.opacity = newOpacity
         alphaValue = newOpacity
         dependencies.saveWindowState()
+    }
+
+    private func applyCommittedZoom(deltaY: CGFloat) {
+        guard deltaY != 0 else { return }
+
+        let step: Double = deltaY > 0 ? 0.08 : -0.08
+        let clamped = PinnedTextMarkdownRenderer.clampedZoom(item.zoomLevel + step)
+        guard abs(clamped - item.zoomLevel) > 0.0001 else { return }
+
+        item.zoomLevel = clamped
+        pinnedTextContentView?.refreshFromItem()
+        resizeToPreferredContent(animated: false)
+        item.frame = frame
+        dependencies.saveWindowState()
+        onFrameChanged?(frame)
     }
 
     func resizeRegion(at locationInWindow: CGPoint) -> ResizeRegion {
