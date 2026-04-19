@@ -330,11 +330,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         let clamped = PinnedTextMarkdownRenderer.clampedZoom(item.zoomLevel + step)
         guard abs(clamped - item.zoomLevel) > 0.0001 else { return }
 
-        item.zoomLevel = clamped
-        pinnedTextContentView?.refreshFromItem()
-        resizeToPreferredContent(animated: false)
-        item.frame = frame
-        dependencies.saveWindowState()
+        applyCommittedZoomValue(clamped)
     }
 
     private func updatePreviewZoom(deltaY: CGFloat) {
@@ -364,9 +360,13 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return
         }
 
-        item.zoomLevel = previewZoom
         contentView.clearPreviewZoom()
-        contentView.refreshFromItem()
+        applyCommittedZoomValue(previewZoom)
+    }
+
+    private func applyCommittedZoomValue(_ zoom: Double) {
+        item.zoomLevel = zoom
+        pinnedTextContentView?.refreshFromItem()
         resizeToPreferredContent(animated: false)
         item.frame = frame
         dependencies.saveWindowState()
