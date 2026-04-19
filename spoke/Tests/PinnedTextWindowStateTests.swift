@@ -171,6 +171,38 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
     }
 
+    @Test("horizontal precise scroll during preview zoom cancels pending commit")
+    func horizontalPreciseScrollDuringPreviewZoomCancelsPendingCommit() throws {
+        let (window, counter) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        let originalOpacity = window.item.opacity
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+
+        window.scrollWheel(with: try makeScrollEvent(deltaX: -40, precise: true))
+        advanceMainLoop()
+
+        #expect(window.item.opacity < originalOpacity)
+        #expect(counter.saves >= 1)
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(content.previewZoomForTesting == committedZoom)
+    }
+
     @Test("unfocused hover vertical scroll updates zoom instead of scrolling content")
     func unfocusedHoverVerticalScrollZooms() throws {
         let (window, counter) = makeWindow(

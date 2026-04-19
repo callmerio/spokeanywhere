@@ -311,6 +311,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
         let deltaX = event.scrollingDeltaX
         guard abs(deltaX) > 1 else { return }
+        pinnedTextContentView?.clearPreviewZoom()
         handleOpacityChange(delta: deltaX, sensitivity: 0.003)
     }
 
