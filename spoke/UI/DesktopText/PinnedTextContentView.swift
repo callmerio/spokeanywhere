@@ -152,7 +152,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        makeContextMenu()
+        return makeContextMenu()
     }
 
     override func layout() {
@@ -635,7 +635,11 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     func cancelActivePreviewIfNeeded() {
         guard gestureZoom != nil || pendingZoomCommitTimer != nil else { return }
-        clearPreviewZoom()
+        if let pinnedWindow = window as? PinnedTextWindow {
+            pinnedWindow.cancelPreviewZoomIfNeeded()
+        } else {
+            clearPreviewZoom()
+        }
     }
 
     func schedulePendingPreviewZoomCommit(

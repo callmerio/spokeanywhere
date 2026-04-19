@@ -129,6 +129,13 @@ struct PinnedTextWindowStateTests {
         RunLoop.main.run(until: Date().addingTimeInterval(seconds))
     }
 
+    private func itemFramesMatch(_ lhs: CGRect, _ rhs: CGRect, tolerance: CGFloat = 0.001) -> Bool {
+        abs(lhs.origin.x - rhs.origin.x) <= tolerance &&
+        abs(lhs.origin.y - rhs.origin.y) <= tolerance &&
+        abs(lhs.size.width - rhs.size.width) <= tolerance &&
+        abs(lhs.size.height - rhs.size.height) <= tolerance
+    }
+
     @Test("preview mode keeps vertical scroll for content and uses horizontal scroll for opacity")
     func scrollWheelUsesVerticalForContentAndHorizontalForOpacity() throws {
         let (window, counter) = makeWindow()
@@ -701,6 +708,46 @@ struct PinnedTextWindowStateTests {
 
         #expect(content.previewZoomForTesting > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+    }
+
+    @Test("active preview zoom grows the visible card and cancellation restores the committed frame")
+    func activePreviewZoomGrowsVisibleCardAndCancellationRestoresCommittedFrame() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedFrame = window.frame
+        let committedZoom = window.item.zoomLevel
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
+        #expect(itemFramesMatch(window.item.frame, committedFrame))
+
+        content.mouseExited(with: try makeMouseEvent(
+            window: window,
+            type: .mouseExited,
+            location: CGPoint(x: 500, y: 500),
+            clickCount: 0
+        ))
+
+        #expect(itemFramesMatch(window.frame, committedFrame))
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(content.previewZoomForTesting == committedZoom)
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
     @Test("double click entering edit during preview zoom cancels pending commit")

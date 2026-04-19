@@ -29,6 +29,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private var activeResizeRegion: ResizeRegion = .none
     private var dragStartScreenPoint: CGPoint = .zero
     private var dragStartFrame: CGRect = .zero
+    private var previewBaseFrame: CGRect?
     private var suppressManagedFrameCallbacks = false
     private var isObservingWindowDragSession = false
     private var didMoveDuringWindowDragSession = false
@@ -60,7 +61,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
     override func resignKey() {
         super.resignKey()
-        pinnedTextContentView?.clearPreviewZoom()
+        cancelPreviewZoomIfNeeded()
         pinnedTextContentView?.commitEditingIfNeeded()
     }
 
@@ -100,7 +101,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         }
 
         if contentView.isFocusedBrowsing || wantsScrollOverride {
-            contentView.clearPreviewZoom()
+            cancelPreviewZoomIfNeeded()
             contentView.forwardVerticalScroll(event)
             return
         }
@@ -311,7 +312,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
         let deltaX = event.scrollingDeltaX
         guard abs(deltaX) > 1 else { return }
-        pinnedTextContentView?.clearPreviewZoom()
+        cancelPreviewZoomIfNeeded()
         handleOpacityChange(delta: deltaX, sensitivity: 0.003)
     }
 
@@ -344,6 +345,10 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
         guard abs(nextZoom - baseZoom) > 0.0001 else { return }
 
+        if contentView.gestureZoom == nil {
+            previewBaseFrame = frame
+        }
+        applyPreviewZoomFrame(nextZoom)
         contentView.beginOrUpdatePreviewZoom(nextZoom)
     }
 
@@ -358,10 +363,12 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
               let previewZoom = contentView.gestureZoom else { return }
 
         guard abs(previewZoom - item.zoomLevel) > 0.0001 else {
+            previewBaseFrame = nil
             contentView.clearPreviewZoom()
             return
         }
 
+        previewBaseFrame = nil
         contentView.clearPreviewZoom()
         applyCommittedZoomValue(previewZoom)
     }
@@ -372,6 +379,40 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         resizeToPreferredContent(animated: false)
         item.frame = frame
         dependencies.saveWindowState()
+    }
+
+    private func applyPreviewZoomFrame(_ zoom: Double) {
+        guard let baseFrame = previewBaseFrame, abs(item.zoomLevel) > 0.0001 else { return }
+
+        let scale = zoom / item.zoomLevel
+        let scaledSize = CGSize(
+            width: max(baseFrame.width * scale, minimumWindowSize.width),
+            height: max(baseFrame.height * scale, minimumWindowSize.height)
+        )
+        let center = CGPoint(x: baseFrame.midX, y: baseFrame.midY)
+        let nextFrame = CGRect(
+            x: center.x - scaledSize.width / 2,
+            y: center.y - scaledSize.height / 2,
+            width: scaledSize.width,
+            height: scaledSize.height
+        )
+
+        suppressManagedFrameCallbacks = true
+        setFrame(nextFrame, display: true)
+        suppressManagedFrameCallbacks = false
+    }
+
+    func cancelPreviewZoomIfNeeded() {
+        guard let contentView = pinnedTextContentView else { return }
+
+        let frameToRestore = previewBaseFrame
+        previewBaseFrame = nil
+        contentView.clearPreviewZoom()
+
+        guard let frameToRestore else { return }
+        suppressManagedFrameCallbacks = true
+        setFrame(frameToRestore, display: true)
+        suppressManagedFrameCallbacks = false
     }
 
     func resizeRegion(at locationInWindow: CGPoint) -> ResizeRegion {
