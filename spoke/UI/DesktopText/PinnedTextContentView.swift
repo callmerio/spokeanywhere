@@ -614,6 +614,14 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         let targetScrollView = isEditing ? editorScrollView : previewScrollView
         targetScrollView.scrollWheel(with: event)
     }
+
+    func beginOrUpdatePreviewZoom(deltaY: CGFloat) {
+        guard deltaY != 0 else { return }
+
+        let baseZoom = gestureZoom ?? item.zoomLevel
+        let step: Double = deltaY > 0 ? 0.08 : -0.08
+        gestureZoom = PinnedTextMarkdownRenderer.clampedZoom(baseZoom + step)
+    }
 }
 
 // MARK: - Testing Hooks

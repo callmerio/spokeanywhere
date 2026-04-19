@@ -377,6 +377,6 @@ extension PinnedTextWindow {
     }
 
     func beginPreviewZoomForTesting(deltaY: CGFloat) {
-        applyCommittedZoom(deltaY: deltaY)
+        pinnedTextContentView?.beginOrUpdatePreviewZoom(deltaY: deltaY)
     }
 }
