@@ -346,6 +346,44 @@ struct PinnedTextWindowStateTests {
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
+    @Test("shift override during non-precise preview cancels delayed commit and restores frame")
+    func shiftOverrideDuringNonPrecisePreviewCancelsDelayedCommitAndRestoresFrame() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        let committedFrame = window.frame
+        let originalForwardedScrollCount = content.forwardedVerticalScrollCountForTesting
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 3, precise: false))
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: true, modifiers: [.shift]))
+        advanceMainLoop()
+
+        #expect(content.forwardedVerticalScrollCountForTesting > originalForwardedScrollCount)
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(content.previewZoomForTesting == committedZoom)
+        #expect(itemFramesMatch(window.frame, committedFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, committedFrame, tolerance: 0.5))
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
+    }
+
     @Test("click enters focused browsing and mouse exit clears it")
     func clickFocusesAndMouseExitClearsFocusedBrowsing() throws {
         let (window, _) = makeWindow(
