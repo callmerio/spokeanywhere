@@ -109,6 +109,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         }
 
         if pinnedWindow.beginContentInteraction(with: event) {
+            clearPreviewZoom()
             return
         }
 
