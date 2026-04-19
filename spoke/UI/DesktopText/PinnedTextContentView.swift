@@ -126,13 +126,12 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
             return
         }
 
-        let frameBeforeDrag = pinnedWindow.frame
-        pinnedWindow.performWindowDrag(with: event)
+        let didDrag = pinnedWindow.performWindowDrag(with: event)
 
-        if pinnedWindow.frame.equalTo(frameBeforeDrag) {
-            enterFocusedBrowsing()
-        } else {
+        if didDrag {
             exitFocusedBrowsing()
+        } else {
+            enterFocusedBrowsing()
         }
     }
 

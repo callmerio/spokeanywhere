@@ -30,6 +30,8 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private var dragStartScreenPoint: CGPoint = .zero
     private var dragStartFrame: CGRect = .zero
     private var suppressManagedFrameCallbacks = false
+    private var isObservingWindowDragSession = false
+    private var didMoveDuringWindowDragSession = false
     // Minimal test hook so unit tests can deterministically model immediate window drag.
     var performDragHandlerForTesting: ((NSEvent) -> Void)?
     private let resizeHandleInset: CGFloat = 14
@@ -147,6 +149,9 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     }
 
     func windowDidMove(_ notification: Notification) {
+        if isObservingWindowDragSession {
+            didMoveDuringWindowDragSession = true
+        }
         guard !suppressManagedFrameCallbacks else { return }
         onFrameChanged?(frame)
     }
@@ -253,13 +258,21 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         return true
     }
 
-    func performWindowDrag(with event: NSEvent) {
+    func performWindowDrag(with event: NSEvent) -> Bool {
+        isObservingWindowDragSession = true
+        didMoveDuringWindowDragSession = false
+
         if let performDragHandlerForTesting {
             performDragHandlerForTesting(event)
-            return
+            didMoveDuringWindowDragSession = true
+            isObservingWindowDragSession = false
+            return true
         }
 
         performDrag(with: event)
+        let didMove = didMoveDuringWindowDragSession
+        isObservingWindowDragSession = false
+        return didMove
     }
 
     func handleHoverChanged(_ hovered: Bool, locationInWindow: CGPoint?) {

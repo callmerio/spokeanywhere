@@ -282,6 +282,38 @@ struct PinnedTextWindowStateTests {
         #expect(content.isFocusedBrowsingForTesting == false)
     }
 
+    @Test("drag handler call without net frame change still does not focus browsing")
+    func dragHandlerWithoutNetFrameChangeDoesNotFocusBrowsing() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 20, y: 30, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        var dragCalls = 0
+        window.performDragHandlerForTesting = { _ in
+            dragCalls += 1
+        }
+
+        content.mouseDown(with: try makeMouseEvent(
+            window: window,
+            type: .leftMouseDown,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 1
+        ))
+
+        #expect(dragCalls == 1)
+        #expect(content.isFocusedBrowsingForTesting == false)
+    }
+
     @Test("resize affordance remains available just outside the card edge")
     func resizeAffordanceStillWorksOutsideCardEdge() throws {
         let (window, _) = makeWindow()
