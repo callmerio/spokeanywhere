@@ -38,6 +38,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     }
     private(set) var isFocusedBrowsing = false
     private(set) var gestureZoom: Double?
+    var pendingZoomCommitWorkItem: DispatchWorkItem?
     private var forwardedVerticalScrollCount = 0
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
@@ -188,6 +189,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         configurePreviewAppearance()
         configureEditorAppearance()
         actionBar.refreshButtons()
+        updatePreviewZoomVisuals()
 
         if resizeWindow {
             (window as? PinnedTextWindow)?.resizeToPreferredContent(animated: false)
@@ -305,6 +307,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         setupCardLayer()
         previewScrollView.borderType = .noBorder
         previewScrollView.drawsBackground = false
+        previewScrollView.wantsLayer = true
         previewScrollView.hasVerticalScroller = false
         previewScrollView.hasHorizontalScroller = false
         previewScrollView.autohidesScrollers = true
@@ -615,12 +618,22 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         targetScrollView.scrollWheel(with: event)
     }
 
-    func beginOrUpdatePreviewZoom(deltaY: CGFloat) {
-        guard deltaY != 0 else { return }
+    func beginOrUpdatePreviewZoom(_ zoom: Double) {
+        gestureZoom = zoom
+        updatePreviewZoomVisuals()
+    }
 
-        let baseZoom = gestureZoom ?? item.zoomLevel
-        let step: Double = deltaY > 0 ? 0.08 : -0.08
-        gestureZoom = PinnedTextMarkdownRenderer.clampedZoom(baseZoom + step)
+    func clearPreviewZoom() {
+        pendingZoomCommitWorkItem?.cancel()
+        pendingZoomCommitWorkItem = nil
+        gestureZoom = nil
+        updatePreviewZoomVisuals()
+    }
+
+    private func updatePreviewZoomVisuals() {
+        let preview = gestureZoom ?? item.zoomLevel
+        let scale = preview / item.zoomLevel
+        previewScrollView.layer?.setAffineTransform(CGAffineTransform(scaleX: scale, y: scale))
     }
 }
 

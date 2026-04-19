@@ -54,6 +54,10 @@ struct AppPinnedTextRuntimeTests {
         window.displayIfNeeded()
     }
 
+    private func advanceMainLoop(by seconds: TimeInterval = 0.2) {
+        RunLoop.main.run(until: Date().addingTimeInterval(seconds))
+    }
+
     @Test("windowFactory 会为 pinned text 窗口绑定 frame 更新回调")
     func windowFactoryBindsFrameCallback() throws {
         let item = PinnedTextItem(
@@ -119,11 +123,14 @@ struct AppPinnedTextRuntimeTests {
 
         window.handleHoverChanged(true, locationInWindow: CGPoint(x: 90, y: 80))
 
-        let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true)
+        let scrollEvent = try makeScrollEvent(deltaY: 30, precise: true)
+        let endEvent = try makeScrollEvent(deltaY: 0, precise: true, phase: .ended)
         #expect(scrollEvent.hasPreciseScrollingDeltas == true)
 
         window.scrollWheel(with: scrollEvent)
 
+        #expect(window.item.zoomLevel == originalZoom)
+        window.scrollWheel(with: endEvent)
         #expect(window.item.zoomLevel != originalZoom)
         #expect(updates.isEmpty == false)
         #expect(updates.last?.equalTo(window.item.frame) == true)

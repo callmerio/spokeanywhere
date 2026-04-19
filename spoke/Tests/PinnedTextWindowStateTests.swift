@@ -125,6 +125,10 @@ struct PinnedTextWindowStateTests {
         window.displayIfNeeded()
     }
 
+    private func advanceMainLoop(by seconds: TimeInterval = 0.2) {
+        RunLoop.main.run(until: Date().addingTimeInterval(seconds))
+    }
+
     @Test("preview mode keeps vertical scroll for content and uses horizontal scroll for opacity")
     func scrollWheelUsesVerticalForContentAndHorizontalForOpacity() throws {
         let (window, counter) = makeWindow()
@@ -159,14 +163,22 @@ struct PinnedTextWindowStateTests {
         let originalZoom = window.item.zoomLevel
         let originalForwardedScrollCount = content.forwardedVerticalScrollCountForTesting
         let originalOffset = content.previewScrollOriginYForTesting
-        let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true)
+        let scrollEvent = try makeScrollEvent(deltaY: 30, precise: true)
+        let endEvent = try makeScrollEvent(deltaY: 0, precise: true, phase: .ended)
 
         #expect(scrollEvent.hasPreciseScrollingDeltas == true)
         window.scrollWheel(with: scrollEvent)
 
-        #expect(window.item.zoomLevel != originalZoom)
+        #expect(content.previewZoomForTesting > originalZoom)
+        #expect(window.item.zoomLevel == originalZoom)
         #expect(content.forwardedVerticalScrollCountForTesting == originalForwardedScrollCount)
         #expect(content.previewScrollOriginYForTesting == originalOffset)
+        #expect(counter.saves == 0)
+
+        window.scrollWheel(with: endEvent)
+
+        #expect(window.item.zoomLevel != originalZoom)
+        #expect(content.previewZoomForTesting == window.item.zoomLevel)
         #expect(counter.saves >= 1)
     }
 
@@ -313,15 +325,24 @@ struct PinnedTextWindowStateTests {
         let originalFrame = window.frame
         let originalCenter = CGPoint(x: originalFrame.midX, y: originalFrame.midY)
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: true))
+        let scrollEvent = try makeScrollEvent(deltaY: 30, precise: true)
+        let endEvent = try makeScrollEvent(deltaY: 0, precise: true, phase: .ended)
 
-        let updatedFrame = window.frame
-        let updatedCenter = CGPoint(x: updatedFrame.midX, y: updatedFrame.midY)
+        window.scrollWheel(with: scrollEvent)
 
-        #expect(abs(updatedCenter.x - originalCenter.x) <= 0.5)
-        #expect(abs(updatedCenter.y - originalCenter.y) <= 0.5)
-        #expect(window.item.frame.equalTo(updatedFrame))
-        #expect(receivedFrames.last?.equalTo(updatedFrame) == true)
+        #expect(window.item.zoomLevel == 1.0)
+        #expect(receivedFrames.isEmpty)
+        #expect(counter.saves == 0)
+
+        window.scrollWheel(with: endEvent)
+
+        let committedFrame = window.frame
+        let committedCenter = CGPoint(x: committedFrame.midX, y: committedFrame.midY)
+
+        #expect(abs(committedCenter.x - originalCenter.x) <= 0.5)
+        #expect(abs(committedCenter.y - originalCenter.y) <= 0.5)
+        #expect(window.item.frame.equalTo(committedFrame))
+        #expect(receivedFrames.last?.equalTo(committedFrame) == true)
         #expect(counter.saves >= 1)
     }
 

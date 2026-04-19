@@ -71,6 +71,11 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return
         }
 
+        if (event.phase == .ended || event.phase == .cancelled), contentView.gestureZoom != nil {
+            commitPreviewZoomIfNeeded()
+            return
+        }
+
         let isVerticalDominant = abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX)
         let wantsScrollOverride = event.modifierFlags.contains(.shift)
 
@@ -89,7 +94,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return
         }
 
-        applyCommittedZoom(deltaY: event.scrollingDeltaY)
+        updatePreviewZoom(deltaY: event.scrollingDeltaY)
     }
 
     func updatePinnedState() {
@@ -302,6 +307,48 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         onFrameChanged?(frame)
     }
 
+    private func updatePreviewZoom(deltaY: CGFloat) {
+        guard let contentView = pinnedTextContentView, deltaY != 0 else { return }
+
+        let baseZoom = contentView.gestureZoom ?? item.zoomLevel
+        let step: Double = deltaY > 0 ? 0.05 : -0.05
+        let nextZoom = PinnedTextMarkdownRenderer.clampedZoom(baseZoom + step)
+
+        guard abs(nextZoom - baseZoom) > 0.0001 else { return }
+
+        contentView.beginOrUpdatePreviewZoom(nextZoom)
+        schedulePreviewZoomCommit()
+    }
+
+    private func schedulePreviewZoomCommit() {
+        pinnedTextContentView?.pendingZoomCommitWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.commitPreviewZoomIfNeeded()
+        }
+
+        pinnedTextContentView?.pendingZoomCommitWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: workItem)
+    }
+
+    private func commitPreviewZoomIfNeeded() {
+        guard let contentView = pinnedTextContentView,
+              let previewZoom = contentView.gestureZoom else { return }
+
+        guard abs(previewZoom - item.zoomLevel) > 0.0001 else {
+            contentView.clearPreviewZoom()
+            return
+        }
+
+        item.zoomLevel = previewZoom
+        contentView.clearPreviewZoom()
+        contentView.refreshFromItem()
+        resizeToPreferredContent(animated: false)
+        item.frame = frame
+        dependencies.saveWindowState()
+        onFrameChanged?(frame)
+    }
+
     func resizeRegion(at locationInWindow: CGPoint) -> ResizeRegion {
         guard let contentView = pinnedTextContentView else { return .none }
         let cardFrame = contentView.interactiveCardFrame()
@@ -377,6 +424,6 @@ extension PinnedTextWindow {
     }
 
     func beginPreviewZoomForTesting(deltaY: CGFloat) {
-        pinnedTextContentView?.beginOrUpdatePreviewZoom(deltaY: deltaY)
+        updatePreviewZoom(deltaY: deltaY)
     }
 }
