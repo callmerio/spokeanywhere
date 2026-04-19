@@ -493,6 +493,45 @@ struct PinnedTextWindowStateTests {
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
+    @Test("multiple preview zoom gestures accumulate before a single ended commit")
+    func multiplePreviewZoomGesturesAccumulateBeforeCommit() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        let firstChanged = try makeScrollEvent(deltaY: 30, precise: true)
+        let secondChanged = try makeScrollEvent(deltaY: 30, precise: true)
+        let endEvent = try makeScrollEvent(deltaY: 0, precise: true, phase: .ended)
+
+        window.scrollWheel(with: firstChanged)
+        let firstPreviewZoom = content.previewZoomForTesting
+
+        #expect(firstPreviewZoom > committedZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+
+        window.scrollWheel(with: secondChanged)
+        let secondPreviewZoom = content.previewZoomForTesting
+
+        #expect(secondPreviewZoom > firstPreviewZoom)
+        #expect(window.item.zoomLevel == committedZoom)
+
+        window.scrollWheel(with: endEvent)
+
+        #expect(window.item.zoomLevel == secondPreviewZoom)
+        #expect(content.previewZoomForTesting == secondPreviewZoom)
+    }
+
     @Test("resign key during preview zoom cancels pending commit")
     func resignKeyDuringPreviewZoomCancelsPendingCommit() throws {
         let (window, _) = makeWindow(

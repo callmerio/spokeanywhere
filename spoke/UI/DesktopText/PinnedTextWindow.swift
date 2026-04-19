@@ -75,7 +75,13 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return
         }
 
-        if (event.phase == .ended || event.phase == .cancelled), contentView.gestureZoom != nil {
+        let isZeroDeltaPreciseEnd = event.hasPreciseScrollingDeltas
+            && abs(event.scrollingDeltaY) < 0.001
+            && abs(event.scrollingDeltaX) < 0.001
+        let isNonPreciseExplicitEnd = !event.hasPreciseScrollingDeltas
+            && (event.phase == .ended || event.phase == .cancelled)
+
+        if contentView.gestureZoom != nil && (isZeroDeltaPreciseEnd || isNonPreciseExplicitEnd) {
             commitPreviewZoomIfNeeded()
             return
         }
@@ -99,6 +105,10 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         }
 
         updatePreviewZoom(deltaY: event.scrollingDeltaY)
+
+        if !event.hasPreciseScrollingDeltas {
+            schedulePreviewZoomCommit()
+        }
     }
 
     func updatePinnedState() {
@@ -337,7 +347,6 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         guard abs(nextZoom - baseZoom) > 0.0001 else { return }
 
         contentView.beginOrUpdatePreviewZoom(nextZoom)
-        schedulePreviewZoomCommit()
     }
 
     private func schedulePreviewZoomCommit() {
