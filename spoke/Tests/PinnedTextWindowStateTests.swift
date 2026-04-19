@@ -1135,16 +1135,22 @@ struct PinnedTextWindowStateTests {
         ))
 
         let committedZoom = window.item.zoomLevel
+        let committedFrame = window.frame
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
 
         #expect(content.previewZoomForTesting > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
 
         window.resignKey()
         advanceMainLoop()
 
         #expect(window.item.zoomLevel == committedZoom)
         #expect(content.previewZoomForTesting == committedZoom)
+        #expect(itemFramesMatch(window.frame, committedFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, committedFrame, tolerance: 0.5))
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
     @Test("double click enters editing and commit persists updated markdown source")
