@@ -90,7 +90,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     override func mouseExited(with event: NSEvent) {
         isHovered = false
         exitFocusedBrowsing()
-        clearPreviewZoom()
+        cancelActivePreviewIfNeeded()
         (window as? PinnedTextWindow)?.handleHoverChanged(false, locationInWindow: nil)
     }
 
@@ -109,7 +109,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         }
 
         if pinnedWindow.beginContentInteraction(with: event) {
-            clearPreviewZoom()
+            cancelActivePreviewIfNeeded()
             return
         }
 
@@ -199,7 +199,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     func beginEditing() {
         guard !isEditing else { return }
-        clearPreviewZoom()
+        cancelActivePreviewIfNeeded()
         editingSnapshot = item.text
         isEditing = true
         editorTextView.string = item.text
@@ -236,7 +236,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
 
     func enterFocusedBrowsing() {
         guard !isEditing else { return }
-        clearPreviewZoom()
+        cancelActivePreviewIfNeeded()
         isFocusedBrowsing = true
     }
 
@@ -631,6 +631,11 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         pendingZoomCommitTimer = nil
         gestureZoom = nil
         updatePreviewZoomVisuals()
+    }
+
+    func cancelActivePreviewIfNeeded() {
+        guard gestureZoom != nil || pendingZoomCommitTimer != nil else { return }
+        clearPreviewZoom()
     }
 
     func schedulePendingPreviewZoomCommit(
