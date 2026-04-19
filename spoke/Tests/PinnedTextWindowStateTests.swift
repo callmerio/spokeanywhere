@@ -755,6 +755,41 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewZoomForTesting == committedZoom)
     }
 
+    @Test("multiple preview cancellation paths remain idempotent")
+    func multiplePreviewCancellationPathsRemainIdempotent() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        let committedZoom = window.item.zoomLevel
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+
+        #expect(content.previewZoomForTesting > committedZoom)
+        #expect(content.previewScaleForTesting > 1.0)
+
+        content.mouseExited(with: try makeMouseEvent(
+            window: window,
+            type: .mouseExited,
+            location: CGPoint(x: 500, y: 500),
+            clickCount: 0
+        ))
+        window.resignKey()
+
+        #expect(window.item.zoomLevel == committedZoom)
+        #expect(content.previewZoomForTesting == committedZoom)
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
+    }
+
     @Test("preview zoom visual scale resets after commit")
     func previewZoomVisualScaleResetsAfterCommit() throws {
         let (window, _) = makeWindow(
