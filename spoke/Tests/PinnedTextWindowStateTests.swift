@@ -219,11 +219,14 @@ struct PinnedTextWindowStateTests {
         ))
 
         let committedZoom = window.item.zoomLevel
+        let committedFrame = window.frame
         let originalOpacity = window.item.opacity
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
 
         #expect(content.previewZoomForTesting > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
 
         window.scrollWheel(with: try makeScrollEvent(deltaX: -40, precise: true))
         advanceMainLoop()
@@ -232,6 +235,9 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
         #expect(window.item.zoomLevel == committedZoom)
         #expect(content.previewZoomForTesting == committedZoom)
+        #expect(itemFramesMatch(window.frame, committedFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, committedFrame, tolerance: 0.5))
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
     @Test("unfocused hover vertical scroll updates zoom instead of scrolling content")
