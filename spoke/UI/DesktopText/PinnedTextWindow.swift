@@ -100,6 +100,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         }
 
         if contentView.isFocusedBrowsing || wantsScrollOverride {
+            contentView.clearPreviewZoom()
             contentView.forwardVerticalScroll(event)
             return
         }
