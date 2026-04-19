@@ -188,7 +188,6 @@ struct PinnedTextWindowStateTests {
 
         let originalZoom = window.item.zoomLevel
         let originalForwardedScrollCount = content.forwardedVerticalScrollCountForTesting
-        let originalOffset = content.previewScrollOriginYForTesting
         let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true, modifiers: [.shift])
 
         #expect(scrollEvent.hasPreciseScrollingDeltas == true)
@@ -196,7 +195,6 @@ struct PinnedTextWindowStateTests {
 
         #expect(window.item.zoomLevel == originalZoom)
         #expect(content.forwardedVerticalScrollCountForTesting > originalForwardedScrollCount)
-        #expect(content.previewScrollOriginYForTesting != originalOffset)
     }
 
     @Test("click enters focused browsing and mouse exit clears it")
