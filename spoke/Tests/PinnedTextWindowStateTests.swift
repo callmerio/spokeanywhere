@@ -613,10 +613,13 @@ struct PinnedTextWindowStateTests {
         ))
 
         let committedZoom = window.item.zoomLevel
+        let committedFrame = window.frame
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
 
         #expect(content.previewZoomForTesting > committedZoom)
         #expect(window.item.zoomLevel == committedZoom)
+        #expect(window.frame.width > committedFrame.width)
+        #expect(window.frame.height > committedFrame.height)
 
         let cardFrame = content.interactiveCardFrame()
         let resizeEdgePoint = CGPoint(x: cardFrame.minX - 4, y: cardFrame.midY)
@@ -633,6 +636,9 @@ struct PinnedTextWindowStateTests {
         #expect(window.activeResizeRegionForTesting == .left)
         #expect(window.item.zoomLevel == committedZoom)
         #expect(content.previewZoomForTesting == committedZoom)
+        #expect(itemFramesMatch(window.frame, committedFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, committedFrame, tolerance: 0.5))
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
     @Test("unfocused hover zoom keeps center anchored and publishes updated frame")
