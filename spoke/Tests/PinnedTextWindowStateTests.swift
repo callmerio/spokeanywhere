@@ -50,7 +50,8 @@ struct PinnedTextWindowStateTests {
         deltaX: Int32 = 0,
         deltaY: Int32 = 0,
         precise: Bool = true,
-        modifiers: NSEvent.ModifierFlags = []
+        modifiers: NSEvent.ModifierFlags = [],
+        phase: NSEvent.Phase = .changed
     ) throws -> NSEvent {
         let units: CGScrollEventUnit = precise ? .pixel : .line
         let cgEvent = try #require(
@@ -64,6 +65,14 @@ struct PinnedTextWindowStateTests {
             )
         )
         cgEvent.flags = CGEventFlags(rawValue: UInt64(modifiers.rawValue))
+
+        if precise {
+            cgEvent.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+            cgEvent.setIntegerValueField(.scrollWheelEventScrollPhase, value: Int64(phase.rawValue))
+            cgEvent.setIntegerValueField(.scrollWheelEventPointDeltaAxis1, value: Int64(deltaY))
+            cgEvent.setIntegerValueField(.scrollWheelEventPointDeltaAxis2, value: Int64(deltaX))
+        }
+
         return try #require(NSEvent(cgEvent: cgEvent))
     }
 
@@ -149,8 +158,10 @@ struct PinnedTextWindowStateTests {
 
         let originalZoom = window.item.zoomLevel
         let originalOffset = content.previewScrollOriginYForTesting
+        let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true)
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: false))
+        #expect(scrollEvent.hasPreciseScrollingDeltas == true)
+        window.scrollWheel(with: scrollEvent)
 
         #expect(window.item.zoomLevel != originalZoom)
         #expect(content.previewScrollOriginYForTesting == originalOffset)
@@ -175,8 +186,10 @@ struct PinnedTextWindowStateTests {
 
         let originalZoom = window.item.zoomLevel
         let originalOffset = content.previewScrollOriginYForTesting
+        let scrollEvent = try makeScrollEvent(deltaY: -30, precise: true, modifiers: [.shift])
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: -30, precise: false, modifiers: [.shift]))
+        #expect(scrollEvent.hasPreciseScrollingDeltas == true)
+        window.scrollWheel(with: scrollEvent)
 
         #expect(window.item.zoomLevel == originalZoom)
         #expect(content.previewScrollOriginYForTesting != originalOffset)

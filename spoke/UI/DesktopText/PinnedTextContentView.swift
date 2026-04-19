@@ -36,6 +36,7 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     private var isHovered = false {
         didSet { updateToolbarVisibility() }
     }
+    // Temporary placeholder for Task 1 red-spec shape; real lifecycle arrives in Task 2.
     private(set) var isFocusedBrowsing = false
     private(set) var isEditing = false {
         didSet { updateEditingVisibility() }
@@ -587,7 +588,11 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         let targetScrollView = isEditing ? editorScrollView : previewScrollView
         targetScrollView.scrollWheel(with: event)
     }
+}
 
+// MARK: - Testing Hooks
+
+extension PinnedTextContentView {
     var isFocusedBrowsingForTesting: Bool {
         isFocusedBrowsing
     }
