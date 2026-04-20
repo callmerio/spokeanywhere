@@ -2,9 +2,12 @@
 # 本地构建发布版本脚本
 # Usage: ./scripts/build-release.sh
 
-set -e
+set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+VERSION="$(bash scripts/read-spoke-version.sh)"
+BUNDLE_ID="com.spokeanywhere"
 
 echo "🔨 Building SpokenAnyWhere..."
 
@@ -27,7 +30,7 @@ mkdir -p dist/SpokenAnyWhere.app/Contents/Resources
 cp .build/release/SpokenAnyWhere dist/SpokenAnyWhere.app/Contents/MacOS/
 
 # 创建 Info.plist
-cat > dist/SpokenAnyWhere.app/Contents/Info.plist << 'EOF'
+cat > dist/SpokenAnyWhere.app/Contents/Info.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -35,15 +38,15 @@ cat > dist/SpokenAnyWhere.app/Contents/Info.plist << 'EOF'
   <key>CFBundleExecutable</key>
   <string>SpokenAnyWhere</string>
   <key>CFBundleIdentifier</key>
-  <string>app.spokenly</string>
+  <string>${BUNDLE_ID}</string>
   <key>CFBundleName</key>
   <string>SpokenAnyWhere</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0.0</string>
+  <string>${VERSION}</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>${VERSION}</string>
   <key>LSMinimumSystemVersion</key>
   <string>14.0</string>
   <key>LSUIElement</key>
@@ -63,11 +66,11 @@ EOF
 # 签名 (使用开发者证书)
 echo "🔏 Signing App..."
 if security find-identity -v -p codesigning | grep -q "Apple Development"; then
-    codesign --force --deep --sign "Apple Development" --identifier "app.spokenly" dist/SpokenAnyWhere.app
+    codesign --force --deep --sign "Apple Development" --identifier "${BUNDLE_ID}" dist/SpokenAnyWhere.app
     echo "✅ Signed with Apple Development certificate"
 else
     echo "⚠️  No developer certificate found, using adhoc signing"
-    codesign --force --deep --sign - --identifier "app.spokenly" dist/SpokenAnyWhere.app
+    codesign --force --deep --sign - --identifier "${BUNDLE_ID}" dist/SpokenAnyWhere.app
 fi
 
 echo "📀 Creating DMG..."

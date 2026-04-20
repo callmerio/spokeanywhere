@@ -25,6 +25,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Resolve App Metadata
+        id: app_meta
+        run: |
+          APP_VERSION="$(bash scripts/read-spoke-version.sh)"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -38,6 +44,7 @@ jobs:
       - name: Create App Bundle
         working-directory: spoke
         run: |
+          APP_VERSION="${{ steps.app_meta.outputs.app_version }}"
           mkdir -p dist/SpokenAnyWhere.app/Contents/MacOS
           mkdir -p dist/SpokenAnyWhere.app/Contents/Resources
 
@@ -45,7 +52,7 @@ jobs:
           cp .build/release/SpokenAnyWhere dist/SpokenAnyWhere.app/Contents/MacOS/
 
           # 创建 Info.plist
-          cat > dist/SpokenAnyWhere.app/Contents/Info.plist << 'EOF'
+          cat > dist/SpokenAnyWhere.app/Contents/Info.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -59,9 +66,9 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>APPL</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.0</string>
+            <string>${APP_VERSION}</string>
             <key>CFBundleVersion</key>
-            <string>1</string>
+            <string>${APP_VERSION}</string>
             <key>LSMinimumSystemVersion</key>
             <string>14.0</string>
             <key>LSUIElement</key>
@@ -70,6 +77,10 @@ jobs:
             <true/>
             <key>NSMicrophoneUsageDescription</key>
             <string>SpokenAnyWhere needs microphone access for voice transcription.</string>
+            <key>NSScreenCaptureUsageDescription</key>
+            <string>实时字幕功能需要捕获系统音频</string>
+            <key>NSSpeechRecognitionUsageDescription</key>
+            <string>语音识别功能需要使用语音识别服务</string>
           </dict>
           </plist>
           EOF
@@ -104,28 +115,41 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Validate Tag Matches App Version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG_VERSION="${{ steps.version.outputs.version }}"
+          APP_VERSION="${{ steps.app_meta.outputs.app_version }}"
+          if [[ "${TAG_VERSION#v}" != "$APP_VERSION" ]]; then
+            echo "error: tag version ${TAG_VERSION} does not match Bundler.toml version ${APP_VERSION}" >&2
+            exit 1
+          fi
+
+      - name: Resolve Release Notes
+        id: release_notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          NOTES_PATH="$(bash scripts/resolve-release-notes.sh "$VERSION")"
+          if [[ "$VERSION" == *"-beta."* ]]; then
+            IS_PRERELEASE=true
+          else
+            IS_PRERELEASE=false
+          fi
+          echo "path=$NOTES_PATH" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: SpokenAnyWhere ${{ steps.version.outputs.version }}
-          body: |
-            ## SpokenAnyWhere ${{ steps.version.outputs.version }}
-
-            ### 安装说明
-            1. 下载 `.dmg` 文件
-            2. 打开 DMG，将应用拖入 Applications 文件夹
-            3. 首次运行需要在「系统设置 > 隐私与安全性」中允许运行
-            4. 授予辅助功能和麦克风权限
-
-            ### 下载
-            - **DMG**: SpokenAnyWhere.dmg (推荐)
-            - **ZIP**: SpokenAnyWhere.zip
+          body_path: ${{ steps.release_notes.outputs.path }}
           files: |
             spoke/dist/SpokenAnyWhere.dmg
             spoke/dist/SpokenAnyWhere.zip
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.release_notes.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

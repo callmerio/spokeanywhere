@@ -4,6 +4,45 @@ macOS 语音助手应用变更日志，记录每次发布的新功能、改进�
 
 ---
 
+## Unreleased
+
+### ✨ New
+
+- 待整理
+
+### 🎨 Improvements
+
+- 待整理
+
+### 🐛 Fixes
+
+- 待整理
+
+---
+
+## v0.1.0 - 2026-04-20
+
+### ✨ New
+
+- **正式 release discipline 起步** - 从这一版开始采用 `v0.X.Y` 的 milestone-driven 版本策略，并建立 `CHANGELOG + docs/releases + GitHub private release` 的分层方法
+- **Pinned Text 缩放跟手性与惯性优化** - 贴屏文字支持更自然的预览缩放、提交连续性与 follow-through
+- **Pinned Text 最小缩放扩展** - 最小缩放下限下降，允许更小字号和更轻量的贴屏阅读密度
+
+### 🎨 Improvements
+
+- **Pinned Text / Screenshot overlay 体验统一** - 透明度下限、横向调透明、右键菜单骨架和 glow token 开始走统一 contract
+- **Pinned Text / Screenshot 边缘视觉统一** - 两类贴图的黑圈厚度和 glow path 语义按 screenshot pin 基准收敛
+- **项目发版入口收口** - release notes、版本号来源与 workflow 的关系开始正规化
+
+### 🐛 Fixes
+
+- 修复贴屏文字缩放时背景与文字层割裂的问题
+- 修复贴屏文字缩小时因为 hover 丢失而回弹的问题
+- 修复 scrollable content 下非等比缩放、轻度 overflow 先拉高、重度 overflow 高度锁死的问题
+- 修复贴屏文字左上角拖拽缩放超过极小值时可能直接消失的问题
+
+---
+
 ## 2026-02-09 - P2 技术债务清理 + 文档完善
 
 ### 📝 Documentation

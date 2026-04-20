@@ -3,7 +3,7 @@ format_version = 2
 [apps.SpokenAnyWhere]
 identifier = "com.spokeanywhere"
 product = "SpokenAnyWhere"
-version = "1.0.0"
+version = "0.1.0"
 category = "public.app-category.productivity"
 
 # Info.plist 自定义
