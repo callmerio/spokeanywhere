@@ -2,7 +2,7 @@ import AppKit
 
 @MainActor
 enum PinnedTextMarkdownRenderer {
-    static let minZoomLevel: Double = 0.8
+    static let minZoomLevel: Double = 0.4
     static let maxZoomLevel: Double = 2.4
     static let baseContentWidth: CGFloat = 320
     static let minContentWidth: CGFloat = 260
