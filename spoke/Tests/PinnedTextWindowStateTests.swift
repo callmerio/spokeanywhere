@@ -141,6 +141,29 @@ struct PinnedTextWindowStateTests {
         abs(lhs.height - rhs.height) <= tolerance
     }
 
+    private func previewMaximumViewportSize() -> CGSize {
+        CGSize(
+            width: PinnedTextMarkdownRenderer.maxContentWidth
+                + PinnedTextMarkdownRenderer.contentInsets.left
+                + PinnedTextMarkdownRenderer.contentInsets.right
+                + (PinnedTextMarkdownRenderer.windowGlowPadding * 2),
+            height: PinnedTextMarkdownRenderer.maxWindowHeight
+        )
+    }
+
+    private func expectedPreviewViewportSize(
+        baseViewport: CGSize,
+        previewZoom: Double,
+        committedZoom: Double
+    ) -> CGSize {
+        PinnedTextZoomGeometry.scaledViewportSize(
+            baseViewport: baseViewport,
+            zoomRatio: CGFloat(previewZoom / max(committedZoom, 0.0001)),
+            minimumSize: CGSize(width: 220, height: 120),
+            maximumSize: previewMaximumViewportSize()
+        )
+    }
+
     @Test("preview mode keeps vertical scroll for content and uses horizontal scroll for opacity")
     func scrollWheelUsesVerticalForContentAndHorizontalForOpacity() throws {
         let (window, counter) = makeWindow()
@@ -822,8 +845,8 @@ struct PinnedTextWindowStateTests {
         #expect(window.item.zoomLevel == committedZoom)
     }
 
-    @Test("active preview zoom uses renderer preferred size for the visible card")
-    func activePreviewZoomUsesRendererPreferredSizeForVisibleCard() throws {
+    @Test("active preview zoom uses proportional viewport geometry for the visible card")
+    func activePreviewZoomUsesProportionalViewportGeometryForVisibleCard() throws {
         let (window, _) = makeWindow(
             text: makeScrollablePreviewText(),
             frame: CGRect(x: 0, y: 0, width: 360, height: 160)
@@ -841,9 +864,10 @@ struct PinnedTextWindowStateTests {
         window.beginPreviewZoomForTesting(deltaY: 20)
 
         let previewZoom = content.previewZoomForTesting
-        let expectedSize = PinnedTextMarkdownRenderer.preferredWindowSize(
-            text: window.item.text,
-            zoomLevel: previewZoom
+        let expectedSize = expectedPreviewViewportSize(
+            baseViewport: CGSize(width: 360, height: 160),
+            previewZoom: previewZoom,
+            committedZoom: window.item.zoomLevel
         )
 
         #expect(sizesMatch(window.frame.size, expectedSize))
@@ -908,8 +932,8 @@ struct PinnedTextWindowStateTests {
         #expect(abs(widthScale - heightScale) <= 0.02)
     }
 
-    @Test("heavily overflowing content at max height does not degrade into width-only zoom")
-    func heavilyOverflowingContentAtMaxHeightDoesNotDegradeIntoWidthOnlyZoom() throws {
+    @Test("heavily overflowing content does not degrade into width-only zoom")
+    func heavilyOverflowingContentDoesNotDegradeIntoWidthOnlyZoom() throws {
         let text = makeScrollablePreviewText(lineCount: 120)
         let (window, _) = makeWindow(
             text: text,
@@ -936,7 +960,6 @@ struct PinnedTextWindowStateTests {
 
         #expect(previewFrame.width > committedFrame.width)
         #expect(previewFrame.height > committedFrame.height)
-        #expect(abs(previewFrame.height - PinnedTextMarkdownRenderer.maxWindowHeight) <= 0.5)
         #expect(abs(widthScale - heightScale) <= 0.02)
     }
 
@@ -1004,6 +1027,31 @@ struct PinnedTextWindowStateTests {
         #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
         #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
+    }
+
+    @Test("overflowing content commit keeps the proportional preview frame instead of jumping to preferred reflow size")
+    func overflowingContentCommitKeepsProportionalPreviewFrame() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(lineCount: 120),
+            frame: CGRect(x: 0, y: 0, width: 320, height: 220)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        let previewFrame = window.frame
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+
+        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
+        #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
     }
 
     @Test("double click entering edit during preview zoom cancels pending commit")
@@ -1221,9 +1269,10 @@ struct PinnedTextWindowStateTests {
         let clampedPreviewFrame = window.frame
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
         #expect(window.item.zoomLevel <= PinnedTextMarkdownRenderer.maxZoomLevel)
-        let expectedMaxSize = PinnedTextMarkdownRenderer.preferredWindowSize(
-            text: window.item.text,
-            zoomLevel: PinnedTextMarkdownRenderer.maxZoomLevel
+        let expectedMaxSize = expectedPreviewViewportSize(
+            baseViewport: CGSize(width: 360, height: 160),
+            previewZoom: PinnedTextMarkdownRenderer.maxZoomLevel,
+            committedZoom: 1.0
         )
         #expect(sizesMatch(clampedPreviewFrame.size, expectedMaxSize))
 
@@ -1258,9 +1307,10 @@ struct PinnedTextWindowStateTests {
         let clampedPreviewFrame = window.frame
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.minZoomLevel) <= 0.0001)
         #expect(window.item.zoomLevel >= PinnedTextMarkdownRenderer.minZoomLevel)
-        let expectedMinSize = PinnedTextMarkdownRenderer.preferredWindowSize(
-            text: window.item.text,
-            zoomLevel: PinnedTextMarkdownRenderer.minZoomLevel
+        let expectedMinSize = expectedPreviewViewportSize(
+            baseViewport: CGSize(width: 360, height: 160),
+            previewZoom: PinnedTextMarkdownRenderer.minZoomLevel,
+            committedZoom: 1.0
         )
         #expect(sizesMatch(clampedPreviewFrame.size, expectedMinSize))
 

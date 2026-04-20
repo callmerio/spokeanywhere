@@ -372,7 +372,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
         previewBaseFrame = nil
         contentView.clearPreviewZoom(resetPreviewContent: false)
-        applyCommittedZoomValue(previewZoom)
+        commitPreviewZoomUsingCurrentFrame(previewZoom)
     }
 
     private func applyCommittedZoomValue(_ zoom: Double) {
@@ -383,6 +383,14 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         if !didPublishResize {
             onFrameChanged?(frame)
         }
+        dependencies.saveWindowState()
+    }
+
+    private func commitPreviewZoomUsingCurrentFrame(_ zoom: Double) {
+        item.zoomLevel = zoom
+        pinnedTextContentView?.refreshFromItem()
+        item.frame = frame
+        onFrameChanged?(frame)
         dependencies.saveWindowState()
     }
 
