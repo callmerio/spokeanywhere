@@ -299,7 +299,10 @@ final class ScreenshotWindow: NSPanel {
             if abs(deltaX) > abs(deltaY) {
                 // 横向主导 -> 透明度
                 if abs(deltaX) > 1 {
-                    handleOpacityChange(delta: deltaX, sensitivity: 0.003)
+                    handleOpacityChange(
+                        delta: deltaX,
+                        sensitivity: OverlayInteractionContract.horizontalOpacitySensitivity
+                    )
                 }
             } else {
                 // 纵向主导 -> 大小
@@ -318,7 +321,10 @@ final class ScreenshotWindow: NSPanel {
     private func handleOpacityChange(delta: CGFloat, sensitivity: CGFloat) {
         // Delta > 0 = 更不透明, Delta < 0 = 更透明
         let opacityDelta = delta * sensitivity
-        let newOpacity = max(0.3, min(1.0, item.opacity + opacityDelta))
+        let newOpacity = max(
+            OverlayInteractionContract.minimumOpacity,
+            min(OverlayInteractionContract.maximumOpacity, item.opacity + opacityDelta)
+        )
         
         // 只有变化时才更新，减少开销
         if abs(item.opacity - newOpacity) > 0.001 {

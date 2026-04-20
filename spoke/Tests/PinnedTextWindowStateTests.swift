@@ -236,6 +236,29 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves >= 1)
     }
 
+    @Test("pinned text horizontal opacity scroll clamps at shared minimum opacity")
+    func pinnedTextHorizontalOpacityScrollClampsAtSharedMinimumOpacity() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(),
+            frame: CGRect(x: 0, y: 0, width: 360, height: 160)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        for _ in 0..<60 {
+            window.scrollWheel(with: try makeScrollEvent(deltaX: -50, precise: true))
+        }
+
+        #expect(abs(window.item.opacity - OverlayInteractionContract.minimumOpacity) <= 0.0001)
+    }
+
     @Test("horizontal precise scroll during preview zoom cancels pending commit")
     func horizontalPreciseScrollDuringPreviewZoomCancelsPendingCommit() throws {
         let (window, counter) = makeWindow(
@@ -1697,6 +1720,22 @@ struct PinnedTextWindowStateTests {
         #expect(titles.contains("Copy Text (T)"))
         #expect(titles.contains("Copy Image (C)"))
         #expect(titles.contains("Close (Q)"))
+    }
+
+    @Test("pinned text context menu follows shared overlay skeleton order")
+    func pinnedTextContextMenuFollowsSharedSkeletonOrder() {
+        let (window, _) = makeWindow()
+        let content = try! #require(window.pinnedTextContentView)
+        let titles = content.contextMenuItemTitles()
+
+        #expect(titles == [
+            "Copy Image (C)",
+            "Copy Text (T)",
+            "Unpin (P)",
+            "Lock (L)",
+            "Mark (M)",
+            "Close (Q)"
+        ])
     }
 
     @Test("editor typography matches preview body rhythm")

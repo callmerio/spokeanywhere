@@ -365,7 +365,10 @@ extension ScreenshotContentView {
         pinItem.keyEquivalentModifierMask = []
         pinItem.target = menuActionProxy
         menu.addItem(pinItem)
-        
+
+        // 分隔线
+        menu.addItem(NSMenuItem.separator())
+
         // 4. Quick Ask (A)
         let aiItem = NSMenuItem(title: "Quick Ask (A)", action: #selector(MenuActionProxy.performQuickAsk), keyEquivalent: "a")
         aiItem.keyEquivalentModifierMask = []
@@ -439,7 +442,9 @@ extension ScreenshotContentView {
         pinItem.image = NSImage(systemSymbolName: item.isPinned ? "pin.slash" : "pin", accessibilityDescription: nil)
         pinItem.target = self
         menu.addItem(pinItem)
-        
+
+        menu.addItem(.separator())
+
         // OCR (Cmd+O)
         let ocrItem = NSMenuItem(title: "OCR", action: #selector(performOCR), keyEquivalent: "o")
         ocrItem.image = NSImage(systemSymbolName: "text.viewfinder", accessibilityDescription: nil)
@@ -451,7 +456,7 @@ extension ScreenshotContentView {
         quickAskItem.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
         quickAskItem.target = self
         menu.addItem(quickAskItem)
-        
+
         menu.addItem(.separator())
         
         // Mark/Unmark (Cmd+M)
@@ -473,6 +478,12 @@ extension ScreenshotContentView {
         menu.addItem(closeItem)
         
         self.menu = menu
+    }
+
+    func contextMenuItemTitles() -> [String] {
+        menu?.items
+            .filter { !$0.isSeparatorItem }
+            .map(\.title) ?? []
     }
 }
 

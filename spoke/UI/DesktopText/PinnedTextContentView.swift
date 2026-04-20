@@ -377,15 +377,15 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
     private func makeContextMenu() -> NSMenu {
         let menu = NSMenu()
 
-        let copyTextItem = NSMenuItem(title: "Copy Text (T)", action: #selector(performCopyText), keyEquivalent: "t")
-        copyTextItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
-        copyTextItem.target = self
-        menu.addItem(copyTextItem)
-
         let copyImageItem = NSMenuItem(title: "Copy Image (C)", action: #selector(performCopyImage), keyEquivalent: "c")
         copyImageItem.image = NSImage(systemSymbolName: "photo", accessibilityDescription: nil)
         copyImageItem.target = self
         menu.addItem(copyImageItem)
+
+        let copyTextItem = NSMenuItem(title: "Copy Text (T)", action: #selector(performCopyText), keyEquivalent: "t")
+        copyTextItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
+        copyTextItem.target = self
+        menu.addItem(copyTextItem)
 
         menu.addItem(.separator())
 

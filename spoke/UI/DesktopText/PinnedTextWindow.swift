@@ -330,12 +330,18 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         guard abs(deltaX) > 1 else { return }
         stopZoomInertia()
         cancelPreviewZoomIfNeeded()
-        handleOpacityChange(delta: deltaX, sensitivity: 0.003)
+        handleOpacityChange(
+            delta: deltaX,
+            sensitivity: OverlayInteractionContract.horizontalOpacitySensitivity
+        )
     }
 
     private func handleOpacityChange(delta: CGFloat, sensitivity: CGFloat) {
         let opacityDelta = delta * sensitivity
-        let newOpacity = max(0.3, min(1.0, item.opacity + opacityDelta))
+        let newOpacity = max(
+            OverlayInteractionContract.minimumOpacity,
+            min(OverlayInteractionContract.maximumOpacity, item.opacity + opacityDelta)
+        )
 
         guard abs(item.opacity - newOpacity) > 0.001 else { return }
         item.opacity = newOpacity
