@@ -5,17 +5,17 @@ struct PinnedTextZoomDynamics {
     private(set) var velocity: Double = 0
 
     mutating func ingest(stepDelta: Double) {
-        velocity = (velocity * 0.55) + (stepDelta * 0.45)
+        velocity = (velocity * 0.75) + (stepDelta * 0.25)
     }
 
     mutating func nextDecayStep() -> Double? {
-        guard abs(velocity) >= 0.002 else {
+        guard abs(velocity) >= 0.001 else {
             velocity = 0
             return nil
         }
 
         let step = velocity
-        velocity *= 0.82
+        velocity *= 0.72
         return step
     }
 

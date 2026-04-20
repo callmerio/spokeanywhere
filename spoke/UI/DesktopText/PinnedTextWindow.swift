@@ -40,6 +40,12 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private let resizeHandleInset: CGFloat = 14
     private let minimumWindowSize = CGSize(width: 220, height: 120)
 
+    private enum PreviewZoomTuning {
+        static let preciseSensitivity: Double = 0.00055
+        static let preciseMaximumStep: Double = 0.02
+        static let nonPreciseStep: Double = 0.02
+    }
+
     init(
         item: PinnedTextItem,
         dependencies: PinnedTextActionDependencies
@@ -112,7 +118,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return
         }
 
-        updatePreviewZoom(deltaY: event.scrollingDeltaY)
+        updatePreviewZoom(deltaY: event.scrollingDeltaY, isPrecise: event.hasPreciseScrollingDeltas)
 
         if !event.hasPreciseScrollingDeltas {
             schedulePreviewZoomCommit()
@@ -347,13 +353,29 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         applyCommittedZoomValue(clamped)
     }
 
-    private func updatePreviewZoom(deltaY: CGFloat) {
+    private func updatePreviewZoom(deltaY: CGFloat, isPrecise: Bool) {
         guard deltaY != 0 else { return }
         stopZoomInertia()
 
-        let step: Double = deltaY > 0 ? 0.05 : -0.05
+        let step = previewZoomStepDelta(for: deltaY, isPrecise: isPrecise)
+        guard step != 0 else { return }
         previewDynamics.ingest(stepDelta: step)
         updatePreviewZoom(stepDelta: step)
+    }
+
+    private func previewZoomStepDelta(for deltaY: CGFloat, isPrecise: Bool) -> Double {
+        let sign: Double = deltaY > 0 ? 1 : -1
+
+        if !isPrecise {
+            return sign * PreviewZoomTuning.nonPreciseStep
+        }
+
+        let scaledMagnitude = min(
+            abs(Double(deltaY)) * PreviewZoomTuning.preciseSensitivity,
+            PreviewZoomTuning.preciseMaximumStep
+        )
+
+        return sign * scaledMagnitude
     }
 
     private func updatePreviewZoom(stepDelta: Double) {
@@ -564,6 +586,6 @@ extension PinnedTextWindow {
     }
 
     func beginPreviewZoomForTesting(deltaY: CGFloat) {
-        updatePreviewZoom(deltaY: deltaY)
+        updatePreviewZoom(deltaY: deltaY, isPrecise: true)
     }
 }

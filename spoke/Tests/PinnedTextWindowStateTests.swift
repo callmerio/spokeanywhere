@@ -1290,8 +1290,11 @@ struct PinnedTextWindowStateTests {
             clickCount: 0
         ))
 
-        for _ in 0..<40 {
+        for _ in 0..<160 {
             window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+            if abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001 {
+                break
+            }
         }
 
         let clampedPreviewFrame = window.frame
