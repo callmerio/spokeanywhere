@@ -314,10 +314,16 @@ enum DesignTokens {
             static let idle = Style(lineWidth: 1.5, shadowRadius: 10, shadowOpacity: 0.6)
         }
 
-        enum PinnedText {
+        enum OverlayContract {
             static let hover = ScreenshotCard.hover
             static let mark = ScreenshotCard.mark
             static let idle = ScreenshotCard.idle
+        }
+
+        enum PinnedText {
+            static let hover = OverlayContract.hover
+            static let mark = OverlayContract.mark
+            static let idle = OverlayContract.idle
         }
     }
     

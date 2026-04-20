@@ -505,8 +505,8 @@ extension ScreenshotContentView {
         // 更新 glowLayer 的 frame 和 path（确保光晕圆角正确）
         glowLayer.frame = bounds // glowLayer 使用全尺寸，利用 padding 区域显示光晕
         
-        // path 基于 contentFrame，但转换为 glowLayer 的坐标系
-        // 向外扩展 1px，确保 border 不被 imageView 遮挡（stroke 是居中绘制的）
+        // path 基于 contentFrame，但转换为 glowLayer 的坐标系。
+        // 向外扩展 1px，让描边厚度在四边和圆角处都更稳定，不会出现角上变细的观感。
         let pathRect = CGRect(x: padding, y: padding, width: contentFrame.width, height: contentFrame.height).insetBy(dx: -1, dy: -1)
         let path = CGPath(roundedRect: pathRect, cornerWidth: 10, cornerHeight: 10, transform: nil)
         glowLayer.path = path
@@ -715,7 +715,7 @@ extension ScreenshotContentView {
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
         
         if isMarked {
-            let style = DesignTokens.Glow.ScreenshotCard.mark
+            let style = DesignTokens.Glow.OverlayContract.mark
             // 橙色光晕 (Mark 状态 - 持久) - 柔和版本
             glowLayer.strokeColor = DesignTokens.Colors.NS.glowMarkStroke.cgColor
             glowLayer.lineWidth = style.lineWidth
@@ -724,7 +724,7 @@ extension ScreenshotContentView {
             glowLayer.shadowOffset = .zero
             glowLayer.shadowOpacity = style.shadowOpacity
         } else if isHovered {
-            let style = DesignTokens.Glow.ScreenshotCard.hover
+            let style = DesignTokens.Glow.OverlayContract.hover
             // 蓝色光晕 (Hover/Select 状态 - 临时) - 柔和版本
             glowLayer.strokeColor = DesignTokens.Colors.NS.glowHoverStroke.cgColor
             glowLayer.lineWidth = style.lineWidth
@@ -733,7 +733,7 @@ extension ScreenshotContentView {
             glowLayer.shadowOffset = .zero
             glowLayer.shadowOpacity = style.shadowOpacity
         } else if isPinned {
-            let style = DesignTokens.Glow.ScreenshotCard.idle
+            let style = DesignTokens.Glow.OverlayContract.idle
             // 黑色光晕 (Pin 状态)
             glowLayer.strokeColor = DesignTokens.Colors.NS.glowIdle.withAlphaComponent(0.5).cgColor
             glowLayer.lineWidth = style.lineWidth

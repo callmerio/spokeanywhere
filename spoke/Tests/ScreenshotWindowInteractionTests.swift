@@ -170,9 +170,9 @@ struct ScreenshotWindowInteractionTests {
         content.updateGlow(isHovered: false, isMarked: false, isPinned: true)
 
         #expect(glowLayer.strokeColor != nil)
-        #expect(glowLayer.lineWidth == DesignTokens.Glow.ScreenshotCard.idle.lineWidth)
-        #expect(glowLayer.shadowRadius == DesignTokens.Glow.ScreenshotCard.idle.shadowRadius)
-        #expect(glowLayer.shadowOpacity == DesignTokens.Glow.ScreenshotCard.idle.shadowOpacity)
+        #expect(glowLayer.lineWidth == DesignTokens.Glow.OverlayContract.idle.lineWidth)
+        #expect(glowLayer.shadowRadius == DesignTokens.Glow.OverlayContract.idle.shadowRadius)
+        #expect(glowLayer.shadowOpacity == DesignTokens.Glow.OverlayContract.idle.shadowOpacity)
 
         let shadowCGColor = try #require(glowLayer.shadowColor)
         let shadowColor = try #require(NSColor(cgColor: shadowCGColor)?.usingColorSpace(.deviceRGB))

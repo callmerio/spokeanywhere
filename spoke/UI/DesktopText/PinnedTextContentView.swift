@@ -474,8 +474,9 @@ final class PinnedTextContentView: NSView, NSTextViewDelegate {
         cardLayer.shadowPath = cardPath
 
         glowLayer.frame = bounds
+        let glowRect = cardFrame.insetBy(dx: -1, dy: -1)
         let path = NSBezierPath(
-            roundedRect: cardFrame,
+            roundedRect: glowRect,
             xRadius: DesignTokens.CornerRadius.xl,
             yRadius: DesignTokens.CornerRadius.xl
         ).cgPath

@@ -1611,6 +1611,44 @@ struct PinnedTextWindowStateTests {
         #expect(topRightCursor === NSCursor.openHand)
     }
 
+    @Test("top-left resize clamps to minimum size without losing the opposite corner")
+    func topLeftResizeClampPreservesBottomRightAnchor() {
+        let originalFrame = CGRect(x: 40, y: 50, width: 360, height: 220)
+        let proposedFrame = CGRect(x: 320, y: 50, width: 80, height: 70)
+
+        let clamped = PinnedTextResizeGeometry.clampedFrame(
+            proposedFrame: proposedFrame,
+            originalFrame: originalFrame,
+            minimumSize: CGSize(width: 220, height: 120),
+            region: .topLeft
+        )
+
+        #expect(clamped.width == 220)
+        #expect(clamped.height == 120)
+        #expect(clamped.maxX == originalFrame.maxX)
+        #expect(clamped.minY == originalFrame.minY)
+    }
+
+    @Test("top-left resize still clamps to minimum size after crossing past the opposite corner")
+    func topLeftResizeClampHandlesInvertedFrames() {
+        let originalFrame = CGRect(x: 40, y: 50, width: 360, height: 220)
+        let proposedFrame = CGRect(x: 430, y: 50, width: -30, height: -40)
+
+        let clamped = PinnedTextResizeGeometry.clampedFrame(
+            proposedFrame: proposedFrame,
+            originalFrame: originalFrame,
+            minimumSize: CGSize(width: 220, height: 120),
+            region: .topLeft
+        )
+
+        #expect(clamped.width == 220)
+        #expect(clamped.height == 120)
+        #expect(clamped.maxX == originalFrame.maxX)
+        #expect(clamped.minY == originalFrame.minY)
+        #expect(clamped.width > 0)
+        #expect(clamped.height > 0)
+    }
+
     @Test("pinned text glow follows screenshot card reference semantics")
     func pinnedTextGlowFollowsScreenshotCardReferenceSemantics() {
         let hoverStyle = PinnedTextContentView.glowStyle(isHovered: true, isMarked: false, isPinned: true)
@@ -1618,17 +1656,17 @@ struct PinnedTextWindowStateTests {
         let pinnedIdleStyle = PinnedTextContentView.glowStyle(isHovered: false, isMarked: false, isPinned: true)
         let unpinnedIdleStyle = PinnedTextContentView.glowStyle(isHovered: false, isMarked: false, isPinned: false)
 
-        #expect(hoverStyle == DesignTokens.Glow.ScreenshotCard.hover)
-        #expect(markStyle == DesignTokens.Glow.ScreenshotCard.mark)
-        #expect(pinnedIdleStyle == DesignTokens.Glow.ScreenshotCard.idle)
+        #expect(hoverStyle == DesignTokens.Glow.OverlayContract.hover)
+        #expect(markStyle == DesignTokens.Glow.OverlayContract.mark)
+        #expect(pinnedIdleStyle == DesignTokens.Glow.OverlayContract.idle)
         #expect(unpinnedIdleStyle == nil)
 
         #expect(DesignTokens.BorderWidth.none == 0)
         #expect(DesignTokens.Shadow.PinnedText.card.opacity == 0)
         #expect(DesignTokens.Shadow.PinnedText.card.radius == 0)
-        #expect(DesignTokens.Glow.PinnedText.hover == DesignTokens.Glow.ScreenshotCard.hover)
-        #expect(DesignTokens.Glow.PinnedText.mark == DesignTokens.Glow.ScreenshotCard.mark)
-        #expect(DesignTokens.Glow.PinnedText.idle == DesignTokens.Glow.ScreenshotCard.idle)
+        #expect(DesignTokens.Glow.PinnedText.hover == DesignTokens.Glow.OverlayContract.hover)
+        #expect(DesignTokens.Glow.PinnedText.mark == DesignTokens.Glow.OverlayContract.mark)
+        #expect(DesignTokens.Glow.PinnedText.idle == DesignTokens.Glow.OverlayContract.idle)
         #expect(DesignTokens.Glow.PinnedText.hover.fillOpacity == 0)
         #expect(DesignTokens.Glow.PinnedText.mark.fillOpacity == 0)
         #expect(PinnedTextMarkdownRenderer.windowGlowPadding == ScreenshotContentView.paddingPerSide)
@@ -1657,9 +1695,9 @@ struct PinnedTextWindowStateTests {
 
         #expect(glowLayer.fillColor?.alpha == 0)
         #expect(glowLayer.strokeColor != nil)
-        #expect(glowLayer.lineWidth == DesignTokens.Glow.ScreenshotCard.hover.lineWidth)
-        #expect(glowLayer.shadowRadius == DesignTokens.Glow.ScreenshotCard.hover.shadowRadius)
-        #expect(glowLayer.shadowOpacity == DesignTokens.Glow.ScreenshotCard.hover.shadowOpacity)
+        #expect(glowLayer.lineWidth == DesignTokens.Glow.OverlayContract.hover.lineWidth)
+        #expect(glowLayer.shadowRadius == DesignTokens.Glow.OverlayContract.hover.shadowRadius)
+        #expect(glowLayer.shadowOpacity == DesignTokens.Glow.OverlayContract.hover.shadowOpacity)
         #expect(glowLayer.shadowPath != nil)
     }
 

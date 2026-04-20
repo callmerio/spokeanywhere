@@ -544,25 +544,12 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         from originalFrame: CGRect,
         region: ResizeRegion
     ) -> CGRect {
-        var frame = proposedFrame
-
-        if frame.width < minimumWindowSize.width {
-            let delta = minimumWindowSize.width - frame.width
-            frame.size.width = minimumWindowSize.width
-            if region == .left || region == .topLeft || region == .bottomLeft {
-                frame.origin.x -= delta
-            }
-        }
-
-        if frame.height < minimumWindowSize.height {
-            let delta = minimumWindowSize.height - frame.height
-            frame.size.height = minimumWindowSize.height
-            if region == .bottom || region == .bottomLeft || region == .bottomRight {
-                frame.origin.y -= delta
-            }
-        }
-
-        return frame
+        PinnedTextResizeGeometry.clampedFrame(
+            proposedFrame: proposedFrame,
+            originalFrame: originalFrame,
+            minimumSize: minimumWindowSize,
+            region: region
+        )
     }
 
     private func applyHoverCursor(at locationInWindow: CGPoint) {
