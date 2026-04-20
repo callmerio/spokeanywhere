@@ -131,6 +131,7 @@ struct AppPinnedTextRuntimeTests {
 
         #expect(window.item.zoomLevel == originalZoom)
         window.scrollWheel(with: endEvent)
+        advanceMainLoop(by: 0.35)
         #expect(window.item.zoomLevel != originalZoom)
         #expect(updates.isEmpty == false)
         #expect(updates.last?.equalTo(window.item.frame) == true)

@@ -33,6 +33,8 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     private var suppressManagedFrameCallbacks = false
     private var isObservingWindowDragSession = false
     private var didMoveDuringWindowDragSession = false
+    private var previewDynamics = PinnedTextZoomDynamics()
+    private var inertiaTimer: Timer?
     // Minimal test hook so unit tests can deterministically model immediate window drag.
     var performDragHandlerForTesting: ((NSEvent) -> Void)?
     private let resizeHandleInset: CGFloat = 14
@@ -61,6 +63,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
     override func resignKey() {
         super.resignKey()
+        stopZoomInertia()
         cancelPreviewZoomIfNeeded()
         pinnedTextContentView?.commitEditingIfNeeded()
     }
@@ -83,7 +86,10 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             && (event.phase == .ended || event.phase == .cancelled)
 
         if contentView.gestureZoom != nil && (isZeroDeltaPreciseEnd || isNonPreciseExplicitEnd) {
-            commitPreviewZoomIfNeeded()
+            beginZoomInertiaIfNeeded()
+            if inertiaTimer == nil {
+                commitPreviewZoomIfNeeded()
+            }
             return
         }
 
@@ -205,6 +211,8 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
             return false
         }
 
+        stopZoomInertia()
+
         let region = resizeRegion(at: event.locationInWindow)
         guard region.isResizable else { return false }
 
@@ -314,6 +322,7 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
         let deltaX = event.scrollingDeltaX
         guard abs(deltaX) > 1 else { return }
+        stopZoomInertia()
         cancelPreviewZoomIfNeeded()
         handleOpacityChange(delta: deltaX, sensitivity: 0.003)
     }
@@ -339,11 +348,19 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
     }
 
     private func updatePreviewZoom(deltaY: CGFloat) {
-        guard let contentView = pinnedTextContentView, deltaY != 0 else { return }
+        guard deltaY != 0 else { return }
+        stopZoomInertia()
+
+        let step: Double = deltaY > 0 ? 0.05 : -0.05
+        previewDynamics.ingest(stepDelta: step)
+        updatePreviewZoom(stepDelta: step)
+    }
+
+    private func updatePreviewZoom(stepDelta: Double) {
+        guard let contentView = pinnedTextContentView, stepDelta != 0 else { return }
 
         let baseZoom = contentView.currentPreviewOrCommittedZoom()
-        let step: Double = deltaY > 0 ? 0.05 : -0.05
-        let nextZoom = PinnedTextMarkdownRenderer.clampedZoom(baseZoom + step)
+        let nextZoom = PinnedTextMarkdownRenderer.clampedZoom(baseZoom + stepDelta)
 
         guard abs(nextZoom - baseZoom) > 0.0001 else { return }
 
@@ -394,6 +411,40 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
         dependencies.saveWindowState()
     }
 
+    private func stopZoomInertia() {
+        inertiaTimer?.invalidate()
+        inertiaTimer = nil
+        previewDynamics.reset()
+    }
+
+    private func beginZoomInertiaIfNeeded() {
+        guard pinnedTextContentView?.gestureZoom != nil else { return }
+        guard inertiaTimer == nil else { return }
+
+        guard abs(previewDynamics.velocity) >= 0.002 else {
+            previewDynamics.reset()
+            return
+        }
+
+        inertiaTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self else {
+                    timer.invalidate()
+                    return
+                }
+
+                guard let decayStep = self.previewDynamics.nextDecayStep() else {
+                    timer.invalidate()
+                    self.inertiaTimer = nil
+                    self.commitPreviewZoomIfNeeded()
+                    return
+                }
+
+                self.updatePreviewZoom(stepDelta: decayStep)
+            }
+        }
+    }
+
     private func applyPreviewZoomFrame(_ zoom: Double) {
         guard let baseFrame = previewBaseFrame else { return }
 
@@ -425,6 +476,8 @@ final class PinnedTextWindow: NSPanel, NSWindowDelegate {
 
     func cancelPreviewZoomIfNeeded() {
         guard let contentView = pinnedTextContentView else { return }
+
+        stopZoomInertia()
 
         let frameToRestore = previewBaseFrame
         previewBaseFrame = nil

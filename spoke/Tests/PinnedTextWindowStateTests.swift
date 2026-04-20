@@ -129,6 +129,14 @@ struct PinnedTextWindowStateTests {
         RunLoop.main.run(until: Date().addingTimeInterval(seconds))
     }
 
+    private func endPrecisePreviewZoomAndSettle(
+        _ window: PinnedTextWindow,
+        settleSeconds: TimeInterval = 0.35
+    ) throws {
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        advanceMainLoop(by: settleSeconds)
+    }
+
     private func itemFramesMatch(_ lhs: CGRect, _ rhs: CGRect, tolerance: CGFloat = 0.001) -> Bool {
         abs(lhs.origin.x - rhs.origin.x) <= tolerance &&
         abs(lhs.origin.y - rhs.origin.y) <= tolerance &&
@@ -337,6 +345,7 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves == 0)
 
         window.scrollWheel(with: endEvent)
+        advanceMainLoop(by: 0.35)
 
         #expect(window.item.zoomLevel != originalZoom)
         #expect(content.previewZoomForTesting == window.item.zoomLevel)
@@ -781,6 +790,7 @@ struct PinnedTextWindowStateTests {
         #expect(counter.saves == 0)
 
         window.scrollWheel(with: endEvent)
+        advanceMainLoop(by: 0.35)
 
         let committedFrame = window.frame
         let committedCenter = CGPoint(x: committedFrame.midX, y: committedFrame.midY)
@@ -816,7 +826,7 @@ struct PinnedTextWindowStateTests {
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
         #expect(receivedFrames.isEmpty)
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
         #expect(receivedFrames.count == 1)
         #expect(receivedFrames.last?.equalTo(window.frame) == true)
@@ -1022,10 +1032,18 @@ struct PinnedTextWindowStateTests {
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
         let previewFrame = window.frame
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
-        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
-        #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
+        let expectedCommittedSize = expectedPreviewViewportSize(
+            baseViewport: CGSize(width: 360, height: 160),
+            previewZoom: window.item.zoomLevel,
+            committedZoom: 1.0
+        )
+
+        #expect(window.frame.width >= previewFrame.width)
+        #expect(window.frame.height >= previewFrame.height)
+        #expect(sizesMatch(window.frame.size, expectedCommittedSize, tolerance: 1.0))
+        #expect(itemFramesMatch(window.item.frame, window.frame, tolerance: 0.5))
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
@@ -1048,10 +1066,18 @@ struct PinnedTextWindowStateTests {
         window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
         let previewFrame = window.frame
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
-        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
-        #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
+        let expectedCommittedSize = expectedPreviewViewportSize(
+            baseViewport: CGSize(width: 320, height: 220),
+            previewZoom: window.item.zoomLevel,
+            committedZoom: 1.0
+        )
+
+        #expect(window.frame.width >= previewFrame.width)
+        #expect(window.frame.height >= previewFrame.height)
+        #expect(sizesMatch(window.frame.size, expectedCommittedSize, tolerance: 1.0))
+        #expect(itemFramesMatch(window.item.frame, window.frame, tolerance: 0.5))
     }
 
     @Test("double click entering edit during preview zoom cancels pending commit")
@@ -1136,12 +1162,13 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewZoomForTesting == previewZoom)
         #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
-        #expect(window.item.zoomLevel == previewZoom)
-        #expect(content.previewZoomForTesting == previewZoom)
-        #expect(itemFramesMatch(window.frame, previewFrame, tolerance: 0.5))
-        #expect(itemFramesMatch(window.item.frame, previewFrame, tolerance: 0.5))
+        #expect(window.item.zoomLevel >= previewZoom)
+        #expect(content.previewZoomForTesting == window.item.zoomLevel)
+        #expect(window.frame.width >= previewFrame.width)
+        #expect(window.frame.height >= previewFrame.height)
+        #expect(itemFramesMatch(window.item.frame, window.frame, tolerance: 0.5))
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
@@ -1201,7 +1228,7 @@ struct PinnedTextWindowStateTests {
         #expect(content.previewScaleForTesting > 1.0)
         #expect(window.item.zoomLevel == 1.0)
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
         #expect(window.item.zoomLevel > 1.0)
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
@@ -1241,9 +1268,10 @@ struct PinnedTextWindowStateTests {
         #expect(window.item.zoomLevel == committedZoom)
 
         window.scrollWheel(with: endEvent)
+        advanceMainLoop(by: 0.35)
 
-        #expect(window.item.zoomLevel == secondPreviewZoom)
-        #expect(content.previewZoomForTesting == secondPreviewZoom)
+        #expect(window.item.zoomLevel >= secondPreviewZoom)
+        #expect(content.previewZoomForTesting == window.item.zoomLevel)
     }
 
     @Test("preview zoom clamps at renderer max before and after commit")
@@ -1276,7 +1304,7 @@ struct PinnedTextWindowStateTests {
         )
         #expect(sizesMatch(clampedPreviewFrame.size, expectedMaxSize))
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
         #expect(abs(window.item.zoomLevel - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.maxZoomLevel) <= 0.0001)
@@ -1314,7 +1342,7 @@ struct PinnedTextWindowStateTests {
         )
         #expect(sizesMatch(clampedPreviewFrame.size, expectedMinSize))
 
-        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        try endPrecisePreviewZoomAndSettle(window)
 
         #expect(abs(window.item.zoomLevel - PinnedTextMarkdownRenderer.minZoomLevel) <= 0.0001)
         #expect(abs(content.previewZoomForTesting - PinnedTextMarkdownRenderer.minZoomLevel) <= 0.0001)
@@ -1409,6 +1437,38 @@ struct PinnedTextWindowStateTests {
         #expect(itemFramesMatch(window.item.frame, secondPreviewFrame, tolerance: 0.5))
         #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
         #expect(counter.saves >= 1)
+    }
+
+    @Test("precise zoom gesture keeps moving briefly after ended before committing")
+    func preciseZoomGestureKeepsMovingBrieflyAfterEndedBeforeCommitting() throws {
+        let (window, _) = makeWindow(
+            text: makeScrollablePreviewText(lineCount: 40),
+            frame: CGRect(x: 0, y: 0, width: 320, height: 220)
+        )
+        let content = try #require(window.pinnedTextContentView)
+        prepareContentForInteraction(content, in: window)
+
+        content.mouseEntered(with: try makeMouseEvent(
+            window: window,
+            type: .mouseEntered,
+            location: CGPoint(x: 80, y: 80),
+            clickCount: 0
+        ))
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 30, precise: true))
+        let frameBeforeEnd = window.frame
+
+        window.scrollWheel(with: try makeScrollEvent(deltaY: 0, precise: true, phase: .ended))
+        advanceMainLoop(by: 0.05)
+        let frameDuringInertia = window.frame
+
+        #expect(frameDuringInertia.width >= frameBeforeEnd.width)
+        #expect(frameDuringInertia.height >= frameBeforeEnd.height)
+
+        advanceMainLoop(by: 0.35)
+
+        #expect(window.item.zoomLevel == content.previewZoomForTesting)
+        #expect(abs(content.previewScaleForTesting - 1.0) <= 0.0001)
     }
 
     @Test("resign key during preview zoom cancels pending commit")
