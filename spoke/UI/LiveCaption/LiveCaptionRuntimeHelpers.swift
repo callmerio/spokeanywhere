@@ -1,5 +1,27 @@
 import Foundation
 
+struct LiveCaptionScrollSyncKey: Equatable {
+    let lastItemID: UUID?
+    let pendingText: String
+    let pendingTranslation: String
+    let translationRevision: Int
+}
+
+@MainActor
+func makeLiveCaptionScrollSyncKey(
+    lastItemID: UUID?,
+    pendingText: String,
+    pendingTranslation: String,
+    translationRevision: Int
+) -> LiveCaptionScrollSyncKey {
+    LiveCaptionScrollSyncKey(
+        lastItemID: lastItemID,
+        pendingText: pendingText,
+        pendingTranslation: pendingTranslation,
+        translationRevision: translationRevision
+    )
+}
+
 func runLiveCaptionLocaleChange(
     manager: LiveCaptionManager,
     languageId: String
@@ -15,6 +37,15 @@ func liveCaptionShouldAutoScroll(
     isUserSelecting: Bool
 ) -> Bool {
     isAtBottom && !isUserSelecting
+}
+
+@MainActor
+func liveCaptionShouldAutoScrollCollapsed(
+    isAtBottom: Bool,
+    isFocusPinned: Bool,
+    isUserSelecting: Bool
+) -> Bool {
+    (isAtBottom || isFocusPinned) && !isUserSelecting
 }
 
 @MainActor
@@ -37,6 +68,12 @@ func liveCaptionScheduleMain(
     _ operation: @escaping @MainActor () -> Void
 ) {
     runtimeRunOnMain(after: seconds, operation)
+}
+
+func liveCaptionCollapsedVisibleItems<T>(
+    from items: [T]
+) -> [T] {
+    Array(items.suffix(3))
 }
 
 @MainActor
