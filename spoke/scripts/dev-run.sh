@@ -33,6 +33,8 @@ BUNDLER="${SWIFT_BUNDLER_BIN:-$HOME/.local/bin/swift-bundler}"
 BUILD_APP="$ROOT_DIR/.build/bundler/${APP_NAME}.app"
 INSTALL_APP="${APP_INSTALL_PATH:-$HOME/Applications/${APP_NAME} Dev.app}"
 INSTALL_BIN="$INSTALL_APP/Contents/MacOS/${APP_NAME}"
+LIVE_CAPTION_MOCK_BOOTSTRAP_FILE="/tmp/spoke-livecaption-mock-scenario.txt"
+LIVE_CAPTION_PROBE_BOOTSTRAP_FILE="/tmp/spoke-livecaption-probe-enabled.txt"
 LOG_DIR="${LOG_DIR:-$ROOT_DIR/../.tmp_frames}"
 KEEP_LOG_COUNT="${KEEP_LOG_COUNT:-20}"
 LAUNCH_MODE="${APP_LAUNCH_MODE:-open}"
@@ -83,6 +85,7 @@ stop_running_instances() {
 
 bundle_app() {
   log_info "构建应用包..."
+  run_cmd rm -rf "$BUILD_APP"
   run_cmd "$BUNDLER" bundle
 }
 
@@ -137,6 +140,28 @@ prepare_logs() {
 }
 
 launch_app_bundle() {
+  if [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]]; then
+    log_info "写入 live caption mock bootstrap: ${SPOKE_DEBUG_LIVECAPTION_SCENARIO}"
+    if [[ "$DRY_RUN" == "1" ]]; then
+      printf '[DRY-RUN] %q > %q\n' "${SPOKE_DEBUG_LIVECAPTION_SCENARIO}" "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
+    else
+      printf '%s\n' "${SPOKE_DEBUG_LIVECAPTION_SCENARIO}" > "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
+    fi
+  else
+    run_cmd rm -f "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
+  fi
+
+  if [[ -n "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" ]]; then
+    log_info "写入 live caption probe bootstrap: ${SPOKE_DEBUG_LIVECAPTION_PROBE}"
+    if [[ "$DRY_RUN" == "1" ]]; then
+      printf '[DRY-RUN] %q > %q\n' "${SPOKE_DEBUG_LIVECAPTION_PROBE}" "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
+    else
+      printf '%s\n' "${SPOKE_DEBUG_LIVECAPTION_PROBE}" > "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
+    fi
+  else
+    run_cmd rm -f "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
+  fi
+
   if [[ "$LAUNCH_MODE" == "exec" ]]; then
     log_info "以 exec 模式启动应用..."
     if [[ "$DRY_RUN" == "1" ]]; then
@@ -147,6 +172,7 @@ launch_app_bundle() {
         USER="${USER:-}" \
         SHELL="${SHELL:-/bin/zsh}" \
         SPOKE_DEBUG_AUTOMATION="${SPOKE_DEBUG_AUTOMATION:-}" \
+        SPOKE_DEBUG_LIVECAPTION_PROBE="${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" \
         SPOKE_SKIP_ACCESSIBILITY_ALERTS="${SPOKE_SKIP_ACCESSIBILITY_ALERTS:-}" \
         SPOKE_AUDIO_WARMUP="${SPOKE_AUDIO_WARMUP:-}" \
         SPOKE_STARTUP_LOG="${SPOKE_STARTUP_LOG:-}" \
@@ -160,6 +186,7 @@ launch_app_bundle() {
         USER="${USER:-}" \
         SHELL="${SHELL:-/bin/zsh}" \
         SPOKE_DEBUG_AUTOMATION="${SPOKE_DEBUG_AUTOMATION:-}" \
+        SPOKE_DEBUG_LIVECAPTION_PROBE="${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" \
         SPOKE_SKIP_ACCESSIBILITY_ALERTS="${SPOKE_SKIP_ACCESSIBILITY_ALERTS:-}" \
         SPOKE_AUDIO_WARMUP="${SPOKE_AUDIO_WARMUP:-}" \
         SPOKE_STARTUP_LOG="${SPOKE_STARTUP_LOG:-}" \
@@ -171,6 +198,26 @@ launch_app_bundle() {
 
   log_info "以 open 模式启动应用..."
   run_cmd open "$INSTALL_APP"
+
+  if [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]]; then
+    log_info "open 模式下补发 live caption mock action..."
+    if [[ "$DRY_RUN" == "1" ]]; then
+      printf '[DRY-RUN] ( sleep 2; %q ) &\n' "$ROOT_DIR/scripts/debug/livecaption-mock-stream.sh"
+    else
+      (
+        sleep 2
+        "$ROOT_DIR/scripts/debug/livecaption-mock-stream.sh" >/tmp/spoke-livecaption-mock-dispatch.out 2>&1 || true
+      ) &
+    fi
+  fi
+
+  if [[ -n "${CURRENT_LOG_PID:-}" ]] && {
+    [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]] ||
+    [[ -n "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" ]]
+  }; then
+    log_info "等待 open 模式 bootstrap 触发并收集首批 live caption 日志..."
+    sleep 4
+  fi
 }
 
 print_next_steps() {
@@ -190,6 +237,8 @@ print_next_steps() {
 
 如果要把 SPOKE_* 环境变量传给应用，请这样运行：
   APP_LAUNCH_MODE=exec SPOKE_DEBUG_AUTOMATION=1 ./dev.sh
+
+如果要启用几何 probe：SPOKE_DEBUG_LIVECAPTION_PROBE=1 SPOKE_DEBUG_LIVECAPTION_SCENARIO=long_translation ./dev.sh
 EOF
 }
 

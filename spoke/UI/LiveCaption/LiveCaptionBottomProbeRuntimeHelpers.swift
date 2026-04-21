@@ -16,6 +16,39 @@ private let liveCaptionProbeLogger = Logger(subsystem: AppIdentity.logSubsystem,
 private let liveCaptionProbeEnabledEnvKey = "SPOKE_DEBUG_LIVECAPTION_PROBE"
 private let liveCaptionProbeBootstrapFilePath = "/tmp/spoke-livecaption-probe-enabled.txt"
 
+private func liveCaptionProbeFlag(from raw: String?) -> Bool? {
+    guard let raw = raw?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased(),
+          !raw.isEmpty else {
+        return nil
+    }
+
+    switch raw {
+    case "1", "true", "yes", "on":
+        return true
+    case "0", "false", "no", "off":
+        return false
+    default:
+        return nil
+    }
+}
+
+private func liveCaptionProbeEnabledFromBootstrapFile(
+    fileManager: FileManager = .default,
+    bootstrapFilePath: String = liveCaptionProbeBootstrapFilePath
+) -> Bool {
+    guard fileManager.fileExists(atPath: bootstrapFilePath),
+          let raw = try? String(
+            contentsOfFile: bootstrapFilePath,
+            encoding: .utf8
+          ) else {
+        return false
+    }
+
+    return liveCaptionProbeFlag(from: raw) == true
+}
+
 struct LiveCaptionProbeSnapshot: Equatable {
     let slot: LiveCaptionProbeSlot
     let frame: CGRect
@@ -35,22 +68,16 @@ func liveCaptionProbeIsEnabled(
     fileManager: FileManager = .default,
     bootstrapFilePath: String = liveCaptionProbeBootstrapFilePath
 ) -> Bool {
-    guard let raw = environment[liveCaptionProbeEnabledEnvKey]?
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-        .lowercased() else {
-        guard fileManager.fileExists(atPath: bootstrapFilePath),
-              let raw = try? String(contentsOfFile: bootstrapFilePath, encoding: .utf8)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased(),
-              !raw.isEmpty else {
-            return false
-        }
-
-        return raw == "1" || raw == "true" || raw == "yes" || raw == "on"
+    if let explicit = liveCaptionProbeFlag(
+        from: environment[liveCaptionProbeEnabledEnvKey]
+    ) {
+        return explicit
     }
 
-    guard !raw.isEmpty else { return false }
-    return raw == "1" || raw == "true" || raw == "yes" || raw == "on"
+    return liveCaptionProbeEnabledFromBootstrapFile(
+        fileManager: fileManager,
+        bootstrapFilePath: bootstrapFilePath
+    )
 }
 
 func liveCaptionProbeFrameIsFinite(_ frame: CGRect) -> Bool {
@@ -88,10 +115,15 @@ func liveCaptionLogBottomProbe(
     guard liveCaptionProbeFrameIsFinite(viewport.frame), liveCaptionProbeFrameIsFinite(target.frame) else { return }
 
     let gap = liveCaptionBottomGap(viewportFrame: viewport.frame, targetFrame: target.frame)
-    let bottomVisible = liveCaptionBottomIsVisible(viewportFrame: viewport.frame, targetFrame: target.frame)
+    let topGap = liveCaptionCollapsedTopGap(
+        viewportFrame: viewport.frame,
+        targetFrame: target.frame
+    )
+    let fullyVisible = target.frame.minY >= viewport.frame.minY &&
+        target.frame.maxY <= viewport.frame.maxY
 
     liveCaptionProbeLogger.debug(
-        "📏 probe mode=\(mode, privacy: .public) target=\(target.slot.rawValue, privacy: .public) textLength=\(target.textLength, privacy: .public) gap=\(gap, privacy: .public) bottomVisible=\(bottomVisible, privacy: .public) isAtBottom=\(isAtBottom, privacy: .public) isUserSelecting=\(isUserSelecting, privacy: .public) scrollTrigger=\(scrollTrigger, privacy: .public)"
+        "📏 probe mode=\(mode, privacy: .public) target=\(target.slot.rawValue, privacy: .public) textLength=\(target.textLength, privacy: .public) viewportHeight=\(viewport.frame.height, privacy: .public) targetHeight=\(target.frame.height, privacy: .public) topGap=\(topGap, privacy: .public) bottomGap=\(gap, privacy: .public) fullyVisible=\(fullyVisible, privacy: .public) isAtBottom=\(isAtBottom, privacy: .public) isUserSelecting=\(isUserSelecting, privacy: .public) scrollTrigger=\(scrollTrigger, privacy: .public)"
     )
 #else
     _ = mode
