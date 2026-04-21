@@ -45,16 +45,26 @@ struct LiveCaptionBottomProbeRuntimeHelpersTests {
 
     @Test("probe 可从 bootstrap 文件启用，供 open 模式验收使用")
     func probeCanBeEnabledFromBootstrapFile() throws {
+        let bootstrapFilePath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("live-caption-probe-\(UUID().uuidString).txt")
+            .path
+
         try "1".write(
-            toFile: liveCaptionProbeBootstrapFilePath,
+            toFile: bootstrapFilePath,
             atomically: true,
             encoding: .utf8
         )
         defer {
-            try? FileManager.default.removeItem(atPath: liveCaptionProbeBootstrapFilePath)
+            try? FileManager.default.removeItem(atPath: bootstrapFilePath)
         }
 
-        #expect(liveCaptionProbeIsEnabled([:]))
+        #expect(
+            liveCaptionProbeIsEnabled(
+                [:],
+                fileManager: FileManager.default,
+                bootstrapFilePath: bootstrapFilePath
+            )
+        )
     }
 }
 #endif
