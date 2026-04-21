@@ -117,6 +117,7 @@ struct LiveCaptionView: View {
             interactionState.vocabularyRefreshTrigger += 1
         }
         .onReceive(dependencies.notificationCenter.publisher(for: .translationUpdated)) { _ in
+            guard interactionState.isExpanded else { return }
             // 翻译完成后强制触发滚动（解决放久了错位问题）
             // 🔥 关键修复：延迟触发滚动，等待 UI 布局完成
             // 当"一口气输出太多"时，布局更新是异步的，立即滚动会基于旧高度计算
@@ -177,12 +178,6 @@ struct LiveCaptionView: View {
         )
         let collapsedItems = liveCaptionCollapsedVisibleItems(from: lineBuffer.items)
         let isEmpty = lineBuffer.items.isEmpty && lineBuffer.pendingText.isEmpty
-        let scrollSyncKey = makeLiveCaptionScrollSyncKey(
-            lastItemID: lineBuffer.items.last?.id,
-            pendingText: lineBuffer.pendingText,
-            pendingTranslation: lineBuffer.pendingTranslation,
-            translationRevision: lineBuffer.translationRevision
-        )
         
         return Group {
             if isEmpty {
@@ -315,16 +310,6 @@ struct LiveCaptionView: View {
                         id: nextID,
                         deltaY: delta
                     )
-                }
-                .onChange(of: scrollSyncKey) { _, _ in
-                    guard liveCaptionShouldAutoScrollCollapsed(
-                        isAtBottom: scrollState.isAtBottom,
-                        isFocusPinned: scrollState.isCollapsedFocusPinned,
-                        isUserSelecting: interactionState.isUserSelecting
-                    ) else {
-                        return
-                    }
-                    scrollState.scrollTrigger += 1
                 }
                 .onChange(of: scrollState.scrollTrigger) { _, _ in
                     // 通过改变 scrollTrigger 触发 NSScrollView 的更新
