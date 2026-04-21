@@ -43,6 +43,7 @@ struct LiveCaptionView: View {
     
     @ObservedObject var manager: LiveCaptionManager
     @ObservedObject var translator: TranslationService
+    @ObservedObject private var lineBuffer: CaptionLineBuffer
     private let dependencies: LiveCaptionViewDependencies
     
     @State private var hoverState = LiveCaptionHoverState()
@@ -60,6 +61,7 @@ struct LiveCaptionView: View {
         self.manager = manager
         self.onClose = onClose
         self.translator = translator
+        self._lineBuffer = ObservedObject(wrappedValue: manager.lineBuffer)
         self.dependencies = dependencies
     }
     
@@ -118,7 +120,6 @@ struct LiveCaptionView: View {
             // 翻译完成后强制触发滚动（解决放久了错位问题）
             // 🔥 关键修复：延迟触发滚动，等待 UI 布局完成
             // 当"一口气输出太多"时，布局更新是异步的，立即滚动会基于旧高度计算
-            scrollLogger.debug("📜 翻译完成通知: isAtBottom=\(scrollState.isAtBottom) isUserSelecting=\(interactionState.isUserSelecting)")
             liveCaptionResyncScrollAfterTranslation(
                 shouldScroll: {
                     liveCaptionShouldAutoScroll(
@@ -128,6 +129,17 @@ struct LiveCaptionView: View {
                 },
                 bump: { scrollState.scrollTrigger += 1 }
             )
+        }
+        .onChange(of: scrollState.isAtBottom) { _, atBottom in
+            guard !interactionState.isExpanded else { return }
+            if atBottom {
+                scrollState.isCollapsedFocusPinned = true
+            }
+        }
+        .onChange(of: interactionState.isExpanded) { _, isExpanded in
+            if !isExpanded {
+                scrollState.isCollapsedFocusPinned = true
+            }
         }
         .accessibilityIdentifier(UITestIdentifiers.Element.liveCaptionRoot)
     }
@@ -163,7 +175,14 @@ struct LiveCaptionView: View {
             get: { scrollState.isAtBottom },
             set: { scrollState.isAtBottom = $0 }
         )
-        let isEmpty = manager.lineBuffer.items.isEmpty && manager.lineBuffer.pendingText.isEmpty
+        let collapsedItems = liveCaptionCollapsedVisibleItems(from: lineBuffer.items)
+        let isEmpty = lineBuffer.items.isEmpty && lineBuffer.pendingText.isEmpty
+        let scrollSyncKey = makeLiveCaptionScrollSyncKey(
+            lastItemID: lineBuffer.items.last?.id,
+            pendingText: lineBuffer.pendingText,
+            pendingTranslation: lineBuffer.pendingTranslation,
+            translationRevision: lineBuffer.translationRevision
+        )
         
         return Group {
             if isEmpty {
@@ -174,18 +193,26 @@ struct LiveCaptionView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 32)
             } else {
-                AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
+                AppKitScrollView(
+                    isAtBottom: isAtBottomBinding,
+                    scrollTrigger: scrollState.scrollTrigger,
+                    scrollAdjustment: scrollState.collapsedScrollRequest,
+                    onUserScrollAway: {
+                        if scrollState.isCollapsedFocusPinned {
+                            scrollState.isCollapsedFocusPinned = false
+                        }
+                    }
+                ) {
                     // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
                     VStack(alignment: .leading, spacing: 16) {
-                        // 1. 已确定的句子（原文+译文）- 使用 CaptionItemView 独立组件
-                        // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
-                        ForEach(manager.lineBuffer.items) { item in
+                        ForEach(collapsedItems) { item in
                             let isNew = !scrollState.appearedItemIDs.contains(item.id)
                             CaptionItemView(
                                 item: item,
                                 isNew: isNew,
                                 translationFontSize: CaptionDesign.translatedFontSize,
-                                translationColor: CaptionDesign.textSecondary
+                                translationColor: CaptionDesign.textSecondary,
+                                translationProbeSlot: item.id == collapsedItems.last?.id ? .finalizedCollapsed : nil
                             ) {
                                 captionText(for: item.original, opacity: isNew ? 0.7 : 1.0)
                             }
@@ -198,22 +225,22 @@ struct LiveCaptionView: View {
                         
                         // 2. 正在输入的流式文本（原文 + 流式翻译）
                         // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
-                        if manager.lineBuffer.pendingLineActive {
+                        if lineBuffer.pendingLineActive {
                             VStack(alignment: .leading, spacing: 4) {
                                 // 流式原文 - 使用 displayPendingText 保证内容不会瞬间变空
                                 // 🔥 修复：始终保留 VocabularyHighlightText，避免类型切换导致视图重建
-                                let displayText = manager.lineBuffer.displayPendingText
+                                let displayText = lineBuffer.displayPendingText
                                 VocabularyHighlightText(
                                     text: displayText.isEmpty ? " " : displayText,
                                     fontSize: CaptionDesign.fontSize,
                                     opacity: displayText.isEmpty ? 0 : 0.7,
                                     onSelectionStarted: {
                                         interactionState.isUserSelecting = true
-                                        manager.lineBuffer.setUserInteracting(true)
+                                        lineBuffer.setUserInteracting(true)
                                     },
                                     onSelectionEnded: {
                                         interactionState.isUserSelecting = false
-                                        manager.lineBuffer.setUserInteracting(false)
+                                        lineBuffer.setUserInteracting(false)
                                     },
                                     onTextSelected: { selectedText, screenPoint in
                                         handleTextSelected(selectedText, at: screenPoint)
@@ -227,7 +254,7 @@ struct LiveCaptionView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 
                                 // 流式翻译（始终占位，防止闪烁）
-                                let pendingTranslation = manager.lineBuffer.pendingTranslation
+                                let pendingTranslation = lineBuffer.pendingTranslation
                                 Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
                                     .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
                                     .foregroundColor(
@@ -236,6 +263,12 @@ struct LiveCaptionView: View {
                                     .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeOut(duration: 0.2), value: pendingTranslation)
+#if DEBUG
+                                    .liveCaptionProbeFrame(
+                                        slot: .pendingCollapsed,
+                                        textLength: pendingTranslation.count
+                                    )
+#endif
                             }
                             .transition(.opacity)  // 🔥 纯 fade in/out
                         }
@@ -243,36 +276,59 @@ struct LiveCaptionView: View {
                         // 底部占位
                         Color.clear.frame(height: CaptionDesign.contentBottomPadding)
                     }
+                    .id("collapsed-content-\(lineBuffer.translationRevision)")
                     .padding(CaptionDesign.padding)
                     .textSelection(.enabled)  // 允许选中文字
                 }
-                .frame(height: CaptionDesign.collapsedContentHeight * 2.5)
-                .mask(LinearGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black.opacity(0.3), location: 0.08),
-                        .init(color: .black.opacity(0.7), location: 0.15),
-                        .init(color: .black, location: 0.25),
-                        .init(color: .black, location: 1.0)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                ))
-                .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
-                    liveCaptionBumpScrollIfNeeded(
+                .frame(height: CaptionDesign.collapsedContentHeight * 2.8)
+#if DEBUG
+                .liveCaptionProbeFrame(slot: .viewportCollapsed)
+                .onPreferenceChange(LiveCaptionProbePreferenceKey.self) { snapshots in
+                    liveCaptionLogBottomProbe(
+                        mode: "collapsed",
+                        snapshots: snapshots,
                         isAtBottom: scrollState.isAtBottom,
+                        isUserSelecting: interactionState.isUserSelecting,
+                        scrollTrigger: scrollState.scrollTrigger
+                    )
+
+                    let target = liveCaptionCollapsedPreferredTarget(
+                        viewport: snapshots[.viewportCollapsed],
+                        pending: snapshots[.pendingCollapsed],
+                        finalized: snapshots[.finalizedCollapsed]
+                    )
+
+                    guard let target else { return }
+                    guard liveCaptionShouldAutoScrollCollapsed(
+                        isAtBottom: scrollState.isAtBottom,
+                        isFocusPinned: scrollState.isCollapsedFocusPinned,
                         isUserSelecting: interactionState.isUserSelecting
-                    ) {
-                        scrollState.scrollTrigger += 1
+                    ) else {
+                        return
                     }
+
+                    let delta = liveCaptionCollapsedScrollDelta(
+                        viewportFrame: target.viewportFrame,
+                        targetFrame: target.targetFrame
+                    )
+
+                    guard abs(delta) > 1 else { return }
+                    let nextID = (scrollState.collapsedScrollRequest?.id ?? 0) + 1
+                    scrollState.collapsedScrollRequest = AppKitScrollAdjustmentRequest(
+                        id: nextID,
+                        deltaY: delta
+                    )
                 }
-                .onChange(of: manager.lineBuffer.pendingText) { _, _ in
-                    liveCaptionBumpScrollIfNeeded(
+#endif
+                .onChange(of: scrollSyncKey) { _, _ in
+                    guard liveCaptionShouldAutoScrollCollapsed(
                         isAtBottom: scrollState.isAtBottom,
+                        isFocusPinned: scrollState.isCollapsedFocusPinned,
                         isUserSelecting: interactionState.isUserSelecting
-                    ) {
-                        scrollState.scrollTrigger += 1
+                    ) else {
+                        return
                     }
+                    scrollState.scrollTrigger += 1
                 }
                 .onChange(of: scrollState.scrollTrigger) { _, _ in
                     // 通过改变 scrollTrigger 触发 NSScrollView 的更新
@@ -287,6 +343,12 @@ struct LiveCaptionView: View {
             get: { scrollState.isAtBottom },
             set: { scrollState.isAtBottom = $0 }
         )
+        let scrollSyncKey = makeLiveCaptionScrollSyncKey(
+            lastItemID: lineBuffer.items.last?.id,
+            pendingText: lineBuffer.pendingText,
+            pendingTranslation: lineBuffer.pendingTranslation,
+            translationRevision: lineBuffer.translationRevision
+        )
 
         return AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
             // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
@@ -294,13 +356,14 @@ struct LiveCaptionView: View {
                 // 已确定的句子 - 使用 CaptionItemView 独立组件
 
                 // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
-                ForEach(manager.lineBuffer.items) { item in
+                ForEach(lineBuffer.items) { item in
                     let isNew = !scrollState.appearedItemIDs.contains(item.id)
                     CaptionItemView(
                         item: item,
                         isNew: isNew,
                         translationFontSize: CaptionDesign.translatedFontSize,
-                        translationColor: CaptionDesign.textSecondary
+                        translationColor: CaptionDesign.textSecondary,
+                        translationProbeSlot: item.id == lineBuffer.items.last?.id ? .finalizedExpanded : nil
                     ) {
                         captionText(for: item.original, opacity: isNew ? 0.7 : 1.0)
                     }
@@ -313,9 +376,9 @@ struct LiveCaptionView: View {
                 
                 // 正在输入的流式文本
                 // 🔥 用 pendingLineActive 而不是 isEmpty,防止转录回退时整行消失导致布局跳动
-                if manager.lineBuffer.pendingLineActive {
-                    let displayText = manager.lineBuffer.displayPendingText
-                    let pendingTranslation = manager.lineBuffer.pendingTranslation
+                if lineBuffer.pendingLineActive {
+                    let displayText = lineBuffer.displayPendingText
+                    let pendingTranslation = lineBuffer.pendingTranslation
                     VStack(alignment: .leading, spacing: 4) {
                         // 🔥 修复：始终保留 VocabularyHighlightText，避免类型切换导致视图重建
                         VocabularyHighlightText(
@@ -324,11 +387,11 @@ struct LiveCaptionView: View {
                             opacity: displayText.isEmpty ? 0 : 0.7,
                             onSelectionStarted: {
                                 interactionState.isUserSelecting = true
-                                manager.lineBuffer.setUserInteracting(true)
+                                lineBuffer.setUserInteracting(true)
                             },
                             onSelectionEnded: {
                                 interactionState.isUserSelecting = false
-                                manager.lineBuffer.setUserInteracting(false)
+                                lineBuffer.setUserInteracting(false)
                             },
                             onTextSelected: { selectedText, screenPoint in
                                 handleTextSelected(selectedText, at: screenPoint)
@@ -349,6 +412,12 @@ struct LiveCaptionView: View {
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
                             .animation(.easeOut(duration: 0.2), value: pendingTranslation)
+#if DEBUG
+                            .liveCaptionProbeFrame(
+                                slot: .pendingExpanded,
+                                textLength: pendingTranslation.count
+                            )
+#endif
                     }
                     .transition(.opacity)  // 🔥 纯 fade in/out
                 }
@@ -356,19 +425,24 @@ struct LiveCaptionView: View {
                 // 底部占位
                 Color.clear.frame(height: CaptionDesign.expandedBottomPadding)
             }
+            .id("expanded-content-\(lineBuffer.translationRevision)")
             .padding(CaptionDesign.padding)
             .textSelection(.enabled)
         }
         .frame(height: 400)
-        .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
-            liveCaptionBumpScrollIfNeeded(
+#if DEBUG
+        .liveCaptionProbeFrame(slot: .viewportExpanded)
+        .onPreferenceChange(LiveCaptionProbePreferenceKey.self) { snapshots in
+            liveCaptionLogBottomProbe(
+                mode: "expanded",
+                snapshots: snapshots,
                 isAtBottom: scrollState.isAtBottom,
-                isUserSelecting: interactionState.isUserSelecting
-            ) {
-                scrollState.scrollTrigger += 1
-            }
+                isUserSelecting: interactionState.isUserSelecting,
+                scrollTrigger: scrollState.scrollTrigger
+            )
         }
-        .onChange(of: manager.lineBuffer.pendingText) { _, _ in
+#endif
+        .onChange(of: scrollSyncKey) { _, _ in
             liveCaptionBumpScrollIfNeeded(
                 isAtBottom: scrollState.isAtBottom,
                 isUserSelecting: interactionState.isUserSelecting
