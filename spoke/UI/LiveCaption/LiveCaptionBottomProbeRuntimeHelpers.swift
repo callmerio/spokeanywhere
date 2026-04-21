@@ -12,7 +12,6 @@ enum LiveCaptionProbeSlot: String {
     case finalizedExpanded
 }
 
-#if DEBUG
 private let liveCaptionProbeLogger = Logger(subsystem: AppIdentity.logSubsystem, category: "LiveCaptionProbe")
 private let liveCaptionProbeEnabledEnvKey = "SPOKE_DEBUG_LIVECAPTION_PROBE"
 private let liveCaptionProbeBootstrapFilePath = "/tmp/spoke-livecaption-probe-enabled.txt"
@@ -76,6 +75,7 @@ func liveCaptionLogBottomProbe(
     isUserSelecting: Bool,
     scrollTrigger: Int
 ) {
+#if DEBUG
     guard liveCaptionProbeIsEnabled() else { return }
 
     let viewportSlot: LiveCaptionProbeSlot = mode == "expanded" ? .viewportExpanded : .viewportCollapsed
@@ -93,35 +93,30 @@ func liveCaptionLogBottomProbe(
     liveCaptionProbeLogger.debug(
         "📏 probe mode=\(mode, privacy: .public) target=\(target.slot.rawValue, privacy: .public) textLength=\(target.textLength, privacy: .public) gap=\(gap, privacy: .public) bottomVisible=\(bottomVisible, privacy: .public) isAtBottom=\(isAtBottom, privacy: .public) isUserSelecting=\(isUserSelecting, privacy: .public) scrollTrigger=\(scrollTrigger, privacy: .public)"
     )
+#else
+    _ = mode
+    _ = snapshots
+    _ = isAtBottom
+    _ = isUserSelecting
+    _ = scrollTrigger
+#endif
 }
 
 extension View {
-    @ViewBuilder
     func liveCaptionProbeFrame(slot: LiveCaptionProbeSlot, textLength: Int = 0) -> some View {
-        if liveCaptionProbeIsEnabled() {
-            background(
-                GeometryReader { geo in
-                    Color.clear.preference(
-                        key: LiveCaptionProbePreferenceKey.self,
-                        value: [
-                            slot: LiveCaptionProbeSnapshot(
-                                slot: slot,
-                                frame: geo.frame(in: .global),
-                                textLength: textLength
-                            )
-                        ]
-                    )
-                }
-            )
-        } else {
-            self
-        }
+        background(
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: LiveCaptionProbePreferenceKey.self,
+                    value: [
+                        slot: LiveCaptionProbeSnapshot(
+                            slot: slot,
+                            frame: geo.frame(in: .global),
+                            textLength: textLength
+                        )
+                    ]
+                )
+            }
+        )
     }
 }
-#else
-extension View {
-    func liveCaptionProbeFrame(slot: LiveCaptionProbeSlot, textLength: Int = 0) -> some View {
-        self
-    }
-}
-#endif

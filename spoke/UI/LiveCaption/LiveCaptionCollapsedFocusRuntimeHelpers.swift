@@ -1,4 +1,3 @@
-#if DEBUG
 import CoreGraphics
 import Foundation
 
@@ -82,4 +81,3 @@ func liveCaptionCollapsedScrollDelta(
 
     return 0
 }
-#endif

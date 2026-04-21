@@ -263,12 +263,10 @@ struct LiveCaptionView: View {
                                     .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeOut(duration: 0.2), value: pendingTranslation)
-#if DEBUG
                                     .liveCaptionProbeFrame(
                                         slot: .pendingCollapsed,
                                         textLength: pendingTranslation.count
                                     )
-#endif
                             }
                             .transition(.opacity)  // 🔥 纯 fade in/out
                         }
@@ -281,7 +279,6 @@ struct LiveCaptionView: View {
                     .textSelection(.enabled)  // 允许选中文字
                 }
                 .frame(height: CaptionDesign.collapsedContentHeight * 2.8)
-#if DEBUG
                 .liveCaptionProbeFrame(slot: .viewportCollapsed)
                 .onPreferenceChange(LiveCaptionProbePreferenceKey.self) { snapshots in
                     liveCaptionLogBottomProbe(
@@ -319,7 +316,6 @@ struct LiveCaptionView: View {
                         deltaY: delta
                     )
                 }
-#endif
                 .onChange(of: scrollSyncKey) { _, _ in
                     guard liveCaptionShouldAutoScrollCollapsed(
                         isAtBottom: scrollState.isAtBottom,
@@ -412,12 +408,10 @@ struct LiveCaptionView: View {
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
                             .animation(.easeOut(duration: 0.2), value: pendingTranslation)
-#if DEBUG
                             .liveCaptionProbeFrame(
                                 slot: .pendingExpanded,
                                 textLength: pendingTranslation.count
                             )
-#endif
                     }
                     .transition(.opacity)  // 🔥 纯 fade in/out
                 }
@@ -430,7 +424,6 @@ struct LiveCaptionView: View {
             .textSelection(.enabled)
         }
         .frame(height: 400)
-#if DEBUG
         .liveCaptionProbeFrame(slot: .viewportExpanded)
         .onPreferenceChange(LiveCaptionProbePreferenceKey.self) { snapshots in
             liveCaptionLogBottomProbe(
@@ -441,7 +434,6 @@ struct LiveCaptionView: View {
                 scrollTrigger: scrollState.scrollTrigger
             )
         }
-#endif
         .onChange(of: scrollSyncKey) { _, _ in
             liveCaptionBumpScrollIfNeeded(
                 isAtBottom: scrollState.isAtBottom,
