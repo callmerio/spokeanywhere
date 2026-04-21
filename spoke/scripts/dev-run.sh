@@ -41,6 +41,8 @@ LAUNCH_MODE="${APP_LAUNCH_MODE:-open}"
 DRY_RUN="${DRY_RUN:-0}"
 CURRENT_LOG_FILE=""
 CURRENT_LOG_PID=""
+WROTE_LIVE_CAPTION_MOCK_BOOTSTRAP=0
+WROTE_LIVE_CAPTION_PROBE_BOOTSTRAP=0
 
 log_info() { echo "[INFO] $*"; }
 log_warn() { echo "[WARN] $*"; }
@@ -84,6 +86,20 @@ run_cmd() {
     return 0
   fi
   "$@"
+}
+
+cleanup() {
+  if [[ "$WROTE_LIVE_CAPTION_MOCK_BOOTSTRAP" == "1" ]]; then
+    rm -f "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
+  fi
+
+  if [[ "$WROTE_LIVE_CAPTION_PROBE_BOOTSTRAP" == "1" ]]; then
+    rm -f "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
+  fi
+
+  if [[ -n "${CURRENT_LOG_PID:-}" ]]; then
+    kill "$CURRENT_LOG_PID" 2>/dev/null || true
+  fi
 }
 
 require_bundler() {
@@ -171,16 +187,18 @@ prepare_logs() {
 
 launch_app_bundle() {
   local probe_state
-  local wrote_probe_bootstrap=0
+  local scenario_value
   probe_state="$(live_caption_probe_flag_state "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}")"
+  scenario_value="$(trim_whitespace "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}")"
 
-  if [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]]; then
-    log_info "写入 live caption mock bootstrap: ${SPOKE_DEBUG_LIVECAPTION_SCENARIO}"
+  if [[ "$LAUNCH_MODE" == "open" && -n "$scenario_value" ]]; then
+    log_info "写入 live caption mock bootstrap: $scenario_value"
     if [[ "$DRY_RUN" == "1" ]]; then
-      printf '[DRY-RUN] %q > %q\n' "${SPOKE_DEBUG_LIVECAPTION_SCENARIO}" "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
+      printf '[DRY-RUN] %q > %q\n' "$scenario_value" "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
     else
-      printf '%s\n' "${SPOKE_DEBUG_LIVECAPTION_SCENARIO}" > "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
+      printf '%s\n' "$scenario_value" > "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
     fi
+    WROTE_LIVE_CAPTION_MOCK_BOOTSTRAP=1
   else
     run_cmd rm -f "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
   fi
@@ -194,7 +212,7 @@ launch_app_bundle() {
     else
       printf '%s\n' "${SPOKE_DEBUG_LIVECAPTION_PROBE}" > "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
     fi
-    wrote_probe_bootstrap=1
+    WROTE_LIVE_CAPTION_PROBE_BOOTSTRAP=1
   elif [[ -n "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" && "$probe_state" == "invalid" ]]; then
     log_warn "忽略无效 live caption probe flag: ${SPOKE_DEBUG_LIVECAPTION_PROBE}"
   fi
@@ -209,6 +227,7 @@ launch_app_bundle() {
         USER="${USER:-}" \
         SHELL="${SHELL:-/bin/zsh}" \
         SPOKE_DEBUG_AUTOMATION="${SPOKE_DEBUG_AUTOMATION:-}" \
+        SPOKE_DEBUG_LIVECAPTION_SCENARIO="${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" \
         SPOKE_DEBUG_LIVECAPTION_PROBE="${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" \
         SPOKE_SKIP_ACCESSIBILITY_ALERTS="${SPOKE_SKIP_ACCESSIBILITY_ALERTS:-}" \
         SPOKE_AUDIO_WARMUP="${SPOKE_AUDIO_WARMUP:-}" \
@@ -223,6 +242,7 @@ launch_app_bundle() {
         USER="${USER:-}" \
         SHELL="${SHELL:-/bin/zsh}" \
         SPOKE_DEBUG_AUTOMATION="${SPOKE_DEBUG_AUTOMATION:-}" \
+        SPOKE_DEBUG_LIVECAPTION_SCENARIO="${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" \
         SPOKE_DEBUG_LIVECAPTION_PROBE="${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" \
         SPOKE_SKIP_ACCESSIBILITY_ALERTS="${SPOKE_SKIP_ACCESSIBILITY_ALERTS:-}" \
         SPOKE_AUDIO_WARMUP="${SPOKE_AUDIO_WARMUP:-}" \
@@ -236,7 +256,7 @@ launch_app_bundle() {
   log_info "以 open 模式启动应用..."
   run_cmd open "$INSTALL_APP"
 
-  if [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]]; then
+  if [[ -n "$scenario_value" ]]; then
     log_info "open 模式下补发 live caption mock action..."
     if [[ "$DRY_RUN" == "1" ]]; then
       printf '[DRY-RUN] ( sleep 2; %q ) &\n' "$ROOT_DIR/scripts/debug/livecaption-mock-stream.sh"
@@ -249,16 +269,11 @@ launch_app_bundle() {
   fi
 
   if [[ -n "${CURRENT_LOG_PID:-}" ]] && {
-    [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]] ||
+    [[ -n "$scenario_value" ]] ||
     [[ "$probe_state" == "active" ]]
   }; then
     log_info "等待 open 模式 bootstrap 触发并收集首批 live caption 日志..."
     sleep 8
-  fi
-
-  if [[ "$wrote_probe_bootstrap" == "1" ]]; then
-    log_info "清理 live caption probe bootstrap..."
-    run_cmd rm -f "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
   fi
 }
 
@@ -295,10 +310,8 @@ main() {
   install_app_bundle
   sign_app_bundle "$identity"
 
+  trap cleanup EXIT
   prepare_logs
-  if [[ "$DRY_RUN" != "1" ]]; then
-    trap '[[ -n "$CURRENT_LOG_PID" ]] && kill "$CURRENT_LOG_PID" 2>/dev/null || true' EXIT
-  fi
 
   launch_app_bundle
   print_next_steps
