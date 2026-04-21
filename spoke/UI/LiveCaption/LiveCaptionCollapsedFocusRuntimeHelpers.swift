@@ -66,16 +66,18 @@ func liveCaptionCollapsedScrollDelta(
         )
     }
 
-    let visibleBottomGap = viewportFrame.maxY - targetFrame.maxY
-    if visibleBottomGap < liveCaptionCollapsedFocusBottomInset {
-        return liveCaptionCollapsedFocusBottomInset - visibleBottomGap
+    let topGap = liveCaptionCollapsedTopGap(
+        viewportFrame: viewportFrame,
+        targetFrame: targetFrame
+    )
+    if topGap < 0 {
+        return topGap
     }
 
-    if targetFrame.minY < viewportFrame.minY {
-        return liveCaptionCollapsedTopGap(
-            viewportFrame: viewportFrame,
-            targetFrame: targetFrame
-        )
+    let visibleBottomGap = viewportFrame.maxY - targetFrame.maxY
+    if visibleBottomGap < liveCaptionCollapsedFocusBottomInset {
+        let desiredDelta = liveCaptionCollapsedFocusBottomInset - visibleBottomGap
+        return min(desiredDelta, topGap)
     }
 
     return 0

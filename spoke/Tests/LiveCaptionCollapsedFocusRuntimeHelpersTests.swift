@@ -57,5 +57,16 @@ struct LiveCaptionCollapsedFocusRuntimeHelpersTests {
 
         #expect(liveCaptionCollapsedScrollDelta(viewportFrame: viewport, targetFrame: target) == 0)
     }
+
+    @Test("bottom focus band 不应以裁掉顶部为代价")
+    func bottomFocusBandClampsToKeepTopVisible() {
+        let viewport = CGRect(x: 0, y: 0, width: 300, height: 100)
+        let target = CGRect(x: 0, y: 5, width: 280, height: 90)
+
+        let delta = liveCaptionCollapsedScrollDelta(viewportFrame: viewport, targetFrame: target)
+
+        #expect(delta == 5)
+        #expect(target.minY - delta >= viewport.minY)
+    }
 }
 #endif
