@@ -297,6 +297,10 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             scrollView.reflectScrolledClipView(scrollView.contentView)
             lastScrollY = targetY
             lastMaxScrollY = metrics.maxScrollY
+            let atBottom = targetY >= metrics.maxScrollY - bottomThreshold
+            if isAtBottomBinding.wrappedValue != atBottom {
+                isAtBottomBinding.wrappedValue = atBottom
+            }
 
             scheduleAppKitScrollMain(after: 0.02) {
                 self.isScrollingProgrammatically = false
@@ -384,16 +388,13 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                     }
                     return
                 }
+
+                if userScrolledAway {
+                    onUserScrollAway?()
+                }
+
                 // 否则是用户主动滚动，让 isAtBottom 正常更新为 false
                 scrollLogger.debug("👆 User scrolled up, stopping auto-scroll")
-            }
-
-            if !isScrollingProgrammatically &&
-                appKitScrollUserScrolledAwayFromBottom(
-                    currentY: scrollY,
-                    lastScrollY: lastScrollY
-                ) {
-                onUserScrollAway?()
             }
             
             lastScrollY = scrollY

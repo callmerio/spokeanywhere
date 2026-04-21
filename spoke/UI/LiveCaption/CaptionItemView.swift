@@ -10,6 +10,7 @@ struct CaptionItemView<OriginalContent: View>: View {
     let isNew: Bool
     let translationFontSize: CGFloat
     let translationColor: Color
+    let translationProbeSlot: LiveCaptionProbeSlot?
     let originalContent: () -> OriginalContent
     
     init(
@@ -17,12 +18,14 @@ struct CaptionItemView<OriginalContent: View>: View {
         isNew: Bool,
         translationFontSize: CGFloat,
         translationColor: Color,
+        translationProbeSlot: LiveCaptionProbeSlot? = nil,
         @ViewBuilder originalContent: @escaping () -> OriginalContent
     ) {
         self.item = item
         self.isNew = isNew
         self.translationFontSize = translationFontSize
         self.translationColor = translationColor
+        self.translationProbeSlot = translationProbeSlot
         self.originalContent = originalContent
     }
     
@@ -59,6 +62,26 @@ struct CaptionItemView<OriginalContent: View>: View {
             // 只对 opacity 应用动画（不影响布局）
             .opacity(hasTranslation ? (isNew ? 0.7 : 1.0) : 0)
             .animation(.easeOut(duration: 0.25), value: hasTranslation)
+            .modifier(
+                LiveCaptionTranslationProbeModifier(
+                    slot: translationProbeSlot,
+                    textLength: item.translation?.count ?? 0
+                )
+            )
+    }
+}
+
+private struct LiveCaptionTranslationProbeModifier: ViewModifier {
+    let slot: LiveCaptionProbeSlot?
+    let textLength: Int
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let slot {
+            content.liveCaptionProbeFrame(slot: slot, textLength: textLength)
+        } else {
+            content
+        }
     }
 }
 
