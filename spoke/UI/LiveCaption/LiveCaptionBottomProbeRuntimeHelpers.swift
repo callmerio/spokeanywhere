@@ -74,6 +74,7 @@ func liveCaptionProbeIsEnabled(
         return explicit
     }
 
+    // Invalid env values fall back to the open-flow bootstrap file instead of forcing probe off.
     return liveCaptionProbeEnabledFromBootstrapFile(
         fileManager: fileManager,
         bootstrapFilePath: bootstrapFilePath

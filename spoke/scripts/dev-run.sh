@@ -46,6 +46,36 @@ log_info() { echo "[INFO] $*"; }
 log_warn() { echo "[WARN] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 
+trim_whitespace() {
+  local value="${1:-}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
+live_caption_probe_flag_state() {
+  local raw
+  raw="$(trim_whitespace "${1:-}")"
+  raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
+
+  if [[ -z "$raw" ]]; then
+    printf 'invalid'
+    return 0
+  fi
+
+  case "$raw" in
+    1|true|yes|on)
+      printf 'active'
+      ;;
+    0|false|no|off)
+      printf 'inactive'
+      ;;
+    *)
+      printf 'invalid'
+      ;;
+  esac
+}
+
 run_cmd() {
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[DRY-RUN] '
@@ -140,6 +170,10 @@ prepare_logs() {
 }
 
 launch_app_bundle() {
+  local probe_state
+  local wrote_probe_bootstrap=0
+  probe_state="$(live_caption_probe_flag_state "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}")"
+
   if [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]]; then
     log_info "写入 live caption mock bootstrap: ${SPOKE_DEBUG_LIVECAPTION_SCENARIO}"
     if [[ "$DRY_RUN" == "1" ]]; then
@@ -151,15 +185,18 @@ launch_app_bundle() {
     run_cmd rm -f "$LIVE_CAPTION_MOCK_BOOTSTRAP_FILE"
   fi
 
-  if [[ -n "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" ]]; then
+  run_cmd rm -f "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
+
+  if [[ "$LAUNCH_MODE" == "open" && "$probe_state" == "active" ]]; then
     log_info "写入 live caption probe bootstrap: ${SPOKE_DEBUG_LIVECAPTION_PROBE}"
     if [[ "$DRY_RUN" == "1" ]]; then
       printf '[DRY-RUN] %q > %q\n' "${SPOKE_DEBUG_LIVECAPTION_PROBE}" "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
     else
       printf '%s\n' "${SPOKE_DEBUG_LIVECAPTION_PROBE}" > "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
     fi
-  else
-    run_cmd rm -f "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
+    wrote_probe_bootstrap=1
+  elif [[ -n "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" && "$probe_state" == "invalid" ]]; then
+    log_warn "忽略无效 live caption probe flag: ${SPOKE_DEBUG_LIVECAPTION_PROBE}"
   fi
 
   if [[ "$LAUNCH_MODE" == "exec" ]]; then
@@ -213,10 +250,15 @@ launch_app_bundle() {
 
   if [[ -n "${CURRENT_LOG_PID:-}" ]] && {
     [[ -n "${SPOKE_DEBUG_LIVECAPTION_SCENARIO:-}" ]] ||
-    [[ -n "${SPOKE_DEBUG_LIVECAPTION_PROBE:-}" ]]
+    [[ "$probe_state" == "active" ]]
   }; then
     log_info "等待 open 模式 bootstrap 触发并收集首批 live caption 日志..."
-    sleep 4
+    sleep 8
+  fi
+
+  if [[ "$wrote_probe_bootstrap" == "1" ]]; then
+    log_info "清理 live caption probe bootstrap..."
+    run_cmd rm -f "$LIVE_CAPTION_PROBE_BOOTSTRAP_FILE"
   fi
 }
 

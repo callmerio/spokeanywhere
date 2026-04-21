@@ -90,5 +90,29 @@ struct LiveCaptionBottomProbeRuntimeHelpersTests {
             )
         )
     }
+
+    @Test("显式 false 环境变量应覆盖 bootstrap 文件")
+    func explicitFalseEnvironmentDisablesProbeEvenWithBootstrapFile() throws {
+        let bootstrapFilePath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("live-caption-probe-\(UUID().uuidString).txt")
+            .path
+
+        try "1".write(
+            toFile: bootstrapFilePath,
+            atomically: true,
+            encoding: .utf8
+        )
+        defer {
+            try? FileManager.default.removeItem(atPath: bootstrapFilePath)
+        }
+
+        #expect(
+            !liveCaptionProbeIsEnabled(
+                ["SPOKE_DEBUG_LIVECAPTION_PROBE": "off"],
+                fileManager: FileManager.default,
+                bootstrapFilePath: bootstrapFilePath
+            )
+        )
+    }
 }
 #endif
