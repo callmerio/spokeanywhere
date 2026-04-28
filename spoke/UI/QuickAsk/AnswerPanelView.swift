@@ -190,14 +190,20 @@ struct AnswerPanelView: View {
                 openSettings()
             }
             .keyboardShortcut(",", modifiers: .command)
-            .hidden()
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
             
             // Cmd + W 关闭窗口
             Button("") {
                 onClose?()
             }
             .keyboardShortcut("w", modifiers: .command)
-            .hidden()
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
         .onChange(of: state.isLoading) { _, isLoading in
             // 当 loading 结束且有回复时，触发自动朗读

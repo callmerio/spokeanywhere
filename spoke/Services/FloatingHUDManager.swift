@@ -128,6 +128,9 @@ final class FloatingHUDManager {
             self?.onCancel?()
         }
         contentView.onHoverChange = { _ in }
+        contentView.openSettingsAction = {
+            triggerFloatingHUDOpenSettings()
+        }
         
         // 固定宽度，内容从底部向上扩展
         let framedView = contentView

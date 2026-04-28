@@ -33,6 +33,8 @@ struct FloatingCapsuleView: View {
     var onCancel: (() -> Void)?
     /// Hover 状态改变回调
     var onHoverChange: ((Bool) -> Void)?
+    /// 打开设置动作
+    var openSettingsAction: (() -> Void)?
     
     var body: some View {
         // 外层容器：固定高度，内容从底部向上扩展
@@ -110,7 +112,12 @@ struct FloatingCapsuleView: View {
             }
         )
         .onPreferenceChange(ContentHeightKey.self) { height in
-            contentHeight = height
+            if floatingCapsuleShouldUpdateMeasuredHeight(
+                currentHeight: contentHeight,
+                newHeight: height
+            ) {
+                contentHeight = height
+            }
         }
         .overlay(
             // 思考状态：跑马灯边框
@@ -138,12 +145,13 @@ struct FloatingCapsuleView: View {
         .background {
             // 隐藏的快捷键监听：Cmd + , 打开设置
             Button("") {
-                if let appDelegate = NSApp.delegate as? AppDelegate {
-                    appDelegate.openSettings()
-                }
+                openSettingsAction?()
             }
             .keyboardShortcut(",", modifiers: .command)
-            .hidden()
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
         } // VStack 结束
         // 窗口顶部渐变遮罩：只有当内容到达窗口顶部时才可见（“传送门”效果）
@@ -287,7 +295,12 @@ struct FloatingCapsuleView: View {
                 )
             }
             .onPreferenceChange(TextContentHeightKey.self) { height in
-                textContentHeight = height
+                if floatingCapsuleShouldUpdateMeasuredHeight(
+                    currentHeight: textContentHeight,
+                    newHeight: height
+                ) {
+                    textContentHeight = height
+                }
             }
             .onChange(of: state.partialText) { _, _ in
                 // 高频流式文本更新时做短防抖，避免同帧触发多次滚动导致 SwiftUI 警告

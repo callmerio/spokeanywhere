@@ -105,17 +105,19 @@ struct DictionaryPanelView: View {
                         // 🔥 使用 \.offset 作为 ID，强制按数组顺序渲染
                         // 避免 SwiftUI 根据 element.id 复用旧 cell 位置
                         ForEach(Array(state.results.enumerated()), id: \.offset) { index, result in
-                            WordResultRow(
-                                result: result,
-                                isSelected: index == state.selectedIndex,
-                                isVocabulary: state.isVocabulary(result.word),
-                                parseDefinition: dependencies.parseDefinition
-                            )
-                            .id("\(index)-\(state.refreshTrigger)") // 加入 refreshTrigger 强制刷新
-                            .onTapGesture {
+                            Button {
                                 state.selectedIndex = index
                                 state.confirmSelection()
+                            } label: {
+                                WordResultRow(
+                                    result: result,
+                                    isSelected: index == state.selectedIndex,
+                                    isVocabulary: state.isVocabulary(result.word),
+                                    parseDefinition: dependencies.parseDefinition
+                                )
                             }
+                            .buttonStyle(.plain)
+                            .id("\(index)-\(state.refreshTrigger)") // 加入 refreshTrigger 强制刷新
                         }
                     }
                 }

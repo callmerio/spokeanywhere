@@ -555,41 +555,53 @@ struct DictionaryEntryRow: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: DS.Spacing.lg) {
-            // 来源图标
-            Image(systemName: entry.source.icon)
-                .font(DS.Typography.caption)
-                .foregroundStyle(entry.source == .auto ? DS.Colors.warning : DS.Colors.accentPrimary)
-                .frame(width: DS.Layout.iconSizeStandard)
-            
-            // 词条内容
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.word)
-                    .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
-                    .foregroundStyle(DS.Colors.textPrimary)
-                
-                if !entry.corrections.isEmpty {
-                    Text("纠错: " + entry.corrections.joined(separator: ", "))
-                        .font(DS.Typography.captionSmall)
-                        .foregroundStyle(DS.Colors.textSecondary)
-                        .lineLimit(1)
+        HStack(spacing: DS.Spacing.md) {
+            Button {
+                onEdit()
+            } label: {
+                HStack(spacing: DS.Spacing.lg) {
+                    // 来源图标
+                    Image(systemName: entry.source.icon)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(entry.source == .auto ? DS.Colors.warning : DS.Colors.accentPrimary)
+                        .frame(width: DS.Layout.iconSizeStandard)
+
+                    // 词条内容
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.word)
+                            .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                            .foregroundStyle(DS.Colors.textPrimary)
+
+                        if !entry.corrections.isEmpty {
+                            Text("纠错: " + entry.corrections.joined(separator: ", "))
+                                .font(DS.Typography.captionSmall)
+                                .foregroundStyle(DS.Colors.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer()
+
+                    // 频率标签
+                    if entry.frequency > 0 {
+                        Text("\(entry.frequency)次")
+                            .font(DS.Typography.timestamp)
+                            .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
+                            .padding(.horizontal, DS.Spacing.sm)
+                            .padding(.vertical, DS.Spacing.xxs)
+                            .background(DS.Colors.settingsCardBackground)
+                            .cornerRadius(DS.CornerRadius.xs)
+                    }
+
+                    // 箭头
+                    Image(systemName: "chevron.right")
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            
-            Spacer()
-            
-            // 频率标签
-            if entry.frequency > 0 {
-                Text("\(entry.frequency)次")
-                    .font(DS.Typography.timestamp)
-                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.7))
-                    .padding(.horizontal, DS.Spacing.sm)
-                    .padding(.vertical, DS.Spacing.xxs)
-                    .background(DS.Colors.settingsCardBackground)
-                    .cornerRadius(DS.CornerRadius.xs)
-            }
-            
-            // 操作按钮（悬浮显示）
+            .buttonStyle(.plain)
+
             if isHovered {
                 HStack(spacing: DS.Spacing.md) {
                     Button(action: onEdit) {
@@ -598,7 +610,7 @@ struct DictionaryEntryRow: View {
                             .foregroundStyle(DS.Colors.textSecondary)
                     }
                     .buttonStyle(.plain)
-                    
+
                     Button(action: onDelete) {
                         Image(systemName: "trash")
                             .font(DS.Typography.caption)
@@ -608,11 +620,6 @@ struct DictionaryEntryRow: View {
                 }
                 .transition(.opacity)
             }
-            
-            // 箭头
-            Image(systemName: "chevron.right")
-                .font(DS.Typography.caption)
-                .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
         }
         .padding(.horizontal, DS.Spacing.xl)
         .padding(.vertical, DS.Spacing.lg)
@@ -628,9 +635,6 @@ struct DictionaryEntryRow: View {
             withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
-        }
-        .onTapGesture {
-            onEdit()
         }
     }
 }

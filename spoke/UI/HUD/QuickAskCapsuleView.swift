@@ -19,12 +19,11 @@ struct QuickAskCapsuleView: View {
     
     /// 左下角图标 hover 状态或菜单打开状态
     @State private var isIconHovering = false
-    /// 菜单是否打开
-    @State private var isMenuOpen = false
+    @State private var isAttachmentMenuPresented = false
     
     /// 是否显示加号图标（hover 或菜单打开时）
     private var showPlusIcon: Bool {
-        isIconHovering || isMenuOpen
+        isIconHovering || isAttachmentMenuPresented
     }
     
     /// 发送回调
@@ -173,7 +172,10 @@ struct QuickAskCapsuleView: View {
                 openSettingsAction?()
             }
             .keyboardShortcut(",", modifiers: .command)
-            .hidden()
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
     }
     
@@ -243,45 +245,8 @@ struct QuickAskCapsuleView: View {
     
     /// 左下角附件菜单按钮（hover 或菜单打开时从应用图标 fade 变成加号）
     private var attachmentMenuButton: some View {
-        Menu {
-            // 从设备上传
-            Button {
-                attachmentManager.pickFiles { state.addAttachment($0) }
-            } label: {
-                Label("从设备上传", systemImage: "doc.badge.plus")
-            }
-            
-            Divider()
-            
-            // 导入文件夹
-            Button {
-                attachmentManager.pickFolder { state.addAttachment($0) }
-            } label: {
-                Label("导入文件夹 (转为文本)", systemImage: "folder.badge.plus")
-            }
-            
-            // 导入 ZIP
-            Button {
-                attachmentManager.pickZIP { state.addAttachment($0) }
-            } label: {
-                Label("导入 ZIP (转为文本)", systemImage: "doc.zipper")
-            }
-            
-            Divider()
-            
-            // 图库
-            Button {
-                attachmentManager.pickFromPhotos { state.addAttachment($0) }
-            } label: {
-                Label("图库", systemImage: "photo.on.rectangle")
-            }
-            
-            // 屏幕截图
-            Button {
-                attachmentManager.captureScreen { state.addAttachment($0) }
-            } label: {
-                Label("屏幕截图", systemImage: "camera.viewfinder")
-            }
+        Button {
+            showAttachmentMenu()
         } label: {
             ZStack {
                 // 默认：应用图标
@@ -302,22 +267,9 @@ struct QuickAskCapsuleView: View {
             .contentShape(Rectangle())
             .animation(.easeInOut(duration: 0.2), value: showPlusIcon)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .onHover { hovering in
             isIconHovering = hovering
-        }
-        .onTapGesture {
-            // 点击时设置菜单打开状态
-            isMenuOpen = true
-            // 延迟重置（菜单关闭后）
-            scheduleQuickAskCapsuleMain(after: 0.5) {
-                if !isIconHovering {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isMenuOpen = false
-                    }
-                }
-            }
         }
     }
     
@@ -355,6 +307,50 @@ struct QuickAskCapsuleView: View {
         withAnimation(.linear(duration: 0.05)) {
             self.levels = newLevels
         }
+    }
+
+    private func showAttachmentMenu() {
+        let menu = NSMenu()
+        let actionHandler = QuickAskAttachmentMenuActionHandler(
+            pickFiles: { attachmentManager.pickFiles { state.addAttachment($0) } },
+            pickFolder: { attachmentManager.pickFolder { state.addAttachment($0) } },
+            pickZIP: { attachmentManager.pickZIP { state.addAttachment($0) } },
+            pickFromPhotos: { attachmentManager.pickFromPhotos { state.addAttachment($0) } },
+            captureScreen: { attachmentManager.captureScreen { state.addAttachment($0) } }
+        )
+
+        menu.addItem(actionHandler.makeItem(
+            title: "从设备上传",
+            systemImage: "doc.badge.plus",
+            action: #selector(QuickAskAttachmentMenuActionHandler.pickFilesAction)
+        ))
+        menu.addItem(.separator())
+        menu.addItem(actionHandler.makeItem(
+            title: "导入文件夹 (转为文本)",
+            systemImage: "folder.badge.plus",
+            action: #selector(QuickAskAttachmentMenuActionHandler.pickFolderAction)
+        ))
+        menu.addItem(actionHandler.makeItem(
+            title: "导入 ZIP (转为文本)",
+            systemImage: "doc.zipper",
+            action: #selector(QuickAskAttachmentMenuActionHandler.pickZIPAction)
+        ))
+        menu.addItem(.separator())
+        menu.addItem(actionHandler.makeItem(
+            title: "图库",
+            systemImage: "photo.on.rectangle",
+            action: #selector(QuickAskAttachmentMenuActionHandler.pickFromPhotosAction)
+        ))
+        menu.addItem(actionHandler.makeItem(
+            title: "屏幕截图",
+            systemImage: "camera.viewfinder",
+            action: #selector(QuickAskAttachmentMenuActionHandler.captureScreenAction)
+        ))
+
+        let anchorPoint = NSEvent.mouseLocation
+        isAttachmentMenuPresented = true
+        menu.popUp(positioning: nil, at: anchorPoint, in: nil)
+        isAttachmentMenuPresented = false
     }
     
     // MARK: - Workflow Execution
@@ -394,6 +390,55 @@ struct QuickAskCapsuleView: View {
             state: state,
             dependencies: dependencies
         )
+    }
+}
+
+private final class QuickAskAttachmentMenuActionHandler: NSObject {
+    private let pickFiles: () -> Void
+    private let pickFolder: () -> Void
+    private let pickZIP: () -> Void
+    private let pickFromPhotos: () -> Void
+    private let captureScreen: () -> Void
+
+    init(
+        pickFiles: @escaping () -> Void,
+        pickFolder: @escaping () -> Void,
+        pickZIP: @escaping () -> Void,
+        pickFromPhotos: @escaping () -> Void,
+        captureScreen: @escaping () -> Void
+    ) {
+        self.pickFiles = pickFiles
+        self.pickFolder = pickFolder
+        self.pickZIP = pickZIP
+        self.pickFromPhotos = pickFromPhotos
+        self.captureScreen = captureScreen
+    }
+
+    func makeItem(title: String, systemImage: String, action: Selector) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil)
+        item.target = self
+        return item
+    }
+
+    @objc func pickFilesAction() {
+        pickFiles()
+    }
+
+    @objc func pickFolderAction() {
+        pickFolder()
+    }
+
+    @objc func pickZIPAction() {
+        pickZIP()
+    }
+
+    @objc func pickFromPhotosAction() {
+        pickFromPhotos()
+    }
+
+    @objc func captureScreenAction() {
+        captureScreen()
     }
 }
 

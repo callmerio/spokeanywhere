@@ -38,12 +38,25 @@ struct MessageCardView: View {
 }
 
 extension MessageCardView {
-    /// 是否需要折叠（内容超过阈值或有多个附件）
+    /// 估算文本行数，用于判断是否需要文本折叠
+    private var estimatedContentLines: Int {
+        let contentLength = max(card.content.count, 1)
+        return Int(ceil(Double(contentLength) / Double(charsPerLine)))
+    }
+
+    /// 多附件时允许卡片整体进入可展开态，但不应强制文本区域撑高
+    private var hasMultipleAttachments: Bool {
+        card.attachments.count > 1
+    }
+
+    /// 仅文本内容超过阈值时才触发文本高度限制与渐隐遮罩
+    private var needsTextCollapse: Bool {
+        estimatedContentLines > collapsedMaxLines
+    }
+
+    /// 是否需要折叠（文本过长或有多个附件）
     private var needsCollapse: Bool {
-        // 估算行数：总字符数 / 每行字符数
-        let estimatedLines = card.content.count / charsPerLine
-        let hasMultipleAttachments = card.attachments.count > 1
-        return estimatedLines > collapsedMaxLines || hasMultipleAttachments
+        needsTextCollapse || hasMultipleAttachments
     }
 
     var body: some View {
@@ -101,27 +114,6 @@ extension MessageCardView {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture {
-            // 点击卡片交互：
-            // - 有摘要：摘要 ↔ 展开原文（自动展开）
-            // - 无摘要：折叠 ↔ 展开
-            // - 其他：复制
-            if card.summary != nil && card.summaryStatus == .completed {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isShowingOriginal.toggle()
-                    // 切换到原文时自动展开，显示完整内容
-                    if isShowingOriginal {
-                        isExpanded = true
-                    }
-                }
-            } else if needsCollapse {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-            } else {
-                copyContent()
-            }
-        }
         .onHover { hovering in
             isHovered = hovering
             // 更新全局 hover 状态（用于键盘事件）
@@ -335,6 +327,21 @@ extension MessageCardView {
                         cardActionButton(icon: "arrow.clockwise", action: reprocess)
                     }
 
+                    // 摘要 / 原文切换按钮
+                    if card.summary != nil && card.summaryStatus == .completed {
+                        cardActionButton(
+                            icon: isShowingOriginal ? "text.quote" : "doc.text.magnifyingglass",
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isShowingOriginal.toggle()
+                                    if isShowingOriginal {
+                                        isExpanded = true
+                                    }
+                                }
+                            }
+                        )
+                    }
+
                     // 展开/折叠按钮（只在需要折叠时显示）
                     if needsCollapse {
                         cardActionButton(
@@ -342,6 +349,9 @@ extension MessageCardView {
                             action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }
                         )
                     }
+
+                    // 复制按钮
+                    cardActionButton(icon: "doc.on.doc", action: copyContent)
 
                     // 删除按钮
                     cardActionButton(icon: "xmark", action: { onDelete?() })
@@ -406,7 +416,7 @@ extension MessageCardView {
                 .frame(minHeight: 20, alignment: .topLeading)
                 // 折叠时固定高度，用 height 而非 maxHeight 确保 mask 对齐
                 .frame(
-                    height: needsCollapse && !isExpanded && !shouldShowSummary
+                    height: needsTextCollapse && !isExpanded && !shouldShowSummary
                         ? CGFloat(collapsedDisplayLines) * lineHeight
                         : nil,
                     alignment: .topLeading
@@ -414,7 +424,7 @@ extension MessageCardView {
                 .clipped()
                 // 折叠时底部渐隐效果：前2.5行完整显示，第3行后半渐变消失
                 .mask {
-                    if needsCollapse && !isExpanded && !shouldShowSummary {
+                    if needsTextCollapse && !isExpanded && !shouldShowSummary {
                         VStack(spacing: 0) {
                             // 前2行 + 第3行的1/2完整显示
                             Rectangle()
@@ -433,14 +443,16 @@ extension MessageCardView {
                 }
 
                 // 折叠状态下，透明覆盖层拦截点击（NSTextView 会吃掉点击事件）
-                if needsCollapse && !isExpanded && !shouldShowSummary {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isExpanded.toggle()
-                            }
+                if needsTextCollapse && !isExpanded && !shouldShowSummary {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded.toggle()
                         }
+                    } label: {
+                        Color.clear
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

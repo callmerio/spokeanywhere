@@ -11,13 +11,18 @@ struct DictionaryResultView: View {
     @State private var isAppearing = false
     
     var body: some View {
-        HStack(spacing: DS.Spacing.lg) {
-            if let data = data {
-                successContent(data)
-            } else if let error = error {
-                errorContent(error)
+        Button {
+            onDismiss()
+        } label: {
+            HStack(spacing: DS.Spacing.lg) {
+                if let data = data {
+                    successContent(data)
+                } else if let error = error {
+                    errorContent(error)
+                }
             }
         }
+        .buttonStyle(.plain)
         .padding(.horizontal, DS.Spacing.xl)
         .padding(.vertical, DS.Spacing.lg)
         .background(backgroundView)
@@ -28,9 +33,6 @@ struct DictionaryResultView: View {
         }
         .scaleEffect(isAppearing ? 1 : 0.9)
         .opacity(isAppearing ? 1 : 0)
-        .onTapGesture {
-            onDismiss()
-        }
     }
     
     // MARK: - Success Content
