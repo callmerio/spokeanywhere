@@ -11,24 +11,14 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     let content: Content
     @Binding var isAtBottom: Bool
     let scrollTrigger: Int  // 当此值变化时滚动到底部
-    let scrollAdjustment: AppKitScrollAdjustmentRequest?
-    let onUserScrollAway: (() -> Void)?
     
     /// 底部检测容差（增大以容忍布局计算误差）
     private let bottomThreshold: CGFloat = CaptionDesign.scrollBottomThreshold
     
-    init(
-        isAtBottom: Binding<Bool>,
-        scrollTrigger: Int,
-        scrollAdjustment: AppKitScrollAdjustmentRequest? = nil,
-        onUserScrollAway: (() -> Void)? = nil,
-        @ViewBuilder content: () -> Content
-    ) {
+    init(isAtBottom: Binding<Bool>, scrollTrigger: Int, @ViewBuilder content: () -> Content) {
         self.content = content()
         self._isAtBottom = isAtBottom
         self.scrollTrigger = scrollTrigger
-        self.scrollAdjustment = scrollAdjustment
-        self.onUserScrollAway = onUserScrollAway
     }
     
     func makeNSView(context: Context) -> NSScrollView {
@@ -124,20 +114,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         // 更新 coordinator 的引用
         context.coordinator.isAtBottomBinding = $isAtBottom
         context.coordinator.bottomThreshold = bottomThreshold
-        context.coordinator.onUserScrollAway = onUserScrollAway
-
-        if let scrollAdjustment,
-           scrollAdjustment.id != context.coordinator.lastScrollAdjustmentID {
-            context.coordinator.lastScrollAdjustmentID = scrollAdjustment.id
-            let coordinator = context.coordinator
-
-            runAppKitScrollOnMain { [weak scrollView, weak coordinator] in
-                guard let scrollView, let coordinator else { return }
-                coordinator.applyScrollAdjustment(scrollAdjustment, to: scrollView)
-            }
-            return
-        }
-
+        
         // 检查是否需要滚动到底部
         let shouldScroll = scrollTrigger != context.coordinator.lastScrollTrigger
         context.coordinator.lastScrollTrigger = scrollTrigger
@@ -157,6 +134,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         guard let documentView = scrollView.documentView else { return }
 
         // 标记程序正在滚动
+        coordinator.pendingCatchUpWorkItem?.cancel()
         coordinator.isScrollingProgrammatically = true
 
         // 🔥 强化布局更新：确保 SwiftUI 内容完全布局
@@ -171,19 +149,11 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         // 计算滚动目标
         let contentHeight = documentView.frame.height
         let clipHeight = scrollView.contentView.bounds.height
-        guard let metrics = appKitScrollTargetMetrics(
-            contentHeight: contentHeight,
-            clipHeight: clipHeight,
-            extraOffset: CaptionDesign.scrollExtraOffset
-        ) else {
-            scrollLogger.error("❌ scrollToBottom skipped invalid metrics contentHeight=\(contentHeight) clipHeight=\(clipHeight)")
-            coordinator.isScrollingProgrammatically = false
-            return
-        }
-        let maxScrollY = metrics.maxScrollY
-        let targetY = metrics.targetY
+        let maxScrollY = max(0, contentHeight - clipHeight)
+        let targetY = maxScrollY + CaptionDesign.scrollExtraOffset
 
         scrollLogger.debug("📜 scrollToBottom: contentHeight=\(contentHeight), clipHeight=\(clipHeight), maxScrollY=\(maxScrollY), targetY=\(targetY)")
+        coordinator.programmaticTargetY = targetY
 
         // 🔥 动画滚动：平滑过渡替代瞬时跳转
         NSAnimationContext.runAnimationGroup { context in
@@ -194,7 +164,7 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         }
 
         // 🔥 避免 Sendable closure 捕获泛型 Coordinator：使用 asyncAfter 替代 completion handler
-        scheduleAppKitScrollMain(after: 0.13) { [weak scrollView, weak coordinator] in
+        let workItem = DispatchWorkItem { [weak scrollView, weak coordinator] in
             guard let scrollView = scrollView, let coordinator = coordinator else { return }
 
             scrollView.reflectScrolledClipView(scrollView.contentView)
@@ -205,10 +175,11 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             // 🔥 追赶检查：动画完成后进行多次延迟检查，确保布局完全更新
             coordinator.performCatchUpScroll(scrollView: scrollView)
         }
+        coordinator.pendingCatchUpWorkItem = workItem
+        scheduleAppKitScrollWorkItem(after: 0.13, workItem)
     }
 
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
-        coordinator.stopPolling()
         removeAppKitScrollObserver(coordinator)
     }
     
@@ -222,14 +193,12 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
         var bottomThreshold: CGFloat
         weak var scrollView: NSScrollView?
         var lastScrollTrigger: Int = 0
-        var lastScrollAdjustmentID: Int = 0
-        var onUserScrollAway: (() -> Void)?
 
         /// 防止程序滚动触发循环
         var isScrollingProgrammatically: Bool = false
-        
-        /// 定时器轮询
-        private var scrollTimer: Timer?
+        var programmaticTargetY: CGFloat?
+        var pendingCatchUpWorkItem: DispatchWorkItem?
+        var pendingFrameChangeWorkItem: DispatchWorkItem?
         
         /// 上次触发防抖时间
         private var lastOverscrollTime: Date = .distantPast
@@ -244,67 +213,6 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             self.isAtBottomBinding = isAtBottom
             self.bottomThreshold = bottomThreshold
             super.init()
-            startPolling()
-        }
-        
-        func startPolling() {
-            scrollTimer = makeAppKitScrollTimer(interval: 2.0) { [weak self] in
-                self?.checkAndScrollToBottom()
-            }
-        }
-        
-        func stopPolling() {
-            scrollTimer?.invalidate()
-            scrollTimer = nil
-        }
-
-        func applyScrollAdjustment(
-            _ request: AppKitScrollAdjustmentRequest,
-            to scrollView: NSScrollView
-        ) {
-            guard !isScrollingProgrammatically else { return }
-            guard let documentView = scrollView.documentView else { return }
-
-            isScrollingProgrammatically = true
-
-            if let hostingView = documentView.subviews.first {
-                hostingView.needsLayout = true
-                hostingView.layoutSubtreeIfNeeded()
-            }
-            documentView.needsLayout = true
-            documentView.layoutSubtreeIfNeeded()
-
-            let contentHeight = documentView.frame.height
-            let clipHeight = scrollView.contentView.bounds.height
-            let currentY = scrollView.contentView.bounds.origin.y
-            guard let metrics = appKitScrollTargetMetrics(
-                contentHeight: contentHeight,
-                clipHeight: clipHeight,
-                extraOffset: CaptionDesign.scrollExtraOffset
-            ) else {
-                isScrollingProgrammatically = false
-                return
-            }
-
-            let targetY = appKitScrollResolvedOrigin(
-                currentY: currentY,
-                deltaY: request.deltaY,
-                maxScrollY: metrics.maxScrollY,
-                extraOffset: CaptionDesign.scrollExtraOffset
-            )
-
-            scrollView.contentView.scroll(to: NSPoint(x: 0, y: targetY))
-            scrollView.reflectScrolledClipView(scrollView.contentView)
-            lastScrollY = targetY
-            lastMaxScrollY = metrics.maxScrollY
-            let atBottom = targetY >= metrics.maxScrollY - bottomThreshold
-            if isAtBottomBinding.wrappedValue != atBottom {
-                isAtBottomBinding.wrappedValue = atBottom
-            }
-
-            scheduleAppKitScrollMain(after: 0.02) {
-                self.isScrollingProgrammatically = false
-            }
         }
         
         private func checkAndScrollToBottom() {
@@ -321,85 +229,82 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let contentHeight = documentView.frame.height
             let clipHeight = scrollView.contentView.bounds.height
             let currentY = scrollView.contentView.bounds.origin.y
-            guard let metrics = appKitScrollTargetMetrics(
-                contentHeight: contentHeight,
-                clipHeight: clipHeight,
-                extraOffset: CaptionDesign.scrollExtraOffset
-            ) else {
-                scrollLogger.error("❌ checkAndScrollToBottom skipped invalid metrics contentHeight=\(contentHeight) clipHeight=\(clipHeight)")
-                return
-            }
-            let maxScrollY = metrics.maxScrollY
+            let maxScrollY = max(0, contentHeight - clipHeight)
             
             let gap = maxScrollY - currentY
-            if appKitScrollNeedsCatchUp(
+            guard appKitScrollShouldCatchUp(
                 gap: gap,
                 threshold: CaptionDesign.scrollCatchUpThreshold
-            ) {
-                isScrollingProgrammatically = true
-                scrollView.contentView.scroll(to: NSPoint(x: 0, y: metrics.targetY))
-                scrollView.reflectScrolledClipView(scrollView.contentView)
-                runAppKitScrollOnMain {
-                    self.isScrollingProgrammatically = false
-                }
+            ) else { return }
+
+            isScrollingProgrammatically = true
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+            runAppKitScrollOnMain {
+                self.isScrollingProgrammatically = false
             }
         }
         
         @objc func scrollViewDidScroll(_ notification: Notification) {
-            guard !isScrollingProgrammatically else { return }
             guard let scrollView = scrollView,
                   let documentView = scrollView.documentView else { return }
             
             let contentHeight = documentView.frame.height
             let clipHeight = scrollView.contentView.bounds.height
             let scrollY = scrollView.contentView.bounds.origin.y
-            guard let metrics = appKitScrollTargetMetrics(
-                contentHeight: contentHeight,
-                clipHeight: clipHeight,
-                extraOffset: CaptionDesign.scrollExtraOffset
-            ) else {
-                scrollLogger.error("❌ scrollViewDidScroll skipped invalid metrics contentHeight=\(contentHeight) clipHeight=\(clipHeight) scrollY=\(scrollY)")
+            let maxScrollY = max(0, contentHeight - clipHeight)
+            let userInterruptedProgrammaticScroll = isScrollingProgrammatically && scrollY < lastScrollY - 3
+
+            if userInterruptedProgrammaticScroll {
+                pendingCatchUpWorkItem?.cancel()
+                pendingCatchUpWorkItem = nil
+                programmaticTargetY = nil
+                isScrollingProgrammatically = false
+                lastScrollY = scrollY
+                lastMaxScrollY = maxScrollY
+
+                runAppKitScrollOnMain {
+                    if self.isAtBottomBinding.wrappedValue {
+                        self.isAtBottomBinding.wrappedValue = false
+                    }
+                }
                 return
             }
-            let maxScrollY = metrics.maxScrollY
+
+            if isScrollingProgrammatically {
+                lastScrollY = scrollY
+                lastMaxScrollY = maxScrollY
+                return
+            }
             
             let atBottom = scrollY >= maxScrollY - bottomThreshold
             let previouslyAtBottom = isAtBottomBinding.wrappedValue
             
             // 🔥 关键修复：区分「用户向上滚动」vs「内容增加导致脱离底部」
-            if previouslyAtBottom && !atBottom {
-                // 之前在底部，现在不在了
-                // 💡 新策略：通过 maxScrollY 是否增加来判断是否有新内容
-                let contentGrew = appKitScrollContentGrew(
-                    maxScrollY: maxScrollY,
-                    lastMaxScrollY: lastMaxScrollY
-                )
-                let userScrolledAway = appKitScrollUserScrolledAwayFromBottom(
-                    currentY: scrollY,
-                    lastScrollY: lastScrollY
-                )
-                if contentGrew && !userScrolledAway {
-                    // 内容增加且用户没主动滚动 → 追赶滚动
-                    scrollLogger.debug("📐 Content grew, triggering catch-up scroll (maxScrollY: \(self.lastMaxScrollY) -> \(maxScrollY))")
-                    lastScrollY = scrollY
-                    lastMaxScrollY = maxScrollY
-                    runAppKitScrollOnMain { [weak self] in
-                        self?.forceScrollToBottom()
-                    }
-                    return
+            if appKitScrollShouldTreatAsContentGrowth(
+                previouslyAtBottom: previouslyAtBottom,
+                atBottom: atBottom,
+                scrollY: scrollY,
+                lastScrollY: lastScrollY,
+                maxScrollY: maxScrollY,
+                lastMaxScrollY: lastMaxScrollY
+            ) {
+                // 内容增加且用户没主动滚动 → 追赶滚动
+                scrollLogger.debug("📐 Content grew, triggering catch-up scroll (maxScrollY: \(self.lastMaxScrollY) -> \(maxScrollY))")
+                lastScrollY = scrollY
+                lastMaxScrollY = maxScrollY
+                runAppKitScrollOnMain { [weak self] in
+                    self?.forceScrollToBottom()
                 }
-
-                if userScrolledAway {
-                    onUserScrollAway?()
-                }
-
+                return
+            } else if previouslyAtBottom && !atBottom {
                 // 否则是用户主动滚动，让 isAtBottom 正常更新为 false
                 scrollLogger.debug("👆 User scrolled up, stopping auto-scroll")
             }
             
             lastScrollY = scrollY
             lastMaxScrollY = maxScrollY
-
+            
             runAppKitScrollOnMain {
                 if self.isAtBottomBinding.wrappedValue != atBottom {
                     self.isAtBottomBinding.wrappedValue = atBottom
@@ -408,7 +313,10 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             
             // 🎯 Overscroll (Pull-up) 检测
             // 阈值调低至 15pt，增加灵敏度
-            if scrollY > maxScrollY + 15 {
+            if appKitScrollShouldHandleOverscroll(
+                scrollY: scrollY,
+                maxScrollY: maxScrollY
+            ) {
                 let now = Date()
                 if now.timeIntervalSince(lastOverscrollTime) > 1.0 { // 1秒冷却
                     lastOverscrollTime = now
@@ -444,22 +352,14 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
 
             let contentHeight = documentView.frame.height
             let clipHeight = scrollView.contentView.bounds.height
-            guard let metrics = appKitScrollTargetMetrics(
-                contentHeight: contentHeight,
-                clipHeight: clipHeight,
-                extraOffset: CaptionDesign.scrollExtraOffset
-            ) else {
-                scrollLogger.error("❌ forceScrollToBottom skipped invalid metrics contentHeight=\(contentHeight) clipHeight=\(clipHeight)")
-                isScrollingProgrammatically = false
-                return
-            }
-            let maxScrollY = metrics.maxScrollY
+            let maxScrollY = max(0, contentHeight - clipHeight)
 
             scrollLogger.debug("📜 forceScrollToBottom: contentHeight=\(contentHeight), maxScrollY=\(maxScrollY)")
+            programmaticTargetY = maxScrollY + CaptionDesign.scrollExtraOffset
 
-            scrollView.contentView.scroll(to: NSPoint(x: 0, y: metrics.targetY))
+            scrollView.contentView.scroll(to: NSPoint(x: 0, y: maxScrollY + CaptionDesign.scrollExtraOffset))
             scrollView.reflectScrolledClipView(scrollView.contentView)
-            lastScrollY = metrics.targetY
+            lastScrollY = maxScrollY + CaptionDesign.scrollExtraOffset
             lastMaxScrollY = maxScrollY
 
             // 🔥 使用追赶检查确保滚动到位
@@ -477,13 +377,16 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
             let remainingAttempts = attempts ?? defaultCatchUpAttempts
             guard remainingAttempts > 0 else {
                 isScrollingProgrammatically = false
+                programmaticTargetY = nil
                 return
             }
 
-            scheduleAppKitScrollMain(after: catchUpInterval) { [weak self, weak scrollView] in
+            pendingCatchUpWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self, weak scrollView] in
                 guard let self = self, let scrollView = scrollView else { return }
                 guard let documentView = scrollView.documentView else {
                     self.isScrollingProgrammatically = false
+                    self.programmaticTargetY = nil
                     return
                 }
 
@@ -498,54 +401,52 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
                 let newContentHeight = documentView.frame.height
                 // 🔥 修复：重新计算 clipHeight 而不是使用传入参数（可能已过时）
                 let clipHeight = scrollView.contentView.bounds.height
+                let newMaxScrollY = max(0, newContentHeight - clipHeight)
                 let currentY = scrollView.contentView.bounds.origin.y
-                guard let metrics = appKitScrollTargetMetrics(
-                    contentHeight: newContentHeight,
-                    clipHeight: clipHeight,
-                    extraOffset: CaptionDesign.scrollExtraOffset
-                ) else {
-                    scrollLogger.error("❌ catchUp skipped invalid metrics contentHeight=\(newContentHeight) clipHeight=\(clipHeight) currentY=\(currentY)")
-                    self.isScrollingProgrammatically = false
-                    return
-                }
-                let newMaxScrollY = metrics.maxScrollY
 
-                scrollLogger.debug("📜 catchUp[\(self.defaultCatchUpAttempts - remainingAttempts + 1)]: contentHeight=\(newContentHeight), maxScrollY=\(newMaxScrollY), currentY=\(currentY)")
+                    scrollLogger.debug("📜 catchUp[\(self.defaultCatchUpAttempts - remainingAttempts + 1)]: contentHeight=\(newContentHeight), maxScrollY=\(newMaxScrollY), currentY=\(currentY)")
 
                 // 如果内容高度增加了，追赶滚动
-                if appKitScrollNeedsCatchUp(
+                if appKitScrollShouldCatchUp(
                     gap: newMaxScrollY - currentY,
                     threshold: CaptionDesign.scrollCatchUpThreshold
                 ) {
-                    scrollView.contentView.scroll(to: NSPoint(x: 0, y: metrics.targetY))
+                    scrollView.contentView.scroll(to: NSPoint(x: 0, y: newMaxScrollY + CaptionDesign.scrollExtraOffset))
                     scrollView.reflectScrolledClipView(scrollView.contentView)
-                    self.lastScrollY = metrics.targetY
+                    self.lastScrollY = newMaxScrollY + CaptionDesign.scrollExtraOffset
                     self.lastMaxScrollY = newMaxScrollY
+                    self.programmaticTargetY = newMaxScrollY + CaptionDesign.scrollExtraOffset
                     // 继续下一次检查（确保 scrollView 仍在窗口中）
                     guard scrollView.window != nil else {
                         self.isScrollingProgrammatically = false
+                        self.programmaticTargetY = nil
                         return
                     }
                     self.performCatchUpScroll(scrollView: scrollView, attempts: remainingAttempts - 1)
                 } else {
                     // 已到底部，完成
                     self.isScrollingProgrammatically = false
+                    self.programmaticTargetY = nil
+                    self.pendingCatchUpWorkItem = nil
                 }
             }
+            pendingCatchUpWorkItem = workItem
+            scheduleAppKitScrollWorkItem(after: catchUpInterval, workItem)
         }
 
         /// 方案 A 的 frame 观察仍保留作为补充
-        /// 🔥 添加 50ms 防抖，防止频繁触发
-        private var lastFrameChangeTime: Date = .distantPast
         @objc func documentViewFrameChanged(_ notification: Notification) {
-            let now = Date()
-            guard now.timeIntervalSince(lastFrameChangeTime) > 0.05 else { return }
-            lastFrameChangeTime = now
-            checkAndScrollToBottom()
+            pendingFrameChangeWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.checkAndScrollToBottom()
+            }
+            pendingFrameChangeWorkItem = workItem
+            scheduleAppKitScrollWorkItem(after: 0.05, workItem)
         }
         
         deinit {
-            // 🔥 不在 deinit 创建逃逸闭包：清理逻辑已在 dismantleNSView 完成
+            pendingCatchUpWorkItem?.cancel()
+            pendingFrameChangeWorkItem?.cancel()
         }
     }
     

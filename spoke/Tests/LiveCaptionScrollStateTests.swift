@@ -12,8 +12,6 @@ struct LiveCaptionScrollStateTests {
         #expect(state.isAtBottom)
         #expect(state.scrollTrigger == 0)
         #expect(state.appearedItemIDs.isEmpty)
-        #expect(state.isCollapsedFocusPinned)
-        #expect(state.collapsedScrollRequest == nil)
     }
 
     @Test("滚动状态可独立跟踪触发器和已出现项")

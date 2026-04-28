@@ -1,27 +1,5 @@
 import Foundation
 
-struct LiveCaptionScrollSyncKey: Equatable {
-    let lastItemID: UUID?
-    let pendingText: String
-    let pendingTranslation: String
-    let translationRevision: Int
-}
-
-@MainActor
-func makeLiveCaptionScrollSyncKey(
-    lastItemID: UUID?,
-    pendingText: String,
-    pendingTranslation: String,
-    translationRevision: Int
-) -> LiveCaptionScrollSyncKey {
-    LiveCaptionScrollSyncKey(
-        lastItemID: lastItemID,
-        pendingText: pendingText,
-        pendingTranslation: pendingTranslation,
-        translationRevision: translationRevision
-    )
-}
-
 func runLiveCaptionLocaleChange(
     manager: LiveCaptionManager,
     languageId: String
@@ -37,15 +15,6 @@ func liveCaptionShouldAutoScroll(
     isUserSelecting: Bool
 ) -> Bool {
     isAtBottom && !isUserSelecting
-}
-
-@MainActor
-func liveCaptionShouldAutoScrollCollapsed(
-    isAtBottom: Bool,
-    isFocusPinned: Bool,
-    isUserSelecting: Bool
-) -> Bool {
-    (isAtBottom || isFocusPinned) && !isUserSelecting
 }
 
 @MainActor
@@ -68,12 +37,6 @@ func liveCaptionScheduleMain(
     _ operation: @escaping @MainActor () -> Void
 ) {
     runtimeRunOnMain(after: seconds, operation)
-}
-
-func liveCaptionCollapsedVisibleItems<T>(
-    from items: [T]
-) -> [T] {
-    Array(items.suffix(3))
 }
 
 @MainActor
@@ -102,6 +65,39 @@ func liveCaptionResetCopiedIndicator(
     _ reset: @escaping @MainActor () -> Void
 ) {
     liveCaptionScheduleMain(after: 1.5, reset)
+}
+
+func appKitScrollShouldTreatAsContentGrowth(
+    previouslyAtBottom: Bool,
+    atBottom: Bool,
+    scrollY: CGFloat,
+    lastScrollY: CGFloat,
+    maxScrollY: CGFloat,
+    lastMaxScrollY: CGFloat,
+    contentGrowthTolerance: CGFloat = 5,
+    userScrollTolerance: CGFloat = 3
+) -> Bool {
+    guard previouslyAtBottom, !atBottom else { return false }
+
+    let contentGrew = maxScrollY > lastMaxScrollY + contentGrowthTolerance
+    let userScrolledAway = scrollY < lastScrollY - userScrollTolerance
+    return contentGrew && !userScrolledAway
+}
+
+func appKitScrollShouldCatchUp(
+    gap: CGFloat,
+    threshold: CGFloat,
+    maxAllowedGap: CGFloat = 500
+) -> Bool {
+    gap > threshold && gap <= maxAllowedGap
+}
+
+func appKitScrollShouldHandleOverscroll(
+    scrollY: CGFloat,
+    maxScrollY: CGFloat,
+    overscrollThreshold: CGFloat = 15
+) -> Bool {
+    scrollY > maxScrollY + overscrollThreshold
 }
 
 @MainActor
