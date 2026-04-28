@@ -45,6 +45,10 @@ spoke/.tmp_cache/
 
 # Backup files
 *.backup.*
+*.bak-*
+
+# Local drafts
+.draft.md
 
 # Misc docs
 *.tldr
