@@ -177,6 +177,29 @@ struct LiveCaptionView: View {
             set: { scrollState.isAtBottom = $0 }
         )
         let collapsedItems = liveCaptionCollapsedVisibleItems(from: lineBuffer.items)
+        let collapsedTargetKind: LiveCaptionCollapsedFocusTargetKind =
+            lineBuffer.pendingLineActive ? .pendingTranslation : .finalizedTranslation
+        let collapsedTargetText =
+            lineBuffer.pendingLineActive
+            ? lineBuffer.pendingTranslation
+            : (collapsedItems.last?.translation ?? "")
+        let collapsedTextWidth = CaptionDesign.maxWidth - (CaptionDesign.padding * 2) - 18
+        let collapsedDynamicBottomPadding = liveCaptionCollapsedDynamicBottomPadding(
+            viewportHeight: CaptionDesign.collapsedContentHeight * 2.8,
+            targetKind: collapsedTargetKind,
+            targetText: collapsedTargetText,
+            pendingLineActive: lineBuffer.pendingLineActive,
+            pendingOriginalText: lineBuffer.displayPendingText,
+            pendingTranslationText: lineBuffer.pendingTranslation,
+            textWidth: collapsedTextWidth,
+            originalFontSize: CaptionDesign.fontSize,
+            translationFontSize: CaptionDesign.translatedFontSize,
+            originalLineSpacing: 4,
+            translationLineSpacing: 3,
+            interTextSpacing: 4,
+            itemSpacing: 16,
+            baseBottomPadding: CaptionDesign.contentBottomPadding
+        )
         let isEmpty = lineBuffer.items.isEmpty && lineBuffer.pendingText.isEmpty
         
         return Group {
@@ -191,7 +214,6 @@ struct LiveCaptionView: View {
                 AppKitScrollView(
                     isAtBottom: isAtBottomBinding,
                     scrollTrigger: scrollState.scrollTrigger,
-                    scrollAdjustment: scrollState.collapsedScrollRequest,
                     onUserScrollAway: {
                         if scrollState.isCollapsedFocusPinned {
                             scrollState.isCollapsedFocusPinned = false
@@ -206,8 +228,7 @@ struct LiveCaptionView: View {
                                 item: item,
                                 isNew: isNew,
                                 translationFontSize: CaptionDesign.translatedFontSize,
-                                translationColor: CaptionDesign.textSecondary,
-                                translationProbeSlot: item.id == collapsedItems.last?.id ? .finalizedCollapsed : nil
+                                translationColor: CaptionDesign.textSecondary
                             ) {
                                 captionText(for: item.original, opacity: isNew ? 0.7 : 1.0)
                             }
@@ -258,59 +279,21 @@ struct LiveCaptionView: View {
                                     .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeOut(duration: 0.2), value: pendingTranslation)
-                                    .liveCaptionProbeFrame(
-                                        slot: .pendingCollapsed,
-                                        textLength: pendingTranslation.count
-                                    )
                             }
                             .transition(.opacity)  // 🔥 纯 fade in/out
                         }
                         
                         // 底部占位
-                        Color.clear.frame(height: CaptionDesign.contentBottomPadding)
+                        Color.clear.frame(
+                            height: CaptionDesign.contentBottomPadding +
+                                collapsedDynamicBottomPadding
+                        )
                     }
                     .id("collapsed-content-\(lineBuffer.translationRevision)")
                     .padding(CaptionDesign.padding)
                     .textSelection(.enabled)  // 允许选中文字
                 }
                 .frame(height: CaptionDesign.collapsedContentHeight * 2.8)
-                .liveCaptionProbeFrame(slot: .viewportCollapsed)
-                .onPreferenceChange(LiveCaptionProbePreferenceKey.self) { snapshots in
-                    liveCaptionLogBottomProbe(
-                        mode: "collapsed",
-                        snapshots: snapshots,
-                        isAtBottom: scrollState.isAtBottom,
-                        isUserSelecting: interactionState.isUserSelecting,
-                        scrollTrigger: scrollState.scrollTrigger
-                    )
-
-                    let target = liveCaptionCollapsedPreferredTarget(
-                        viewport: snapshots[.viewportCollapsed],
-                        pending: snapshots[.pendingCollapsed],
-                        finalized: snapshots[.finalizedCollapsed]
-                    )
-
-                    guard let target else { return }
-                    guard liveCaptionShouldAutoScrollCollapsed(
-                        isAtBottom: scrollState.isAtBottom,
-                        isFocusPinned: scrollState.isCollapsedFocusPinned,
-                        isUserSelecting: interactionState.isUserSelecting
-                    ) else {
-                        return
-                    }
-
-                    let delta = liveCaptionCollapsedScrollDelta(
-                        viewportFrame: target.viewportFrame,
-                        targetFrame: target.targetFrame
-                    )
-
-                    guard abs(delta) > 1 else { return }
-                    let nextID = (scrollState.collapsedScrollRequest?.id ?? 0) + 1
-                    scrollState.collapsedScrollRequest = AppKitScrollAdjustmentRequest(
-                        id: nextID,
-                        deltaY: delta
-                    )
-                }
                 .onChange(of: scrollState.scrollTrigger) { _, _ in
                     // 通过改变 scrollTrigger 触发 NSScrollView 的更新
                 }

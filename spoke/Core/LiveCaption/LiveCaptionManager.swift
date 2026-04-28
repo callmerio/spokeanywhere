@@ -194,6 +194,45 @@ final class LiveCaptionManager: ObservableObject {
     static func makeTesting(dependencies: LiveCaptionManagerDependencies? = nil) -> LiveCaptionManager {
         LiveCaptionManager(dependencies: dependencies ?? .preview)
     }
+
+#if DEBUG
+    func debugRunLongTranslationMockStream() {
+        translationTask?.cancel()
+        translationTask = nil
+        volatileTranslationTask?.cancel()
+        volatileTranslationTask = nil
+
+        lineBuffer.clear()
+        pendingText = ""
+        lastFinalizedLength = 0
+        currentAppName = "Debug Mock Stream"
+        translationEnabled = true
+        showOriginal = true
+
+        let frames = makeLiveCaptionLongTranslationMockFrames()
+        runLiveCaptionManagerAsync(self) { manager in
+            for frame in frames {
+                switch frame.kind {
+                case .pending:
+                    manager.pendingText = frame.original
+                    manager.lineBuffer.updateVolatile(text: frame.original)
+                    manager.lineBuffer.updatePendingTranslation(
+                        frame.translation,
+                        version: manager.lineBuffer.currentVolatileVersion
+                    )
+                case .finalized:
+                    manager.pendingText = ""
+                    guard let itemID = manager.lineBuffer.addFinalized(text: frame.original) else { continue }
+                    manager.lineBuffer.clearPending()
+                    manager.lineBuffer.updateTranslation(id: itemID, translation: frame.translation)
+                    manager.dependencies.postTranslationUpdate()
+                }
+
+                try? await Task.sleep(for: .milliseconds(220))
+            }
+        }
+    }
+#endif
     
     // MARK: - Public API
     
@@ -690,12 +729,12 @@ final class LiveCaptionManager: ObservableObject {
             if !newText.isEmpty {
                 // 🔥 先取消翻译任务，防止竞态
                 volatileTranslationTask?.cancel()
-                
+
                 // 🔥 先添加到 Buffer（继承 pendingTranslation），再清空流式状态
                 // 顺序很重要：addFinalized 需要读取 pendingTranslation 来继承翻译
                 guard let itemId = lineBuffer.addFinalized(text: newText) else { return }
                 lineBuffer.clearPending()
-                
+
                 // 触发翻译并更新 Buffer + 历史记录
                 runLiveCaptionManagerAsync(self) { manager in
                     let translation = await manager.translateAndUpdateBuffer(itemId: itemId, text: newText)
@@ -753,7 +792,7 @@ final class LiveCaptionManager: ObservableObject {
             // 清空流式状态
             lineBuffer.clearPending()
             volatileTranslationTask?.cancel()
-            
+
             // 添加到 Buffer
             guard let itemId = lineBuffer.addFinalized(text: segment.text) else { return }
             // 触发翻译

@@ -32,4 +32,18 @@ struct CaptionLineBufferTests {
         #expect(buffer.pendingTranslation.isEmpty)
         #expect(buffer.displayPendingText.isEmpty)
     }
+
+    @Test("updateTranslation 会递增 translationRevision")
+    func updateTranslationAdvancesRevision() throws {
+        let buffer = CaptionLineBuffer()
+        let id = buffer.addFinalized(text: "final text")
+
+        let initialRevision = buffer.translationRevision
+        let itemID = try #require(id)
+
+        buffer.updateTranslation(id: itemID, translation: "最终译文")
+
+        #expect(buffer.translationRevision == initialRevision + 1)
+        #expect(buffer.items.first?.translation == "最终译文")
+    }
 }

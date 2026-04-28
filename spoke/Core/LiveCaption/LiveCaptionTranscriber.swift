@@ -144,6 +144,11 @@ final class LiveCaptionTranscriber: ObservableObject {
         let isFinal = result.isFinal
         
         guard !text.isEmpty else { return }
+
+        let preview = String(text.prefix(120))
+        logger.debug(
+            "🎙️ Recognition update final=\(isFinal, privacy: .public) chars=\(text.count, privacy: .public) preview=\(preview, privacy: .public)"
+        )
         
         let segment = TranscriptionSegment(
             text: text,

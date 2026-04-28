@@ -25,6 +25,7 @@ final class LiveCaptionWindowManager {
     private var window: LiveCaptionPanel?
     private let logger = Logger(subsystem: "com.spokeanywhere", category: "LiveCaptionWindow")
     private let manager: LiveCaptionManager
+    private var isDebugPreviewMode = false
     
     /// 窗口是否可见
     var isVisible: Bool { window?.isVisible ?? false }
@@ -42,10 +43,21 @@ final class LiveCaptionWindowManager {
     
     /// 显示字幕窗口
     func show() {
+#if DEBUG
+        if AppDebugLaunchContext.liveCaptionMockScenarioActive || liveCaptionHasMockScenario() {
+            setDebugPreviewMode(true)
+        }
+#endif
         createWindowIfNeeded()
         
-        window?.orderFront(nil)
-        
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        guard !isDebugPreviewMode else {
+            logger.info("🧪 Live Caption show skipped manager.start() in debug preview mode")
+            return
+        }
+
         // 启动字幕
         runLiveCaptionWindowAsync(self) { windowManager in
             try? await windowManager.manager.start()
@@ -132,6 +144,23 @@ final class LiveCaptionWindowManager {
     }
 
 }
+
+#if DEBUG
+extension LiveCaptionWindowManager {
+    func setDebugPreviewMode(_ enabled: Bool) {
+        isDebugPreviewMode = enabled
+        logger.info("🧪 Live Caption debug preview mode = \(enabled, privacy: .public)")
+    }
+
+    func showDebugPreview() {
+        setDebugPreviewMode(true)
+        createWindowIfNeeded()
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        logger.info("🧪 Live Caption debug preview shown")
+    }
+}
+#endif
 
 // MARK: - Live Caption Panel
 

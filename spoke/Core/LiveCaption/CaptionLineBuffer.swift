@@ -52,6 +52,9 @@ final class CaptionLineBuffer: ObservableObject {
     
     /// 流式文本的实时翻译
     @Published private(set) var pendingTranslation: String = ""
+
+    /// 已确定字幕项的译文更新版本，用于驱动根视图级滚动同步
+    @Published private(set) var translationRevision: Int = 0
     
     /// 🔥 备份最后一次非空的 pendingText，用于防止瞬间变空时UI闪烁
     private var lastNonEmptyPendingText: String = ""
@@ -171,6 +174,9 @@ final class CaptionLineBuffer: ObservableObject {
         // 直接更新 class 属性，触发其 @Published 通知
         // 由于 items 数组引用不变，ForEach 不会重新布局
         item.translation = translation
+        // 译文高度变化需要父级重新测量滚动内容，否则 NSHostingView 可能保留旧内容高度
+        items = Array(items)
+        translationRevision += 1
     }
     
     /// 清空所有内容
@@ -178,6 +184,7 @@ final class CaptionLineBuffer: ObservableObject {
         items.removeAll()
         pendingText = ""
         pendingTranslation = ""
+        translationRevision = 0
         pendingLineActive = false
         volatileVersion += 1
         logger.info("🧹 CaptionLineBuffer cleared")

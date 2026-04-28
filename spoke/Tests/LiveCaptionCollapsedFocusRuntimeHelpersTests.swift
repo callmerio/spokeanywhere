@@ -68,5 +68,70 @@ struct LiveCaptionCollapsedFocusRuntimeHelpersTests {
         #expect(delta == 5)
         #expect(target.minY - delta >= viewport.minY)
     }
+
+    @Test("当焦点块底部仍被裁掉时会按缺口补动态尾部余量")
+    func clippedTargetNeedsAdditionalBottomPadding() {
+        let viewport = CGRect(x: 0, y: 0, width: 300, height: 280)
+        let target = CGRect(x: 0, y: 315, width: 280, height: 107)
+
+        #expect(
+            liveCaptionCollapsedAdditionalBottomPadding(
+                viewportFrame: viewport,
+                targetFrame: target
+            ) == 178
+        )
+    }
+
+    @Test("已经满足可见带要求时不再增加动态尾部余量")
+    func visibleTargetNeedsNoAdditionalBottomPadding() {
+        let viewport = CGRect(x: 0, y: 0, width: 300, height: 280)
+        let target = CGRect(x: 0, y: 61, width: 280, height: 107)
+
+        #expect(
+            liveCaptionCollapsedAdditionalBottomPadding(
+                viewportFrame: viewport,
+                targetFrame: target
+            ) == 0
+        )
+    }
+
+    @Test("接近底部可见带阈值时不会因 1 到 2pt 缺口持续抖动追赶")
+    func nearSatisfiedBottomGapNeedsNoFurtherPadding() {
+        let viewport = CGRect(x: 0, y: 0, width: 300, height: 280)
+        let target = CGRect(x: 0, y: 135, width: 280, height: 107) // bottom gap = 38
+
+        #expect(
+            liveCaptionCollapsedAdditionalBottomPadding(
+                viewportFrame: viewport,
+                targetFrame: target
+            ) == 0
+        )
+    }
+
+    @Test("接近底部可见带阈值时不再为最后 1 到 2pt 持续发滚动请求")
+    func nearSatisfiedBottomGapNeedsNoFurtherScroll() {
+        let viewport = CGRect(x: 0, y: 0, width: 300, height: 280)
+        let target = CGRect(x: 0, y: 135, width: 280, height: 107) // bottom gap = 38
+
+        #expect(
+            liveCaptionCollapsedScrollDelta(
+                viewportFrame: viewport,
+                targetFrame: target
+            ) == 0
+        )
+    }
+
+    @Test("超高焦点块只补足露出结尾所需的动态尾部余量")
+    func oversizedTargetAlignsBottomWithoutExtraInsetPadding() {
+        let viewport = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let target = CGRect(x: 0, y: 140, width: 280, height: 260)
+
+        #expect(
+            liveCaptionCollapsedAdditionalBottomPadding(
+                viewportFrame: viewport,
+                targetFrame: target
+            ) == 200
+        )
+    }
 }
 #endif
