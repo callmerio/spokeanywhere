@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 @MainActor
 struct CardAttachmentViewDependencies {
     let imageCache: AttachmentImageCache
@@ -279,32 +281,34 @@ struct CardAttachmentThumbnail: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             // 缩略图
-            Group {
-                if let thumbnail = thumbnail {
-                    Image(nsImage: thumbnail)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: displaySize.width, height: displaySize.height)
-                        .clipped()
-                } else {
-                    // 占位
-                    Rectangle()
-                        .fill(DesignTokens.Colors.cardBackground)
-                        .frame(width: displaySize.width, height: displaySize.height)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(0.6)
-                        )
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(DesignTokens.Colors.borderPrimary, lineWidth: DesignTokens.BorderWidth.thin)
-            )
-            .onTapGesture {
+            Button {
                 showFullImage = true
+            } label: {
+                Group {
+                    if let thumbnail = thumbnail {
+                        Image(nsImage: thumbnail)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: displaySize.width, height: displaySize.height)
+                            .clipped()
+                    } else {
+                        // 占位
+                        Rectangle()
+                            .fill(DS.Colors.cardBackground)
+                            .frame(width: displaySize.width, height: displaySize.height)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            )
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.md, style: .continuous)
+                        .stroke(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.thin)
+                )
             }
+            .buttonStyle(.plain)
             
             // 删除按钮（hover 时显示）
             if showDeleteButton && isHovered {

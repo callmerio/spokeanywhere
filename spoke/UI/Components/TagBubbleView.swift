@@ -112,80 +112,85 @@ struct TagBubbleView: View {
     // MARK: - Bubble View
     
     private var bubbleView: some View {
-        Text(tag.name)
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(tag.color.color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule()
-                    .fill(tag.color.color.opacity(isFilterActive ? 0.4 : (isHovered ? 0.25 : 0.15)))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(tag.color.color.opacity(isFilterActive ? 0.6 : 0.3), lineWidth: isFilterActive ? 1.5 : 1)
-            )
-            .scaleEffect(isFilterActive ? 1.05 : 1.0)
-            .contentShape(Capsule())
-            .onTapGesture {
-                onFilterToggle?()
+        Button {
+            onFilterToggle?()
+        } label: {
+            Text(tag.name)
+                .font(DS.Typography.captionSmall)
+                .foregroundColor(tag.color.color)
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.vertical, DS.Spacing.xs)
+                .background(
+                    Capsule()
+                        .fill(tag.color.color.opacity(isFilterActive ? 0.4 : (isHovered ? 0.25 : 0.15)))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            tag.color.color.opacity(isFilterActive ? 0.6 : 0.3),
+                            lineWidth: isFilterActive ? (DS.BorderWidth.thin + DS.BorderWidth.hairline) : DS.BorderWidth.thin
+                        )
+                )
+                .scaleEffect(isFilterActive ? 1.05 : 1.0)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
             }
-            .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    isHovered = hovering
-                }
+        }
+        .contextMenu {
+            // 编辑名称
+            Button {
+                editingName = tag.name
+                isEditing = true
+            } label: {
+                Label("编辑名称", systemImage: "pencil")
             }
-            .contextMenu {
-                // 编辑名称
-                Button {
-                    editingName = tag.name
-                    isEditing = true
-                } label: {
-                    Label("编辑名称", systemImage: "pencil")
-                }
-                
-                Divider()
-                
-                // 颜色选择子菜单
-                Menu {
-                    ForEach(TagColor.allCases, id: \.self) { color in
-                        Button {
-                            dependencies.updateTagColor(tag.id, color)
-                        } label: {
-                            HStack {
-                                Circle()
-                                    .fill(color.color)
-                                    .frame(width: 12, height: 12)
-                                Text(color.displayName)
-                                if tag.color == color {
-                                    Image(systemName: "checkmark")
-                                }
+            
+            Divider()
+            
+            // 颜色选择子菜单
+            Menu {
+                ForEach(TagColor.allCases, id: \.self) { color in
+                    Button {
+                        dependencies.updateTagColor(tag.id, color)
+                    } label: {
+                        HStack {
+                            Circle()
+                                .fill(color.color)
+                                .frame(width: 12, height: 12)
+                            Text(color.displayName)
+                            if tag.color == color {
+                                Image(systemName: "checkmark")
                             }
                         }
                     }
-                } label: {
-                    Label("更换颜色", systemImage: "paintpalette")
                 }
-                
-                Divider()
-                
-                // 从卡片移除（如果有 cardId）
-                if let cardId = cardId {
-                    Button {
-                        onRemoveFromCard?()
-                        dependencies.removeTagFromCard(tag.id, cardId)
-                    } label: {
-                        Label("从卡片移除", systemImage: "minus.circle")
-                    }
-                }
-                
-                // 删除标签（全局）
-                Button(role: .destructive) {
-                    dependencies.deleteTag(tag.id)
+            } label: {
+                Label("更换颜色", systemImage: "paintpalette")
+            }
+            
+            Divider()
+            
+            // 从卡片移除（如果有 cardId）
+            if let cardId = cardId {
+                Button {
+                    onRemoveFromCard?()
+                    dependencies.removeTagFromCard(tag.id, cardId)
                 } label: {
-                    Label("删除标签", systemImage: "trash")
+                    Label("从卡片移除", systemImage: "minus.circle")
                 }
             }
+            
+            // 删除标签（全局）
+            Button(role: .destructive) {
+                dependencies.deleteTag(tag.id)
+            } label: {
+                Label("删除标签", systemImage: "trash")
+            }
+        }
     }
     
     // MARK: - Editing View

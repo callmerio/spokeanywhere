@@ -187,15 +187,21 @@ struct FormattedDefinitionView: View {
             WrappingHStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(words.enumerated()), id: \.offset) { _, word in
                     let cleanWord = word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-                    Text(word)
-                        .font(.system(size: 14))
-                        .foregroundStyle(DesignTokens.Colors.textSecondary)
-                        .underline(cleanWord.count > 2, color: DesignTokens.Colors.textSecondary.opacity(0.3))
-                        .onTapGesture {
-                            if cleanWord.count > 2 {
-                                onWordTap?(cleanWord.lowercased())
-                            }
+                    if cleanWord.count > 2 {
+                        Button {
+                            onWordTap?(cleanWord.lowercased())
+                        } label: {
+                            Text(word)
+                                .font(.system(size: 14))
+                                .foregroundStyle(DesignTokens.Colors.textSecondary)
+                                .underline(true, color: DesignTokens.Colors.textSecondary.opacity(0.3))
                         }
+                        .buttonStyle(.plain)
+                    } else {
+                        Text(word)
+                            .font(.system(size: 14))
+                            .foregroundStyle(DesignTokens.Colors.textSecondary)
+                    }
                 }
             }
         } else {

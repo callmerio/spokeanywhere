@@ -164,23 +164,49 @@ struct HistoryRecordCard: View {
     @State private var showCopied = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // 头部行：标题 + 时间 + X按钮（同一水平线）
-            HStack(alignment: .center, spacing: 8) {
-                // 标题
-                Text(record.title)
-                    .font(.system(size: style == .prominent ? 14 : 13, weight: .semibold))
-                    .foregroundStyle(DS.Colors.textPrimary)
-                    .lineLimit(1)
-                
-                Spacer(minLength: 8)
-                
-                // 时间
-                Text(record.detailedTime)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(DS.Colors.textPlaceholder)
-                
-                // 删除按钮（始终占位，opacity 控制显示）
+        Button {
+            copyContent()
+            onTap?()
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                // 头部行：标题 + 时间
+                HStack(alignment: .center, spacing: 8) {
+                    Text(record.title)
+                        .font(.system(size: style == .prominent ? 14 : 13, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textPrimary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 8)
+
+                    Text(record.detailedTime)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DS.Colors.textPlaceholder)
+
+                    if onDelete != nil {
+                        Color.clear.frame(width: 20, height: 20)
+                    }
+                }
+
+                // 预览文本（独立一行，固定占位3行高度）
+                Text(record.preview)
+                    .font(.system(size: 13))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .lineLimit(3)
+                    .frame(height: 54, alignment: .topLeading) // 3行 * 18pt/行 = 54pt
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(isHovered ? DS.Colors.borderSecondary : DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
+        )
+        .overlay(alignment: .topTrailing) {
+            if onDelete != nil {
                 Button(action: { onDelete?() }, label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .medium))
@@ -190,29 +216,11 @@ struct HistoryRecordCard: View {
                         .clipShape(Circle())
                 })
                 .buttonStyle(.plain)
-                .opacity(isHovered && onDelete != nil ? 1 : 0)
+                .opacity(isHovered ? 1 : 0)
                 .animation(.easeInOut(duration: 0.12), value: isHovered)
+                .padding(.top, 12)
+                .padding(.trailing, 14)
             }
-            
-            // 预览文本（独立一行，固定占位3行高度）
-            Text(record.preview)
-                .font(.system(size: 13))
-                .foregroundStyle(DS.Colors.textSecondary)
-                .lineLimit(3)
-                .frame(height: 54, alignment: .topLeading) // 3行 * 18pt/行 = 54pt
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(isHovered ? DS.Colors.borderSecondary : DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            copyContent()
-            onTap?()
         }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {

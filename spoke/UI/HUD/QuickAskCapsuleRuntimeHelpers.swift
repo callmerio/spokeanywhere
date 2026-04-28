@@ -1,12 +1,5 @@
 import Foundation
 
-func scheduleQuickAskCapsuleMain(
-    after seconds: Double,
-    _ operation: @escaping @MainActor () -> Void
-) {
-    runtimeRunOnMain(after: seconds, operation)
-}
-
 func runQuickAskCapsuleWorkflow(
     workflow: WorkflowAction,
     context: WorkflowContext,

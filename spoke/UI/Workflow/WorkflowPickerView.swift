@@ -65,15 +65,17 @@ struct WorkflowPickerView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(Array(flatWorkflows.enumerated()), id: \.element.id) { index, workflow in
-                        WorkflowOptionRow(
-                            workflow: workflow,
-                            isSelected: index == workflowState.selectedIndex,
-                            filter: filter
-                        )
-                        .id(workflow.id)
-                        .onTapGesture {
+                        Button {
                             onSelect(workflow)
+                        } label: {
+                            WorkflowOptionRow(
+                                workflow: workflow,
+                                isSelected: index == workflowState.selectedIndex,
+                                filter: filter
+                            )
                         }
+                        .buttonStyle(.plain)
+                        .id(workflow.id)
                     }
                 }
                 .padding(6)
@@ -116,25 +118,25 @@ struct WorkflowOptionRow: View {
     let filter: String
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.md) {
             // 名称
             Text(workflow.name)
-                .font(.system(size: 12, weight: .medium))
+                .font(DS.Typography.caption)
                 .foregroundStyle(.primary)
             
             // 描述（一行，超出截断）
             Text(workflow.description)
-                .font(.system(size: 11))
+                .font(DS.Typography.captionSmall)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.tail)
             
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.sm)
         .background(isSelected ? DS.Colors.accentPrimary.opacity(0.2) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
         .contentShape(Rectangle())
     }
 }
