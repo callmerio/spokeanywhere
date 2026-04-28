@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "plan_id": "PLN-001",
+  "project": "SpokenAnyWhere",
+  "scope": "phase",
+  "milestone": "M1",
+  "phase": 1,
+  "phase_slug": "stabilize-desktop-overlay-runtime",
+  "title": "Stabilize Desktop Overlay Runtime",
+  "status": "completed",
+  "created_at": "2026-04-27T00:00:00Z",
+  "updated_at": "2026-04-27T00:00:00Z",
+  "summary": "Stabilize the current main worktree by separating Maestro documentation from runtime code, validating Live Caption collapsed/debug behavior, checking app runtime helper seams, preserving overlay interaction contracts, and preparing safe worktree cleanup/harvest without destructive actions.",
+  "approach": "Proceed in dependency order: first protect context and classify the dirty main worktree, then validate the highest-risk Live Caption/debug runtime changes, then validate app runtime helper seams and overlay integration, then produce a non-destructive cleanup/harvest inventory for old worktrees. Do not merge or delete worktrees in this plan.",
+  "task_count": 6,
+  "task_ids": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-005", "TASK-006"],
+  "complexity": "moderate",
+  "waves": [
+    {
+      "wave": 1,
+      "label": "Protect context and split main worktree",
+      "tasks": ["TASK-001", "TASK-002"],
+      "can_parallelize": false,
+      "rationale": "The dirty main worktree must be classified before runtime validation or cleanup decisions."
+    },
+    {
+      "wave": 2,
+      "label": "Validate runtime code slices",
+      "tasks": ["TASK-003", "TASK-004", "TASK-005"],
+      "can_parallelize": false,
+      "rationale": "Live Caption/debug runtime has the highest risk and should be checked before broader runtime and overlay assertions."
+    },
+    {
+      "wave": 3,
+      "label": "Prepare non-destructive worktree cleanup path",
+      "tasks": ["TASK-006"],
+      "can_parallelize": false,
+      "rationale": "Old worktree pruning and branch cleanup require a harvest inventory after current main is understood."
+    }
+  ],
+  "validation": {
+    "narrow_commands": [
+      "cd spoke && swift build",
+      "cd spoke && swift test --filter LiveCaption",
+      "cd spoke && swift test --filter AppLifecyclePlanTests",
+      "cd spoke && swift test --filter AppRuntimeHelpersTests",
+      "cd spoke && swift test --filter CaptionLineBufferTests"
+    ],
+    "full_commands": [
+      "cd spoke && swift test --parallel",
+      "cd spoke && bash Tests/run-concurrency-check.sh",
+      "cd spoke && ./dev.sh"
+    ]
+  },
+  "collision_detection": {
+    "status": "clear",
+    "checked_against": [],
+    "overlaps": []
+  },
+  "checker": {
+    "status": "PASS",
+    "iteration": 1,
+    "issues": []
+  }
+}

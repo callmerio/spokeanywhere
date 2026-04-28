@@ -1,0 +1,121 @@
+{
+  "version": "2.0",
+  "project_name": "SpokenAnyWhere",
+  "status": "phase_1_validated",
+  "current_milestone": "M2",
+  "current_task_id": null,
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "Stabilize Desktop Overlay Runtime",
+      "status": "completed",
+      "roadmap_phase": 1,
+      "summary": "Finish and validate Live Caption collapsed focus, debug simulation, app runtime helper seams, and overlay integration without expanding product scope.",
+      "artifacts": [".workflow/roadmap.md", ".workflow/codebase/action-logs/development-progress-2026-04-27.md", ".workflow/codebase/action-logs/development-initiative-2026-04-27.md"]
+    },
+    {
+      "id": "M2",
+      "name": "Consolidate Workflow Documentation and Release Hygiene",
+      "status": "in_progress",
+      "roadmap_phase": 2,
+      "summary": "Migrate useful legacy CCW/superpowers knowledge into Maestro, retire obsolete workflow artifacts safely, split commits, and run release-quality gates.",
+      "artifacts": [".workflow/roadmap.md", ".workflow/project.md", ".workflow/state.json"]
+    }
+  ],
+  "artifacts": [
+    {
+      "type": "development-progress",
+      "path": ".workflow/codebase/action-logs/development-progress-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Git-derived current progress snapshot covering local commits, uncommitted batches, risks, and next validation steps."
+    },
+    {
+      "type": "development-initiative",
+      "path": ".workflow/codebase/action-logs/development-initiative-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Initiative brief connecting Git history, document timeline, legacy CCW/.agent material, superpowers docs, cleanup strategy, and next Maestro phases."
+    },
+    {
+      "type": "roadmap",
+      "path": ".workflow/roadmap.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Two-phase Maestro roadmap for stabilizing desktop overlay runtime and consolidating workflow documentation/release hygiene."
+    },
+    {
+      "type": "worktree-audit",
+      "path": ".workflow/codebase/action-logs/worktree-audit-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Read-only audit of all Git worktrees, branch divergence, dirty state, merge risk, completion clues, and cleanup order."
+    },
+    {
+      "id": "PLN-001",
+      "type": "plan",
+      "milestone": "M1",
+      "phase": 1,
+      "scope": "phase",
+      "path": "scratch/20260427-plan-P1-stabilize-desktop-overlay-runtime",
+      "status": "completed",
+      "depends_on": null,
+      "harvested": false,
+      "created_at": "2026-04-27T00:00:00Z",
+      "completed_at": "2026-04-27T00:00:00Z"
+    },
+    {
+      "type": "main-worktree-split",
+      "path": ".workflow/codebase/action-logs/main-worktree-split-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Path-level classification of dirty main worktree into Maestro docs, roadmap docs, Live Caption runtime, app runtime helper seams, legacy CCW cleanup, and hold list."
+    },
+    {
+      "type": "worktree-cleanup-inventory",
+      "path": ".workflow/codebase/action-logs/worktree-cleanup-inventory-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Non-destructive inventory of safe-prune candidates, inspect-before-prune worktrees, harvest-before-cleanup branches, and approval-required cleanup commands."
+    },
+    {
+      "type": "phase-execution-report",
+      "path": ".workflow/codebase/action-logs/phase-1-execution-report-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Phase 1 execution report: TASK-001 through TASK-006 passed; LiveCaption, CaptionLineBuffer, AppLifecyclePlan, AppRuntimeHelpers tests and swift build passed."
+    },
+    {
+      "type": "harvest-report",
+      "path": ".workflow/codebase/action-logs/m2-harvest-report-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Non-destructive M2 harvest report covering QuickAsk menu polish, screen-capture indicator fix, SelectionToolbar startup permission, Nocturne governance, and stale autoresearch branches."
+    },
+    {
+      "type": "harvest-report",
+      "path": ".workflow/codebase/action-logs/m2-autoresearch-lessons-harvest-2026-04-27.md",
+      "created_at": "2026-04-27T00:00:00Z",
+      "summary": "Non-destructive harvest of autoresearch arch-v3 lessons into Maestro architecture, quality, and learning specs."
+    },
+        {
+            "type": "cleanup-readiness",
+            "path": ".workflow/codebase/action-logs/m2-cleanup-readiness-2026-04-27.md",
+            "created_at": "2026-04-27T00:00:00Z",
+            "summary": "Cleanup readiness categories for stale worktrees and branches, with destructive cleanup held for explicit approval."
+        },
+        {
+            "type": "handoff",
+            "path": ".workflow/codebase/action-logs/handoff-2026-04-29.md",
+            "created_at": "2026-04-29T00:00:00Z",
+            "summary": "Current M2 handoff covering completed validation, dirty worktree grouping, cleanup approval boundaries, and recommended next execution order."
+        }
+    ],
+    "last_updated": "2026-04-29T00:00:00Z",
+  "last_codebase_rebuild": "2026-04-27T00:00:00Z",
+  "accumulated_context": {
+    "key_decisions": [
+      "M2 continues non-destructively: harvest docs/tests first, hold prune/remove/delete/merge for explicit approval.",
+      "Ported SelectionToolbar startup permission coverage from spoke-swiftui-wave1 instead of merging that branch wholesale."
+    ],
+    "blockers": [],
+    "deferred": [
+      "Destructive worktree cleanup remains approval-gated.",
+      "spoke-swiftui-wave1 still has broad UI/test diffs and is not ready for deletion after this pass."
+    ]
+  },
+  "transition_history": [],
+  "milestone_history": []
+}

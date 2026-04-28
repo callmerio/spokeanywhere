@@ -1,0 +1,44 @@
+{
+  "id": "TASK-005",
+  "phase": 1,
+  "phase_slug": "stabilize-desktop-overlay-runtime",
+  "title": "Validate PinnedText and Screenshot overlay integration boundaries",
+  "type": "verification",
+  "priority": "medium",
+  "status": "pending",
+  "description": "Validate that current PinnedText and Screenshot manager changes preserve existing overlay contracts while participating in the runtime helper/debug integration slice.",
+  "files": [
+    "spoke/Core/DesktopText/PinnedTextManager.swift",
+    "spoke/Core/DesktopText/PinnedTextManagerLiveDependencies.swift",
+    "spoke/Core/Screenshot/ScreenshotManager.swift",
+    "spoke/App/AppPinnedTextRuntime.swift",
+    "spoke/App/AppScreenshotRuntime.swift"
+  ],
+  "read_first": [
+    ".workflow/roadmap.md",
+    ".workflow/codebase/action-logs/development-initiative-2026-04-27.md",
+    "docs/superpowers/plans/2026-04-20-overlay-unified-contract-implementation.md",
+    "docs/superpowers/plans/2026-04-19-pinned-text-hover-zoom-implementation.md",
+    "spoke/Core/DesktopText/PinnedTextManager.swift",
+    "spoke/Core/Screenshot/ScreenshotManager.swift",
+    "spoke/App/AppPinnedTextRuntime.swift",
+    "spoke/App/AppScreenshotRuntime.swift"
+  ],
+  "action": "Confirm current PinnedText and Screenshot changes are limited to runtime integration and do not merge their implementations or alter product contracts beyond the existing overlay integration scope. Run swift build after Live Caption and App runtime tests pass.",
+  "implementation": [
+    "Read PinnedTextManager, ScreenshotManager, AppPinnedTextRuntime, and AppScreenshotRuntime.",
+    "Compare changes against overlay contract plan: do not merge PinnedTextWindow and ScreenshotWindow; do not merge text zoom and image zoom internals.",
+    "Run cd spoke && swift build.",
+    "If build fails, fix only direct compile errors in the listed files or their immediate dependencies."
+  ],
+  "convergence": {
+    "criteria": [
+      "cd spoke && swift build exits 0",
+      "spoke/Core/DesktopText/PinnedTextManager.swift exists",
+      "spoke/Core/Screenshot/ScreenshotManager.swift exists",
+      "spoke/App/AppPinnedTextRuntime.swift exists",
+      "spoke/App/AppScreenshotRuntime.swift exists"
+    ]
+  },
+  "depends_on": ["TASK-004"]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "TASK-001",
+  "phase": 1,
+  "phase_slug": "stabilize-desktop-overlay-runtime",
+  "title": "Classify the dirty main worktree into commit groups",
+  "type": "analysis",
+  "priority": "high",
+  "status": "pending",
+  "description": "Create an exact file-to-workstream classification for the current dirty main worktree before any code execution or cleanup.",
+  "files": [".workflow/codebase/action-logs/main-worktree-split-2026-04-27.md"],
+  "read_first": [
+    ".workflow/codebase/action-logs/development-progress-2026-04-27.md",
+    ".workflow/codebase/action-logs/development-initiative-2026-04-27.md",
+    ".workflow/codebase/action-logs/worktree-audit-2026-04-27.md",
+    ".workflow/roadmap.md",
+    ".workflow/state.json"
+  ],
+  "action": "Run git status --short and git diff --name-status, then write .workflow/codebase/action-logs/main-worktree-split-2026-04-27.md with five explicit groups: maestro-workflow-docs, product-roadmap-docs, live-caption-runtime-debug-tests, app-runtime-helper-seams, legacy-ccw-cleanup. Each changed path must appear in exactly one group or in an explicit hold list.",
+  "implementation": [
+    "Collect current status with git status --short.",
+    "Collect path-level changes with git diff --name-status and untracked file listing.",
+    "Write a Markdown table containing columns: path, git_status, group, reason, commit_candidate, validation_required.",
+    "Add a Hold / Do Not Stage Yet section for ambiguous backups, .draft.md, old .tldr files, Excalidraw, and any dirty old-framework deletion that still needs migration confirmation."
+  ],
+  "convergence": {
+    "criteria": [
+      ".workflow/codebase/action-logs/main-worktree-split-2026-04-27.md exists",
+      "main-worktree-split-2026-04-27.md contains 'maestro-workflow-docs'",
+      "main-worktree-split-2026-04-27.md contains 'live-caption-runtime-debug-tests'",
+      "main-worktree-split-2026-04-27.md contains 'legacy-ccw-cleanup'",
+      "main-worktree-split-2026-04-27.md contains 'Hold / Do Not Stage Yet'"
+    ]
+  },
+  "depends_on": []
+}

@@ -1,0 +1,36 @@
+{
+  "id": "TASK-002",
+  "phase": 1,
+  "phase_slug": "stabilize-desktop-overlay-runtime",
+  "title": "Protect and validate Maestro planning artifacts",
+  "type": "docs",
+  "priority": "high",
+  "status": "pending",
+  "description": "Ensure the Maestro docs produced during initialization, initiative framing, roadmap generation, worktree audit, and this plan are internally consistent and JSON-valid before code work proceeds.",
+  "files": [".workflow/state.json", ".workflow/project.md", ".workflow/roadmap.md", ".workflow/scratch/20260427-plan-P1-stabilize-desktop-overlay-runtime/plan.json"],
+  "read_first": [
+    ".workflow/project.md",
+    ".workflow/state.json",
+    ".workflow/roadmap.md",
+    ".workflow/codebase/action-logs/development-progress-2026-04-27.md",
+    ".workflow/codebase/action-logs/development-initiative-2026-04-27.md",
+    ".workflow/codebase/action-logs/worktree-audit-2026-04-27.md",
+    ".workflow/scratch/20260427-plan-P1-stabilize-desktop-overlay-runtime/plan.json"
+  ],
+  "action": "Register plan artifact PLN-001 in .workflow/state.json with path scratch/20260427-plan-P1-stabilize-desktop-overlay-runtime, milestone M1, phase 1, scope phase, status completed, harvested false, depends_on null, created_at and completed_at 2026-04-27T00:00:00Z. Validate all JSON files with python3 -m json.tool.",
+  "implementation": [
+    "Update .workflow/state.json artifacts[] by appending PLN-001 if absent.",
+    "Set .workflow/state.json last_updated to 2026-04-27T00:00:00Z.",
+    "Run python3 -m json.tool on .workflow/state.json, .workflow/config.json, .workflow/codebase/doc-index.json, and the plan.json.",
+    "Confirm .workflow/roadmap.md references Phase 1: Stabilize Desktop Overlay Runtime."
+  ],
+  "convergence": {
+    "criteria": [
+      ".workflow/state.json contains '\"id\": \"PLN-001\"'",
+      ".workflow/state.json contains 'scratch/20260427-plan-P1-stabilize-desktop-overlay-runtime'",
+      "python3 -m json.tool .workflow/state.json exits 0",
+      "python3 -m json.tool .workflow/scratch/20260427-plan-P1-stabilize-desktop-overlay-runtime/plan.json exits 0"
+    ]
+  },
+  "depends_on": ["TASK-001"]
+}

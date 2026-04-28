@@ -1,0 +1,32 @@
+{
+  "id": "TASK-006",
+  "phase": 1,
+  "phase_slug": "stabilize-desktop-overlay-runtime",
+  "title": "Prepare non-destructive worktree cleanup and harvest inventory",
+  "type": "analysis",
+  "priority": "medium",
+  "status": "pending",
+  "description": "Create a concrete next-action inventory for prunable worktrees, patch-equivalent branches, old superpowers/autoresearch branches, and branches requiring harvest, without deleting or pruning anything.",
+  "files": [".workflow/codebase/action-logs/worktree-cleanup-inventory-2026-04-27.md"],
+  "read_first": [
+    ".workflow/codebase/action-logs/worktree-audit-2026-04-27.md",
+    ".workflow/codebase/action-logs/development-initiative-2026-04-27.md",
+    ".workflow/roadmap.md"
+  ],
+  "action": "Write .workflow/codebase/action-logs/worktree-cleanup-inventory-2026-04-27.md containing four lists: safe-prune-candidates, inspect-before-prune, harvest-before-cleanup, and keep-for-now. Include exact branch/worktree names and the command that would be run later, but do not run prune/remove/delete commands.",
+  "implementation": [
+    "Run git worktree prune --dry-run and capture output for documentation only.",
+    "Run git status --short in dirty non-main worktrees only if paths still exist.",
+    "Write the inventory file with exact recommended next command for each group.",
+    "Mark destructive commands as requires-user-approval."
+  ],
+  "convergence": {
+    "criteria": [
+      ".workflow/codebase/action-logs/worktree-cleanup-inventory-2026-04-27.md exists",
+      "worktree-cleanup-inventory-2026-04-27.md contains 'safe-prune-candidates'",
+      "worktree-cleanup-inventory-2026-04-27.md contains 'harvest-before-cleanup'",
+      "worktree-cleanup-inventory-2026-04-27.md contains 'requires-user-approval'"
+    ]
+  },
+  "depends_on": ["TASK-005"]
+}

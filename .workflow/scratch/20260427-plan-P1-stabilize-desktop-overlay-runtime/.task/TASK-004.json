@@ -1,0 +1,47 @@
+{
+  "id": "TASK-004",
+  "phase": 1,
+  "phase_slug": "stabilize-desktop-overlay-runtime",
+  "title": "Validate App runtime helper seam extraction",
+  "type": "verification",
+  "priority": "high",
+  "status": "pending",
+  "description": "Validate AppDelegate/AppLifecycle/runtime helper changes and ensure the extraction keeps lifecycle, pinned text, screenshot, and debug automation behavior explicit and test-covered.",
+  "files": [
+    "spoke/App/AppDelegate.swift",
+    "spoke/App/AppDelegateLiveDependencies.swift",
+    "spoke/App/AppLifecyclePlan.swift",
+    "spoke/App/AppRuntimeHelpers.swift",
+    "spoke/App/AppPinnedTextRuntime.swift",
+    "spoke/App/AppScreenshotRuntime.swift",
+    "spoke/Core/Debug/DebugAutomationTriggerService.swift",
+    "spoke/Tests/AppLifecyclePlanTests.swift",
+    "spoke/Tests/AppRuntimeHelpersTests.swift"
+  ],
+  "read_first": [
+    ".workflow/codebase/architecture.md",
+    ".workflow/codebase/action-logs/development-progress-2026-04-27.md",
+    "spoke/App/AppDelegate.swift",
+    "spoke/App/AppLifecyclePlan.swift",
+    "spoke/App/AppRuntimeHelpers.swift",
+    "spoke/Tests/AppLifecyclePlanTests.swift",
+    "spoke/Tests/AppRuntimeHelpersTests.swift"
+  ],
+  "action": "Verify the App runtime seam extraction without expanding AppDelegate responsibilities. AppLifecyclePlanTests and AppRuntimeHelpersTests must pass. Keep all changes compatible with the existing ServiceContainer and AppDelegateLiveDependencies patterns.",
+  "implementation": [
+    "Read AppDelegate, AppLifecyclePlan, AppRuntimeHelpers, and their tests before editing.",
+    "Run cd spoke && swift test --filter AppLifecyclePlanTests.",
+    "Run cd spoke && swift test --filter AppRuntimeHelpersTests.",
+    "If tests fail, fix only direct lifecycle/runtime helper mismatches and rerun the failed command.",
+    "Confirm no new runtime helper introduces unrelated product behavior."
+  ],
+  "convergence": {
+    "criteria": [
+      "cd spoke && swift test --filter AppLifecyclePlanTests exits 0",
+      "cd spoke && swift test --filter AppRuntimeHelpersTests exits 0",
+      "spoke/App/AppRuntimeHelpers.swift exists",
+      "spoke/Tests/AppRuntimeHelpersTests.swift exists"
+    ]
+  },
+  "depends_on": ["TASK-003"]
+}

@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "schema_version": "1.0",
+  "project": "SpokenAnyWhere",
+  "last_updated": "2026-04-27T00:00:00Z",
+  "features": [
+    {"id": "FT-001", "name": "Voice Recording and Dictation", "status": "active", "requirement_ids": [], "component_ids": ["TC-001", "TC-002", "TC-003"], "phase": null},
+    {"id": "FT-002", "name": "Quick Ask Conversational AI", "status": "active", "requirement_ids": [], "component_ids": ["TC-004", "TC-005", "TC-006"], "phase": null},
+    {"id": "FT-003", "name": "Live Captions", "status": "active", "requirement_ids": [], "component_ids": ["TC-007", "TC-008"], "phase": null},
+    {"id": "FT-004", "name": "Screenshot and OCR", "status": "active", "requirement_ids": [], "component_ids": ["TC-009", "TC-010"], "phase": null},
+    {"id": "FT-005", "name": "Selection Toolbar", "status": "active", "requirement_ids": [], "component_ids": ["TC-011", "TC-012"], "phase": null},
+    {"id": "FT-006", "name": "Message Panel and Clipboard Pipeline", "status": "active", "requirement_ids": [], "component_ids": ["TC-013", "TC-014"], "phase": null},
+    {"id": "FT-007", "name": "Settings and Configuration", "status": "active", "requirement_ids": [], "component_ids": ["TC-015", "TC-016", "TC-017"], "phase": null}
+  ],
+  "components": [
+    {"id": "TC-001", "name": "RecordingController", "type": "service", "code_locations": ["spoke/Services/RecordingController.swift"], "feature_ids": ["FT-001"], "symbols": ["RecordingController"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-002", "name": "AudioRecorderService", "type": "service", "code_locations": ["spoke/Core/Audio/AudioRecorderService.swift"], "feature_ids": ["FT-001"], "symbols": ["AudioRecorderService"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-003", "name": "TranscriptionManager", "type": "service", "code_locations": ["spoke/Core/Transcription/"], "feature_ids": ["FT-001"], "symbols": ["TranscriptionManager"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-004", "name": "QuickAskService", "type": "service", "code_locations": ["spoke/Services/QuickAskService.swift"], "feature_ids": ["FT-002"], "symbols": ["QuickAskService"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-005", "name": "LLMPipeline", "type": "service", "code_locations": ["spoke/Core/LLM/LLMPipeline.swift"], "feature_ids": ["FT-002"], "symbols": ["LLMPipeline"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-006", "name": "WorkflowExecutor", "type": "service", "code_locations": ["spoke/Core/Workflow/WorkflowExecutor.swift"], "feature_ids": ["FT-002"], "symbols": ["WorkflowExecutor"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-007", "name": "LiveCaptionManager", "type": "service", "code_locations": ["spoke/Core/LiveCaption/LiveCaptionManager.swift"], "feature_ids": ["FT-003"], "symbols": ["LiveCaptionManager"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-008", "name": "LiveCaptionView", "type": "ui", "code_locations": ["spoke/UI/LiveCaption/"], "feature_ids": ["FT-003"], "symbols": ["LiveCaptionView"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-009", "name": "ScreenshotManager", "type": "service", "code_locations": ["spoke/Core/Screenshot/ScreenshotManager.swift"], "feature_ids": ["FT-004"], "symbols": ["ScreenshotManager"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-010", "name": "ScreenOCRService", "type": "service", "code_locations": ["spoke/Services/ScreenOCRService.swift"], "feature_ids": ["FT-004"], "symbols": ["ScreenOCRService"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-011", "name": "SelectionToolbarManager", "type": "service", "code_locations": ["spoke/Services/SelectionToolbarManager.swift"], "feature_ids": ["FT-005"], "symbols": ["SelectionToolbarManager"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-012", "name": "SelectionActionService", "type": "service", "code_locations": ["spoke/Services/SelectionActionService.swift"], "feature_ids": ["FT-005"], "symbols": ["SelectionActionService"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-013", "name": "MessagePanelManager", "type": "service", "code_locations": ["spoke/Services/MessagePanelManager.swift"], "feature_ids": ["FT-006"], "symbols": ["MessagePanelManager"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-014", "name": "ClipboardPipelineService", "type": "service", "code_locations": ["spoke/Services/ClipboardPipelineService.swift"], "feature_ids": ["FT-006"], "symbols": ["ClipboardPipelineService"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-015", "name": "ServiceContainer", "type": "core", "code_locations": ["spoke/Services/ServiceContainer.swift"], "feature_ids": ["FT-007"], "symbols": ["ServiceContainer", "ServiceContainerDependencies"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-016", "name": "AppSettings", "type": "config", "code_locations": ["spoke/Services/AppSettings.swift"], "feature_ids": ["FT-007"], "symbols": ["AppSettings"], "last_updated": "2026-04-27T00:00:00Z"},
+    {"id": "TC-017", "name": "SettingsView", "type": "ui", "code_locations": ["spoke/UI/Settings/SettingsView.swift"], "feature_ids": ["FT-007"], "symbols": ["SettingsView"], "last_updated": "2026-04-27T00:00:00Z"}
+  ],
+  "requirements": [],
+  "architecture_decisions": [],
+  "actions": []
+}
