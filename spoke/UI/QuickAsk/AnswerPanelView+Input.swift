@@ -18,7 +18,7 @@ extension AnswerPanelView {
             .overlay {
                 AttachmentDropOverlay(cornerRadius: DS.CornerRadius.lg, isVisible: isDragOver)
             }
-            .onDrop(of: [.image, .fileURL], isTargeted: $isDragOver) { providers in
+            .onDrop(of: [.image, .fileURL], isTargeted: isDragOverBinding) { providers in
                 handleDropProviders(providers)
                 return true
             }
@@ -68,7 +68,7 @@ extension AnswerPanelView {
             }
             
             AnswerPanelTextEditor(
-                text: $followUpInput,
+                text: followUpInputBinding,
                 placeholder: workflowState.selectedWorkflow != nil ? "输入内容..." : "继续追问...",
                 onSend: { sendMessage() },
                 onPasteImage: { image in handlePasteImage(image) },

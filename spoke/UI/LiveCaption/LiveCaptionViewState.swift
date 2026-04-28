@@ -1,4 +1,3 @@
-import CoreGraphics
 import Foundation
 import Observation
 
@@ -16,8 +15,6 @@ final class LiveCaptionScrollState {
     var isAtBottom = true
     var scrollTrigger = 0
     var appearedItemIDs: Set<UUID> = []
-    var isCollapsedFocusPinned = true
-    var collapsedScrollRequest: AppKitScrollAdjustmentRequest?
 }
 
 @Observable

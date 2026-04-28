@@ -21,22 +21,20 @@ struct AnswerPanelInputDependencies {
 struct AnswerPanelView: View {
     @Bindable var state: AnswerPanelState
     let dependencies: AnswerPanelViewDependencies
+    private let injectedWorkflowState: WorkflowState
     
-    @State var followUpInput: String = ""
-    
-    /// Workflow 状态
-    @State var workflowState: WorkflowState
+    @State private var _followUpInput: String = ""
     
     /// 录音状态
-    @State var isRecording: Bool = false
-    @State var audioLevels: [Float] = Array(repeating: 0.05, count: 40)
+    @State private var _isRecording: Bool = false
+    @State private var _audioLevels: [Float] = Array(repeating: 0.05, count: 40)
     
     // Markdown Height (初始值设大一点，避免加载时截断)
     @State private var answerHeight: CGFloat = 200
     // Toolbar Hover State
     @State private var isHoveringToolbar: Bool = false
-    @State var isHoveringCloseButton: Bool = false
-    @State var isHoveringNewChatButton: Bool = false
+    @State private var _isHoveringCloseButton: Bool = false
+    @State private var _isHoveringNewChatButton: Bool = false
     
     // 操作按钮状态
     @State private var isCopied: Bool = false
@@ -50,10 +48,10 @@ struct AnswerPanelView: View {
     @State private var lastAutoReadAnswer: String = ""
     
     // 待发送附件
-    @State var pendingAttachments: [Attachment] = []
+    @State private var _pendingAttachments: [Attachment] = []
     
     // 拖拽状态
-    @State var isDragOver: Bool = false
+    @State private var _isDragOver: Bool = false
     
     /// 关闭回调
     var onClose: (() -> Void)?
@@ -74,7 +72,7 @@ struct AnswerPanelView: View {
     ) {
         self.state = state
         self.dependencies = dependencies
-        self._workflowState = State(initialValue: dependencies.workflowState)
+        self.injectedWorkflowState = dependencies.workflowState
         self.ttsService = dependencies.ttsService
         self.ttsSettings = dependencies.ttsSettings
         self.onClose = onClose
@@ -224,5 +222,52 @@ struct AnswerPanelView: View {
     /// 打开设置窗口
     private func openSettings() {
         dependencies.openSettings()
+    }
+
+    var workflowState: WorkflowState {
+        injectedWorkflowState
+    }
+
+    var followUpInput: String {
+        get { _followUpInput }
+        nonmutating set { _followUpInput = newValue }
+    }
+
+    var followUpInputBinding: Binding<String> {
+        $_followUpInput
+    }
+
+    var isRecording: Bool {
+        get { _isRecording }
+        nonmutating set { _isRecording = newValue }
+    }
+
+    var audioLevels: [Float] {
+        get { _audioLevels }
+        nonmutating set { _audioLevels = newValue }
+    }
+
+    var isHoveringCloseButton: Bool {
+        get { _isHoveringCloseButton }
+        nonmutating set { _isHoveringCloseButton = newValue }
+    }
+
+    var isHoveringNewChatButton: Bool {
+        get { _isHoveringNewChatButton }
+        nonmutating set { _isHoveringNewChatButton = newValue }
+    }
+
+    var pendingAttachments: [Attachment] {
+        get { _pendingAttachments }
+        nonmutating set { _pendingAttachments = newValue }
+    }
+
+    var isDragOver: Bool {
+        get { _isDragOver }
+        nonmutating set { _isDragOver = newValue }
+    }
+
+    var isDragOverBinding: Binding<Bool> {
+        $_isDragOver
     }
 }
