@@ -256,18 +256,6 @@ launch_app_bundle() {
   log_info "以 open 模式启动应用..."
   run_cmd open "$INSTALL_APP"
 
-  if [[ -n "$scenario_value" ]]; then
-    log_info "open 模式下补发 live caption mock action..."
-    if [[ "$DRY_RUN" == "1" ]]; then
-      printf '[DRY-RUN] ( sleep 2; %q ) &\n' "$ROOT_DIR/scripts/debug/livecaption-mock-stream.sh"
-    else
-      (
-        sleep 2
-        "$ROOT_DIR/scripts/debug/livecaption-mock-stream.sh" >/tmp/spoke-livecaption-mock-dispatch.out 2>&1 || true
-      ) &
-    fi
-  fi
-
   if [[ -n "${CURRENT_LOG_PID:-}" ]] && {
     [[ -n "$scenario_value" ]] ||
     [[ "$probe_state" == "active" ]]
