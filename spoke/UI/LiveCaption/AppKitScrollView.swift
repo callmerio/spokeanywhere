@@ -180,6 +180,12 @@ struct AppKitScrollView<Content: View>: NSViewRepresentable {
     }
 
     static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        coordinator.pendingCatchUpWorkItem?.cancel()
+        coordinator.pendingCatchUpWorkItem = nil
+        coordinator.pendingFrameChangeWorkItem?.cancel()
+        coordinator.pendingFrameChangeWorkItem = nil
+        coordinator.isScrollingProgrammatically = false
+        coordinator.programmaticTargetY = nil
         removeAppKitScrollObserver(coordinator)
     }
     
