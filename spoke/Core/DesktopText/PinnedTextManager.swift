@@ -29,6 +29,11 @@ final class PinnedTextManager {
     }
 
     private var storageRootDirectory: URL {
+        if let override = ProcessInfo.processInfo.environment["SPOKE_PINNED_TEXT_BASE_DIR"], !override.isEmpty {
+            let dir = URL(fileURLWithPath: override, isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir
+        }
         let dir = dependencies.storageRootDirectory()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
@@ -196,6 +201,15 @@ final class PinnedTextManager {
         windows.removeAll()
         saveAll()
         windowFactory = nil
+    }
+
+    func hideAllWindowsForDebugPreview() {
+        for window in windows.values {
+            window.orderOut(nil)
+            window.close()
+        }
+        windows.removeAll()
+        logger.debug("🧪 [PinnedTextManager] Hid all pinned text windows for debug preview")
     }
 
     private func showWindow(for item: PinnedTextItem) {

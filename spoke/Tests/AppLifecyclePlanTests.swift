@@ -36,6 +36,33 @@ struct AppLifecyclePlanTests {
         #expect(debugPlan.map(\.id).last == .setupDebugAutomationTrigger)
     }
 
+    @Test("mock scenario startup plan 走最小启动路径并优先 debug automation")
+    func mockScenarioUsesMinimalStartupPlan() {
+        let plan = AppLifecyclePlan.startup(
+            includeDebugAutomation: true,
+            mockScenarioActive: true
+        )
+
+        #expect(plan.map(\.id) == [
+            .installCrashLogger,
+            .setupDebugAutomationTrigger,
+            .setupMenuBar
+        ])
+    }
+
+    @Test("mock scenario 即使不开启 debug automation 也跳过权限密集步骤")
+    func mockScenarioWithoutDebugStillSkipsHeavyStartupSteps() {
+        let plan = AppLifecyclePlan.startup(
+            includeDebugAutomation: false,
+            mockScenarioActive: true
+        )
+
+        #expect(plan.map(\.id) == [
+            .installCrashLogger,
+            .setupMenuBar
+        ])
+    }
+
     @Test("shutdown plan 保持现有步骤顺序")
     func shutdownStepOrderIsStable() {
         let plan = AppLifecyclePlan.shutdown(includeDebugAutomation: false)

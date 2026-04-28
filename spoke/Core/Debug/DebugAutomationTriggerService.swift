@@ -15,6 +15,7 @@ final class DebugAutomationTriggerService {
         case ping
         case recordingToggle = "recording.toggle"
         case captionToggle = "caption.toggle"
+        case captionMockLongTranslation = "caption.mock.long_translation"
         case screenshotCapture = "screenshot.capture"
         case messagePanelToggle = "messagePanel.toggle"
         case quickAskTrigger = "quickAsk.trigger"
@@ -26,6 +27,7 @@ final class DebugAutomationTriggerService {
 
     var onRecordingToggle: (() -> Void)?
     var onCaptionToggle: (() -> Void)?
+    var onCaptionMockLongTranslation: (() -> Void)?
     var onScreenshotCapture: (() -> Void)?
     var onMessagePanelToggle: (() -> Void)?
     var onQuickAskTrigger: (() -> Void)?
@@ -38,6 +40,10 @@ final class DebugAutomationTriggerService {
     /// - `SPOKE_DEBUG_AUTOMATION=1|true|yes|on` => 启用
     /// - `SPOKE_DEBUG_AUTOMATION=0|false|no|off` 或未设置 => 禁用（默认）
     private static func isEnabledByEnvironment() -> Bool {
+        if AppDebugLaunchContext.liveCaptionMockScenarioActive || liveCaptionHasMockScenario() {
+            return true
+        }
+
         guard let raw = ProcessInfo.processInfo.environment[enableEnvKey]?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else {
             return false
@@ -98,6 +104,9 @@ final class DebugAutomationTriggerService {
         case .captionToggle:
             logger.info("🧪 [DebugAutomation] action=caption.toggle")
             onCaptionToggle?()
+        case .captionMockLongTranslation:
+            logger.info("🧪 [DebugAutomation] action=caption.mock.long_translation")
+            onCaptionMockLongTranslation?()
         case .screenshotCapture:
             logger.info("🧪 [DebugAutomation] action=screenshot.capture")
             onScreenshotCapture?()

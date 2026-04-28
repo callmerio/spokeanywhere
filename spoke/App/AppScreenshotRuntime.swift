@@ -19,6 +19,10 @@ struct AppScreenshotRuntime {
     }
 
     func restorePinnedScreenshots(log: (String) -> Void) async {
+        if appShouldSkipSpeechPreparationForMockScenario() {
+            log("🧪 [AppDelegate][debug] Skip pinned screenshot restore for live caption mock scenario")
+            return
+        }
         await restoreAll()
         log("📸 [AppDelegate] Pinned screenshot restore finished")
     }

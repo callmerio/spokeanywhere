@@ -7,7 +7,7 @@ import SwiftUI
 struct AppDelegateDependencies {
     let notificationCenter: NotificationCenter
     let hotKeyService: HotKeyService
-    let quickAskService: QuickAskService
+    let quickAskServiceProvider: () -> QuickAskService
     let screenshotManager: ScreenshotManager
     let pinnedTextManager: PinnedTextManager
     let liveCaptionManager: LiveCaptionManager
@@ -68,6 +68,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var quickAskShortcutObserver: NSObjectProtocol?
     private var toolbarSettingsObserver: NSObjectProtocol?
     private let dependencies: AppDelegateDependencies
+    private lazy var quickAskService = dependencies.quickAskServiceProvider()
     private let settingsWindowRuntime = SettingsWindowRuntime.live
     private let statusMenuTitleRuntime = AppStatusMenuTitleRuntime()
     private let statusMenuShortcutObserverRuntime = AppStatusMenuShortcutObserverRuntime()
@@ -123,8 +124,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 启动计时（仅用于内部 logger）
         let launchStart = CFAbsoluteTimeGetCurrent()
         let launchLogger = Logger(subsystem: "com.spokeanywhere", category: "Launch")
+        AppDebugLaunchContext.liveCaptionMockScenarioName = liveCaptionMockScenarioFromEnvironment()
+        AppDebugLaunchContext.liveCaptionMockScenarioActive = AppDebugLaunchContext.liveCaptionMockScenarioName != nil
 
         runStartupPipeline(launchStart: launchStart, launchLogger: launchLogger)
+        bootstrapLiveCaptionMockScenarioIfNeeded()
 
         logLaunchStep("Step 12: Application launch complete! ✅", launchStart: launchStart, launchLogger: launchLogger)
 
@@ -144,6 +148,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 设置 ScreenshotManager 的窗口工厂
         dependencies.screenshotManager.windowFactory = screenshotRuntime.makeWindowFactory()
+
+        if AppDebugLaunchContext.liveCaptionMockScenarioActive {
+            logger.debug("🧪 [AppDelegate] Skip pinned screenshot restore for live caption mock scenario")
+            logger.info("📸 [AppDelegate] ✅ Screenshot service setup complete")
+            return
+        }
         
         // 异步恢复之前 Pinned 的截图，避免启动阶段主线程阻塞
         runAppDelegateUtilityTask(self) { delegate in
@@ -159,6 +169,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("📝 [AppDelegate] setupPinnedTextService() 开始")
 
         dependencies.pinnedTextManager.windowFactory = pinnedTextRuntime.makeWindowFactory()
+
+        if AppDebugLaunchContext.liveCaptionMockScenarioActive {
+            logger.debug("🧪 [AppDelegate] Skip pinned text restore for live caption mock scenario")
+            logger.info("📝 [AppDelegate] ✅ Pinned text service setup complete")
+            return
+        }
 
         runAppDelegateUtilityTask(self) { delegate in
             await delegate.pinnedTextRuntime.restorePinnedTexts { message in
@@ -178,13 +194,42 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
 #if DEBUG
+    private func bootstrapLiveCaptionMockScenarioIfNeeded() {
+        guard let scenario = AppDebugLaunchContext.liveCaptionMockScenarioName else { return }
+
+        logger.info("🧪 [AppDelegate] Bootstrapping live caption mock scenario: \(scenario, privacy: .public)")
+        runAppMainActorAsync {
+            await self.dependencies.liveCaptionManager.stop()
+            self.dependencies.screenshotManager.hideAllWindowsForDebugPreview()
+            self.dependencies.pinnedTextManager.hideAllWindowsForDebugPreview()
+            self.dependencies.liveCaptionWindowManager.showDebugPreview()
+            if scenario == "long_translation" {
+                self.dependencies.liveCaptionManager.debugRunLongTranslationMockStream()
+            }
+            runAppMainActor {
+                runtimeRunOnMain(after: 0.6) {
+                    self.dependencies.screenshotManager.hideAllWindowsForDebugPreview()
+                    self.dependencies.pinnedTextManager.hideAllWindowsForDebugPreview()
+                }
+            }
+        }
+    }
+
     private func setupDebugAutomationTrigger() {
         let trigger = dependencies.debugAutomationTrigger
         trigger.onRecordingToggle = {
             self.dependencies.recordingController.debugToggleRecording()
         }
         trigger.onCaptionToggle = {
+            self.dependencies.liveCaptionWindowManager.setDebugPreviewMode(false)
             self.dependencies.liveCaptionWindowManager.toggle()
+        }
+        trigger.onCaptionMockLongTranslation = {
+            runAppMainActorAsync {
+                await self.dependencies.liveCaptionManager.stop()
+                self.dependencies.liveCaptionWindowManager.showDebugPreview()
+                self.dependencies.liveCaptionManager.debugRunLongTranslationMockStream()
+            }
         }
         trigger.onScreenshotCapture = {
             runAppMainActorAsync {
@@ -195,7 +240,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.dependencies.messagePanelManager.toggle()
         }
         trigger.onQuickAskTrigger = {
-            self.dependencies.quickAskService.startSession()
+            self.quickAskService.startSession()
         }
         if trigger.start() {
             logger.info("🧪 [AppDelegate] Debug automation trigger ready")
@@ -223,7 +268,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("📋 [AppDelegate] selectionToolbarEnabled = \(enabled)")
         
         if enabled {
-            dependencies.selectionToolbarManager.start(requestPermissionIfNeeded: false)
+            dependencies.selectionToolbarManager.start(requestPermissionIfNeeded: true)
             logger.info("📋 [AppDelegate] ✅ Selection toolbar started")
         } else {
             logger.info("📋 [AppDelegate] ⏸️ Selection toolbar disabled in settings")
@@ -329,7 +374,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func buildStartupSteps() -> [LifecycleStep] {
-        AppLifecyclePlan.startup(includeDebugAutomation: includeDebugAutomationStep)
+        AppLifecyclePlan.startup(
+            includeDebugAutomation: includeDebugAutomationStep,
+            mockScenarioActive: AppDebugLaunchContext.liveCaptionMockScenarioActive
+        )
             .map { spec in
                 (spec.name, startupAction(for: spec.id))
             }
@@ -394,7 +442,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case .stopRecordingController:
             return { self.dependencies.recordingController.stop() }
         case .stopQuickAskService:
-            return { self.dependencies.quickAskService.stop() }
+            return { self.quickAskService.stop() }
         case .stopMessagePanelManager:
             return { self.dependencies.messagePanelManager.stop() }
         case .stopLiveCaptionManager:
@@ -468,6 +516,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func prepareDictionaryIfNeeded() {
+        if appShouldSkipSpeechPreparationForMockScenario() {
+            logger.debug("🧪 [AppDelegate] Skip dictionary precompilation for live caption mock scenario")
+            return
+        }
+
         // 双轨词典注入策略：
         // 1. contextualStrings（轻量级）- 每次录音时实时注入，无需预编译
         // 2. 预编译 LM（重量级）- 启动时后台准备，准备好后提供更强识别效果
@@ -493,6 +546,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func warmupSpeechEngineInBackground() {
+        if appShouldSkipSpeechPreparationForMockScenario() {
+            logger.debug("🧪 [AppDelegate] Skip speech engine warmup for live caption mock scenario")
+            return
+        }
+
         // 预热语音引擎（后台）- 消除首次使用时的 ~2s 卡顿
         // SpeechTranscriber assets 安装是主要耗时点
         runAppDetached(priority: .background) { [transcriptionManager = dependencies.transcriptionManager] in

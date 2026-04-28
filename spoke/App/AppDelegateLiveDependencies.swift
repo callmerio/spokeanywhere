@@ -4,10 +4,11 @@ import Foundation
 extension AppDelegateDependencies {
     static func makeLive() -> Self {
         let services = currentServiceContainer()
+        let quickAskServiceProvider = { services.quickAskServiceConcrete }
         return .init(
             notificationCenter: .default,
             hotKeyService: services.hotKeyService,
-            quickAskService: services.quickAskServiceConcrete,
+            quickAskServiceProvider: quickAskServiceProvider,
             screenshotManager: services.screenshotManager,
             pinnedTextManager: services.pinnedTextManager,
             liveCaptionManager: services.liveCaptionManager,

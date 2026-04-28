@@ -18,6 +18,10 @@ struct AppPinnedTextRuntime {
     }
 
     func restorePinnedTexts(log: (String) -> Void) async {
+        if appShouldSkipSpeechPreparationForMockScenario() {
+            log("🧪 [AppDelegate][debug] Skip pinned text restore for live caption mock scenario")
+            return
+        }
         await restoreAll()
         log("📝 [AppDelegate] Pinned text restore finished")
     }

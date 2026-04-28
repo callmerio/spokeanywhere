@@ -1,5 +1,25 @@
 import Foundation
 
+@MainActor
+enum AppDebugLaunchContext {
+    static var liveCaptionMockScenarioActive = false
+    static var liveCaptionMockScenarioName: String?
+}
+
+@MainActor
+func appShouldSkipSpeechPreparationForMockScenario(
+    environment: [String: String] = ProcessInfo.processInfo.environment
+) -> Bool {
+    AppDebugLaunchContext.liveCaptionMockScenarioActive || liveCaptionMockScenarioFromEnvironment(environment) != nil
+}
+
+@MainActor
+func appShouldEagerResolveQuickAskService(
+    environment: [String: String] = ProcessInfo.processInfo.environment
+) -> Bool {
+    !appShouldSkipSpeechPreparationForMockScenario(environment: environment)
+}
+
 func runAppMainActorAsync(
     _ operation: @escaping @MainActor () async -> Void
 ) {

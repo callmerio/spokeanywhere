@@ -171,6 +171,15 @@ final class ScreenshotManager {
         logger.info("🛑 Screenshot manager stopped")
     }
 
+    func hideAllWindowsForDebugPreview() {
+        for window in windows.values {
+            window.orderOut(nil)
+            window.close()
+        }
+        windows.removeAll()
+        logger.debug("🧪 [ScreenshotManager] Hid all screenshot windows for debug preview")
+    }
+
 #if DEBUG
     /// Debug-only：自动化脚本入口，固定区域截图（无需手动框选）
     func debugCaptureForAutomation() async {

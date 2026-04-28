@@ -37,7 +37,29 @@ struct AppLifecycleStepSpec: Equatable {
 }
 
 enum AppLifecyclePlan {
-    static func startup(includeDebugAutomation: Bool) -> [AppLifecycleStepSpec] {
+    static func startup(
+        includeDebugAutomation: Bool,
+        mockScenarioActive: Bool = false
+    ) -> [AppLifecycleStepSpec] {
+        if mockScenarioActive {
+            var steps: [AppLifecycleStepSpec] = [
+                .init(id: .installCrashLogger, name: "Step 0: Installing crash logger..."),
+                .init(id: .setupMenuBar, name: "Step 2: Setting up status bar...")
+            ]
+
+            if includeDebugAutomation {
+                steps.insert(
+                    .init(
+                        id: .setupDebugAutomationTrigger,
+                        name: "Step 1: Setting up debug automation trigger..."
+                    ),
+                    at: 1
+                )
+            }
+
+            return steps
+        }
+
         var steps: [AppLifecycleStepSpec] = [
             .init(id: .installCrashLogger, name: "Step 0: Installing crash logger..."),
             .init(id: .checkAccessibility, name: "Step 1: Checking accessibility permission..."),
