@@ -1,6 +1,30 @@
 import AppKit
 import Foundation
 
+func selectionToolbarAccessibilityAppName(
+    bundleURL: URL = Bundle.main.bundleURL,
+    fallbackName: String = AppIdentity.displayName
+) -> String {
+    let candidate = bundleURL.deletingPathExtension().lastPathComponent
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !candidate.isEmpty, candidate != "/" else {
+        return fallbackName
+    }
+
+    return candidate
+}
+
+func selectionToolbarAccessibilityInformativeText(
+    appName: String = selectionToolbarAccessibilityAppName()
+) -> String {
+    """
+    选择工具栏需要辅助功能权限才能检测文本选择。
+
+    请在「系统设置 → 隐私与安全性 → 辅助功能」中授权 \(appName)。
+    """
+}
+
 func runSelectionToolbarOnMain(
     _ operation: @escaping @MainActor () -> Void
 ) {

@@ -162,7 +162,7 @@ final class SelectionToolbarManager {
     private func showAccessibilityPermissionAlert() {
         let alert = NSAlert()
         alert.messageText = "需要辅助功能权限"
-        alert.informativeText = "选择工具栏需要辅助功能权限才能检测文本选择。\n\n请在「系统设置 → 隐私与安全性 → 辅助功能」中授权 SpokenAnyWhere。"
+        alert.informativeText = selectionToolbarAccessibilityInformativeText()
         alert.alertStyle = .warning
         alert.addButton(withTitle: "打开系统设置")
         alert.addButton(withTitle: "稍后")
