@@ -49,11 +49,11 @@ struct QuickAskCapsuleView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.BorderWidth.none) {
             Spacer()
             
             // 主面板（Picker + 输入框 + 控制栏）
-            VStack(spacing: 0) {
+            VStack(spacing: DS.BorderWidth.none) {
                 // Workflow Picker（在输入框上方，共享背景）
                 if workflowState.isPickerVisible {
                     WorkflowPickerView(
@@ -138,21 +138,21 @@ struct QuickAskCapsuleView: View {
                     topGlow
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl))
+            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl))
             .overlay(
                 Group {
                     if state.phase == .sending {
                         RunningLightBorder()
                     } else {
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(DS.Colors.borderPrimary, lineWidth: 0.5)
+                        RoundedRectangle(cornerRadius: DS.CornerRadius.xl)
+                            .strokeBorder(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
                     }
                 }
             )
             .overlay {
                 // 拖拽蒙版（使用通用组件）
-                AttachmentDropOverlay(cornerRadius: 16, isVisible: isDragOver)
+                AttachmentDropOverlay(cornerRadius: DS.CornerRadius.xl, isVisible: isDragOver)
             }
             // 拖拽处理（使用 AttachmentManager）
             .onDrop(of: [.image, .fileURL, .folder, .zip], isTargeted: $isDragOver) { providers in
@@ -164,7 +164,7 @@ struct QuickAskCapsuleView: View {
             .onChange(of: state.audioLevel) { _, newLevel in
                 updateWaveform(newLevel)
             }
-            .animation(.easeOut(duration: 0.15), value: workflowState.isPickerVisible)
+            .animation(DS.Animation.fast, value: workflowState.isPickerVisible)
         }
         .background {
             // 隐藏的快捷键监听：Cmd + , 打开设置
@@ -193,7 +193,7 @@ struct QuickAskCapsuleView: View {
                 startPoint: .bottom,
                 endPoint: .top
             )
-            .frame(height: 44)
+            .frame(height: DS.Layout.toolbarHeight + DS.Spacing.xs)
         }
     }
     
@@ -207,7 +207,7 @@ struct QuickAskCapsuleView: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: 30)
+            .frame(height: DS.Layout.iconSizeXLarge - DS.Spacing.xxs)
             Spacer()
         }
     }
@@ -215,20 +215,20 @@ struct QuickAskCapsuleView: View {
     // MARK: - Control Bar (和转录 HUD 一样)
     
     private var controlBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: DS.BorderWidth.none) {
             // 左侧：App 图标 + 附件菜单（hover 时变加号）
             attachmentMenuButton
             
-            Spacer().frame(width: 12)
+            Spacer().frame(width: DS.Spacing.lg)
             
             // 波形（和转录 HUD 一样）
             if state.phase == .recording {
                 ScrollingWaveform(levels: levels)
-                    .frame(width: 120, height: 16)
+                    .frame(width: DS.Layout.toolbarHeight * 3, height: DS.Spacing.xl)
             } else if state.phase == .sending {
                 // 发送中：显示思考状态
                 StatusIndicator(isThinking: true)
-                    .frame(width: 20, height: 20)
+                    .frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
             }
             
             Spacer()
@@ -236,9 +236,9 @@ struct QuickAskCapsuleView: View {
             // 右侧：品牌标签
             brandLabel
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(height: 40)
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.md)
+        .frame(height: DS.Layout.toolbarHeight)
     }
     
     // MARK: - Components
@@ -255,17 +255,17 @@ struct QuickAskCapsuleView: View {
                 
                 // Hover 或菜单打开：加号
                 Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(DS.Typography.content.weight(.bold))
                     .foregroundStyle(DS.Colors.textPrimary)
                     .opacity(showPlusIcon ? 1 : 0)
             }
-            .frame(width: 24, height: 24)
+            .frame(width: DS.Layout.iconSizeLarge, height: DS.Layout.iconSizeLarge)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: DS.CornerRadius.sm)
                     .fill(showPlusIcon ? DS.Colors.buttonHoverStrong : Color.clear)
             )
             .contentShape(Rectangle())
-            .animation(.easeInOut(duration: 0.2), value: showPlusIcon)
+            .animation(DS.Animation.normal, value: showPlusIcon)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -280,22 +280,22 @@ struct QuickAskCapsuleView: View {
             Image(nsImage: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
         } else {
             Image(systemName: "app.fill")
-                .font(.system(size: 14))
-                .foregroundStyle(DesignTokens.Colors.textPrimary)
+                .font(DS.Typography.content)
+                .foregroundStyle(DS.Colors.textPrimary)
         }
     }
     
     private var brandLabel: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.xs) {
             Image(systemName: "waveform")
-                .font(.system(size: 12))
+                .font(DS.Typography.caption)
             Text("SpokenAnyWhere")
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Typography.captionSmall)
         }
-        .foregroundStyle(DesignTokens.Colors.textSecondary)
+        .foregroundStyle(DS.Colors.textSecondary)
     }
     
     // MARK: - Helpers
@@ -304,7 +304,7 @@ struct QuickAskCapsuleView: View {
         var newLevels = levels
         newLevels.removeFirst()
         newLevels.append(level)
-        withAnimation(.linear(duration: 0.05)) {
+        withAnimation(.linear(duration: DS.Animation.durationFast / 3)) {
             self.levels = newLevels
         }
     }
@@ -463,5 +463,5 @@ private final class QuickAskAttachmentMenuActionHandler: NSObject {
             executeWorkflow: { _, _ in .success("") }
         )
     )
-        .frame(width: 340, height: 200)
+        .frame(width: DS.Layout.captionMaxWidth / 2 + DS.Spacing.xs, height: DS.Layout.toolbarHeight * 5)
 }

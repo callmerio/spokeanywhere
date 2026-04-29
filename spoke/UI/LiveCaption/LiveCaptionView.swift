@@ -67,7 +67,7 @@ struct LiveCaptionView: View {
     var body: some View {
         ZStack {
             // 内容
-            VStack(spacing: 0) {
+            VStack(spacing: DS.BorderWidth.none) {
                 if interactionState.isExpanded {
                     expandedContent
                 } else {
@@ -97,9 +97,9 @@ struct LiveCaptionView: View {
         .overlay(cardBorder)
         .background(shadowAndGlowLayer)
         .padding(CaptionDesign.shadowPadding)
-        .animation(.easeInOut(duration: 0.15), value: hoverState.isHovering)
+        .animation(DS.Animation.fast, value: hoverState.isHovering)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 hoverState.isHovering = hovering
             }
         }
@@ -177,7 +177,7 @@ struct LiveCaptionView: View {
             } else {
                 AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
                     // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.xl) {
                         // 1. 已确定的句子（原文+译文）- 使用 CaptionItemView 独立组件
                         // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
                         ForEach(manager.lineBuffer.items) { item in
@@ -204,7 +204,7 @@ struct LiveCaptionView: View {
                         // 2. 正在输入的流式文本（原文 + 流式翻译）
                         // 🔥 用 pendingLineActive 而不是 isEmpty，防止转录回退时整行消失导致布局跳动
                         if manager.lineBuffer.pendingLineActive {
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                                 // 流式原文 - 使用 displayPendingText 保证内容不会瞬间变空
                                 // 🔥 修复：始终保留 VocabularyHighlightText，避免类型切换导致视图重建
                                 let displayText = manager.lineBuffer.displayPendingText
@@ -295,7 +295,7 @@ struct LiveCaptionView: View {
 
         return AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
             // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xl) {
                 // 已确定的句子 - 使用 CaptionItemView 独立组件
 
                 // 🔥 方案 F: 三层防御 - CaptionItem 是 class + @ObservedObject 隔离
@@ -325,7 +325,7 @@ struct LiveCaptionView: View {
                 if manager.lineBuffer.pendingLineActive {
                     let displayText = manager.lineBuffer.displayPendingText
                     let pendingTranslation = manager.lineBuffer.pendingTranslation
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                         // 🔥 修复：始终保留 VocabularyHighlightText，避免类型切换导致视图重建
                         VocabularyHighlightText(
                             text: displayText.isEmpty ? " " : displayText,
@@ -368,7 +368,7 @@ struct LiveCaptionView: View {
             .padding(CaptionDesign.padding)
             .textSelection(.enabled)
         }
-        .frame(height: 400)
+        .frame(height: DS.Layout.captionMaxWidth - DS.Layout.toolbarHeight - DS.Layout.toolbarHeight - DS.Layout.toolbarHeight - DS.Layout.toolbarHeight - DS.Layout.toolbarHeight - DS.Spacing.xxxl - DS.Spacing.xxxl - DS.Spacing.xxl)
         .onChange(of: manager.lineBuffer.items.last?.id) { _, _ in
             liveCaptionBumpScrollIfNeeded(
                 isAtBottom: scrollState.isAtBottom,
@@ -511,7 +511,7 @@ struct LiveCaptionView: View {
         ZStack {
             // 默认阴影（始终存在，提供层次感）
             RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
-                .fill(Color.black.opacity(0.001))
+                .fill(DS.Colors.overlayDark.opacity(0.001 / 0.3))
                 .shadow(
                     color: DS.Shadow.caption.color,
                     radius: CaptionDesign.shadowRadius,
@@ -572,12 +572,12 @@ private struct LiveCaptionHoverOverlay: View {
                 Spacer()
 
                 hoverToolbar
-                    .padding(4)
+                    .padding(DS.Spacing.xs)
                     .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
+                    .shadow(color: DS.Shadow.tight(0.1).color, radius: DS.Shadow.tight().radius, x: DS.Shadow.tight().x, y: DS.Shadow.tight().y)
             }
-            .padding(12)
+            .padding(DS.Spacing.lg)
 
             Spacer()
         }
@@ -600,47 +600,47 @@ private struct LiveCaptionHoverOverlay: View {
                 }
             }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: DS.Spacing.xs) {
                 Image(systemName: "globe")
-                    .font(.system(size: 12))
+                    .font(DS.Typography.caption)
                 Text(
                     LiveCaptionManager.supportedLanguages
                         .first(where: { $0.id == manager.sourceLanguage })?.name ?? "Language"
                 )
-                .font(.system(size: 12, weight: .medium))
+                .font(DS.Typography.caption)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 10))
+                    .font(DS.Typography.timestamp)
                     .opacity(0.6)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.horizontal, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.sm)
             .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
         .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
+        .shadow(color: DS.Shadow.tight(0.1).color, radius: DS.Shadow.tight().radius, x: DS.Shadow.tight().x, y: DS.Shadow.tight().y)
     }
 
     private var hoverToolbar: some View {
         let buttonSize: CGFloat = 24
         let cornerRadius: CGFloat = buttonSize * 0.27
 
-        return HStack(spacing: 8) {
+        return HStack(spacing: DS.Spacing.md) {
             Button {
                 copyAllContent()
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(DS.Animation.normal) {
                     hoverState.isCopied = true
                 }
                 liveCaptionResetCopiedIndicator {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(DS.Animation.normal) {
                         hoverState.isCopied = false
                     }
                 }
             } label: {
                 Image(systemName: hoverState.isCopied ? "checkmark" : "doc.on.doc")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(DS.Typography.timestamp.weight(.medium))
                     .foregroundStyle((hoverState.isCopyHovered || hoverState.isCopied) ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
                     .background((hoverState.isCopyHovered || hoverState.isCopied) ? DS.Colors.buttonHover : Color.clear)
@@ -649,8 +649,8 @@ private struct LiveCaptionHoverOverlay: View {
                             cornerRadius: hoverState.isCopyHovered || hoverState.isCopied ? cornerRadius : buttonSize / 2
                         )
                     )
-                    .animation(.easeInOut(duration: 0.2), value: hoverState.isCopyHovered)
-                    .animation(.easeInOut(duration: 0.2), value: hoverState.isCopied)
+                    .animation(DS.Animation.normal, value: hoverState.isCopyHovered)
+                    .animation(DS.Animation.normal, value: hoverState.isCopied)
             }
             .buttonStyle(.plain)
             .onHover { hovering in
@@ -659,17 +659,17 @@ private struct LiveCaptionHoverOverlay: View {
             .help("复制全部内容")
 
             Button {
-                withAnimation(.spring(response: 0.3)) {
+                withAnimation(DS.Animation.spring) {
                     interactionState.isExpanded.toggle()
                 }
             } label: {
                 Image(systemName: interactionState.isExpanded ? "chevron.down" : "chevron.up")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(DS.Typography.caption)
                     .foregroundStyle(hoverState.isExpandHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
                     .background(hoverState.isExpandHovered ? DS.Colors.buttonHover : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: hoverState.isExpandHovered ? cornerRadius : buttonSize / 2))
-                    .animation(.easeInOut(duration: 0.2), value: hoverState.isExpandHovered)
+                    .animation(DS.Animation.normal, value: hoverState.isExpandHovered)
             }
             .buttonStyle(.plain)
             .onHover { hovering in
@@ -680,12 +680,12 @@ private struct LiveCaptionHoverOverlay: View {
                 onClose()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(DS.Typography.timestamp.weight(.medium))
                     .foregroundStyle(hoverState.isCloseHovered ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: buttonSize, height: buttonSize)
                     .background(hoverState.isCloseHovered ? DS.Colors.buttonHover : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: hoverState.isCloseHovered ? cornerRadius : buttonSize / 2))
-                    .animation(.easeInOut(duration: 0.2), value: hoverState.isCloseHovered)
+                    .animation(DS.Animation.normal, value: hoverState.isCloseHovered)
             }
             .buttonStyle(.plain)
             .onHover { hovering in
@@ -782,5 +782,5 @@ struct TranslationTaskModifier15: ViewModifier {
             .padding(.bottom, 60)
         }
     }
-    .frame(width: 800, height: 600)
+    .frame(width: DS.Layout.captionMaxWidth + DS.Layout.toolbarHeight + DS.Layout.toolbarHeight + DS.Spacing.xxxl + DS.Spacing.md, height: DS.Layout.captionMaxWidth - DS.Spacing.xxxl - DS.Spacing.xxxl + DS.Spacing.md)
 }

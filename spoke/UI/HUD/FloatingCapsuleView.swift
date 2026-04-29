@@ -22,7 +22,7 @@ struct FloatingCapsuleView: View {
     
     /// 内容是否到达窗口顶部（需要显示遮罩）
     private var isContentAtTop: Bool {
-        contentHeight >= windowHeight - 20 // 留 20px 的容差
+        contentHeight >= windowHeight - (DS.Spacing.xxl - DS.Spacing.xs) // 留 20px 的容差
     }
     
     let state: RecordingState
@@ -42,7 +42,7 @@ struct FloatingCapsuleView: View {
             Spacer() // 顶部弹性空间，把内容推到底部
             
             // 实际内容区域
-            VStack(spacing: 0) {
+            VStack(spacing: DS.BorderWidth.none) {
                 // 上方：转写文字区域（向上扩展）
                 // .success 状态也保留文字显示，直到 UI 消失
                 let showText = state.phase == .recording
@@ -85,7 +85,7 @@ struct FloatingCapsuleView: View {
                             startPoint: .bottom,
                             endPoint: .top
                         )
-                        .frame(height: 44)
+                        .frame(height: DS.Layout.toolbarHeight + DS.Spacing.xs)
                     }
                 }
                 
@@ -99,7 +99,7 @@ struct FloatingCapsuleView: View {
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    .frame(height: 30)
+                    .frame(height: DS.Layout.iconSizeXLarge - DS.Spacing.xxs)
                     Spacer()
                 }
             }
@@ -126,18 +126,18 @@ struct FloatingCapsuleView: View {
                 if state.phase == .thinking {
                     RunningLightBorder()
                 } else {
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(DS.Colors.borderPrimary, lineWidth: 0.5)
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.xl)
+                        .strokeBorder(DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
                 }
             }
         )
-        .animation(.easeInOut(duration: 0.2), value: isHovering) // Hover 切换动画
+        .animation(DS.Animation.normal, value: isHovering) // Hover 切换动画
         .onChange(of: state.audioLevel) { _, newLevel in
             updateWaveform(newLevel)
         }
         // 监听整个视图的 Hover 状态
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(DS.Animation.normal) {
                 isHovering = hovering
             }
             onHoverChange?(hovering)
@@ -159,16 +159,16 @@ struct FloatingCapsuleView: View {
             if isContentAtTop {
                 LinearGradient(
                     colors: [
-                        Color.black.opacity(0.95),
-                        Color.black.opacity(0.6),
+                        DS.Colors.overlayStrong.opacity(0.95 / 0.8),
+                        DS.Colors.overlayMedium,
                         Color.clear
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 50)
+                .frame(height: DS.Layout.toolbarHeight + DS.CornerRadius.md)
                 .allowsHitTesting(false)
-                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+                .transition(.opacity.animation(DS.Animation.normal))
             }
         }
         .accessibilityIdentifier(UITestIdentifiers.Element.floatingHUDRoot)
@@ -180,35 +180,35 @@ struct FloatingCapsuleView: View {
         // 使用 ScrollView + 动态高度，当内容超出时可滚动
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     // 转写文字（最新的在底部，可滚动）
                     if case .failure(let message, let reason, let suggestion) = state.phase {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
                             // 即使 AI 失败，如果已经有转写文本，也显示出来
                             if !state.partialText.isEmpty {
                                 Text(state.partialText)
-                                    .font(.system(size: 14))
+                                    .font(DS.Typography.content)
                                     .foregroundStyle(DS.Colors.textSecondary)
-                                    .lineSpacing(4)
+                                    .lineSpacing(DS.LineSpacing.normal)
                                     .italic()
                                 
                                 Divider()
                                     .background(DS.Colors.borderPrimary.opacity(0.2))
                             }
                             
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack(alignment: .top, spacing: 8) {
+                            VStack(alignment: .leading, spacing: DS.Spacing.md) {
+                                HStack(alignment: .top, spacing: DS.Spacing.md) {
                                                                     Image(systemName: "exclamationmark.triangle.fill")
                                                                         .foregroundStyle(DS.Colors.error)
-                                                                        .font(.system(size: 14))
-                                                                        VStack(alignment: .leading, spacing: 4) {
+                                                                        .font(DS.Typography.content)
+                                                                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                                         Text(message)
-                                            .font(.system(size: 14, weight: .semibold))
+                                            .font(DS.Typography.content.weight(.semibold))
                                             .foregroundStyle(DS.Colors.textPrimary)
                                         
                                         if let reason = reason {
                                             Text(reason)
-                                                .font(.system(size: 13))
+                                                .font(DS.Typography.button)
                                                 .foregroundStyle(DS.Colors.textSecondary)
                                         }
                                     }
@@ -218,17 +218,17 @@ struct FloatingCapsuleView: View {
                                 
                                                                 Text(suggestion)
                                 
-                                                                    .font(.system(size: 12))
+                                                                    .font(DS.Typography.caption)
                                 
-                                                                    .padding(.vertical, 4)
+                                                                    .padding(.vertical, DS.Spacing.xs)
                                 
-                                                                    .padding(.horizontal, 8)
+                                                                    .padding(.horizontal, DS.Spacing.md)
                                 
                                                                     .background(DS.Colors.accentInfo.opacity(0.1))
                                 
                                                                     .foregroundStyle(DS.Colors.accentInfo)
                                 
-                                                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                                                    .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
                                 
                                                             }
                                 
@@ -237,38 +237,38 @@ struct FloatingCapsuleView: View {
                         }
                     } else if !state.partialText.isEmpty {
                         Text(state.partialText)
-                            .font(.system(size: 14))
+                            .font(DS.Typography.content)
                             .foregroundStyle(DS.Colors.textPrimary)
-                            .lineSpacing(4)
+                            .lineSpacing(DS.LineSpacing.normal)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                     } else if state.phase == .processing {
-                        HStack(spacing: 8) {
+                        HStack(spacing: DS.Spacing.md) {
                             ProgressView()
                                 .controlSize(.small)
                             Text("处理中...")
-                                .font(.system(size: 14))
+                                .font(DS.Typography.content)
                                 .foregroundStyle(DS.Colors.textSecondary)
                         }
                     } else if state.phase == .thinking || state.phase == .success {
                         // 思考中状态：文字模糊效果 + 提示
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.md) {
                             if !state.partialText.isEmpty {
                                 Text(state.partialText)
-                                    .font(.system(size: 14))
+                                    .font(DS.Typography.content)
                                     .foregroundStyle(
                                         state.phase == .success ? DS.Colors.textPrimary : DS.Colors.textSecondary
                                     )
-                                    .lineSpacing(4)
+                                    .lineSpacing(DS.LineSpacing.normal)
                                     .blur(radius: state.phase == .thinking ? 2 : 0)
-                                    .animation(.easeInOut(duration: 0.3), value: state.phase)
+                                    .animation(DS.Animation.slow, value: state.phase)
                             }
                             
                             if state.phase == .thinking {
-                                HStack(spacing: 6) {
+                                HStack(spacing: DS.Spacing.sm) {
                                     ThinkingIndicator()
                                     Text("AI 思考中...")
-                                        .font(.system(size: 13))
+                                        .font(DS.Typography.button)
                                         .foregroundStyle(DS.Colors.textPrimary)
                                 }
                                 .transition(.opacity)
@@ -276,16 +276,16 @@ struct FloatingCapsuleView: View {
                         }
                     } else {
                         Text("正在聆听...")
-                            .font(.system(size: 14))
+                            .font(DS.Typography.content)
                             .foregroundStyle(DS.Colors.textSecondary)
                     }
                     
                     // 底部锚点，用于自动滚动
-                    Color.clear.frame(height: 1).id("bottom")
+                    Color.clear.frame(height: DS.BorderWidth.thin).id("bottom")
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
+                .padding(.horizontal, DS.Spacing.xl)
+                .padding(.top, DS.Spacing.xl)
+                .padding(.bottom, DS.Spacing.lg)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 // 测量内容实际高度
                 .background(
@@ -320,7 +320,7 @@ struct FloatingCapsuleView: View {
         .frame(maxHeight: min(textContentHeight, maxTextAreaHeight))
         // 顶部渐变遮罩：当内容超出可视区域时显示
         .mask(
-            VStack(spacing: 0) {
+            VStack(spacing: DS.BorderWidth.none) {
                 // 顶部渐变（仅当内容可滚动时生效）
                 if textContentHeight > maxTextAreaHeight {
                     LinearGradient(
@@ -328,7 +328,7 @@ struct FloatingCapsuleView: View {
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    .frame(height: 30)
+                    .frame(height: DS.Layout.iconSizeXLarge - DS.Spacing.xxs)
                 }
                 
                 // 主体区域完全可见
@@ -340,24 +340,24 @@ struct FloatingCapsuleView: View {
     // MARK: - Control Bar (下方固定)
     
     private var controlBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: DS.BorderWidth.none) {
             // 左侧：App 图标 (Success 状态下不再显示大勾勾，而是保持 App 图标)
             appIcon
             
-            Spacer().frame(width: 12)
+            Spacer().frame(width: DS.Spacing.lg)
             
             if state.phase == .recording {
                 ScrollingWaveform(levels: levels)
-                    .frame(width: 120, height: 16)
+                    .frame(width: DS.Layout.toolbarHeight * 3, height: DS.Spacing.xl)
             } else if state.phase == .thinking || state.phase == .success {
                 // 思考中/成功：显示状态指示器 (Spinner -> Checkmark)
                 StatusIndicator(isThinking: state.phase == .thinking)
-                    .frame(width: 20, height: 20)
+                    .frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
             } else if case .failure = state.phase {
                 // 失败：显示红色警告图标
                 Image(systemName: "exclamationmark.circle.fill")
                     .foregroundStyle(DS.Colors.error)
-                    .font(.system(size: 16))
+                    .font(DS.Typography.bodySecondary)
             }
             
             Spacer()
@@ -366,15 +366,15 @@ struct FloatingCapsuleView: View {
                 brandLabel
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(height: 44)
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.md + DS.Spacing.xxs)
+        .frame(height: DS.Layout.toolbarHeight + DS.Spacing.xs)
     }
     
     // MARK: - Hover Overlay
     
     private var hoverOverlay: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.BorderWidth.none) {
             // 上半部分：完成录音
             Button {
                 onComplete?()
@@ -383,14 +383,14 @@ struct FloatingCapsuleView: View {
                     // Hover 时显示淡淡的蓝色，否则几乎透明（显示底部的灰黑色）
                     DS.Colors.accentInfo.opacity(isHoveringComplete ? 0.15 : 0.001)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Spacing.md) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 22))
+                            .font(DS.Typography.titleLarge)
                             .foregroundStyle(DS.Colors.accentInfo)
-                            .shadow(color: DS.Colors.accentInfo.opacity(0.5), radius: 4)
+                            .shadow(color: DS.Colors.accentInfo.opacity(0.5), radius: DS.Spacing.xs)
                         
                         Text("完成录音")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(DS.Typography.content.weight(.medium))
                             .foregroundStyle(DS.Colors.textPrimary)
                             .shadow(radius: 1)
                     }
@@ -399,7 +399,7 @@ struct FloatingCapsuleView: View {
             .buttonStyle(.plain)
             .frame(maxHeight: .infinity)
             .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(DS.Animation.normal) {
                     isHoveringComplete = hovering
                 }
             }
@@ -416,14 +416,14 @@ struct FloatingCapsuleView: View {
                     // Hover 时显示淡淡的红色，否则几乎透明
                     DS.Colors.error.opacity(isHoveringCancel ? 0.15 : 0.001)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Spacing.md) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 22))
+                            .font(DS.Typography.titleLarge)
                             .foregroundStyle(DS.Colors.error)
-                            .shadow(color: DS.Colors.error.opacity(0.5), radius: 4)
+                            .shadow(color: DS.Colors.error.opacity(0.5), radius: DS.Spacing.xs)
                         
                         Text("取消录音")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(DS.Typography.content.weight(.medium))
                             .foregroundStyle(DS.Colors.textPrimary)
                             .shadow(radius: 1)
                     }
@@ -432,7 +432,7 @@ struct FloatingCapsuleView: View {
             .buttonStyle(.plain)
             .frame(maxHeight: .infinity)
             .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(DS.Animation.normal) {
                     isHoveringCancel = hovering
                 }
             }
@@ -452,16 +452,16 @@ struct FloatingCapsuleView: View {
                     .foregroundStyle(DS.Colors.textPrimary)
             }
         }
-        .frame(width: 24, height: 24)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .frame(width: DS.Layout.iconSizeLarge, height: DS.Layout.iconSizeLarge)
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
     }
     
     private var brandLabel: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.xs) {
             Image(systemName: "waveform")
-                .font(.system(size: 12))
+                .font(DS.Typography.caption)
             Text("SpokenAnyWhere")
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Typography.captionSmall)
         }
         .foregroundStyle(DS.Colors.textSecondary)
     }
@@ -473,7 +473,7 @@ struct FloatingCapsuleView: View {
         newLevels.removeFirst()
         newLevels.append(level)
         // 缩短动画时间，让波形跳动更敏捷
-        withAnimation(.linear(duration: 0.05)) {
+        withAnimation(.linear(duration: DS.Animation.durationFast / 3)) {
             self.levels = newLevels
         }
     }
@@ -566,19 +566,19 @@ struct ScrollingWaveform: View {
     let levels: [Float]
     
     var body: some View {
-        HStack(alignment: .center, spacing: 2) {
+        HStack(alignment: .center, spacing: DS.Spacing.xxs) {
             ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
                 Capsule()
                     .fill(barColor(for: index))
                     // 动态高度：即使音量很小，也给一个基础波动
-                    .frame(width: 2, height: barHeight(for: level))
+                    .frame(width: DS.Spacing.xxs, height: barHeight(for: level))
             }
         }
     }
     
     private func barHeight(for level: Float) -> CGFloat {
-        let minH: CGFloat = 4
-        let maxH: CGFloat = 20 // 增加最大高度
+        let minH: CGFloat = DS.Spacing.xs
+        let maxH: CGFloat = DS.Layout.iconSizeStandard // 增加最大高度
         
         // 非线性映射：让小音量也能有明显的高度
         // pow(level, 0.7) 会提升小数值的权重
@@ -623,7 +623,7 @@ struct StatusIndicator: View {
                     ForEach(0..<6, id: \.self) { index in
                         Circle()
                             .fill(dotColors[index])
-                            .frame(width: 4, height: 4)
+                            .frame(width: DS.Spacing.xs, height: DS.Spacing.xs)
                             .offset(y: -7) // 半径
                             .rotationEffect(.degrees(Double(index) * 60))
                     }
@@ -632,12 +632,12 @@ struct StatusIndicator: View {
             } else {
                 // 成功对号
                 Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(DS.Typography.captionSmall.weight(.bold))
                     .foregroundStyle(DS.Colors.success)
                     .scaleEffect(checkmarkScale)
             }
         }
-        .frame(width: 18, height: 18)
+        .frame(width: DS.Layout.iconSizeMedium + DS.Spacing.xxs, height: DS.Layout.iconSizeMedium + DS.Spacing.xxs)
         .onAppear {
             if isThinking {
                 startSpinner()
@@ -671,11 +671,11 @@ struct ThinkingIndicator: View {
     @State private var isAnimating = false
     
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: DS.LineSpacing.tight) {
             ForEach(0..<3) { index in
                 Circle()
                     .fill(DS.Colors.textPrimary)
-                    .frame(width: 4, height: 4)
+                    .frame(width: DS.Spacing.xs, height: DS.Spacing.xs)
                     .scaleEffect(isAnimating ? 1.0 : 0.5)
                     .animation(
                         .easeInOut(duration: 0.6)
@@ -699,7 +699,7 @@ struct RunningLightBorder: View {
     var body: some View {
         ZStack {
             // 外层光晕 (柔和扩散)
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.xl)
                 .stroke(
                     AngularGradient(
                         colors: [
@@ -712,12 +712,12 @@ struct RunningLightBorder: View {
                         center: .center,
                         angle: .degrees(rotation)
                     ),
-                    lineWidth: 2
+                    lineWidth: DS.Spacing.xxs
                 )
-                .blur(radius: 3)
+                .blur(radius: DS.LineSpacing.tight)
             
             // 内层清晰边框
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.xl)
                 .stroke(
                     AngularGradient(
                         colors: [
@@ -730,11 +730,11 @@ struct RunningLightBorder: View {
                         center: .center,
                         angle: .degrees(rotation)
                     ),
-                    lineWidth: 1.5
+                    lineWidth: DS.BorderWidth.thin + DS.BorderWidth.hairline
                 )
         }
         .onAppear {
-            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationNormal).repeatForever(autoreverses: false)) {
                 rotation = 360
             }
         }
