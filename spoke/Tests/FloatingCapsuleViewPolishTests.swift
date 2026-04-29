@@ -1,7 +1,9 @@
 import Foundation
 import Testing
+@testable import SpokenAnyWhere
 
 @Suite("FloatingCapsuleView 收口测试")
+@MainActor
 struct FloatingCapsuleViewPolishTests {
     @Test("设置入口应通过注入动作而非直接依赖 AppDelegate")
     func settingsOpenPathIsInjected() throws {
@@ -19,6 +21,18 @@ struct FloatingCapsuleViewPolishTests {
             !source.contains("NSApp.delegate as? AppDelegate"),
             "FloatingCapsuleView 不应直接依赖 AppDelegate 打开设置"
         )
+
+        var didOpenSettings = false
+        let view = FloatingCapsuleView(
+            state: RecordingState(),
+            openSettingsAction: {
+                didOpenSettings = true
+            }
+        )
+
+        view.openSettingsAction?()
+
+        #expect(didOpenSettings, "FloatingCapsuleView 应保留并触发注入的设置动作")
     }
 
     @Test("内容高度更新应通过 helper 做相等性 guard")
@@ -33,6 +47,19 @@ struct FloatingCapsuleViewPolishTests {
         #expect(
             source.contains("floatingCapsuleShouldUpdateMeasuredHeight"),
             "FloatingCapsuleView 应通过 helper 判断是否需要写入高度状态"
+        )
+
+        #expect(
+            !floatingCapsuleShouldUpdateMeasuredHeight(currentHeight: 100, newHeight: 100.4),
+            "高度差在默认容差内时不应触发状态写入"
+        )
+        #expect(
+            floatingCapsuleShouldUpdateMeasuredHeight(currentHeight: 100, newHeight: 100.6),
+            "高度差超过默认容差时应触发状态写入"
+        )
+        #expect(
+            !floatingCapsuleShouldUpdateMeasuredHeight(currentHeight: 100, newHeight: 100.9, tolerance: 1),
+            "自定义容差应参与高度 guard 判断"
         )
     }
 
