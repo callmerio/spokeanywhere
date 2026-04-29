@@ -17,7 +17,7 @@ Repository-maintained release history for the SpokenAnyWhere macOS app.
 - fix(accessibility): render non-interactive label when filter action is nil
 - docs: add subagent delegation system to `AGENTS.md`
 - chore: retire legacy CCW agent framework
-- 359 tests, 0 concurrency warnings
+- 360 tests, 85 suites, 0 concurrency warnings
 
 ## v0.2.0 — Runtime Stabilization (2026-04-27)
 
