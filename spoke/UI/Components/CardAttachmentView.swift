@@ -106,6 +106,13 @@ struct CardAttachmentView: View {
     /// 展开状态：多行流式布局
     private var expandedView: some View {
         AttachmentFlowLayout(spacing: spacing) {
+            Button(action: {}) {
+                EmptyView()
+            }
+            .buttonStyle(.plain)
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+
             ForEach(attachments) { attachment in
                 CardAttachmentThumbnail(
                     attachment: attachment,
