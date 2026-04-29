@@ -98,7 +98,7 @@ SpokenAnyWhere is converging from a collection of strong desktop capture and AI 
 | 2. Consolidate Workflow Documentation and Release Hygiene | ✅ Completed | Maestro init, CCW retirement, 7-group commit split, approved branch/worktree cleanup, AGENTS.md delegation system |
 | 3. Harvest spoke-swiftui-wave1 (SwiftUI Modernization) | ✅ Completed | A+B+D (Button + DesignTokens + HUD), C+E (LiveCaption polling + QuickAsk state); 33 files, +1144/−886; 359 tests, 0 concurrency warnings |
 | 4. Remaining Worktree/Branch Cleanup | ✅ Completed | spoke-swiftui-wave1, autoresearch/arch-v3 deleted; autoresearch/control (12 sub-branches) retained as archive |
-| 5. **Next: Choose from options below** | ⬜ Pending | See Phase 5 Options |
+| 5. **Next: Choose from options below** | ⬜ Pending | A(DesignTokens)✅ B(TagBubble)✅ C(Tests)✅ F(Release)✅ — D(Understanding) E(EntryPoints) G(Archive) remain |
 
 ### Phase 5 Options — Next Possible Workstreams
 
