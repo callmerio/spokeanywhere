@@ -196,7 +196,7 @@ DS.Colors.glowTop,
                                     .background(DS.Colors.borderPrimary.opacity(DS.Opacity.light))
                             }
                             
-VStack(alignment: .leading, spacing: DS.Spacing.md) {
+                            VStack(alignment: .leading, spacing: DS.Spacing.md) {
                                 HStack(alignment: .top, spacing: DS.Spacing.md) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .foregroundStyle(DS.Colors.error)
@@ -223,8 +223,6 @@ VStack(alignment: .leading, spacing: DS.Spacing.md) {
                                         .foregroundStyle(DS.Colors.accentInfo)
                                         .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
                                 }
-
-
                             }
                         }
                     } else if !state.partialText.isEmpty {
