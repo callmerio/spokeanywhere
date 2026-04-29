@@ -3,6 +3,7 @@ import OSLog
 import SwiftUI
 
 private let logger = Logger(subsystem: "com.spokeanywhere", category: "DictionaryPanelView")
+private typealias DS = DesignTokens
 
 // MARK: - Dictionary Panel View
 
@@ -35,7 +36,7 @@ struct DictionaryPanelView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.BorderWidth.none) {
             switch state.viewMode {
             case .list:
                 listView
@@ -43,7 +44,7 @@ struct DictionaryPanelView: View {
                 detailView(result)
             }
         }
-        .frame(width: 600, height: 420)
+        .frame(width: DS.Layout.captionMaxWidth, height: 420)
         .background(
             ZStack {
                 VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
@@ -61,7 +62,7 @@ struct DictionaryPanelView: View {
     // MARK: - List View
     
     private var listView: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.BorderWidth.none) {
             searchBar
             Divider().background(DesignTokens.Colors.borderPrimary)
             resultsList
@@ -74,7 +75,7 @@ struct DictionaryPanelView: View {
         HStack(spacing: DesignTokens.Spacing.lg) {
             Button(action: onDismiss) {
                 Image(systemName: "arrow.left")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(DS.Typography.content.weight(.medium))
                     .foregroundStyle(DesignTokens.Colors.textSecondary)
             }
             .buttonStyle(.plain)
@@ -96,7 +97,7 @@ struct DictionaryPanelView: View {
     private var resultsList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 0) {
+                LazyVStack(spacing: DS.BorderWidth.none) {
                     if state.results.isEmpty && !state.searchText.isEmpty {
                         emptyState
                     } else if state.results.isEmpty {
@@ -135,14 +136,14 @@ struct DictionaryPanelView: View {
     private var emptyState: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
             Image(systemName: "text.magnifyingglass")
-                .font(.system(size: 32))
+                .font(DS.Typography.titleLarge)
                 .foregroundStyle(DesignTokens.Colors.textPlaceholder)
             Text("未找到 \"\(state.searchText)\"")
                 .font(DesignTokens.Typography.content)
                 .foregroundStyle(DesignTokens.Colors.textPlaceholder)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 40)
+        .padding(.vertical, DS.Spacing.xxxl)
     }
     
     private var recentWordsHeader: some View {
@@ -160,7 +161,7 @@ struct DictionaryPanelView: View {
         HStack(spacing: DesignTokens.Spacing.xl) {
             HStack(spacing: DesignTokens.Spacing.sm) {
                 Image(systemName: "book")
-                    .font(.system(size: 12))
+                    .font(DS.Typography.caption)
                 Text("Define Word")
                     .font(DesignTokens.Typography.caption)
             }
@@ -184,10 +185,10 @@ struct DictionaryPanelView: View {
                 .font(DesignTokens.Typography.captionSmall)
                 .foregroundStyle(DesignTokens.Colors.textPlaceholder)
             Text(key)
-                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .font(DS.Typography.timestamp.weight(.medium))
                 .foregroundStyle(DesignTokens.Colors.textPlaceholder)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 2)
+                .padding(.horizontal, DS.Spacing.xs)
+                .padding(.vertical, DS.Spacing.xxs)
                 .background(DesignTokens.Colors.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.xs))
         }
@@ -196,7 +197,7 @@ struct DictionaryPanelView: View {
     // MARK: - Detail View
     
     private func detailView(_ result: LocalDictionaryResult) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.BorderWidth.none) {
             detailHeader(result)
             Divider().background(DesignTokens.Colors.borderPrimary)
             detailContent(result)
@@ -209,7 +210,7 @@ struct DictionaryPanelView: View {
         HStack(spacing: DesignTokens.Spacing.lg) {
             Button(action: { state.backToList() }, label: {
                 Image(systemName: "arrow.left")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(DS.Typography.content.weight(.medium))
                     .foregroundStyle(DesignTokens.Colors.textSecondary)
             })
             .buttonStyle(.plain)
@@ -239,7 +240,7 @@ struct DictionaryPanelView: View {
                 }
             )
             .id("detail-\(result.word)-\(state.refreshTrigger)") // 强制刷新详情页
-            .padding(20)
+            .padding(DS.Spacing.xxl)
         }
         .frame(maxHeight: .infinity)
     }
@@ -280,7 +281,7 @@ struct WordResultRow: View {
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.lg) {
             Text(result.word)
-                .font(.system(size: 15, weight: .medium))
+                .font(DS.Typography.content.weight(.medium))
                 .foregroundStyle(isVocabulary ? DesignTokens.Colors.warning : DesignTokens.Colors.textPrimary)
             
             // 使用富文本显示: 灰色POS + 中文意思
@@ -291,7 +292,7 @@ struct WordResultRow: View {
             
             if isVocabulary {
                 Image(systemName: "star.fill")
-                    .font(.system(size: 10))
+                    .font(DS.Typography.timestamp)
                     .foregroundStyle(DesignTokens.Colors.warning)
             }
         }
@@ -362,7 +363,7 @@ struct DictionarySearchField: NSViewRepresentable {
         textField.isBordered = false
         textField.drawsBackground = false
         textField.focusRingType = .none
-        textField.font = NSFont.systemFont(ofSize: 18)
+        textField.font = NSFont.systemFont(ofSize: DS.Typography.fontSizeBody)
         textField.textColor = DesignTokens.Colors.NS.textPrimary
         textField.placeholderString = placeholder
         textField.cell?.sendsActionOnEndEditing = false

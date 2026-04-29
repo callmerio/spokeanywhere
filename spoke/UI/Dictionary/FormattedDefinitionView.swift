@@ -1,5 +1,7 @@
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 // MARK: - Formatted Definition View
 
 struct FormattedDefinitionView: View {
@@ -39,7 +41,7 @@ struct FormattedDefinitionView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xl) {
             headerSection
             
             Divider().background(DesignTokens.Colors.borderPrimary)
@@ -55,15 +57,15 @@ struct FormattedDefinitionView: View {
     // MARK: - Header
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.lg) {
                 Text(result.word)
-                    .font(.system(size: 32, weight: .bold))
+                    .font(DS.Typography.titleLarge)
                     .foregroundStyle(isVocabulary ? DesignTokens.Colors.warning : DesignTokens.Colors.textPrimary)
                 
                 if let phonetic = parsedDefinition.phonetic ?? result.phonetic {
                     Text("| \(phonetic) |")
-                        .font(.system(size: 15))
+                        .font(DS.Typography.content)
                         .foregroundStyle(DesignTokens.Colors.textSecondary.opacity(0.8))
                 }
             }
@@ -73,7 +75,7 @@ struct FormattedDefinitionView: View {
     // MARK: - Formatted Sections
     
     private var formattedSectionsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
             ForEach(Array(parsedDefinition.sections.enumerated()), id: \.offset) { index, section in
                 sectionView(section, index: index)
             }
@@ -81,42 +83,42 @@ struct FormattedDefinitionView: View {
     }
     
     private func sectionView(_ section: DefinitionSection, index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+            HStack(spacing: DS.Spacing.sm) {
                 if let label = section.label {
                     Text("\(label).")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(DS.Typography.content.weight(.semibold))
                         .foregroundStyle(DesignTokens.Colors.textPrimary)
                 }
                 
                 if !section.pos.isEmpty {
                     Text(section.pos)
-                        .font(.system(size: 15, weight: .regular, design: .serif))
+                        .font(DS.Typography.content)
                         .italic()
                         .foregroundStyle(DesignTokens.Colors.textSecondary)
                 }
             }
             
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xl) {
                 ForEach(section.senses) { sense in
                     senseView(sense)
                 }
             }
-            .padding(.leading, 8)
+            .padding(.leading, DS.Spacing.md)
         }
     }
     
     private func senseView(_ sense: DefinitionSense) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            HStack(alignment: .top, spacing: DS.Spacing.md) {
                 if let number = sense.number {
                     Text(number)
-                        .font(.system(size: 14))
+                        .font(DS.Typography.content)
                         .foregroundStyle(DesignTokens.Colors.textSecondary)
-                        .frame(width: 20, alignment: .leading)
+                        .frame(width: DS.Layout.iconSizeStandard, alignment: .leading)
                 }
                 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                     senseMeaningRow(sense)
                     
                     if !sense.examples.isEmpty {
@@ -128,49 +130,49 @@ struct FormattedDefinitionView: View {
     }
     
     private func senseMeaningRow(_ sense: DefinitionSense) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Spacing.sm) {
             if let gloss = sense.gloss {
                 Text(gloss)
-                    .font(.system(size: 14))
+                    .font(DS.Typography.content)
                     .foregroundStyle(DesignTokens.Colors.textSecondary)
             }
             
             if let chinese = sense.chinese {
                 Text(chinese)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(DS.Typography.content.weight(.medium))
                     .foregroundStyle(DesignTokens.Colors.textPrimary)
             }
             
             if let pinyin = sense.pinyin {
                 Text(pinyin)
-                    .font(.system(size: 13))
+                    .font(DS.Typography.button)
                     .foregroundStyle(DesignTokens.Colors.textPlaceholder)
             }
         }
     }
     
     private func examplesView(_ examples: [DefinitionExample]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
             // 每个义项最多显示1个例句
             ForEach(examples.prefix(1)) { example in
                 exampleRow(example)
             }
         }
-        .padding(.leading, 4)
+        .padding(.leading, DS.Spacing.xs)
     }
     
     private func exampleRow(_ example: DefinitionExample) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
             Text("‣")
-                .font(.system(size: 13))
+                .font(DS.Typography.button)
                 .foregroundStyle(DesignTokens.Colors.textPlaceholder)
             
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: DS.LineSpacing.tight) {
                 clickableEnglishText(example.english)
                 
                 if let chinese = example.chinese {
                     Text(chinese)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(DS.Typography.content.weight(.medium))
                         .foregroundStyle(DesignTokens.Colors.textPrimary)
                 }
             }
@@ -184,7 +186,7 @@ struct FormattedDefinitionView: View {
         if onWordTap != nil {
             // 将英文分词，每个单词可点击
             let words = text.components(separatedBy: .whitespaces)
-            WrappingHStack(alignment: .leading, spacing: 4) {
+            WrappingHStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 ForEach(Array(words.enumerated()), id: \.offset) { _, word in
                     let cleanWord = word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
                     if cleanWord.count > 2 {
@@ -192,21 +194,21 @@ struct FormattedDefinitionView: View {
                             onWordTap?(cleanWord.lowercased())
                         } label: {
                             Text(word)
-                                .font(.system(size: 14))
+                                .font(DS.Typography.content)
                                 .foregroundStyle(DesignTokens.Colors.textSecondary)
                                 .underline(true, color: DesignTokens.Colors.textSecondary.opacity(0.3))
                         }
                         .buttonStyle(.plain)
                     } else {
                         Text(word)
-                            .font(.system(size: 14))
+                            .font(DS.Typography.content)
                             .foregroundStyle(DesignTokens.Colors.textSecondary)
                     }
                 }
             }
         } else {
             Text(text)
-                .font(.system(size: 14))
+                .font(DS.Typography.content)
                 .foregroundStyle(DesignTokens.Colors.textSecondary)
         }
     }
@@ -226,7 +228,7 @@ struct FormattedDefinitionView: View {
 
 struct WrappingHStack: Layout {
     var alignment: Alignment = .leading
-    var spacing: CGFloat = 4
+    var spacing: CGFloat = DS.Spacing.xs
     
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = arrangeSubviews(proposal: proposal, subviews: subviews)
@@ -292,6 +294,6 @@ struct WrappingHStack: Layout {
         )
         .padding()
     }
-    .frame(width: 600, height: 400)
+    .frame(width: DS.Layout.captionMaxWidth, height: DS.Layout.captionMaxWidth - DS.Spacing.xxxl - DS.Spacing.xxxl - DS.Spacing.xxl)
     .background(DesignTokens.Colors.settingsBackground)
 }

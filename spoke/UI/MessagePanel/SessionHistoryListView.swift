@@ -22,7 +22,7 @@ struct HistoryGroupView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.BorderWidth.none) {
             if isExpanded {
                 // 展开：显示所有记录
                 expandedContent
@@ -31,7 +31,7 @@ struct HistoryGroupView: View {
                 stackedCardsView
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous))
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isExpanded)
     }
     
@@ -102,12 +102,12 @@ struct HistoryGroupView: View {
     // MARK: - Expanded Content（展开状态）
     
     private var expandedContent: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DS.Spacing.md) {
             // 分类标题 + 收起按钮（通知中心风格）
-            HStack(alignment: .center, spacing: 12) {
+            HStack(alignment: .center, spacing: DS.Spacing.lg) {
                 // Chat 分类标题（和 Pipeline 对齐）
                 Text(type.displayTitle)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(DS.Typography.titleLarge)
                     .foregroundStyle(DS.Colors.textPrimary)
                 
                 Spacer()
@@ -122,8 +122,8 @@ struct HistoryGroupView: View {
                 // × 按钮（hover 效果）
                 HoverCloseButton(action: { onClearType?() }, size: 24, iconSize: 10)
             }
-            .padding(.horizontal, 4)  // 和 Pipeline 对齐
-            .padding(.vertical, 8)
+            .padding(.horizontal, DS.Spacing.xs)  // 和 Pipeline 对齐
+            .padding(.vertical, DS.Spacing.md)
             
             // 所有记录
             ForEach(records) { record in
@@ -139,7 +139,7 @@ struct HistoryGroupView: View {
                 )
             }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, DS.Spacing.md)
     }
 }
 
@@ -168,58 +168,58 @@ struct HistoryRecordCard: View {
             copyContent()
             onTap?()
         } label: {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 // 头部行：标题 + 时间
-                HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .center, spacing: DS.Spacing.md) {
                     Text(record.title)
-                        .font(.system(size: style == .prominent ? 14 : 13, weight: .semibold))
+                        .font((style == .prominent ? DS.Typography.content : DS.Typography.button).weight(.semibold))
                         .foregroundStyle(DS.Colors.textPrimary)
                         .lineLimit(1)
 
-                    Spacer(minLength: 8)
+                    Spacer(minLength: DS.Spacing.md)
 
                     Text(record.detailedTime)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DS.Typography.captionSmall)
                         .foregroundStyle(DS.Colors.textPlaceholder)
 
                     if onDelete != nil {
-                        Color.clear.frame(width: 20, height: 20)
+                        Color.clear.frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
                     }
                 }
 
                 // 预览文本（独立一行，固定占位3行高度）
                 Text(record.preview)
-                    .font(.system(size: 13))
+                    .font(DS.Typography.button)
                     .foregroundStyle(DS.Colors.textSecondary)
                     .lineLimit(3)
-                    .frame(height: 54, alignment: .topLeading) // 3行 * 18pt/行 = 54pt
+                    .frame(height: DS.Layout.toolbarHeight + DS.Spacing.lg + DS.Spacing.xxs, alignment: .topLeading) // 3行 * 18pt/行 = 54pt
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, DS.Spacing.lg + DS.Spacing.xxs)
+        .padding(.vertical, DS.Spacing.lg)
         .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.xl, style: .continuous)
                 .strokeBorder(isHovered ? DS.Colors.borderSecondary : DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.hairline)
         )
         .overlay(alignment: .topTrailing) {
             if onDelete != nil {
                 Button(action: { onDelete?() }, label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(DS.Typography.timestamp.weight(.medium))
                         .foregroundStyle(DS.Colors.textPlaceholder)
-                        .frame(width: 20, height: 20)
+                        .frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
                         .background(DS.Colors.chipBackground)
                         .clipShape(Circle())
                 })
                 .buttonStyle(.plain)
                 .opacity(isHovered ? 1 : 0)
                 .animation(.easeInOut(duration: 0.12), value: isHovered)
-                .padding(.top, 12)
-                .padding(.trailing, 14)
+                .padding(.top, DS.Spacing.lg)
+                .padding(.trailing, DS.Spacing.lg + DS.Spacing.xxs)
             }
         }
         .onHover { hovering in
@@ -232,7 +232,7 @@ struct HistoryRecordCard: View {
     private var cardBackground: some View {
         ZStack {
             // 毛玻璃效果
-            VisualEffectBlur(material: .hudWindow, cornerRadius: 16)
+            VisualEffectBlur(material: .hudWindow, cornerRadius: DS.CornerRadius.xl)
             
             // 深色叠加 (复制时短暂变亮)
             showCopied ? DS.Colors.buttonHoverStrong : (isHovered ? DS.Colors.overlayDark : DS.Colors.overlayLight)
@@ -277,7 +277,7 @@ struct HistoryRecordCard: View {
         SessionRecord(type: .transcription, title: "测试转录", preview: "这是一段转录文本")
     ]
     
-    return VStack(spacing: 12) {
+    return VStack(spacing: DS.Spacing.lg) {
         HistoryGroupView(
             type: .conversation,
             records: testRecords.filter { $0.type == .conversation },
@@ -291,5 +291,5 @@ struct HistoryRecordCard: View {
     }
     .frame(width: 360)
     .padding()
-    .background(Color.gray.opacity(0.3))
+    .background(DS.Colors.overlayDark)
 }

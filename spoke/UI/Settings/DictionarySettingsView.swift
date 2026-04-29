@@ -107,9 +107,9 @@ struct DictionarySettingsContent: View {
             } label: {
                 HStack(spacing: DS.Spacing.sm) {
                     Image(systemName: "plus")
-                        .font(.system(size: DS.Typography.fontSizeCaption, weight: .semibold))
+                        .font(DS.Typography.caption.weight(.semibold))
                     Text("新增热词")
-                        .font(.system(size: DS.Typography.fontSizeButton, weight: .semibold))
+                        .font(DS.Typography.button.weight(.semibold))
                 }
                 .foregroundStyle(DS.Colors.textPrimary)
                 .padding(.horizontal, DS.Spacing.xl)
@@ -286,7 +286,7 @@ struct DictionarySettingsContent: View {
     // MARK: - Dictionary List Section
     
     private var dictionaryListSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             // 说明卡片
             introCard
             
@@ -295,7 +295,7 @@ struct DictionarySettingsContent: View {
                 emptyStateView
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: DS.Spacing.md) {
                         ForEach(filteredEntries) { entry in
                             DictionaryEntryRow(
                                 entry: entry,
@@ -327,8 +327,8 @@ struct DictionarySettingsContent: View {
     
     private var introCard: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            Text("让小凹记住你的表达")
-                .font(.system(size: DS.Typography.fontSizeContent, weight: .semibold))
+                Text("让小凹记住你的表达")
+                .font(DS.Typography.content.weight(.semibold))
                 .foregroundStyle(DS.Colors.textPrimary)
             
             Text("小凹会自动学习你常用的术语，也支持手动维护。添加行业词汇、公司名称或口头表达，让润色与注入更符合你的习惯。")
@@ -357,7 +357,7 @@ struct DictionarySettingsContent: View {
                 .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
             
             Text("暂无词条")
-                .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                .font(DS.Typography.content.weight(.medium))
                 .foregroundStyle(DS.Colors.textSecondary)
             
             Text("点击「新增热词」添加你的专属词汇")
@@ -567,9 +567,9 @@ struct DictionaryEntryRow: View {
                         .frame(width: DS.Layout.iconSizeStandard)
 
                     // 词条内容
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                         Text(entry.word)
-                            .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                            .font(DS.Typography.content.weight(.medium))
                             .foregroundStyle(DS.Colors.textPrimary)
 
                         if !entry.corrections.isEmpty {
@@ -665,7 +665,7 @@ struct HotwordChip: View {
                 correctedWord = hotword.word
             } label: {
                 Image(systemName: "checkmark")
-                    .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
+                    .font(DS.Typography.timestamp.weight(.bold))
                     .foregroundStyle(DS.Colors.success)
             }
             .buttonStyle(.plain)
@@ -675,7 +675,7 @@ struct HotwordChip: View {
                 onDismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: DS.Typography.fontSizeTimestamp, weight: .bold))
+                    .font(DS.Typography.timestamp.weight(.bold))
                     .foregroundStyle(DS.Colors.error.opacity(0.8))
             }
             .buttonStyle(.plain)
@@ -745,7 +745,7 @@ extension DictionarySettingsContent {
                 
                 VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     Text("生词本")
-                        .font(.system(size: DS.Typography.fontSizeContent, weight: .medium))
+                        .font(DS.Typography.content.weight(.medium))
                         .foregroundStyle(DS.Colors.textPrimary)
                     
                     Text("查词时自动收藏的生词，同步到实时字幕高亮")
