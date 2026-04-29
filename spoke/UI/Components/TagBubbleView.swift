@@ -112,9 +112,22 @@ struct TagBubbleView: View {
     // MARK: - Bubble View
     
     private var bubbleView: some View {
-        Button {
-            onFilterToggle?()
-        } label: {
+        Group {
+            if onFilterToggle != nil {
+                Button {
+                    onFilterToggle?()
+                } label: {
+                    tagLabel
+                }
+                .buttonStyle(.plain)
+            } else {
+                tagLabel
+            }
+        }
+    }
+    
+    private var tagLabel: some View {
+        Group {
             Text(tag.name)
                 .font(DS.Typography.captionSmall)
                 .foregroundColor(tag.color.color)
