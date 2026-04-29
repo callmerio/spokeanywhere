@@ -88,15 +88,15 @@ struct CardAttachmentView: View {
             // 右下角数量提示
             if remaining > 0 {
                 Text("+\(remaining)")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .font(DS.Typography.caption)
+                    .foregroundColor(DS.Colors.textPrimary)
+                    .padding(.horizontal, DS.Spacing.md)
+                    .padding(.vertical, DS.Spacing.xs)
                     .background(
                         Capsule()
-                            .fill(Color.black.opacity(0.6))
+                            .fill(DS.Colors.overlayMedium)
                     )
-                    .padding(4)
+                    .padding(DS.Spacing.xs)
             }
         }
     }
@@ -316,12 +316,12 @@ struct CardAttachmentThumbnail: View {
                     dependencies.removeAttachment(attachment.id, cardId)
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.5), radius: 2)
+                        .font(.system(size: DS.Layout.iconSizeMedium))
+                        .foregroundColor(DS.Colors.textPrimary)
+                        .shadow(color: DS.Colors.overlayMedium, radius: DS.Spacing.xxs)
                 }
                 .buttonStyle(.plain)
-                .padding(4)
+                .padding(DS.Spacing.xs)
                 .transition(.opacity)
             }
         }
@@ -427,26 +427,26 @@ struct FullImagePopover: View {
     }
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DS.Spacing.md) {
             // 图片
             if let image = image {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: displaySize.width, height: displaySize.height)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm, style: .continuous))
             } else {
                 ProgressView()
                     .frame(width: 200, height: 150)
             }
             
             // 操作按钮
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Spacing.lg) {
                 Button {
                     copyToClipboard()
                 } label: {
                     Label("复制", systemImage: "doc.on.doc")
-                        .font(.system(size: 11))
+                        .font(DS.Typography.captionSmall)
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.secondary)
@@ -455,7 +455,7 @@ struct FullImagePopover: View {
                     saveToDesktop()
                 } label: {
                     Label("保存", systemImage: "square.and.arrow.down")
-                        .font(.system(size: 11))
+                        .font(DS.Typography.captionSmall)
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.secondary)
@@ -466,13 +466,13 @@ struct FullImagePopover: View {
                     isPresented = false
                 } label: {
                     Text("关闭")
-                        .font(.system(size: 11))
+                        .font(DS.Typography.captionSmall)
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.secondary)
             }
         }
-        .padding(12)
+        .padding(DS.Spacing.lg)
         .onAppear {
             image = dependencies.imageCache.original(for: attachment)
         }
@@ -497,20 +497,20 @@ struct CardDropOverlay: View {
     
     var body: some View {
         if isTargeted {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous)
+                .stroke(DS.Colors.accentPrimary, style: StrokeStyle(lineWidth: DS.BorderWidth.thin, dash: [DS.Spacing.md, DS.Spacing.xs]))
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.1))
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous)
+                        .fill(DS.Colors.accentPrimary.opacity(0.1))
                 )
                 .overlay(
-                    VStack(spacing: 8) {
+                    VStack(spacing: DS.Spacing.md) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 24))
+                            .font(.system(size: DS.Layout.iconSizeLarge))
                         Text("松开添加图片")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(DS.Typography.caption)
                     }
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(DS.Colors.accentPrimary)
                 )
         }
     }
@@ -519,7 +519,7 @@ struct CardDropOverlay: View {
 // MARK: - Preview
 
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: DS.Spacing.xxl) {
         // 模拟附件
         let mockAttachment = CardAttachment(
             fileName: "test.png",
@@ -542,5 +542,5 @@ struct CardDropOverlay: View {
         )
     }
     .padding()
-    .background(Color.black)
+    .background(DS.Colors.overlayStrong)
 }

@@ -51,8 +51,8 @@ struct WorkflowPickerView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 8)
-        .padding(.top, 8)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.top, DS.Spacing.md)
         .onChange(of: filter) { _, _ in
             workflowState.selectedIndex = 0
         }
@@ -63,7 +63,7 @@ struct WorkflowPickerView: View {
     private var workflowList: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                     ForEach(Array(flatWorkflows.enumerated()), id: \.element.id) { index, workflow in
                         Button {
                             onSelect(workflow)
@@ -78,7 +78,7 @@ struct WorkflowPickerView: View {
                         .id(workflow.id)
                     }
                 }
-                .padding(6)
+                .padding(DS.Spacing.sm)
             }
             .frame(maxHeight: 260)
             .onChange(of: workflowState.selectedIndex) { _, newIndex in
@@ -94,7 +94,7 @@ struct WorkflowPickerView: View {
     // MARK: - Empty State
     
     private var emptyState: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DS.Spacing.md) {
             Image(systemName: "magnifyingglass")
                 .font(.title2)
                 .foregroundStyle(.secondary)
@@ -106,7 +106,7 @@ struct WorkflowPickerView: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .padding(.vertical, DS.Spacing.xxl)
     }
 }
 

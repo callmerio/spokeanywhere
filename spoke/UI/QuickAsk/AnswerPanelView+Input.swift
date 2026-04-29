@@ -8,7 +8,7 @@ extension AnswerPanelView {
     
     var inputArea: some View {
         inputAreaContent
-            .padding(14)
+            .padding(DS.Spacing.lg)
             .background(DS.Colors.chipBackground)
             .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg))
             .overlay(
@@ -22,13 +22,13 @@ extension AnswerPanelView {
                 handleDropProviders(providers)
                 return true
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-            .padding(.top, 8)
+            .padding(.horizontal, DS.Spacing.xl)
+            .padding(.bottom, DS.Spacing.xl)
+            .padding(.top, DS.Spacing.md)
     }
     
     var inputAreaContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
             if !pendingAttachments.isEmpty {
                 pendingAttachmentsView
             }
@@ -45,7 +45,7 @@ extension AnswerPanelView {
     
     var pendingAttachmentsView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 ForEach(pendingAttachments) { attachment in
                     AttachmentThumbnailView(
                         attachment: attachment,
@@ -54,13 +54,13 @@ extension AnswerPanelView {
                     )
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.top, 4)
+            .padding(.horizontal, DS.Spacing.xs)
+            .padding(.top, DS.Spacing.xs)
         }
     }
     
     var textEditorView: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
             if let workflow = workflowState.selectedWorkflow {
                 WorkflowTagView(keyword: workflow.keyword) {
                     workflowState.reset()
@@ -89,7 +89,7 @@ extension AnswerPanelView {
     }
     
     var inputToolbar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Spacing.lg) {
             AttachmentPickerMenu(onAdd: { attachment in
                 withAnimation { pendingAttachments.append(attachment) }
             })
@@ -99,7 +99,7 @@ extension AnswerPanelView {
             if !isRecording {
                 Button(action: { toggleRecording() }, label: {
                     Image(systemName: "mic")
-                        .font(.system(size: 16))
+                        .font(.system(size: DS.Layout.iconSizeMedium))
                         .foregroundStyle(DS.Colors.textPlaceholder)
                 })
                 .buttonStyle(.plain)
@@ -107,13 +107,13 @@ extension AnswerPanelView {
             
             sendButton
         }
-        .padding(.top, 4)
+        .padding(.top, DS.Spacing.xs)
     }
     
     var sendButton: some View {
         Button(action: { sendMessage() }, label: {
             Image(systemName: "arrow.up.circle.fill")
-                .font(.system(size: 28))
+                .font(.system(size: DS.Layout.iconSizeXLarge))
                 .foregroundStyle(canSend ? DS.Colors.accentPrimary : DS.Colors.textPlaceholder)
         })
         .buttonStyle(.plain)

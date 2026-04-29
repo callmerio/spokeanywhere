@@ -42,7 +42,7 @@ struct DictionaryResultView: View {
         HStack(alignment: .top, spacing: DS.Spacing.xl) {
             VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(data.word)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(DS.Typography.titleLarge)
                     .foregroundStyle(DS.Colors.textPrimary)
                 
                 if let phonetic = data.phonetic, !phonetic.isEmpty {
@@ -54,7 +54,7 @@ struct DictionaryResultView: View {
             .frame(minWidth: 60)
             
             Divider()
-                .frame(height: 40)
+                .frame(height: DS.Layout.toolbarHeight)
                 .background(DS.Colors.borderSecondary)
             
             VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -90,12 +90,12 @@ struct DictionaryResultView: View {
     private func errorContent(_ error: DictionaryAPIError) -> some View {
         HStack(spacing: DS.Spacing.lg) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: DS.Layout.iconSizeStandard))
+                .font(DS.Typography.titleLarge)
                 .foregroundStyle(DS.Colors.warning)
             
             VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 Text(word)
-                    .font(.system(size: DS.Typography.fontSizeBodySecondary, weight: .semibold))
+                    .font(DS.Typography.bodySecondary)
                     .foregroundStyle(DS.Colors.textPrimary)
                 
                 Text(error.localizedDescription)
