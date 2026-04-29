@@ -251,6 +251,12 @@ enum DesignTokens {
         static let durationFast: Double = 0.15
         static let durationNormal: Double = 0.2
         static let durationSlow: Double = 0.3
+        /// 脉冲动画时长（600ms）- 思考指示器
+        static let durationPulse: Double = 0.6
+        /// 旋转动画时长（1.5s）- 状态指示器旋转
+        static let durationSpinner: Double = 1.5
+        /// 跑马灯旋转时长（2.0s）- 流光边框
+        static let durationRunningLight: Double = 2.0
     }
     
     // MARK: - Shadow

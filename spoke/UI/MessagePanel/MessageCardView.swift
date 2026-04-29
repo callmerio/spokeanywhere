@@ -451,7 +451,7 @@ extension MessageCardView {
                             isExpanded.toggle()
                         }
                     } label: {
-                        Color.clear
+                        DS.Colors.clear
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

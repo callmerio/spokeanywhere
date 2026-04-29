@@ -42,7 +42,7 @@ struct FloatingCapsuleView: View {
             Spacer() // 顶部弹性空间，把内容推到底部
             
             // 实际内容区域
-            VStack(spacing: DS.BorderWidth.none) {
+            VStack(spacing: DS.Spacing.none) {
                 // 上方：转写文字区域（向上扩展）
                 // .success 状态也保留文字显示，直到 UI 消失
                 let showText = state.phase == .recording
@@ -78,9 +78,9 @@ struct FloatingCapsuleView: View {
                         Spacer()
                         LinearGradient(
                             colors: [
-                                DS.Colors.recordingGlow.opacity(0.25),
-                                DS.Colors.recordingGlow.opacity(0.08),
-                                Color.clear
+DS.Colors.recordingGlow.opacity(DS.Opacity.hover),
+                                 DS.Colors.recordingGlow.opacity(0.08),
+                                 DS.Colors.clear
                             ],
                             startPoint: .bottom,
                             endPoint: .top
@@ -93,8 +93,8 @@ struct FloatingCapsuleView: View {
                 VStack {
                     LinearGradient(
                         colors: [
-                            DS.Colors.glowTop,
-                            Color.clear
+DS.Colors.glowTop,
+                             DS.Colors.clear
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -108,7 +108,7 @@ struct FloatingCapsuleView: View {
         // 跟踪内容高度
         .background(
             GeometryReader { geo in
-                Color.clear.preference(key: ContentHeightKey.self, value: geo.size.height)
+                DS.Colors.clear.preference(key: ContentHeightKey.self, value: geo.size.height)
             }
         )
         .onPreferenceChange(ContentHeightKey.self) { height in
@@ -161,7 +161,7 @@ struct FloatingCapsuleView: View {
                     colors: [
                         DS.Colors.overlayStrong.opacity(0.95 / 0.8),
                         DS.Colors.overlayMedium,
-                        Color.clear
+                        DS.Colors.clear
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -193,19 +193,19 @@ struct FloatingCapsuleView: View {
                                     .italic()
                                 
                                 Divider()
-                                    .background(DS.Colors.borderPrimary.opacity(0.2))
+                                    .background(DS.Colors.borderPrimary.opacity(DS.Opacity.light))
                             }
                             
-                            VStack(alignment: .leading, spacing: DS.Spacing.md) {
+VStack(alignment: .leading, spacing: DS.Spacing.md) {
                                 HStack(alignment: .top, spacing: DS.Spacing.md) {
-                                                                    Image(systemName: "exclamationmark.triangle.fill")
-                                                                        .foregroundStyle(DS.Colors.error)
-                                                                        .font(DS.Typography.content)
-                                                                        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundStyle(DS.Colors.error)
+                                        .font(DS.Typography.content)
+                                    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                                         Text(message)
                                             .font(DS.Typography.content.weight(.semibold))
                                             .foregroundStyle(DS.Colors.textPrimary)
-                                        
+
                                         if let reason = reason {
                                             Text(reason)
                                                 .font(DS.Typography.button)
@@ -213,26 +213,18 @@ struct FloatingCapsuleView: View {
                                         }
                                     }
                                 }
-                                
-                                                            if let suggestion = suggestion {
-                                
-                                                                Text(suggestion)
-                                
-                                                                    .font(DS.Typography.caption)
-                                
-                                                                    .padding(.vertical, DS.Spacing.xs)
-                                
-                                                                    .padding(.horizontal, DS.Spacing.md)
-                                
-                                                                    .background(DS.Colors.accentInfo.opacity(0.1))
-                                
-                                                                    .foregroundStyle(DS.Colors.accentInfo)
-                                
-                                                                    .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
-                                
-                                                            }
-                                
-                                
+
+                                if let suggestion = suggestion {
+                                    Text(suggestion)
+                                        .font(DS.Typography.caption)
+                                        .padding(.vertical, DS.Spacing.xs)
+                                        .padding(.horizontal, DS.Spacing.md)
+                                        .background(DS.Colors.accentInfo.opacity(0.1))
+                                        .foregroundStyle(DS.Colors.accentInfo)
+                                        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
+                                }
+
+
                             }
                         }
                     } else if !state.partialText.isEmpty {
@@ -281,7 +273,7 @@ struct FloatingCapsuleView: View {
                     }
                     
                     // 底部锚点，用于自动滚动
-                    Color.clear.frame(height: DS.BorderWidth.thin).id("bottom")
+                    DS.Colors.clear.frame(height: DS.BorderWidth.thin).id("bottom")
                 }
                 .padding(.horizontal, DS.Spacing.xl)
                 .padding(.top, DS.Spacing.xl)
@@ -290,7 +282,7 @@ struct FloatingCapsuleView: View {
                 // 测量内容实际高度
                 .background(
                     GeometryReader { geo in
-                        Color.clear.preference(key: TextContentHeightKey.self, value: geo.size.height)
+                        DS.Colors.clear.preference(key: TextContentHeightKey.self, value: geo.size.height)
                     }
                 )
             }
@@ -320,11 +312,11 @@ struct FloatingCapsuleView: View {
         .frame(maxHeight: min(textContentHeight, maxTextAreaHeight))
         // 顶部渐变遮罩：当内容超出可视区域时显示
         .mask(
-            VStack(spacing: DS.BorderWidth.none) {
+            VStack(spacing: DS.Spacing.none) {
                 // 顶部渐变（仅当内容可滚动时生效）
                 if textContentHeight > maxTextAreaHeight {
                     LinearGradient(
-                        colors: [.clear, .black],
+                        colors: [DS.Colors.clear, .black],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -340,7 +332,7 @@ struct FloatingCapsuleView: View {
     // MARK: - Control Bar (下方固定)
     
     private var controlBar: some View {
-        HStack(spacing: DS.BorderWidth.none) {
+        HStack(spacing: DS.Spacing.none) {
             // 左侧：App 图标 (Success 状态下不再显示大勾勾，而是保持 App 图标)
             appIcon
             
@@ -374,7 +366,7 @@ struct FloatingCapsuleView: View {
     // MARK: - Hover Overlay
     
     private var hoverOverlay: some View {
-        VStack(spacing: DS.BorderWidth.none) {
+        VStack(spacing: DS.Spacing.none) {
             // 上半部分：完成录音
             Button {
                 onComplete?()
@@ -387,7 +379,7 @@ struct FloatingCapsuleView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(DS.Typography.titleLarge)
                             .foregroundStyle(DS.Colors.accentInfo)
-                            .shadow(color: DS.Colors.accentInfo.opacity(0.5), radius: DS.Spacing.xs)
+                            .shadow(color: DS.Colors.accentInfo.opacity(DS.Opacity.emphasis), radius: DS.Spacing.xs)
                         
                         Text("完成录音")
                             .font(DS.Typography.content.weight(.medium))
@@ -420,7 +412,7 @@ struct FloatingCapsuleView: View {
                         Image(systemName: "xmark.circle.fill")
                             .font(DS.Typography.titleLarge)
                             .foregroundStyle(DS.Colors.error)
-                            .shadow(color: DS.Colors.error.opacity(0.5), radius: DS.Spacing.xs)
+                            .shadow(color: DS.Colors.error.opacity(DS.Opacity.emphasis), radius: DS.Spacing.xs)
                         
                         Text("取消录音")
                             .font(DS.Typography.content.weight(.medium))
@@ -646,7 +638,7 @@ struct StatusIndicator: View {
         .onChange(of: isThinking) { wasThinking, nowThinking in
             if wasThinking && !nowThinking {
                 // 转到成功状态
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                withAnimation(DS.Animation.springBouncy) {
                     checkmarkScale = 1
                 }
             } else if nowThinking {
@@ -659,7 +651,7 @@ struct StatusIndicator: View {
     }
     
     private func startSpinner() {
-        withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+        withAnimation(.linear(duration: DS.Animation.durationSpinner).repeatForever(autoreverses: false)) {
             rotation = 360
         }
     }
@@ -678,7 +670,7 @@ struct ThinkingIndicator: View {
                     .frame(width: DS.Spacing.xs, height: DS.Spacing.xs)
                     .scaleEffect(isAnimating ? 1.0 : 0.5)
                     .animation(
-                        .easeInOut(duration: 0.6)
+                        .easeInOut(duration: DS.Animation.durationPulse)
                         .repeatForever()
                         .delay(Double(index) * 0.2),
                         value: isAnimating
@@ -734,7 +726,7 @@ struct RunningLightBorder: View {
                 )
         }
         .onAppear {
-            withAnimation(.linear(duration: DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationSlow + DS.Animation.durationNormal).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: DS.Animation.durationRunningLight).repeatForever(autoreverses: false)) {
                 rotation = 360
             }
         }
