@@ -173,7 +173,7 @@ struct TagBubbleView: View {
                         HStack {
                             Circle()
                                 .fill(color.color)
-                                .frame(width: 12, height: 12)
+                                .frame(width: DS.Spacing.lg, height: DS.Spacing.lg)
                             Text(color.displayName)
                             if tag.color == color {
                                 Image(systemName: "checkmark")
@@ -209,10 +209,10 @@ struct TagBubbleView: View {
     // MARK: - Editing View
     
     private var editingView: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.xs) {
             TextField("", text: $editingName)
                 .textFieldStyle(.plain)
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Typography.captionSmall)
                 .foregroundColor(tag.color.color)
                 .frame(minWidth: 40, maxWidth: 120)
                 .onSubmit {
@@ -223,7 +223,7 @@ struct TagBubbleView: View {
                 commitEdit()
             } label: {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(DS.Typography.timestamp.weight(.bold))
                     .foregroundColor(DS.Colors.success)
             }
             .buttonStyle(.plain)
@@ -232,20 +232,20 @@ struct TagBubbleView: View {
                 isEditing = false
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(DS.Typography.timestamp.weight(.bold))
                     .foregroundColor(DS.Colors.error)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.xs)
         .background(
             Capsule()
                 .fill(tag.color.color.opacity(0.2))
         )
         .overlay(
             Capsule()
-                .stroke(tag.color.color.opacity(0.5), lineWidth: 1)
+                .stroke(tag.color.color.opacity(0.5), lineWidth: DS.BorderWidth.thin)
         )
     }
     
@@ -302,7 +302,7 @@ struct TagListView: View {
     }
     
     var body: some View {
-        FlowLayout(spacing: 6) {
+        FlowLayout(spacing: DS.Spacing.sm) {
             ForEach(tags) { tag in
                 TagBubbleView(
                     tag: tag,
@@ -325,9 +325,9 @@ struct TagListView: View {
             onAddTag?()
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 9, weight: .bold))
+                .font(DS.Typography.timestamp.weight(.bold))
                 .foregroundColor(isHoveringAdd ? DS.Colors.textPrimary : DS.Colors.textPlaceholder)
-                .frame(width: 20, height: 20)
+                .frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
                 .background(
                     Circle()
                         .fill(isHoveringAdd ? DS.Colors.buttonHoverStrong : DS.Colors.chipBackground)
@@ -346,7 +346,7 @@ struct TagListView: View {
 
 /// 水平流式布局（自动换行）- 使用 cache 避免重复计算
 struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
+    var spacing: CGFloat = DS.Spacing.md
     
     // MARK: - Cache 结构
     
@@ -458,16 +458,16 @@ struct AddTagPopover: View {
         let filteredTags = dependencies.searchTags(searchQuery)
         let matchingTag = dependencies.tagNamed(searchQuery)
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
             // 搜索/新建输入框
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Spacing.md) {
                 Image(systemName: "tag")
-                    .foregroundColor(.secondary)
-                    .font(.system(size: 12))
+                    .foregroundColor(DS.Colors.textSecondary)
+                    .font(DS.Typography.caption)
                 
                 TextField("搜索或新建标签...", text: $searchQuery)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(DS.Typography.button)
                     .focused($isInputFocused)
                     .onSubmit {
                         if !searchQuery.isEmpty {
@@ -475,18 +475,18 @@ struct AddTagPopover: View {
                         }
                     }
             }
-            .padding(10)
+            .padding(DS.Spacing.md)
             .background(DS.Colors.chipBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
             
             // 最近使用
             if !recentTags.isEmpty && searchQuery.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                     Text("最近使用")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(DS.Typography.timestamp.weight(.medium))
+                        .foregroundColor(DS.Colors.textSecondary)
                     
-                    FlowLayout(spacing: 6) {
+                    FlowLayout(spacing: DS.Spacing.sm) {
                         ForEach(recentTags) { tag in
                             TagBubbleButton(tag: tag) {
                                 addExistingTag(tag)
@@ -498,12 +498,12 @@ struct AddTagPopover: View {
             
             // 搜索结果
             if !searchQuery.isEmpty && !filteredTags.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
                     Text("已有标签")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(DS.Typography.timestamp.weight(.medium))
+                        .foregroundColor(DS.Colors.textSecondary)
                     
-                    FlowLayout(spacing: 6) {
+                    FlowLayout(spacing: DS.Spacing.sm) {
                         ForEach(filteredTags) { tag in
                             TagBubbleButton(tag: tag) {
                                 addExistingTag(tag)
@@ -518,19 +518,19 @@ struct AddTagPopover: View {
                 Button {
                     createAndAdd()
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Spacing.sm) {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 12))
+                            .font(DS.Typography.caption)
                         Text("创建「\(searchQuery)」")
-                            .font(.system(size: 12))
+                            .font(DS.Typography.caption)
                     }
                     .foregroundColor(DS.Colors.accentPrimary)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(12)
-        .frame(width: 220)
+        .padding(DS.Spacing.lg)
+        .frame(width: DS.Layout.toolbarHeight * 5 + DS.Layout.iconSizeStandard)
         .onAppear {
             isInputFocused = true
             recentTags = dependencies.recentTags()
@@ -561,17 +561,17 @@ struct TagBubbleButton: View {
     var body: some View {
         Button(action: action) {
             Text(tag.name)
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Typography.captionSmall)
                 .foregroundColor(tag.color.color)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.vertical, DS.Spacing.xs)
                 .background(
                     Capsule()
                         .fill(tag.color.color.opacity(isHovered ? 0.25 : 0.15))
                 )
                 .overlay(
                     Capsule()
-                        .stroke(tag.color.color.opacity(0.3), lineWidth: 1)
+                        .stroke(tag.color.color.opacity(0.3), lineWidth: DS.BorderWidth.thin)
                 )
         }
         .buttonStyle(.plain)
@@ -595,24 +595,24 @@ struct ActiveFilterTagBubble: View {
     
     var body: some View {
         Button(action: onRemove) {
-            HStack(spacing: 4) {
+            HStack(spacing: DS.Spacing.xs) {
                 Text(tag.name)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(DS.Typography.timestamp.weight(.medium))
                 
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(DS.Typography.timestamp.weight(.bold))
                     .opacity(isHovered ? 1 : 0.6)
             }
             .foregroundColor(tag.color.color)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.xs)
             .background(
                 Capsule()
                     .fill(tag.color.color.opacity(isHovered ? 0.35 : 0.25))
             )
             .overlay(
                 Capsule()
-                    .stroke(tag.color.color.opacity(0.5), lineWidth: 1)
+                    .stroke(tag.color.color.opacity(0.5), lineWidth: DS.BorderWidth.thin)
             )
         }
         .buttonStyle(.plain)
@@ -629,7 +629,7 @@ struct ActiveFilterTagBubble: View {
 #Preview {
     let previewDependencies = TagBubbleDependencies.preview
 
-    VStack(spacing: 20) {
+    VStack(spacing: DS.Spacing.xxl) {
         // 单个标签
         TagBubbleView(
             tag: CardTag(name: "macOS", color: .blue),
@@ -648,7 +648,7 @@ struct ActiveFilterTagBubble: View {
             dependencies: previewDependencies,
             activeFilterTagIds: []
         )
-        .frame(width: 200)
+        .frame(width: DS.Layout.toolbarHeight * 5)
         
         // 激活的筛选标签
         ActiveFilterTagBubble(tag: CardTag(name: "Swift", color: .orange)) {

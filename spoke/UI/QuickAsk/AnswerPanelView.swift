@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 @MainActor
 struct AnswerPanelViewDependencies {
     let workflowState: WorkflowState
@@ -101,14 +103,14 @@ struct AnswerPanelView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            VStack(spacing: 0) {
+            VStack(spacing: DS.BorderWidth.none) {
                 // 顶部占位 (避免内容被 Toolbar 遮挡，或者留白)
-                Color.clear.frame(height: 10)
+                Color.clear.frame(height: DS.CornerRadius.md)
                 
                 // 对话内容区
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.xxl) {
                             // 消息列表
                             ForEach(state.messages) { message in
                                 MessageBubbleView(
@@ -130,8 +132,8 @@ struct AnswerPanelView: View {
                                 suggestedQuestionsView
                             }
                         }
-                        .padding(16)
-                        .padding(.top, 20) // 额外顶部内边距
+                        .padding(DS.Spacing.xl)
+                        .padding(.top, DS.Spacing.xxl - DS.Spacing.xs) // 额外顶部内边距
                     }
                     .onChange(of: state.messages) { _, messages in
                         if let lastId = messages.last?.id {
@@ -158,17 +160,17 @@ struct AnswerPanelView: View {
             ZStack(alignment: .top) {
                 // 透明热区 (始终存在，确保 hover 检测)
                 Color.clear
-                    .frame(height: 56)
+                    .frame(height: DS.Layout.toolbarHeight + DS.Spacing.xl)
                 
                 // toolbar (受 opacity 控制)
                 toolbar
                     .opacity(isHoveringToolbar ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: isHoveringToolbar)
+                    .animation(DS.Animation.normal, value: isHoveringToolbar)
             }
-            .frame(maxWidth: .infinity, maxHeight: 56, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: DS.Layout.toolbarHeight + DS.Spacing.xl, alignment: .top)
             .contentShape(Rectangle())
             .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.15)) {
+                withAnimation(DS.Animation.fast) {
                     isHoveringToolbar = hovering
                 }
             }
@@ -178,10 +180,10 @@ struct AnswerPanelView: View {
                 // 磨砂玄效果
                 VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
                 // 深色叠加
-                Color.black.opacity(0.4)
+                DS.Colors.overlayLight
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.xl))
         .background {
             // 隐藏的快捷键监听：Cmd + , 打开设置
             Button("") {

@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+private typealias DS = DesignTokens
+
 @MainActor
 struct MessageCardViewDependencies {
     let hoverState: MessagePanelHoverState
@@ -62,7 +64,7 @@ extension MessageCardView {
     var body: some View {
         ZStack(alignment: .top) {
             // 卡片主体
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 // 头部：阶段标签 + 时间 + 操作按钮
                 headerView
 
@@ -88,9 +90,9 @@ extension MessageCardView {
                     metadataView
                 }
             }
-            .padding(14)
+            .padding(DS.Spacing.lg + DS.Spacing.xxs)
             .background(cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous))
             .overlay(
                 // 拖拽提示
                 CardDropOverlay(isTargeted: isDropTargeted)
@@ -285,7 +287,7 @@ extension MessageCardView {
     }
 
     private var headerView: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.md) {
             // 图标：应用图标或阶段指示器
             if let sourceApp = card.sourceApp {
                 SourceAppIconView(
@@ -297,14 +299,14 @@ extension MessageCardView {
                 // 无来源应用时显示阶段圆点
                 Circle()
                     .fill(card.stage.color)
-                    .frame(width: 8, height: 8)
-                    .shadow(color: card.stage.glowColor.opacity(0.5), radius: 4, x: 0, y: 0)
+                    .frame(width: DS.Spacing.md, height: DS.Spacing.md)
+                    .shadow(color: card.stage.glowColor.opacity(0.5), radius: DS.Spacing.xs, x: 0, y: 0)
             }
 
             // 标题（类似通知的 App 名称位置）
             Text(cardTitle)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(DesignTokens.Colors.textPrimary)
+                .font(DS.Typography.button.weight(.semibold))
+                .foregroundStyle(DS.Colors.textPrimary)
                 .lineLimit(1)
 
             // Today/Note 标记
@@ -312,16 +314,16 @@ extension MessageCardView {
                 recordTypeBadge
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: DS.Spacing.md)
 
             // 时间戳
             Text(card.formattedTime)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(DesignTokens.Colors.textPlaceholder)
+                .font(DS.Typography.captionSmall)
+                .foregroundStyle(DS.Colors.textPlaceholder)
 
             // 操作按钮组（悬浮显示）
             if isHovered {
-                HStack(spacing: 4) {
+                HStack(spacing: DS.Spacing.xs) {
                     // 重新处理按钮
                     if canReprocess {
                         cardActionButton(icon: "arrow.clockwise", action: reprocess)
@@ -381,17 +383,17 @@ extension MessageCardView {
     private var contentView: some View {
         ZStack(alignment: .topLeading) {
             // 文本内容（固定从顶部开始显示）
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
                 // 摘要生成中的提示（不阻塞内容显示）
                 if card.summaryStatus == .generating {
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Spacing.sm) {
                         ProgressView()
                             .controlSize(.mini)
                         Text("正在总结...")
-                            .font(.system(size: 10))
+                            .font(DS.Typography.timestamp)
                     }
-                    .foregroundColor(DesignTokens.Colors.textPlaceholder)
-                    .padding(.bottom, 2)
+                    .foregroundColor(DS.Colors.textPlaceholder)
+                    .padding(.bottom, DS.Spacing.xxs)
                 }
 
                 // 有高亮标记时使用 HighlightedContentText，否则使用普通 Text
@@ -400,14 +402,14 @@ extension MessageCardView {
                         HighlightedContentText(
                             text: displayText,
                             highlights: card.highlights,
-                            font: .systemFont(ofSize: 13),
-                            foregroundColor: DesignTokens.Colors.NS.textPrimary
+                            font: .systemFont(ofSize: DS.Typography.fontSizeButton),
+                            foregroundColor: DS.Colors.NS.textPrimary
                         )
                     } else {
                         // 普通文本或摘要（摘要标题已在 header 显示，这里直接显示内容）
                         Text(displayText)
-                            .font(.system(size: 13))
-                            .foregroundStyle(DesignTokens.Colors.textSecondary)
+                            .font(DS.Typography.button)
+                            .foregroundStyle(DS.Colors.textSecondary)
                             .textSelection(.enabled)
                             .lineLimit(nil)  // 禁用省略号，让 mask 处理渐变
                             .fixedSize(horizontal: false, vertical: true)
@@ -425,7 +427,7 @@ extension MessageCardView {
                 // 折叠时底部渐隐效果：前2.5行完整显示，第3行后半渐变消失
                 .mask {
                     if needsTextCollapse && !isExpanded && !shouldShowSummary {
-                        VStack(spacing: 0) {
+                        VStack(spacing: DS.BorderWidth.none) {
                             // 前2行 + 第3行的1/2完整显示
                             Rectangle()
                                 .frame(height: CGFloat(collapsedDisplayLines) * lineHeight - lineHeight * 0.5)
@@ -479,13 +481,13 @@ extension MessageCardView {
                 Button {
                     showTagPopover = true
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: DS.Spacing.xs) {
                         Image(systemName: "tag")
-                            .font(.system(size: 10))
+                            .font(DS.Typography.timestamp)
                         Text("添加标签")
-                            .font(.system(size: 10))
+                            .font(DS.Typography.timestamp)
                     }
-                    .foregroundStyle(DesignTokens.Colors.textPlaceholder)
+                    .foregroundStyle(DS.Colors.textPlaceholder)
                 }
                 .buttonStyle(.plain)
             }
@@ -497,12 +499,12 @@ extension MessageCardView {
     // MARK: - Metadata
 
     private var metadataView: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.md) {
             ForEach(Array(card.metadata.keys.sorted()), id: \.self) { key in
                 if let value = card.metadata[key] {
                     Text("\(key): \(value)")
-                        .font(.system(size: 9))
-                        .foregroundColor(DesignTokens.Colors.textPlaceholder)
+                        .font(DS.Typography.timestamp)
+                        .foregroundColor(DS.Colors.textPlaceholder)
                 }
             }
         }
@@ -516,10 +518,10 @@ extension MessageCardView {
     private func cardActionButton(icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(DesignTokens.Colors.textSecondary)
-                .frame(width: 20, height: 20)
-                .background(DesignTokens.Colors.buttonHover)
+                .font(DS.Typography.timestamp.weight(.medium))
+                .foregroundStyle(DS.Colors.textSecondary)
+                .frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
+                .background(DS.Colors.buttonHover)
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -559,48 +561,48 @@ extension MessageCardView {
 
     /// 复制成功浮动提示（紧凑 + 半透明）
     private var copyFeedbackBadge: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.xs) {
             Image(systemName: "checkmark")
-                .font(.system(size: 9, weight: .bold))
+                .font(DS.Typography.timestamp.weight(.bold))
             Text("已复制")
-                .font(.system(size: 10, weight: .medium))
+                .font(DS.Typography.timestamp.weight(.medium))
         }
-        .foregroundColor(.green)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .foregroundColor(DS.Colors.success)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.xs)
         .background(
             Capsule()
-                .fill(DesignTokens.Colors.overlayMedium)
+                .fill(DS.Colors.overlayMedium)
                 .overlay(
                     Capsule()
-                        .stroke(DesignTokens.Colors.success.opacity(0.4), lineWidth: DesignTokens.BorderWidth.hairline)
+                        .stroke(DS.Colors.success.opacity(0.4), lineWidth: DS.BorderWidth.hairline)
                 )
         )
-        .offset(y: -6)
+        .offset(y: -DS.Spacing.sm)
     }
 
     /// Todo/Done/Note 标记徽章
     private var recordTypeBadge: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: DS.Spacing.xxs) {
             Image(systemName: card.recordType.icon)
-                .font(.system(size: 8))
+                .font(DS.Typography.timestamp)
             Text(card.recordType.displayName)
-                .font(.system(size: 9, weight: .medium))
+                .font(DS.Typography.timestamp.weight(.medium))
         }
         .foregroundColor(card.recordType.color)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
+        .padding(.horizontal, DS.Spacing.sm)
+        .padding(.vertical, DS.Spacing.xxs)
         .background(card.recordType.color.opacity(0.15))
         .clipShape(Capsule())
     }
 
     private var cardBackground: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(showCopied ? DesignTokens.Colors.buttonHoverStrong : (isHovered ? DesignTokens.Colors.cardBackground : DesignTokens.Colors.surfaceThin))
+            RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous)
+                .fill(showCopied ? DS.Colors.buttonHoverStrong : (isHovered ? DS.Colors.cardBackground : DS.Colors.surfaceThin))
 
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(isHovered ? DesignTokens.Colors.borderSecondary : DesignTokens.Colors.borderPrimary, lineWidth: DesignTokens.BorderWidth.thin)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous)
+                .stroke(isHovered ? DS.Colors.borderSecondary : DS.Colors.borderPrimary, lineWidth: DS.BorderWidth.thin)
         }
     }
 
