@@ -94,10 +94,70 @@ SpokenAnyWhere is converging from a collection of strong desktop capture and AI 
 
 | Phase | Status | Completed |
 |-------|--------|-----------|
-| 1. Stabilize Desktop Overlay Runtime | Completed | TASK-001 through TASK-006 completed; LiveCaption, CaptionLineBuffer, AppLifecyclePlan, AppRuntimeHelpers tests and swift build passed |
-| 2. Consolidate Workflow Documentation and Release Hygiene | In progress | Maestro init, codebase map, harvest reports, cleanup readiness, wave1 classification, and staging plan generated |
+| 1. Stabilize Desktop Overlay Runtime | ✅ Completed | TASK-001–TASK-006; LiveCaption Collapsed Focus + Debug Simulation + App Runtime Seams |
+| 2. Consolidate Workflow Documentation and Release Hygiene | ✅ Completed | Maestro init, CCW retirement, 7-group commit split, approved branch/worktree cleanup, AGENTS.md delegation system |
+| 3. Harvest spoke-swiftui-wave1 (SwiftUI Modernization) | ✅ Completed | A+B+D (Button + DesignTokens + HUD), C+E (LiveCaption polling + QuickAsk state); 33 files, +1144/−886; 359 tests, 0 concurrency warnings |
+| 4. Remaining Worktree/Branch Cleanup | ✅ Completed | spoke-swiftui-wave1, autoresearch/arch-v3 deleted; autoresearch/control (12 sub-branches) retained as archive |
+| 5. **Next: Choose from options below** | ⬜ Pending | See Phase 5 Options |
 
-## Loading Order for Future Sessions
+### Phase 5 Options — Next Possible Workstreams
+
+> Choose one or more. Recommended order follows dependency chain.
+
+#### Option A: DesignTokens Compliance Pass 🔧
+- **Effort**: Medium (1–2 days)
+- **Depends on**: Nothing
+- **Description**: Replace all 123 remaining hardcoded styling violations (`.system(size:)`, `.padding(N)`, `Color.black`, `.cornerRadius(N)`) with DesignTokens (DS.Typography, DS.Spacing, DS.Colors, DS.CornerRadius) across harvested views.
+- **Files**: TagBubbleView, FloatingCapsuleView, WorkflowPickerView, all A+B-viewed files
+- **Why now**: Phase 3 partially applied tokens but left pre-existing violations. Completing this makes the codebase fully AGENTS.md-compliant for UI styling.
+- **Risk**: Visual drift — each replacement should be manually verified or backed by visual snapshot tests.
+
+#### Option B: TagBubbleView Nil-Action Button Fix 🐛
+- **Effort**: Small (<1 hour)
+- **Depends on**: Option A (overlapping file)
+- **Description**: Fix `onFilterToggle == nil` no-op Button — either `.disabled()` or render non-interactive label instead of Button. Improves accessibility semantics.
+- **File**: `spoke/UI/Components/TagBubbleView.swift:114-117`
+
+#### Option C: Test Quality Elevation 📊
+- **Effort**: Small–Medium (0.5–1 day)
+- **Depends on**: Nothing
+- **Description**: Replace source-string tests (SwiftUIButtonSemantics, QuickAskViewStateOwnership, FloatingCapsuleViewPolish) with behavior-verification tests. Add teardown-cancellation test for AppKitScrollView.dismantleNSView.
+- **Why now**: Current test suite is coverage-forward but regression-weak. Behavior tests catch real issues (like uncancelled DispatchWorkItem) that string checks miss.
+
+#### Option D: Product Roadmap — Desktop Understanding Layer 🧠
+- **Effort**: Large (2–4 weeks)
+- **Depends on**: Nothing
+- **Description**: Unify desktop capture outputs (screenshot OCR, pinned text, clipboard, live caption transcripts) into a structured AI-ready context layer. This is the "Understanding Layer" from ROADMAP.detail.md — the bridge between raw capture and AI actions.
+- **Key files**: `Services/LLMPipeline.swift`, `Services/ClipboardPipelineService.swift`, context assemblers
+- **Risk**: Architecture design needed first — consult Oracle for context-layer design.
+
+#### Option E: Product Roadmap — Global Entry Points Unification 🔀
+- **Effort**: Medium–Large (1–2 weeks)
+- **Depends on**: Nothing directly; benefits from Option D
+- **Description**: Unify the current fragmented entry points: hotkeys, status bar menu, selection toolbar, overlay controls. Make them configurable and consistent.
+- **Files**: `HotKeyService`, `SelectionMonitorService`, `AppDelegate.swift` status menu, settings UI
+
+#### Option F: Release Discipline Formalization 📦
+- **Effort**: Small (0.5 day)
+- **Depends on**: Nothing
+- **Description**: Establish changelog format, version numbering (semver), tag discipline, and release notes template. Build on existing `docs/superpowers/specs/` design documents.
+- **Why now**: 27 commits pushed without formal version bump or changelog. Should be done before next user-facing release.
+
+#### Option G: autoresearch/control Archive Consolidation 🗂️
+- **Effort**: Small (0.5 day)
+- **Depends on**: Nothing
+- **Description**: Review the 12 retained `autoresearch/control` sub-branches. Classify as archive-only or extract any reusable findings. Move worktree to a permanent archive location or consolidate into a single snapshot.
+- **Risk**: Low — all are read-only historical branches.
+
+---
+
+### Recommended Execution Order
+
+```
+Option A (DesignTokens) → Option B (TagBubble fix)
+Option F (Release discipline) → Option C (Tests) or Option D (Understanding layer)
+Option G (Archive cleanup) → anytime
+```
 
 1. `.workflow/project.md`
 2. `.workflow/roadmap.md`
