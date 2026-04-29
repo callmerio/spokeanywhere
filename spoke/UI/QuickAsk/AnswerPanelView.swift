@@ -32,7 +32,7 @@ struct AnswerPanelView: View {
     @State private var _audioLevels: [Float] = Array(repeating: 0.05, count: 40)
     
     // Markdown Height (初始值设大一点，避免加载时截断)
-    @State private var answerHeight: CGFloat = 200
+    @State private var answerHeight: CGFloat = DS.Layout.toolbarHeight * 5
     // Toolbar Hover State
     @State private var isHoveringToolbar: Bool = false
     @State private var _isHoveringCloseButton: Bool = false

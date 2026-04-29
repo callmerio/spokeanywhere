@@ -135,21 +135,21 @@ struct TagBubbleView: View {
                 .padding(.vertical, DS.Spacing.xs)
                 .background(
                     Capsule()
-                        .fill(tag.color.color.opacity(isFilterActive ? 0.4 : (isHovered ? 0.25 : 0.15)))
+                        .fill(tag.color.color.opacity(isFilterActive ? DS.Opacity.strong : (isHovered ? DS.Opacity.hover : DS.Opacity.subtle)))
                 )
                 .overlay(
                     Capsule()
                         .stroke(
-                            tag.color.color.opacity(isFilterActive ? 0.6 : 0.3),
+                            tag.color.color.opacity(isFilterActive ? DS.Opacity.high : DS.Opacity.medium),
                             lineWidth: isFilterActive ? (DS.BorderWidth.thin + DS.BorderWidth.hairline) : DS.BorderWidth.thin
                         )
                 )
-                .scaleEffect(isFilterActive ? 1.05 : 1.0)
+                .scaleEffect(isFilterActive ? DS.Scale.activeTag : DS.Scale.normal)
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
         }
@@ -214,7 +214,7 @@ struct TagBubbleView: View {
                 .textFieldStyle(.plain)
                 .font(DS.Typography.captionSmall)
                 .foregroundColor(tag.color.color)
-                .frame(minWidth: 40, maxWidth: 120)
+                .frame(minWidth: DS.Layout.toolbarHeight, maxWidth: DS.Layout.toolbarHeight * 3)
                 .onSubmit {
                     commitEdit()
                 }
@@ -241,11 +241,11 @@ struct TagBubbleView: View {
         .padding(.vertical, DS.Spacing.xs)
         .background(
             Capsule()
-                .fill(tag.color.color.opacity(0.2))
+                .fill(tag.color.color.opacity(DS.Opacity.light))
         )
         .overlay(
             Capsule()
-                .stroke(tag.color.color.opacity(0.5), lineWidth: DS.BorderWidth.thin)
+                .stroke(tag.color.color.opacity(DS.Opacity.emphasis), lineWidth: DS.BorderWidth.thin)
         )
     }
     
@@ -335,7 +335,7 @@ struct TagListView: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHoveringAdd = hovering
             }
         }
@@ -567,16 +567,16 @@ struct TagBubbleButton: View {
                 .padding(.vertical, DS.Spacing.xs)
                 .background(
                     Capsule()
-                        .fill(tag.color.color.opacity(isHovered ? 0.25 : 0.15))
+                        .fill(tag.color.color.opacity(isHovered ? DS.Opacity.hover : DS.Opacity.subtle))
                 )
                 .overlay(
                     Capsule()
-                        .stroke(tag.color.color.opacity(0.3), lineWidth: DS.BorderWidth.thin)
+                        .stroke(tag.color.color.opacity(DS.Opacity.medium), lineWidth: DS.BorderWidth.thin)
                 )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
         }
@@ -601,23 +601,23 @@ struct ActiveFilterTagBubble: View {
                 
                 Image(systemName: "xmark")
                     .font(DS.Typography.timestamp.weight(.bold))
-                    .opacity(isHovered ? 1 : 0.6)
+                    .opacity(isHovered ? DS.Opacity.opaque : DS.Opacity.high)
             }
             .foregroundColor(tag.color.color)
             .padding(.horizontal, DS.Spacing.md)
             .padding(.vertical, DS.Spacing.xs)
             .background(
                 Capsule()
-                    .fill(tag.color.color.opacity(isHovered ? 0.35 : 0.25))
+                    .fill(tag.color.color.opacity(isHovered ? DS.Opacity.hoverStrong : DS.Opacity.hover))
             )
             .overlay(
                 Capsule()
-                    .stroke(tag.color.color.opacity(0.5), lineWidth: DS.BorderWidth.thin)
+                    .stroke(tag.color.color.opacity(DS.Opacity.emphasis), lineWidth: DS.BorderWidth.thin)
             )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(DS.Animation.fast) {
                 isHovered = hovering
             }
         }
@@ -655,6 +655,6 @@ struct ActiveFilterTagBubble: View {
             print("Remove filter")
         }
     }
-    .padding()
+    .padding(DS.Spacing.md)
     .background(DS.Colors.settingsBackground)
 }

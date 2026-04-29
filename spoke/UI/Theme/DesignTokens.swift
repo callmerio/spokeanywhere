@@ -113,6 +113,8 @@ enum DesignTokens {
         static let accentDim = Color(nsColor: NSColor.white.withAlphaComponent(0.05))
         /// 主强调色（遵循系统 Accent Color）
         static let accentPrimary = Color.accentColor
+        /// 主强调色浅底
+        static let accentSubtleBackground = Color.accentColor.opacity(0.1)
         /// 轻微高饱和渐变起点
         static let accentGradientStart = Color(red: 0.6, green: 0.8, blue: 1.0)
         /// 轻微高饱和渐变终点
@@ -179,6 +181,8 @@ enum DesignTokens {
     
     // MARK: - Spacing
     enum Spacing {
+        /// 无间距
+        static let none: CGFloat = 0
         /// 最小间距（2pt）
         static let xxs: CGFloat = 2
         /// 紧凑间距（4pt）
@@ -351,12 +355,44 @@ enum DesignTokens {
         static let iconSizeXLarge: CGFloat = 32
         /// 图标底座尺寸
         static let iconBackdropSize: CGFloat = 40
+        /// 附件缩略图尺寸
+        static let attachmentThumbnailSize: CGFloat = 60
+        /// 附件缩略图最大宽度
+        static let attachmentThumbnailMaxWidth: CGFloat = 120
+        /// 附件数量徽标预留宽度
+        static let attachmentBadgeReservedWidth: CGFloat = 50
+        /// 原图弹窗最大尺寸
+        static let fullImagePopoverMaxSize: (width: CGFloat, height: CGFloat) = (400, 350)
+        /// 原图弹窗加载占位尺寸
+        static let fullImagePopoverPlaceholderSize: (width: CGFloat, height: CGFloat) = (200, 150)
+        /// 词典词头最小宽度
+        static let dictionaryTermMinWidth: CGFloat = 60
+        /// 词典词性最小宽度
+        static let dictionaryPartOfSpeechMinWidth: CGFloat = 30
+        /// Workflow 选择器最大高度
+        static let workflowPickerMaxHeight: CGFloat = 260
+        /// Quick Ask 输入框高度范围
+        static let quickAskInputHeightRange: (min: CGFloat, max: CGFloat) = (20, 60)
         /// 毛玻璃模糊半径
         static let blurRadius: CGFloat = 20
         /// 拖动指示器尺寸
         static let dragIndicatorSize: (width: CGFloat, height: CGFloat) = (32, 4)
         /// 工具栏分隔线高度
         static let toolbarSeparatorHeight: CGFloat = 20
+        /// 词典浮窗高度
+        static let dictionaryPanelHeight: CGFloat = 420
+        /// 词典设置强度选择器宽度
+        static let dictionaryWeightPickerWidth: CGFloat = 180
+        /// 词典设置搜索框宽度
+        static let dictionarySearchFieldWidth: CGFloat = 200
+        /// 词典设置列表最大高度
+        static let dictionaryListMaxHeight: CGFloat = 400
+        /// 词典热词确认弹窗宽度
+        static let dictionaryHotwordPopoverWidth: CGFloat = 260
+        /// 会话历史叠放卡片占位高度
+        static let sessionHistoryPlaceholderHeight: CGFloat = 60
+        /// 会话历史预览宽度
+        static let sessionHistoryPreviewWidth: CGFloat = 360
     }
 
     // MARK: - Border Width
@@ -377,6 +413,42 @@ enum DesignTokens {
         static let normal: CGFloat = 4
         /// 宽松行距
         static let relaxed: CGFloat = 6
+    }
+
+    // MARK: - Opacity
+    enum Opacity {
+        /// 无透明度
+        static let hidden: CGFloat = 0
+        /// 轻微状态层
+        static let subtle: CGFloat = 0.15
+        /// 浅状态层
+        static let light: CGFloat = 0.2
+        /// Hover 状态层
+        static let hover: CGFloat = 0.25
+        /// 标准状态层
+        static let medium: CGFloat = 0.3
+        /// 强 Hover 状态层
+        static let hoverStrong: CGFloat = 0.35
+        /// 强状态层
+        static let strong: CGFloat = 0.4
+        /// 强调状态层
+        static let emphasis: CGFloat = 0.5
+        /// 高强调状态层
+        static let high: CGFloat = 0.6
+        /// 完全可见
+        static let opaque: CGFloat = 1
+    }
+
+    // MARK: - Scale
+    enum Scale {
+        /// 默认缩放
+        static let normal: CGFloat = 1
+        /// 轻微复制反馈缩放
+        static let feedback: CGFloat = 1.02
+        /// 激活标签缩放
+        static let activeTag: CGFloat = 1.05
+        /// 转场初始缩放
+        static let transitionInitial: CGFloat = 0.8
     }
 }
 

@@ -25,7 +25,7 @@ struct MessageCardView: View {
     @State private var showCopied = false
     @State private var isExpanded = false
     @State private var isShowingOriginal = false  // 点击展开原文（摘要模式）
-    @State private var copyScale: CGFloat = 1.0
+    @State private var copyScale: CGFloat = DS.Scale.normal
     @State private var showTagPopover = false
     @State private var isDropTargeted = false
 
@@ -34,7 +34,7 @@ struct MessageCardView: View {
     /// 折叠后实际显示的行数（高度）
     private let collapsedDisplayLines = 3
     /// 每行高度（13pt 字体 + SwiftUI 默认行间距 ≈ 16pt）
-    private let lineHeight: CGFloat = 16
+    private let lineHeight: CGFloat = DS.Typography.fontSizeButton + DS.LineSpacing.tight
     /// 每行大约的字符数（用于估算是否需要折叠）
     private let charsPerLine = 25
 }
@@ -110,7 +110,7 @@ extension MessageCardView {
             if showCopied {
                 copyFeedbackBadge
                     .transition(.asymmetric(
-                        insertion: .scale(scale: 0.8).combined(with: .opacity).combined(with: .offset(y: 8)),
+                        insertion: .scale(scale: DS.Scale.transitionInitial).combined(with: .opacity).combined(with: .offset(y: DS.Spacing.md)),
                         removal: .opacity
                     ))
             }
@@ -300,7 +300,7 @@ extension MessageCardView {
                 Circle()
                     .fill(card.stage.color)
                     .frame(width: DS.Spacing.md, height: DS.Spacing.md)
-                    .shadow(color: card.stage.glowColor.opacity(0.5), radius: DS.Spacing.xs, x: 0, y: 0)
+                    .shadow(color: card.stage.glowColor.opacity(DS.Opacity.emphasis), radius: DS.Spacing.xs, x: 0, y: 0)
             }
 
             // 标题（类似通知的 App 名称位置）
@@ -334,7 +334,7 @@ extension MessageCardView {
                         cardActionButton(
                             icon: isShowingOriginal ? "text.quote" : "doc.text.magnifyingglass",
                             action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(DS.Animation.normal) {
                                     isShowingOriginal.toggle()
                                     if isShowingOriginal {
                                         isExpanded = true
@@ -348,7 +348,7 @@ extension MessageCardView {
                     if needsCollapse {
                         cardActionButton(
                             icon: (isExpanded || isShowingOriginal) ? "chevron.up" : "chevron.down",
-                            action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }
+                            action: { withAnimation(DS.Animation.normal) { isExpanded.toggle() } }
                         )
                     }
 
@@ -359,7 +359,7 @@ extension MessageCardView {
                     cardActionButton(icon: "xmark", action: { onDelete?() })
                 }
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.12), value: isHovered)
+                .animation(DS.Animation.fast, value: isHovered)
             }
         }
     }
@@ -415,7 +415,7 @@ extension MessageCardView {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .frame(minHeight: 20, alignment: .topLeading)
+                .frame(minHeight: DS.Layout.iconSizeStandard, alignment: .topLeading)
                 // 折叠时固定高度，用 height 而非 maxHeight 确保 mask 对齐
                 .frame(
                     height: needsTextCollapse && !isExpanded && !shouldShowSummary
@@ -433,7 +433,7 @@ extension MessageCardView {
                                 .frame(height: CGFloat(collapsedDisplayLines) * lineHeight - lineHeight * 0.5)
                             // 第3行后1/2渐变消失
                             LinearGradient(
-                                colors: [.white, .clear],
+                                colors: [DS.Colors.textPrimary, DS.Colors.clear],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
@@ -447,7 +447,7 @@ extension MessageCardView {
                 // 折叠状态下，透明覆盖层拦截点击（NSTextView 会吃掉点击事件）
                 if needsTextCollapse && !isExpanded && !shouldShowSummary {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(DS.Animation.normal) {
                             isExpanded.toggle()
                         }
                     } label: {
@@ -540,19 +540,19 @@ extension MessageCardView {
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
 
         // 动画：卡片轻微放大 + 显示浮动提示
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
-            copyScale = 1.02
+        withAnimation(DS.Animation.springBouncy) {
+            copyScale = DS.Scale.feedback
             showCopied = true
         }
 
         runMessageCardCopyFeedback(
             resetScale: {
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
-                    copyScale = 1.0
+                withAnimation(DS.Animation.spring) {
+                    copyScale = DS.Scale.normal
                 }
             },
             hideCopied: {
-                withAnimation(.easeOut(duration: 0.25)) {
+                withAnimation(DS.Animation.normal) {
                     showCopied = false
                 }
             }
@@ -575,7 +575,7 @@ extension MessageCardView {
                 .fill(DS.Colors.overlayMedium)
                 .overlay(
                     Capsule()
-                        .stroke(DS.Colors.success.opacity(0.4), lineWidth: DS.BorderWidth.hairline)
+                        .stroke(DS.Colors.success.opacity(DS.Opacity.strong), lineWidth: DS.BorderWidth.hairline)
                 )
         )
         .offset(y: -DS.Spacing.sm)
@@ -592,7 +592,7 @@ extension MessageCardView {
         .foregroundColor(card.recordType.color)
         .padding(.horizontal, DS.Spacing.sm)
         .padding(.vertical, DS.Spacing.xxs)
-        .background(card.recordType.color.opacity(0.15))
+        .background(card.recordType.color.opacity(DS.Opacity.subtle))
         .clipShape(Capsule())
     }
 
