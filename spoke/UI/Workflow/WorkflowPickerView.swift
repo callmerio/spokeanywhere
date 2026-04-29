@@ -43,7 +43,7 @@ struct WorkflowPickerView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: DS.Spacing.none) {
             if flatWorkflows.isEmpty {
                 emptyState
             } else {
@@ -80,10 +80,10 @@ struct WorkflowPickerView: View {
                 }
                 .padding(DS.Spacing.sm)
             }
-            .frame(maxHeight: 260)
+            .frame(maxHeight: DS.Layout.workflowPickerMaxHeight)
             .onChange(of: workflowState.selectedIndex) { _, newIndex in
                 if let workflow = flatWorkflows[safe: newIndex] {
-                    withAnimation(.easeOut(duration: 0.1)) {
+                    withAnimation(.easeOut(duration: DS.Animation.durationFast)) {
                         proxy.scrollTo(workflow.id, anchor: .center)
                     }
                 }
@@ -96,14 +96,14 @@ struct WorkflowPickerView: View {
     private var emptyState: some View {
         VStack(spacing: DS.Spacing.md) {
             Image(systemName: "magnifyingglass")
-                .font(.title2)
-                .foregroundStyle(.secondary)
+                .font(DS.Typography.titleLarge)
+                .foregroundStyle(DS.Colors.textSecondary)
             Text("没有匹配的 Workflow")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(DS.Typography.button)
+                .foregroundStyle(DS.Colors.textSecondary)
             Text("输入 / 查看所有可用项")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.textPlaceholder)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, DS.Spacing.xxl)
@@ -122,12 +122,12 @@ struct WorkflowOptionRow: View {
             // 名称
             Text(workflow.name)
                 .font(DS.Typography.caption)
-                .foregroundStyle(.primary)
+                .foregroundStyle(DS.Colors.textPrimary)
             
             // 描述（一行，超出截断）
             Text(workflow.description)
                 .font(DS.Typography.captionSmall)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DS.Colors.textSecondary)
                 .lineLimit(1)
                 .truncationMode(.tail)
             
@@ -135,7 +135,7 @@ struct WorkflowOptionRow: View {
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, DS.Spacing.sm)
-        .background(isSelected ? DS.Colors.accentPrimary.opacity(0.2) : Color.clear)
+        .background(isSelected ? DS.Colors.buttonActive : DS.Colors.clear)
         .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm))
         .contentShape(Rectangle())
     }

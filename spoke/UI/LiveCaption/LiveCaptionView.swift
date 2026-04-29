@@ -170,10 +170,10 @@ struct LiveCaptionView: View {
             if isEmpty {
                 // 空状态
                 Text("等待音频...")
-                    .font(.system(size: CaptionDesign.fontSize))
-                    .foregroundColor(CaptionDesign.textSecondary)
+                    .font(DS.Typography.body)
+                    .foregroundColor(DS.Colors.textTranslation)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 32)
+                    .padding(.vertical, DS.Spacing.xxl + DS.Spacing.md)
             } else {
                 AppKitScrollView(isAtBottom: isAtBottomBinding, scrollTrigger: scrollState.scrollTrigger) {
                     // 🔥 移除 Spacer，避免内容变化时 Spacer 高度重算导致滚动跳变
@@ -234,11 +234,11 @@ struct LiveCaptionView: View {
                                 // 流式翻译（始终占位，防止闪烁）
                                 let pendingTranslation = manager.lineBuffer.pendingTranslation
                                 Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
-                                    .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                                    .font(DS.Typography.bodySecondary)
                                     .foregroundColor(
                                         CaptionDesign.textSecondary.opacity(pendingTranslation.isEmpty ? 0 : 0.7)
                                     )
-                                    .lineSpacing(3)
+                                    .lineSpacing(DS.LineSpacing.tight)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .animation(.easeOut(duration: 0.2), value: pendingTranslation)
                             }
@@ -254,11 +254,11 @@ struct LiveCaptionView: View {
                 .frame(height: CaptionDesign.collapsedContentHeight * 2.5)
                 .mask(LinearGradient(
                     gradient: Gradient(stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black.opacity(0.3), location: 0.08),
-                        .init(color: .black.opacity(0.7), location: 0.15),
-                        .init(color: .black, location: 0.25),
-                        .init(color: .black, location: 1.0)
+                        .init(color: DS.Colors.clear, location: 0),
+                        .init(color: DS.Colors.overlayDark, location: 0.08),
+                        .init(color: DS.Colors.overlayStrong.opacity(0.7 / 0.8), location: 0.15),
+                        .init(color: DS.Colors.overlayStrong.opacity(1.0 / 0.8), location: 0.25),
+                        .init(color: DS.Colors.overlayStrong.opacity(1.0 / 0.8), location: 1.0)
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -351,11 +351,11 @@ struct LiveCaptionView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         
                         Text(pendingTranslation.isEmpty ? " " : pendingTranslation)
-                            .font(.system(size: CaptionDesign.translatedFontSize, weight: .regular))
+                            .font(DS.Typography.bodySecondary)
                             .foregroundColor(
                                 CaptionDesign.textSecondary.opacity(pendingTranslation.isEmpty ? 0 : 0.7)
                             )
-                            .lineSpacing(3)
+                            .lineSpacing(DS.LineSpacing.tight)
                             .fixedSize(horizontal: false, vertical: true)
                             .animation(.easeOut(duration: 0.2), value: pendingTranslation)
                     }
@@ -462,7 +462,7 @@ struct LiveCaptionView: View {
         RoundedRectangle(cornerRadius: CaptionDesign.dragIndicatorHeight / 2)
             .fill(CaptionDesign.dragIndicatorColor)
             .frame(width: CaptionDesign.dragIndicatorWidth, height: CaptionDesign.dragIndicatorHeight)
-            .padding(.bottom, 8)
+            .padding(.bottom, DS.Spacing.md)
     }
     
     /// 复制全部内容到剪贴板
@@ -521,12 +521,12 @@ struct LiveCaptionView: View {
 
             // Hover 光晕效果（仅 hover 时显示）
             RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
-                .fill(Color.clear)
+                .fill(DS.Colors.clear)
                 .shadow(
                     color: hoverState.isHovering ? CaptionDesign.glowColor : .clear,
                     radius: CaptionDesign.glowRadius,
-                    x: 0,
-                    y: 0
+                    x: DS.BorderWidth.none,
+                    y: DS.BorderWidth.none
                 )
         }
         .allowsHitTesting(false)
@@ -549,7 +549,7 @@ struct LiveCaptionView: View {
         RoundedRectangle(cornerRadius: CaptionDesign.cornerRadius)
             .stroke(
                 hoverState.isHovering ? CaptionDesign.glowBorderColor : CaptionDesign.borderColor,
-                lineWidth: hoverState.isHovering ? CaptionDesign.glowBorderWidth : 1
+                lineWidth: hoverState.isHovering ? CaptionDesign.glowBorderWidth : DS.BorderWidth.thin
             )
     }
 }
@@ -624,7 +624,7 @@ private struct LiveCaptionHoverOverlay: View {
     }
 
     private var hoverToolbar: some View {
-        let buttonSize: CGFloat = 24
+        let buttonSize: CGFloat = DS.Layout.iconSizeLarge
         let cornerRadius: CGFloat = buttonSize * 0.27
 
         return HStack(spacing: DS.Spacing.md) {
@@ -779,7 +779,7 @@ struct TranslationTaskModifier15: ViewModifier {
                 translator: .makePreview(),
                 dependencies: .preview
             )
-            .padding(.bottom, 60)
+            .padding(.bottom, DS.Layout.toolbarHeight + DS.Spacing.xl + DS.Spacing.xs)
         }
     }
     .frame(width: DS.Layout.captionMaxWidth + DS.Layout.toolbarHeight + DS.Layout.toolbarHeight + DS.Spacing.xxxl + DS.Spacing.md, height: DS.Layout.captionMaxWidth - DS.Spacing.xxxl - DS.Spacing.xxxl + DS.Spacing.md)

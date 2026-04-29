@@ -24,11 +24,11 @@ struct CardAttachmentView: View {
     private let dependencies: CardAttachmentViewDependencies
     
     /// 缩略图固定高度
-    private let thumbnailHeight: CGFloat = 60
+    private let thumbnailHeight: CGFloat = DS.Layout.attachmentThumbnailSize
     /// 图片间距
-    private let spacing: CGFloat = 6
+    private let spacing: CGFloat = DS.Spacing.sm
     /// 可用宽度（卡片宽度 - padding）
-    private let availableWidth: CGFloat = MessagePanelState.panelWidth - 28 - 16  // padding + 边距
+    private let availableWidth: CGFloat = MessagePanelState.panelWidth - (DS.Spacing.lg + DS.Spacing.xl) - DS.Spacing.xl
 
     init(
         attachments: [CardAttachment],
@@ -134,7 +134,7 @@ struct CardAttachmentView: View {
         var rows = 1
         
         // 预留 +N 标签的空间
-        let reservedWidth: CGFloat = 50
+        let reservedWidth: CGFloat = DS.Layout.attachmentBadgeReservedWidth
         let effectiveWidth = availableWidth - reservedWidth
         
         for attachment in attachments {
@@ -245,7 +245,7 @@ struct CardAttachmentThumbnail: View {
     /// 固定高度模式（用于流式布局）
     var fixedHeight: CGFloat?
     /// 最大宽度模式（传统模式）
-    var maxWidth: CGFloat = 120
+    var maxWidth: CGFloat = DS.Layout.attachmentThumbnailMaxWidth
     var showDeleteButton: Bool = false
     private let dependencies: CardAttachmentViewDependencies
     
@@ -257,7 +257,7 @@ struct CardAttachmentThumbnail: View {
         attachment: CardAttachment,
         cardId: UUID,
         fixedHeight: CGFloat? = nil,
-        maxWidth: CGFloat = 120,
+        maxWidth: CGFloat = DS.Layout.attachmentThumbnailMaxWidth,
         showDeleteButton: Bool = false,
         dependencies: CardAttachmentViewDependencies
     ) {
@@ -323,7 +323,7 @@ struct CardAttachmentThumbnail: View {
                     dependencies.removeAttachment(attachment.id, cardId)
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: DS.Layout.iconSizeMedium))
+                        .font(DS.Typography.bodySecondary)
                         .foregroundColor(DS.Colors.textPrimary)
                         .shadow(color: DS.Colors.overlayMedium, radius: DS.Spacing.xxs)
                 }
@@ -333,7 +333,7 @@ struct CardAttachmentThumbnail: View {
             }
         }
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(.easeInOut(duration: DS.Animation.durationFast)) {
                 isHovered = hovering
             }
         }
@@ -418,8 +418,8 @@ struct FullImagePopover: View {
 
     /// 计算合适的显示尺寸
     private var displaySize: CGSize {
-        let maxWidth: CGFloat = 400
-        let maxHeight: CGFloat = 350
+        let maxWidth: CGFloat = DS.Layout.fullImagePopoverMaxSize.width
+        let maxHeight: CGFloat = DS.Layout.fullImagePopoverMaxSize.height
         let ratio = attachment.aspectRatio
         
         if ratio > 1 {
@@ -444,7 +444,10 @@ struct FullImagePopover: View {
                     .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.sm, style: .continuous))
             } else {
                 ProgressView()
-                    .frame(width: 200, height: 150)
+                    .frame(
+                        width: DS.Layout.fullImagePopoverPlaceholderSize.width,
+                        height: DS.Layout.fullImagePopoverPlaceholderSize.height
+                    )
             }
             
             // 操作按钮
@@ -456,7 +459,7 @@ struct FullImagePopover: View {
                         .font(DS.Typography.captionSmall)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .foregroundColor(DS.Colors.textSecondary)
                 
                 Button {
                     saveToDesktop()
@@ -465,7 +468,7 @@ struct FullImagePopover: View {
                         .font(DS.Typography.captionSmall)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .foregroundColor(DS.Colors.textSecondary)
                 
                 Spacer()
                 
@@ -476,7 +479,7 @@ struct FullImagePopover: View {
                         .font(DS.Typography.captionSmall)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .foregroundColor(DS.Colors.textSecondary)
             }
         }
         .padding(DS.Spacing.lg)
@@ -508,12 +511,12 @@ struct CardDropOverlay: View {
                 .stroke(DS.Colors.accentPrimary, style: StrokeStyle(lineWidth: DS.BorderWidth.thin, dash: [DS.Spacing.md, DS.Spacing.xs]))
                 .background(
                     RoundedRectangle(cornerRadius: DS.CornerRadius.lg, style: .continuous)
-                        .fill(DS.Colors.accentPrimary.opacity(0.1))
+                        .fill(DS.Colors.accentSubtleBackground)
                 )
                 .overlay(
                     VStack(spacing: DS.Spacing.md) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: DS.Layout.iconSizeLarge))
+                            .font(DS.Typography.titleLarge)
                         Text("松开添加图片")
                             .font(DS.Typography.caption)
                     }
@@ -548,6 +551,6 @@ struct CardDropOverlay: View {
             isExpanded: true
         )
     }
-    .padding()
+    .padding(DS.Spacing.md)
     .background(DS.Colors.overlayStrong)
 }

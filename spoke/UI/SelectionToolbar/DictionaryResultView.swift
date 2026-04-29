@@ -48,10 +48,10 @@ struct DictionaryResultView: View {
                 if let phonetic = data.phonetic, !phonetic.isEmpty {
                     Text(phonetic)
                         .font(DS.Typography.caption)
-                        .foregroundStyle(DS.Colors.textSecondary.opacity(0.8))
+                        .foregroundStyle(DS.Colors.textSecondary)
                 }
             }
-            .frame(minWidth: 60)
+            .frame(minWidth: DS.Layout.dictionaryTermMinWidth)
             
             Divider()
                 .frame(height: DS.Layout.toolbarHeight)
@@ -71,8 +71,8 @@ struct DictionaryResultView: View {
             if !sense.posDisplay.isEmpty {
                 Text(sense.posDisplay)
                     .font(DS.Typography.captionSmall)
-                    .foregroundStyle(DS.Colors.accentPrimary.opacity(0.9))
-                    .frame(minWidth: 30, alignment: .leading)
+                    .foregroundStyle(DS.Colors.accentPrimary)
+                    .frame(minWidth: DS.Layout.dictionaryPartOfSpeechMinWidth, alignment: .leading)
             }
             
             if let chinese = sense.chinese {
@@ -100,7 +100,7 @@ struct DictionaryResultView: View {
                 
                 Text(error.localizedDescription)
                     .font(DS.Typography.caption)
-                    .foregroundStyle(DS.Colors.textSecondary.opacity(0.85))
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
         }
     }
@@ -128,7 +128,7 @@ struct DictionaryResultView: View {
 // MARK: - Preview
 
 #Preview("Dictionary Result") {
-    VStack(spacing: 20) {
+    VStack(spacing: DS.Spacing.xxl) {
         DictionaryResultView(
             word: "prisoner",
             data: DictionaryData(
@@ -168,6 +168,6 @@ struct DictionaryResultView: View {
             onDismiss: {}
         )
     }
-    .padding()
+    .padding(DS.Spacing.md)
     .background(DS.Colors.settingsBackground)
 }

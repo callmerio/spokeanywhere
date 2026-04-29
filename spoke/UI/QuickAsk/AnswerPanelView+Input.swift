@@ -50,7 +50,7 @@ extension AnswerPanelView {
                     AttachmentThumbnailView(
                         attachment: attachment,
                         onRemove: { removeAttachment(attachment.id) },
-                        size: 60
+                        size: DS.Layout.attachmentThumbnailSize
                     )
                 }
             }
@@ -84,7 +84,10 @@ extension AnswerPanelView {
                 onWorkflowKeyEvent: { workflowState.handleKeyEvent($0) },
                 isWorkflowPickerVisible: { workflowState.isPickerVisible }
             )
-            .frame(minHeight: 20, maxHeight: 60)
+            .frame(
+                minHeight: DS.Layout.quickAskInputHeightRange.min,
+                maxHeight: DS.Layout.quickAskInputHeightRange.max
+            )
         }
     }
     
@@ -99,7 +102,7 @@ extension AnswerPanelView {
             if !isRecording {
                 Button(action: { toggleRecording() }, label: {
                     Image(systemName: "mic")
-                        .font(.system(size: DS.Layout.iconSizeMedium))
+                        .font(DS.Typography.bodySecondary)
                         .foregroundStyle(DS.Colors.textPlaceholder)
                 })
                 .buttonStyle(.plain)
@@ -113,7 +116,7 @@ extension AnswerPanelView {
     var sendButton: some View {
         Button(action: { sendMessage() }, label: {
             Image(systemName: "arrow.up.circle.fill")
-                .font(.system(size: DS.Layout.iconSizeXLarge))
+                .font(DS.Typography.titleLarge)
                 .foregroundStyle(canSend ? DS.Colors.accentPrimary : DS.Colors.textPlaceholder)
         })
         .buttonStyle(.plain)
@@ -140,7 +143,7 @@ extension AnswerPanelView {
     }
     
     func removeAttachment(_ id: UUID) {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(.easeInOut(duration: DS.Animation.durationNormal)) {
             pendingAttachments.removeAll { $0.id == id }
         }
     }

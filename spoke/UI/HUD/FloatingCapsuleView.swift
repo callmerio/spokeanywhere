@@ -392,7 +392,7 @@ struct FloatingCapsuleView: View {
                         Text("完成录音")
                             .font(DS.Typography.content.weight(.medium))
                             .foregroundStyle(DS.Colors.textPrimary)
-                            .shadow(radius: 1)
+                            .shadow(radius: DS.Shadow.tight().radius)
                     }
                 }
             }
@@ -425,7 +425,7 @@ struct FloatingCapsuleView: View {
                         Text("取消录音")
                             .font(DS.Typography.content.weight(.medium))
                             .foregroundStyle(DS.Colors.textPrimary)
-                            .shadow(radius: 1)
+                            .shadow(radius: DS.Shadow.tight().radius)
                     }
                 }
             }
@@ -624,7 +624,7 @@ struct StatusIndicator: View {
                         Circle()
                             .fill(dotColors[index])
                             .frame(width: DS.Spacing.xs, height: DS.Spacing.xs)
-                            .offset(y: -7) // 半径
+                            .offset(y: -(DS.Spacing.md - DS.BorderWidth.thin)) // 半径
                             .rotationEffect(.degrees(Double(index) * 60))
                     }
                 }
@@ -712,7 +712,7 @@ struct RunningLightBorder: View {
                         center: .center,
                         angle: .degrees(rotation)
                     ),
-                    lineWidth: DS.Spacing.xxs
+                    lineWidth: DS.BorderWidth.thin + DS.BorderWidth.thin
                 )
                 .blur(radius: DS.LineSpacing.tight)
             

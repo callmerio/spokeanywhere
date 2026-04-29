@@ -38,10 +38,10 @@ struct HistoryGroupView: View {
     // MARK: - Layout Constants
     
     private enum StackLayout {
-        static let verticalOffset: CGFloat = 8
-        static let horizontalPadding: CGFloat = 6
-        static let placeholderHeight: CGFloat = 60
-        static let cornerRadius: CGFloat = 16
+        static let verticalOffset = DS.Spacing.md
+        static let horizontalPadding = DS.Spacing.sm
+        static let placeholderHeight = DS.Layout.sessionHistoryPlaceholderHeight
+        static let cornerRadius = DS.CornerRadius.xl
     }
     
     // MARK: - Stacked Cards（折叠状态 - 向下三卡片叠放）
@@ -120,7 +120,7 @@ struct HistoryGroupView: View {
                 }
                 
                 // × 按钮（hover 效果）
-                HoverCloseButton(action: { onClearType?() }, size: 24, iconSize: 10)
+                HoverCloseButton(action: { onClearType?() }, size: DS.Layout.iconSizeLarge, iconSize: DS.Typography.fontSizeTimestamp)
             }
             .padding(.horizontal, DS.Spacing.xs)  // 和 Pipeline 对齐
             .padding(.vertical, DS.Spacing.md)
@@ -183,7 +183,7 @@ struct HistoryRecordCard: View {
                         .foregroundStyle(DS.Colors.textPlaceholder)
 
                     if onDelete != nil {
-                        Color.clear.frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
+                        DS.Colors.clear.frame(width: DS.Layout.iconSizeStandard, height: DS.Layout.iconSizeStandard)
                     }
                 }
 
@@ -289,7 +289,7 @@ struct HistoryRecordCard: View {
             onDeleteRecord: { _ in }
         )
     }
-    .frame(width: 360)
-    .padding()
+    .frame(width: DS.Layout.sessionHistoryPreviewWidth)
+    .padding(DS.Spacing.md)
     .background(DS.Colors.overlayDark)
 }

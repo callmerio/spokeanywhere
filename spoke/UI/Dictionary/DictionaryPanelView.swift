@@ -44,7 +44,7 @@ struct DictionaryPanelView: View {
                 detailView(result)
             }
         }
-        .frame(width: DS.Layout.captionMaxWidth, height: 420)
+        .frame(width: DS.Layout.captionMaxWidth, height: DS.Layout.dictionaryPanelHeight)
         .background(
             ZStack {
                 VisualEffectBackground(material: .hudWindow, blendingMode: .behindWindow)
@@ -298,7 +298,7 @@ struct WordResultRow: View {
         }
         .padding(.horizontal, DesignTokens.Spacing.xl)
         .padding(.vertical, DesignTokens.Spacing.lg)
-        .background(isSelected ? DesignTokens.Colors.buttonHover : Color.clear)
+        .background(isSelected ? DesignTokens.Colors.buttonHover : DS.Colors.clear)
         .contentShape(Rectangle())
     }
     

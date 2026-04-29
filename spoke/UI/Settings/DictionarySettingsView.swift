@@ -202,7 +202,7 @@ struct DictionarySettingsContent: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 180)
+                    .frame(width: DS.Layout.dictionaryWeightPickerWidth)
                     
                     // 当前级别说明
                     Text(UserDefaults.standard.dictionaryWeightLevel.description)
@@ -279,7 +279,7 @@ struct DictionarySettingsContent: View {
             .padding(.vertical, DS.Spacing.md)
             .background(DS.Colors.settingsCardBackground)
             .cornerRadius(DS.CornerRadius.md)
-            .frame(width: 200)
+            .frame(width: DS.Layout.dictionarySearchFieldWidth)
         }
     }
     
@@ -313,7 +313,7 @@ struct DictionarySettingsContent: View {
                         }
                     }
                 }
-                .frame(maxHeight: 400)
+                .frame(maxHeight: DS.Layout.dictionaryListMaxHeight)
             }
             
             // 批量操作栏
@@ -353,7 +353,7 @@ struct DictionarySettingsContent: View {
     private var emptyStateView: some View {
         VStack(spacing: DS.Spacing.lg) {
             Image(systemName: "book.closed")
-                .font(.system(size: DS.Layout.iconSizeXLarge))
+                .font(DS.Typography.titleLarge)
                 .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
             
             Text("暂无词条")
@@ -525,7 +525,7 @@ struct FilterButton: View {
         Button(action: action) {
             HStack(spacing: DS.Spacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: DS.Layout.iconSizeSmall))
+                    .font(DS.Typography.captionSmall)
                 Text(title)
                     .font(DS.Typography.caption)
             }
@@ -536,7 +536,7 @@ struct FilterButton: View {
             .cornerRadius(DS.CornerRadius.xl)
             .overlay(
                 RoundedRectangle(cornerRadius: DS.CornerRadius.xl)
-                    .stroke(isSelected ? DS.Colors.warning.opacity(0.3) : Color.clear, lineWidth: DS.BorderWidth.thin)
+                    .stroke(isSelected ? DS.Colors.warning.opacity(0.3) : DS.Colors.clear, lineWidth: DS.BorderWidth.thin)
             )
         }
         .buttonStyle(.plain)
@@ -691,7 +691,7 @@ struct HotwordChip: View {
                 
                 TextField("正确词形", text: $correctedWord)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 200)
+                    .frame(width: DS.Layout.dictionarySearchFieldWidth)
                 
                 Text("转录可能识别成: \(hotword.word)")
                     .font(DS.Typography.captionSmall)
@@ -714,7 +714,7 @@ struct HotwordChip: View {
                 }
             }
             .padding(DS.Spacing.xl)
-            .frame(width: 260)
+            .frame(width: DS.Layout.dictionaryHotwordPopoverWidth)
         }
     }
 }
@@ -740,7 +740,7 @@ extension DictionarySettingsContent {
         } label: {
             HStack(spacing: DS.Spacing.lg) {
                 Image(systemName: "heart.text.square.fill")
-                    .font(.system(size: DS.Layout.iconSizeStandard))
+                    .font(DS.Typography.content)
                     .foregroundStyle(DS.Colors.error)
                 
                 VStack(alignment: .leading, spacing: DS.Spacing.xxs) {
@@ -760,7 +760,7 @@ extension DictionarySettingsContent {
                     .foregroundStyle(DS.Colors.textSecondary)
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: DS.Layout.iconSizeSmall, weight: .semibold))
+                    .font(DS.Typography.captionSmall.weight(.semibold))
                     .foregroundStyle(DS.Colors.textSecondary.opacity(0.5))
             }
             .padding(DS.Spacing.lg)
